@@ -130,13 +130,13 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7] p-4">
-      <Card className="w-full max-w-md p-8 bg-white border-[#d2d2d7] shadow-sm">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[#1d1d1f]">
+          <h1 className="text-2xl font-bold">
             {isSignUp ? "Create Account" : "Welcome Back"}
           </h1>
-          <p className="text-[#86868b] mt-2">
+          <p className="mt-2">
             {isSignUp
               ? "Sign up to start estimating projects"
               : "Sign in to your account"}
@@ -145,54 +145,42 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {isSignUp && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-[#1d1d1f]">First Name</Label>
-                <Input
-                  id="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  required
-                  className="bg-white border-[#d2d2d7] text-[#1d1d1f] focus:border-[#007AFF] focus:ring-[#007AFF]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-[#1d1d1f]">Last Name</Label>
-                <Input
-                  id="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  required
-                  className="bg-white border-[#d2d2d7] text-[#1d1d1f] focus:border-[#007AFF] focus:ring-[#007AFF]"
-                />
-              </div>
+              <Input
+                label="First Name"
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
+              <Input
+                label="Last Name"
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+              />
             </>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-[#1d1d1f]">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="bg-white border-[#d2d2d7] text-[#1d1d1f] focus:border-[#007AFF] focus:ring-[#007AFF]"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-[#1d1d1f]">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="bg-white border-[#d2d2d7] text-[#1d1d1f] focus:border-[#007AFF] focus:ring-[#007AFF]"
-              minLength={6}
-            />
-          </div>
+          <Input
+            label="Email"
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <Input
+            label="Password"
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+          />
           <Button
             type="submit"
-            className="w-full bg-[#007AFF] hover:bg-[#0066CC] text-white transition-all duration-300"
+            className="w-full"
             disabled={loading}
           >
             {loading
@@ -212,7 +200,7 @@ const Login = () => {
               setFirstName("");
               setLastName("");
             }}
-            className="text-[#007AFF] hover:text-[#0066CC] transition-colors bg-transparent"
+            className="text-primary hover:text-primary-700 transition-colors bg-transparent"
           >
             {isSignUp
               ? "Already have an account? Sign in"
