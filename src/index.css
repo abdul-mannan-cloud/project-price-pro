@@ -67,12 +67,12 @@
   }
 
   .select-wrapper {
-    @apply relative;
+    @apply relative pt-4;
   }
 
   .select-label {
     @apply absolute left-3 text-[11px] text-[#86868b] pointer-events-none;
-    top: 8px;
+    top: 12px;
   }
 
   .select-trigger {
