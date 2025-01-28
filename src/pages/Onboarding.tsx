@@ -1,3 +1,4 @@
+<lov-code>
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { StepIndicator } from "@/components/EstimateForm/StepIndicator";
 
 type OnboardingStep = 0 | 1 | 2;
 
@@ -274,131 +276,4 @@ const Onboarding = () => {
                   >
                     Previous
                   </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={loading || !isBusinessInfoValid()}
-                    className={`h-[44px] px-6 text-[17px] font-medium text-white rounded-full transition-colors ${
-                      isBusinessInfoValid()
-                        ? 'bg-[#0066cc] hover:bg-[#0055b3]'
-                        : 'bg-[#0066cc]/50 cursor-not-allowed'
-                    }`}
-                  >
-                    {loading ? "Saving..." : "Next"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      case OnboardingSteps.BRANDING:
-        return (
-          <div className="space-y-6">
-            <div>
-              <Label htmlFor="primaryColor" className="text-[15px] font-medium text-gray-900">
-                Primary Color
-              </Label>
-              <div className="mt-2 flex gap-3">
-                <Input
-                  id="primaryColor"
-                  name="primaryColor"
-                  type="color"
-                  value={formData.primaryColor}
-                  onChange={handleInputChange}
-                  className="h-12 w-16 rounded-xl border-gray-300 bg-gray-50 p-1 transition-colors focus:border-blue-500 focus:ring-blue-500"
-                />
-                <Input
-                  value={formData.primaryColor}
-                  onChange={handleInputChange}
-                  name="primaryColor"
-                  className="h-12 flex-1 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="secondaryColor" className="text-[15px] font-medium text-gray-900">
-                Secondary Color
-              </Label>
-              <div className="mt-2 flex gap-3">
-                <Input
-                  id="secondaryColor"
-                  name="secondaryColor"
-                  type="color"
-                  value={formData.secondaryColor}
-                  onChange={handleInputChange}
-                  className="h-12 w-16 rounded-xl border-gray-300 bg-gray-50 p-1 transition-colors focus:border-blue-500 focus:ring-blue-500"
-                />
-                <Input
-                  value={formData.secondaryColor}
-                  onChange={handleInputChange}
-                  name="secondaryColor"
-                  className="h-12 flex-1 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-        );
-      case OnboardingSteps.SETTINGS:
-        return (
-          <div className="space-y-6">
-            <div>
-              <Label htmlFor="minimumProjectCost" className="text-[15px] font-medium text-gray-900">
-                Minimum Project Cost ($)
-              </Label>
-              <Input
-                id="minimumProjectCost"
-                name="minimumProjectCost"
-                type="number"
-                value={formData.minimumProjectCost}
-                onChange={handleInputChange}
-                min="0"
-                step="100"
-                className="mt-2 h-12 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <Label htmlFor="markupPercentage" className="text-[15px] font-medium text-gray-900">
-                Markup Percentage (%)
-              </Label>
-              <Input
-                id="markupPercentage"
-                name="markupPercentage"
-                type="number"
-                value={formData.markupPercentage}
-                onChange={handleInputChange}
-                min="0"
-                max="100"
-                step="0.1"
-                className="mt-2 h-12 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <Label htmlFor="taxRate" className="text-[15px] font-medium text-gray-900">
-                Tax Rate (%)
-              </Label>
-              <Input
-                id="taxRate"
-                name="taxRate"
-                type="number"
-                value={formData.taxRate}
-                onChange={handleInputChange}
-                min="0"
-                max="100"
-                step="0.1"
-                className="mt-2 h-12 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        );
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-[#fbfbfd] flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        {renderStep()}
-      </div>
-    </div>
-  );
-};
-
-export default Onboarding;
+                 
