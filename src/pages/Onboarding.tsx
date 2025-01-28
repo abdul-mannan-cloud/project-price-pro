@@ -430,41 +430,32 @@ const Onboarding = () => {
 
             <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
               <div className="space-y-4">
-                <div className="relative">
-                  <label htmlFor="minimumProjectCost">Minimum Project Cost ($)</label>
-                  <Input
-                    id="minimumProjectCost"
-                    name="minimumProjectCost"
-                    type="number"
-                    value={formData.minimumProjectCost}
-                    onChange={handleInputChange}
-                    className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px]"
-                  />
-                </div>
+                <Input
+                  id="minimumProjectCost"
+                  name="minimumProjectCost"
+                  type="number"
+                  label="Minimum Project Cost ($)"
+                  value={formData.minimumProjectCost}
+                  onChange={handleInputChange}
+                />
 
-                <div className="relative">
-                  <label htmlFor="markupPercentage">Markup Percentage (%)</label>
-                  <Input
-                    id="markupPercentage"
-                    name="markupPercentage"
-                    type="number"
-                    value={formData.markupPercentage}
-                    onChange={handleInputChange}
-                    className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px]"
-                  />
-                </div>
+                <Input
+                  id="markupPercentage"
+                  name="markupPercentage"
+                  type="number"
+                  label="Markup Percentage (%)"
+                  value={formData.markupPercentage}
+                  onChange={handleInputChange}
+                />
 
-                <div className="relative">
-                  <label htmlFor="taxRate">Tax Rate (%)</label>
-                  <Input
-                    id="taxRate"
-                    name="taxRate"
-                    type="number"
-                    value={formData.taxRate}
-                    onChange={handleInputChange}
-                    className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px]"
-                  />
-                </div>
+                <Input
+                  id="taxRate"
+                  name="taxRate"
+                  type="number"
+                  label="Tax Rate (%)"
+                  value={formData.taxRate}
+                  onChange={handleInputChange}
+                />
 
                 <div className="flex justify-between pt-6">
                   <Button
