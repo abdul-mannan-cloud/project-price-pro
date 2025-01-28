@@ -62,7 +62,7 @@
   .form-input:focus + .form-label,
   .form-input:not(:placeholder-shown) + .form-label {
     @apply text-[11px] text-[#86868b];
-    top: 8px; /* Updated from 12px to 8px to move label higher */
+    top: 8px;
     transform: translateY(0);
   }
 
@@ -72,36 +72,12 @@
 
   .select-label {
     @apply absolute left-3 text-[11px] text-[#86868b] pointer-events-none;
-    top: 8px; /* Updated from 12px to 8px to match input labels */
+    top: 8px;
   }
 
   .select-trigger {
     @apply h-[52px] w-full rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 pt-5 pb-1 text-[15px] transition-all;
     @apply focus:border-[#0066cc] focus:ring-[#0066cc] focus:outline-none;
-  }
-
-  .apple-card {
-    @apply bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4;
-  }
-
-  .apple-button {
-    @apply h-[44px] px-6 text-[17px] font-medium rounded-full transition-colors;
-  }
-
-  .apple-button-primary {
-    @apply apple-button bg-[#007aff] text-white hover:bg-[#0066cc];
-  }
-
-  .apple-button-secondary {
-    @apply apple-button border border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7];
-  }
-
-  .apple-label {
-    @apply block text-[13px] font-medium text-[#1d1d1f] mb-1;
-  }
-
-  .apple-heading {
-    @apply text-center space-y-2 mb-8;
   }
 }
 
