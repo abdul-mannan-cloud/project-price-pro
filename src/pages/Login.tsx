@@ -3,52 +3,151 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const Login = () => {
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log("Login attempt with:", { email, password });
+    setLoading(true);
+
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              first_name: firstName,
+              last_name: lastName,
+            },
+          },
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Account created successfully!",
+          description: "Please check your email to verify your account.",
+        });
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully signed in.",
+        });
+        navigate("/");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-100 to-white p-4">
-      <Card className="w-full max-w-md p-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#000000] p-4">
+      <Card className="w-full max-w-md p-8 bg-[#111111] border-[#222222]">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-primary">Contractor Login</h1>
-          <p className="text-gray-600 mt-2">
-            Access your estimation dashboard
+          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+            {isSignUp ? "Create Account" : "Welcome Back"}
+          </h1>
+          <p className="text-gray-400 mt-2">
+            {isSignUp
+              ? "Sign up to start estimating projects"
+              : "Sign in to your account"}
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {isSignUp && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="firstName" className="text-white">First Name</Label>
+                <Input
+                  id="firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  className="bg-[#222222] border-[#333333] text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName" className="text-white">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                  className="bg-[#222222] border-[#333333] text-white"
+                />
+              </div>
+            </>
+          )}
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-white">Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder="you@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              className="bg-[#222222] border-[#333333] text-white"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-white">Password</Label>
             <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              className="bg-[#222222] border-[#333333] text-white"
             />
           </div>
-          <Button type="submit" className="w-full">
-            Sign In
+          <Button
+            type="submit"
+            className="w-full bg-[#9b87f5] hover:bg-[#8a74f8] text-white transition-all duration-300"
+            disabled={loading}
+          >
+            {loading
+              ? "Loading..."
+              : isSignUp
+              ? "Create Account"
+              : "Sign In"}
           </Button>
         </form>
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="text-[#9b87f5] hover:text-[#8a74f8] transition-colors"
+          >
+            {isSignUp
+              ? "Already have an account? Sign in"
+              : "Don't have an account? Sign up"}
+          </button>
+        </div>
       </Card>
     </div>
   );
