@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+type OnboardingStep = 0 | 1 | 2;
+
 const OnboardingSteps = {
   BUSINESS_INFO: 0,
   BRANDING: 1,
@@ -16,7 +18,7 @@ const OnboardingSteps = {
 const Onboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState(OnboardingSteps.BUSINESS_INFO);
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>(OnboardingSteps.BUSINESS_INFO);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     businessName: "",
@@ -238,7 +240,7 @@ const Onboarding = () => {
         <div className="flex justify-between">
           <Button
             variant="outline"
-            onClick={() => setCurrentStep((prev) => prev - 1)}
+            onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
             disabled={currentStep === OnboardingSteps.BUSINESS_INFO || loading}
             className="bg-[#222222] text-white border-[#333333] hover:bg-[#333333]"
           >
@@ -249,7 +251,7 @@ const Onboarding = () => {
               if (currentStep === OnboardingSteps.SETTINGS) {
                 handleSubmit();
               } else {
-                setCurrentStep((prev) => prev + 1);
+                setCurrentStep((prev) => (prev + 1) as OnboardingStep);
               }
             }}
             disabled={loading}
