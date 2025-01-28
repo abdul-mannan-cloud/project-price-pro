@@ -187,7 +187,22 @@ const Onboarding = () => {
     root.style.setProperty('--ring', primaryColor);
   };
 
-  // Add this helper function to convert hex to HSL
+  const handlePrimaryColorChange = (newColor: string) => {
+    setFormData(prev => ({
+      ...prev,
+      primaryColor: newColor
+    }));
+    updateGlobalColors(newColor, formData.secondaryColor);
+  };
+
+  const handleSecondaryColorChange = (newColor: string) => {
+    setFormData(prev => ({
+      ...prev,
+      secondaryColor: newColor
+    }));
+    updateGlobalColors(formData.primaryColor, newColor);
+  };
+
   const hexToHSL = (hex: string) => {
     // Remove the hash if it exists
     hex = hex.replace(/^#/, '');
