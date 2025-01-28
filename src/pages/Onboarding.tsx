@@ -3,6 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,6 +21,23 @@ const OnboardingSteps = {
   SETTINGS: 2,
 } as const;
 
+const CONSTRUCTION_INDUSTRIES = [
+  "General Contractor",
+  "Residential Construction",
+  "Commercial Construction",
+  "Remodeling",
+  "Electrical",
+  "Plumbing",
+  "HVAC",
+  "Roofing",
+  "Landscaping",
+  "Interior Design",
+  "Painting",
+  "Flooring",
+  "Masonry",
+  "Carpentry",
+] as const;
+
 const Onboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -21,8 +45,12 @@ const Onboarding = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     businessName: "",
+    fullName: "",
+    industry: "",
     contactEmail: "",
     contactPhone: "",
+    address: "",
+    licenseNumber: "",
     primaryColor: "#007AFF",
     secondaryColor: "#F5F5F7",
     minimumProjectCost: "1000",
@@ -33,6 +61,10 @@ const Onboarding = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, industry: value }));
   };
 
   const handleSubmit = async () => {
@@ -79,25 +111,58 @@ const Onboarding = () => {
     switch (currentStep) {
       case OnboardingSteps.BUSINESS_INFO:
         return (
-          <div className="space-y-6">
-            <div>
-              <Label htmlFor="businessName" className="text-[17px] font-medium text-[#1d1d1f]">
-                Business Name
-              </Label>
+          <div className="space-y-4">
+            <p className="text-[15px] text-[#86868b] mb-6">
+              This information will be visible to customers when they show interest in your services.
+            </p>
+            <div className="relative">
               <Input
                 id="businessName"
                 name="businessName"
                 value={formData.businessName}
                 onChange={handleInputChange}
                 required
-                className="mt-2 h-[44px] rounded-xl border border-[#d2d2d7] bg-[#fbfbfd] px-4 text-[17px] shadow-sm transition-colors focus:border-[#0066cc] focus:ring-[#0066cc]"
-                placeholder="Enter your business name"
+                placeholder="Business Name"
+                className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b]"
               />
             </div>
-            <div>
-              <Label htmlFor="contactEmail" className="text-[17px] font-medium text-[#1d1d1f]">
-                Contact Email
-              </Label>
+            <div className="relative">
+              <Input
+                id="fullName"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleInputChange}
+                required
+                placeholder="Full Name"
+                className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b]"
+              />
+            </div>
+            <div className="relative">
+              <Select value={formData.industry} onValueChange={handleSelectChange}>
+                <SelectTrigger className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm">
+                  <SelectValue placeholder="Select Industry" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[280px]">
+                  {CONSTRUCTION_INDUSTRIES.map((industry) => (
+                    <SelectItem key={industry} value={industry}>
+                      {industry}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="relative">
+              <Input
+                id="contactPhone"
+                name="contactPhone"
+                type="tel"
+                value={formData.contactPhone}
+                onChange={handleInputChange}
+                placeholder="Contact Phone"
+                className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b]"
+              />
+            </div>
+            <div className="relative">
               <Input
                 id="contactEmail"
                 name="contactEmail"
@@ -105,22 +170,28 @@ const Onboarding = () => {
                 value={formData.contactEmail}
                 onChange={handleInputChange}
                 required
-                className="mt-2 h-[44px] rounded-xl border border-[#d2d2d7] bg-[#fbfbfd] px-4 text-[17px] shadow-sm transition-colors focus:border-[#0066cc] focus:ring-[#0066cc]"
-                placeholder="Enter your email address"
+                placeholder="Contact Email"
+                className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b]"
               />
             </div>
-            <div>
-              <Label htmlFor="contactPhone" className="text-[17px] font-medium text-[#1d1d1f]">
-                Contact Phone
-              </Label>
+            <div className="relative">
               <Input
-                id="contactPhone"
-                name="contactPhone"
-                type="tel"
-                value={formData.contactPhone}
+                id="address"
+                name="address"
+                value={formData.address}
                 onChange={handleInputChange}
-                className="mt-2 h-[44px] rounded-xl border border-[#d2d2d7] bg-[#fbfbfd] px-4 text-[17px] shadow-sm transition-colors focus:border-[#0066cc] focus:ring-[#0066cc]"
-                placeholder="Enter your phone number"
+                placeholder="Business Address"
+                className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b]"
+              />
+            </div>
+            <div className="relative">
+              <Input
+                id="licenseNumber"
+                name="licenseNumber"
+                value={formData.licenseNumber}
+                onChange={handleInputChange}
+                placeholder="License Number"
+                className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b]"
               />
             </div>
           </div>
