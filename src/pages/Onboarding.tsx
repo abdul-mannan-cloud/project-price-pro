@@ -24,8 +24,8 @@ const Onboarding = () => {
     businessName: "",
     contactEmail: "",
     contactPhone: "",
-    primaryColor: "#6366F1",
-    secondaryColor: "#4F46E5",
+    primaryColor: "#007AFF",
+    secondaryColor: "#F5F5F7",
     minimumProjectCost: "1000",
     markupPercentage: "20",
     taxRate: "8.5",
@@ -91,19 +91,24 @@ const Onboarding = () => {
     switch (currentStep) {
       case OnboardingSteps.BUSINESS_INFO:
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <Label htmlFor="businessName">Business Name</Label>
+              <Label htmlFor="businessName" className="text-[15px] font-medium text-gray-900">
+                Business Name
+              </Label>
               <Input
                 id="businessName"
                 name="businessName"
                 value={formData.businessName}
                 onChange={handleInputChange}
                 required
+                className="mt-2 h-12 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
             <div>
-              <Label htmlFor="contactEmail">Contact Email</Label>
+              <Label htmlFor="contactEmail" className="text-[15px] font-medium text-gray-900">
+                Contact Email
+              </Label>
               <Input
                 id="contactEmail"
                 name="contactEmail"
@@ -111,58 +116,66 @@ const Onboarding = () => {
                 value={formData.contactEmail}
                 onChange={handleInputChange}
                 required
+                className="mt-2 h-12 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
             <div>
-              <Label htmlFor="contactPhone">Contact Phone</Label>
+              <Label htmlFor="contactPhone" className="text-[15px] font-medium text-gray-900">
+                Contact Phone
+              </Label>
               <Input
                 id="contactPhone"
                 name="contactPhone"
                 type="tel"
                 value={formData.contactPhone}
                 onChange={handleInputChange}
+                className="mt-2 h-12 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
           </div>
         );
       case OnboardingSteps.BRANDING:
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <Label htmlFor="primaryColor">Primary Color</Label>
-              <div className="flex gap-2">
+              <Label htmlFor="primaryColor" className="text-[15px] font-medium text-gray-900">
+                Primary Color
+              </Label>
+              <div className="mt-2 flex gap-3">
                 <Input
                   id="primaryColor"
                   name="primaryColor"
                   type="color"
                   value={formData.primaryColor}
                   onChange={handleInputChange}
-                  className="w-16 h-10"
+                  className="h-12 w-16 rounded-xl border-gray-300 bg-gray-50 p-1 transition-colors focus:border-blue-500 focus:ring-blue-500"
                 />
                 <Input
                   value={formData.primaryColor}
                   onChange={handleInputChange}
                   name="primaryColor"
-                  className="flex-1"
+                  className="h-12 flex-1 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
             <div>
-              <Label htmlFor="secondaryColor">Secondary Color</Label>
-              <div className="flex gap-2">
+              <Label htmlFor="secondaryColor" className="text-[15px] font-medium text-gray-900">
+                Secondary Color
+              </Label>
+              <div className="mt-2 flex gap-3">
                 <Input
                   id="secondaryColor"
                   name="secondaryColor"
                   type="color"
                   value={formData.secondaryColor}
                   onChange={handleInputChange}
-                  className="w-16 h-10"
+                  className="h-12 w-16 rounded-xl border-gray-300 bg-gray-50 p-1 transition-colors focus:border-blue-500 focus:ring-blue-500"
                 />
                 <Input
                   value={formData.secondaryColor}
                   onChange={handleInputChange}
                   name="secondaryColor"
-                  className="flex-1"
+                  className="h-12 flex-1 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -170,9 +183,9 @@ const Onboarding = () => {
         );
       case OnboardingSteps.SETTINGS:
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <Label htmlFor="minimumProjectCost">
+              <Label htmlFor="minimumProjectCost" className="text-[15px] font-medium text-gray-900">
                 Minimum Project Cost ($)
               </Label>
               <Input
@@ -183,10 +196,13 @@ const Onboarding = () => {
                 onChange={handleInputChange}
                 min="0"
                 step="100"
+                className="mt-2 h-12 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
             <div>
-              <Label htmlFor="markupPercentage">Markup Percentage (%)</Label>
+              <Label htmlFor="markupPercentage" className="text-[15px] font-medium text-gray-900">
+                Markup Percentage (%)
+              </Label>
               <Input
                 id="markupPercentage"
                 name="markupPercentage"
@@ -196,10 +212,13 @@ const Onboarding = () => {
                 min="0"
                 max="100"
                 step="0.1"
+                className="mt-2 h-12 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
             <div>
-              <Label htmlFor="taxRate">Tax Rate (%)</Label>
+              <Label htmlFor="taxRate" className="text-[15px] font-medium text-gray-900">
+                Tax Rate (%)
+              </Label>
               <Input
                 id="taxRate"
                 name="taxRate"
@@ -209,6 +228,7 @@ const Onboarding = () => {
                 min="0"
                 max="100"
                 step="0.1"
+                className="mt-2 h-12 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -217,15 +237,15 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#000000] flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg p-8 bg-[#111111] border-[#222222]">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <Card className="w-full max-w-lg p-8 bg-white border border-gray-200 shadow-sm">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">
+          <h1 className="text-[32px] font-semibold text-gray-900 mb-2">
             {currentStep === OnboardingSteps.BUSINESS_INFO && "Business Information"}
             {currentStep === OnboardingSteps.BRANDING && "Branding"}
             {currentStep === OnboardingSteps.SETTINGS && "Estimate Settings"}
           </h1>
-          <p className="text-gray-400">
+          <p className="text-[17px] text-gray-500">
             {currentStep === OnboardingSteps.BUSINESS_INFO &&
               "Tell us about your business"}
             {currentStep === OnboardingSteps.BRANDING &&
@@ -242,7 +262,7 @@ const Onboarding = () => {
             variant="outline"
             onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
             disabled={currentStep === OnboardingSteps.BUSINESS_INFO || loading}
-            className="bg-[#222222] text-white border-[#333333] hover:bg-[#333333]"
+            className="h-12 px-6 text-[15px] font-medium border border-gray-300 text-gray-900 hover:bg-gray-50"
           >
             Previous
           </Button>
@@ -255,7 +275,7 @@ const Onboarding = () => {
               }
             }}
             disabled={loading}
-            className="bg-[#9b87f5] hover:bg-[#8a74f8] text-white"
+            className="h-12 px-6 text-[15px] font-medium bg-blue-500 text-white hover:bg-blue-600"
           >
             {loading
               ? "Loading..."
