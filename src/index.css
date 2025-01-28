@@ -56,7 +56,7 @@
 
   .form-input {
     @apply h-[52px] w-full rounded-lg border border-input bg-background px-3 pt-5 pb-1 text-[15px] transition-all;
-    @apply focus:border-primary focus:ring-primary focus:outline-none;
+    @apply focus:border-[#007AFF] focus:ring-[#007AFF] focus:outline-none;
     @apply placeholder:text-transparent;
   }
 
@@ -85,7 +85,7 @@
 
   .select-trigger {
     @apply h-[52px] w-full rounded-lg border border-input bg-background px-3 pt-5 pb-0 text-[15px] transition-all;
-    @apply focus:border-primary focus:ring-primary focus:outline-none;
+    @apply focus:border-[#007AFF] focus:ring-[#007AFF] focus:outline-none;
     @apply flex items-center;
     min-height: 52px;
   }
@@ -94,23 +94,25 @@
     @apply bg-background border border-input rounded-xl shadow-sm;
   }
 
+  /* Default button style (Apple-style) */
   .button {
     @apply rounded-lg px-4 py-2 font-medium transition-colors;
-    background-color: var(--primary);
-    color: var(--primary-foreground);
+    background-color: #007AFF;
+    color: #FFFFFF;
   }
 
   .button:hover {
-    background-color: var(--primary-600);
+    background-color: #0066CC;
   }
 
-  button {
+  /* Dynamic button style (for non-index pages) */
+  :not(.index-page) button {
     @apply transition-colors;
     background-color: var(--primary);
     color: var(--primary-foreground);
   }
 
-  button:hover {
+  :not(.index-page) button:hover {
     background-color: var(--primary-600);
   }
 
