@@ -62,7 +62,7 @@
   .form-input:focus + .form-label,
   .form-input:not(:placeholder-shown) + .form-label {
     @apply text-[11px] text-[#86868b];
-    top: 12px;
+    top: 8px; /* Updated from 12px to 8px to move label higher */
     transform: translateY(0);
   }
 
@@ -72,7 +72,7 @@
 
   .select-label {
     @apply absolute left-3 text-[11px] text-[#86868b] pointer-events-none;
-    top: 12px;
+    top: 8px; /* Updated from 12px to 8px to match input labels */
   }
 
   .select-trigger {
