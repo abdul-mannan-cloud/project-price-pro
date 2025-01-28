@@ -84,7 +84,7 @@
   }
 
   .select-trigger {
-    @apply h-[52px] w-full rounded-lg border border-input bg-background px-3 pt-5 pb-0 text-[15px] transition-all;
+    @apply h-[52px] w-full rounded-lg border border-input bg-white px-3 pt-5 pb-0 text-[15px] transition-all;
     @apply focus:border-[#007AFF] focus:ring-[#007AFF] focus:outline-none;
     @apply flex items-center;
     min-height: 52px;

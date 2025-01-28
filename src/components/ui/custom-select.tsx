@@ -35,12 +35,12 @@ const CustomSelect = ({
         <SelectTrigger className={cn("select-trigger", className)}>
           <SelectValue placeholder=" " />
         </SelectTrigger>
-        <SelectContent className="z-[100] bg-white border border-input shadow-md">
+        <SelectContent className="z-[100] bg-white border border-input shadow-md rounded-lg">
           {options.map((option) => (
             <SelectItem
               key={option.value}
               value={option.value}
-              className="cursor-pointer hover:bg-secondary"
+              className="cursor-pointer hover:bg-[#f5f5f7] text-[15px] text-foreground"
             >
               {option.label}
             </SelectItem>
