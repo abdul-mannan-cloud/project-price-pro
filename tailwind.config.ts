@@ -19,11 +19,11 @@ export default {
     },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        border: "#d2d2d7",
+        input: "#d2d2d7",
+        ring: "#0066cc",
+        background: "#ffffff",
+        foreground: "#1d1d1f",
         primary: {
           DEFAULT: "#007AFF",
           foreground: "#FFFFFF",
@@ -40,8 +40,8 @@ export default {
           foreground: "#1D1D1F",
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: "#ff3b30",
+          foreground: "#FFFFFF",
         },
         muted: {
           DEFAULT: "#F5F5F7",
@@ -53,9 +53,9 @@ export default {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "0.75rem",
+        md: "0.625rem",
+        sm: "0.5rem",
       },
       keyframes: {
         "accordion-down": {
@@ -82,7 +82,7 @@ export default {
         slideUp: "slideUp 0.5s ease-out",
       },
       fontFamily: {
-        sans: ["SF Pro Text", "Inter var", "system-ui", "sans-serif"],
+        sans: ["-apple-system", "SF Pro Text", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
       },
     },
   },
