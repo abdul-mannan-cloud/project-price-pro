@@ -73,12 +73,12 @@
 
   .select-label {
     @apply absolute left-3 text-[11px] text-[#86868b] pointer-events-none;
-    top: 12px;
+    top: 14px;
     z-index: 10;
   }
 
   .select-trigger {
-    @apply h-[52px] w-full rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 pt-5 pb-1 text-[15px] transition-all;
+    @apply h-[52px] w-full rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 pt-4 pb-0 text-[15px] transition-all;
     @apply focus:border-[#0066cc] focus:ring-[#0066cc] focus:outline-none;
     @apply flex items-center;
     min-height: 52px;
