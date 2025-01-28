@@ -100,7 +100,6 @@ const Onboarding = () => {
         return;
       }
 
-      // First check if contractor exists using maybeSingle() instead of single()
       const { data: existingContractor, error: fetchError } = await supabase
         .from("contractors")
         .select()
@@ -112,7 +111,6 @@ const Onboarding = () => {
       }
 
       if (existingContractor) {
-        // If contractor exists, update instead of insert
         const { error: updateError } = await supabase
           .from("contractors")
           .update({
@@ -128,7 +126,6 @@ const Onboarding = () => {
 
         if (updateError) throw updateError;
       } else {
-        // If contractor doesn't exist, proceed with insert
         const { error: insertError } = await supabase
           .from("contractors")
           .insert({
@@ -170,17 +167,14 @@ const Onboarding = () => {
   const updateGlobalColors = (primaryColor: string, secondaryColor: string) => {
     const root = document.documentElement;
     
-    // Set primary color and its variants
     root.style.setProperty('--primary', primaryColor);
     root.style.setProperty('--primary-foreground', '#FFFFFF');
     
-    // Calculate primary color variants
     const primaryHex = primaryColor.replace('#', '');
     const r = parseInt(primaryHex.slice(0, 2), 16);
     const g = parseInt(primaryHex.slice(2, 4), 16);
     const b = parseInt(primaryHex.slice(4, 6), 16);
     
-    // Convert to HSL for consistent variants
     const max = Math.max(r, g, b) / 255;
     const min = Math.min(r, g, b) / 255;
     const l = (max + min) / 2;
@@ -205,7 +199,6 @@ const Onboarding = () => {
       h *= 60;
     }
     
-    // Set HSL variants
     root.style.setProperty('--primary-100', `hsl(${h}, ${s * 100}%, 95%)`);
     root.style.setProperty('--primary-200', `hsl(${h}, ${s * 100}%, 90%)`);
     root.style.setProperty('--primary-300', `hsl(${h}, ${s * 100}%, 85%)`);
@@ -214,15 +207,12 @@ const Onboarding = () => {
     root.style.setProperty('--primary-600', `hsl(${h}, ${s * 100}%, 45%)`);
     root.style.setProperty('--primary-700', `hsl(${h}, ${s * 100}%, 40%)`);
     
-    // Set secondary color
     root.style.setProperty('--secondary', secondaryColor);
     root.style.setProperty('--secondary-foreground', '#1d1d1f');
     
-    // Update accent color to match primary
     root.style.setProperty('--accent', primaryColor);
     root.style.setProperty('--accent-foreground', '#FFFFFF');
     
-    // Update ring color (focus states)
     root.style.setProperty('--ring', primaryColor);
   };
 
@@ -346,12 +336,12 @@ const Onboarding = () => {
 
                 <div className="flex justify-between pt-6">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
                     disabled={currentStep === OnboardingSteps.BUSINESS_INFO || loading}
-                    className="h-[44px] px-6 text-[17px] font-medium border border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-full"
+                    className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
                   >
-                    Previous
+                    Back
                   </Button>
                   <Button
                     onClick={handleSubmit}
@@ -406,12 +396,12 @@ const Onboarding = () => {
 
                 <div className="flex justify-between pt-6">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
                     disabled={loading}
-                    className="h-[44px] px-6 text-[17px] font-medium border border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-full"
+                    className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
                   >
-                    Previous
+                    Back
                   </Button>
                   <Button
                     onClick={handleSubmit}
@@ -478,12 +468,12 @@ const Onboarding = () => {
 
                 <div className="flex justify-between pt-6">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
                     disabled={loading}
-                    className="h-[44px] px-6 text-[17px] font-medium border border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-full"
+                    className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
                   >
-                    Previous
+                    Back
                   </Button>
                   <Button
                     onClick={handleSubmit}
