@@ -96,20 +96,46 @@ const Onboarding = () => {
 
       if (!user) throw new Error("No user found");
 
-      const { error: contractorError } = await supabase
+      // First check if contractor exists
+      const { data: existingContractor } = await supabase
         .from("contractors")
-        .insert({
-          id: user.id,
-          business_name: formData.businessName,
-          contact_email: formData.contactEmail,
-          contact_phone: formData.contactPhone,
-          branding_colors: {
-            primary: formData.primaryColor,
-            secondary: formData.secondaryColor,
-          },
-        });
+        .select()
+        .eq('id', user.id)
+        .single();
 
-      if (contractorError) throw contractorError;
+      if (existingContractor) {
+        // If contractor exists, update instead of insert
+        const { error: updateError } = await supabase
+          .from("contractors")
+          .update({
+            business_name: formData.businessName,
+            contact_email: formData.contactEmail,
+            contact_phone: formData.contactPhone,
+            branding_colors: {
+              primary: formData.primaryColor,
+              secondary: formData.secondaryColor,
+            },
+          })
+          .eq('id', user.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // If contractor doesn't exist, proceed with insert
+        const { error: insertError } = await supabase
+          .from("contractors")
+          .insert({
+            id: user.id,
+            business_name: formData.businessName,
+            contact_email: formData.contactEmail,
+            contact_phone: formData.contactPhone,
+            branding_colors: {
+              primary: formData.primaryColor,
+              secondary: formData.secondaryColor,
+            },
+          });
+
+        if (insertError) throw insertError;
+      }
 
       toast({
         title: "Information saved!",
