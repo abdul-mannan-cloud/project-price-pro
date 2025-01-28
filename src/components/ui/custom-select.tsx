@@ -40,7 +40,7 @@ const CustomSelect = ({
             <SelectItem
               key={option.value}
               value={option.value}
-              className="cursor-pointer text-foreground bg-white hover:bg-[#f5f5f7]"
+              className="cursor-pointer hover:bg-secondary"
             >
               {option.label}
             </SelectItem>
