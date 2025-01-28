@@ -212,7 +212,7 @@ const Login = () => {
               setFirstName("");
               setLastName("");
             }}
-            className="text-[#007AFF] hover:text-[#0066CC] transition-colors"
+            className="text-[#007AFF] hover:text-[#0066CC] transition-colors bg-transparent"
           >
             {isSignUp
               ? "Already have an account? Sign in"
