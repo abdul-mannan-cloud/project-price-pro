@@ -162,15 +162,45 @@ const Onboarding = () => {
     root.style.setProperty('--primary', primaryColor);
     root.style.setProperty('--primary-foreground', '#FFFFFF');
     
-    // Calculate primary color variants (you may want to adjust these calculations)
-    const h = primaryColor.match(/\d+(\.\d+)?/g)?.[0] || "0";
-    root.style.setProperty('--primary-100', `hsl(${h}, 100%, 95%)`);
-    root.style.setProperty('--primary-200', `hsl(${h}, 100%, 90%)`);
-    root.style.setProperty('--primary-300', `hsl(${h}, 100%, 85%)`);
-    root.style.setProperty('--primary-400', `hsl(${h}, 100%, 80%)`);
-    root.style.setProperty('--primary-500', `hsl(${h}, 100%, 75%)`);
-    root.style.setProperty('--primary-600', `hsl(${h}, 100%, 70%)`);
-    root.style.setProperty('--primary-700', `hsl(${h}, 100%, 65%)`);
+    // Calculate primary color variants
+    const primaryHex = primaryColor.replace('#', '');
+    const r = parseInt(primaryHex.slice(0, 2), 16);
+    const g = parseInt(primaryHex.slice(2, 4), 16);
+    const b = parseInt(primaryHex.slice(4, 6), 16);
+    
+    // Convert to HSL for consistent variants
+    const max = Math.max(r, g, b) / 255;
+    const min = Math.min(r, g, b) / 255;
+    const l = (max + min) / 2;
+    
+    let h, s;
+    if (max === min) {
+      h = s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r / 255:
+          h = (g - b) / d + (g < b ? 6 : 0);
+          break;
+        case g / 255:
+          h = (b - r) / d + 2;
+          break;
+        default:
+          h = (r - g) / d + 4;
+          break;
+      }
+      h *= 60;
+    }
+    
+    // Set HSL variants
+    root.style.setProperty('--primary-100', `hsl(${h}, ${s * 100}%, 95%)`);
+    root.style.setProperty('--primary-200', `hsl(${h}, ${s * 100}%, 90%)`);
+    root.style.setProperty('--primary-300', `hsl(${h}, ${s * 100}%, 85%)`);
+    root.style.setProperty('--primary-400', `hsl(${h}, ${s * 100}%, 80%)`);
+    root.style.setProperty('--primary-500', `hsl(${h}, ${s * 100}%, 75%)`);
+    root.style.setProperty('--primary-600', `hsl(${h}, ${s * 100}%, 70%)`);
+    root.style.setProperty('--primary-700', `hsl(${h}, ${s * 100}%, 65%)`);
     
     // Set secondary color
     root.style.setProperty('--secondary', secondaryColor);
@@ -182,6 +212,10 @@ const Onboarding = () => {
     
     // Update ring color (focus states)
     root.style.setProperty('--ring', primaryColor);
+
+    // Update button styles
+    document.documentElement.style.setProperty('--button-background', primaryColor);
+    document.documentElement.style.setProperty('--button-hover', `hsl(${h}, ${s * 100}%, 45%)`);
   };
 
   const handlePrimaryColorChange = (newColor: string) => {

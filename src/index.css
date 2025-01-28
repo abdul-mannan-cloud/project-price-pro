@@ -30,6 +30,8 @@
     --border: #d2d2d7;
     --input: #d2d2d7;
     --ring: #0066cc;
+    --button-background: var(--primary);
+    --button-hover: var(--primary-600);
   }
 
   * {
@@ -37,7 +39,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-secondary text-foreground font-sans antialiased;
   }
 
   h1 {
@@ -96,7 +98,12 @@
 
   .button {
     @apply rounded-lg px-4 py-2 font-medium transition-colors;
-    @apply bg-primary text-primary-foreground hover:bg-primary-600;
+    background-color: var(--button-background);
+    color: var(--primary-foreground);
+  }
+
+  .button:hover {
+    background-color: var(--button-hover);
   }
 
   .container {
