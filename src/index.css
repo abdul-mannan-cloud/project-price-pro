@@ -37,7 +37,7 @@
   }
 
   body {
-    @apply bg-secondary text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
   }
 
   h1 {
