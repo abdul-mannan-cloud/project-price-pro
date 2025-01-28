@@ -104,6 +104,16 @@
     background-color: var(--primary-600);
   }
 
+  button {
+    @apply transition-colors;
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  button:hover {
+    background-color: var(--primary-600);
+  }
+
   .container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }

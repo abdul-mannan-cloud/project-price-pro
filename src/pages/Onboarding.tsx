@@ -344,7 +344,7 @@ const Onboarding = () => {
                   <Button
                     onClick={handleSubmit}
                     disabled={!isBusinessInfoValid() || loading}
-                    className="h-[44px] px-6 text-[17px] font-medium bg-[#007aff] text-white hover:bg-[#0066cc] rounded-full"
+                    className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
                   >
                     {loading ? "Saving..." : "Next"}
                   </Button>
@@ -404,7 +404,7 @@ const Onboarding = () => {
                   <Button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="h-[44px] px-6 text-[17px] font-medium bg-[#007aff] text-white hover:bg-[#0066cc] rounded-full"
+                    className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
                   >
                     {loading ? "Saving..." : "Next"}
                   </Button>
@@ -476,7 +476,7 @@ const Onboarding = () => {
                   <Button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="h-[44px] px-6 text-[17px] font-medium bg-[#007aff] text-white hover:bg-[#0066cc] rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? "Saving..." : "Complete"}
                   </Button>
