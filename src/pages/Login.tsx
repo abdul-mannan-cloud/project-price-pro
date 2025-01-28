@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -46,7 +46,12 @@ const Login = () => {
           password,
         });
 
-        if (error) throw error;
+        if (error) {
+          if (error.message === "Invalid login credentials") {
+            throw new Error("Invalid email or password. Please try again.");
+          }
+          throw error;
+        }
 
         toast({
           title: "Welcome back!",
@@ -123,6 +128,7 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="bg-[#222222] border-[#333333] text-white"
+              minLength={6}
             />
           </div>
           <Button
