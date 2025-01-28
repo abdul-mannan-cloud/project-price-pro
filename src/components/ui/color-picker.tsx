@@ -76,13 +76,13 @@ const trimColorString = (color: string, maxLength: number = 20): string => {
   return `${color.slice(0, maxLength - 3)}...`
 }
 
-export function ColorPicker({
+const ColorPicker = ({
   color,
   onChange,
 }: {
   color: string
   onChange: (color: string) => void
-}) {
+}) => {
   const [hsl, setHsl] = useState<[number, number, number]>([0, 0, 0])
   const [colorInput, setColorInput] = useState(color)
   const [isOpen, setIsOpen] = useState(false)
