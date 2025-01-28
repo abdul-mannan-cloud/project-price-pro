@@ -8,6 +8,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { StepIndicator } from "@/components/EstimateForm/StepIndicator";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 type OnboardingStep = 0 | 1 | 2;
 
@@ -316,21 +317,18 @@ const Onboarding = () => {
 
               <div className="space-y-4">
                 <div className="relative">
-                  <label htmlFor={`${activeColorType}Color`} className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
                     {activeColorType === 'primary' ? 'Primary' : 'Secondary'} Color
                   </label>
-                  <div className="flex items-center space-x-4">
-                    <div 
-                      className="w-10 h-10 rounded border border-[#d2d2d7]"
-                      style={{ backgroundColor: formData[`${activeColorType}Color`] }}
-                    />
-                    <Input
-                      id={`${activeColorType}Color`}
-                      name={`${activeColorType}Color`}
-                      type="color"
-                      value={formData[`${activeColorType}Color`]}
-                      onChange={handleInputChange}
-                      className="w-full h-[38px]"
+                  <div className="flex items-center">
+                    <ColorPicker
+                      color={formData[`${activeColorType}Color`]}
+                      onChange={(newColor) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          [`${activeColorType}Color`]: newColor
+                        }))
+                      }}
                     />
                   </div>
                 </div>
