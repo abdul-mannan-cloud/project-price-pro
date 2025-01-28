@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -135,150 +136,156 @@ const Onboarding = () => {
       case OnboardingSteps.BUSINESS_INFO:
         return (
           <div className="space-y-6">
-            <div className="text-center">
+            <div className="text-center space-y-2">
               <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
                 Business Information
               </h1>
-              <p className="text-[15px] text-[#86868b] mt-2">
+              <p className="text-[15px] text-[#86868b]">
                 This information will be visible to customers when they show interest in your services.
               </p>
             </div>
 
             <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
-              <div className="relative">
-                <Input
-                  id="businessName"
-                  name="businessName"
-                  value={formData.businessName}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Business Name"
-                  className={`h-[38px] rounded-lg border ${
-                    isRequiredFieldEmpty('businessName') ? 'border-red-500' : 'border-[#d2d2d7]'
-                  } bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4`}
-                />
-                {isRequiredFieldEmpty('businessName') && (
-                  <span className="text-red-500 text-xs mt-1">Business name is required</span>
-                )}
-              </div>
-
-              <div className="relative">
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Full Name"
-                  className={`h-[38px] rounded-lg border ${
-                    isRequiredFieldEmpty('fullName') ? 'border-red-500' : 'border-[#d2d2d7]'
-                  } bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4`}
-                />
-                {isRequiredFieldEmpty('fullName') && (
-                  <span className="text-red-500 text-xs mt-1">Full name is required</span>
-                )}
-              </div>
-
-              <div className="relative">
-                <Select value={formData.industry} onValueChange={handleSelectChange}>
-                  <SelectTrigger 
+              <div className="space-y-4">
+                <div className="relative">
+                  <Input
+                    id="businessName"
+                    name="businessName"
+                    value={formData.businessName}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Business Name"
                     className={`h-[38px] rounded-lg border ${
-                      isRequiredFieldEmpty('industry') ? 'border-red-500' : 'border-[#d2d2d7]'
-                    } bg-[#fbfbfd] px-3 text-[15px] shadow-sm`}
+                      isRequiredFieldEmpty('businessName') ? 'border-red-500' : 'border-[#d2d2d7]'
+                    } bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4`}
+                  />
+                  {isRequiredFieldEmpty('businessName') && (
+                    <span className="text-red-500 text-xs mt-1">Business name is required</span>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <Input
+                    id="fullName"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Full Name"
+                    className={`h-[38px] rounded-lg border ${
+                      isRequiredFieldEmpty('fullName') ? 'border-red-500' : 'border-[#d2d2d7]'
+                    } bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4`}
+                  />
+                  {isRequiredFieldEmpty('fullName') && (
+                    <span className="text-red-500 text-xs mt-1">Full name is required</span>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <Select value={formData.industry} onValueChange={handleSelectChange}>
+                    <SelectTrigger 
+                      className={`h-[38px] rounded-lg border ${
+                        isRequiredFieldEmpty('industry') ? 'border-red-500' : 'border-[#d2d2d7]'
+                      } bg-[#fbfbfd] px-3 text-[15px] shadow-sm`}
+                    >
+                      <SelectValue placeholder="Select Industry" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-[#d2d2d7] shadow-md rounded-lg">
+                      {CONSTRUCTION_INDUSTRIES.map((industry) => (
+                        <SelectItem 
+                          key={industry} 
+                          value={industry}
+                          className="hover:bg-[#f5f5f7]"
+                        >
+                          {industry}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {isRequiredFieldEmpty('industry') && (
+                    <span className="text-red-500 text-xs mt-1">Industry is required</span>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <Input
+                    id="contactPhone"
+                    name="contactPhone"
+                    type="tel"
+                    value={formData.contactPhone}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Contact Phone"
+                    className={`h-[38px] rounded-lg border ${
+                      isRequiredFieldEmpty('contactPhone') ? 'border-red-500' : 'border-[#d2d2d7]'
+                    } bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4`}
+                  />
+                  {isRequiredFieldEmpty('contactPhone') && (
+                    <span className="text-red-500 text-xs mt-1">Contact phone is required</span>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <Input
+                    id="contactEmail"
+                    name="contactEmail"
+                    type="email"
+                    value={formData.contactEmail}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Contact Email"
+                    className={`h-[38px] rounded-lg border ${
+                      isRequiredFieldEmpty('contactEmail') ? 'border-red-500' : 'border-[#d2d2d7]'
+                    } bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4`}
+                  />
+                  {isRequiredFieldEmpty('contactEmail') && (
+                    <span className="text-red-500 text-xs mt-1">Contact email is required</span>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <Input
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    placeholder="Business Address (Optional)"
+                    className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Input
+                    id="licenseNumber"
+                    name="licenseNumber"
+                    value={formData.licenseNumber}
+                    onChange={handleInputChange}
+                    placeholder="License Number (Optional)"
+                    className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4"
+                  />
+                </div>
+
+                <div className="flex justify-between pt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
+                    disabled={currentStep === OnboardingSteps.BUSINESS_INFO || loading}
+                    className="h-[44px] px-6 text-[17px] font-medium border border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-full"
                   >
-                    <SelectValue placeholder="Select Industry" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[280px]">
-                    {CONSTRUCTION_INDUSTRIES.map((industry) => (
-                      <SelectItem key={industry} value={industry}>
-                        {industry}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {isRequiredFieldEmpty('industry') && (
-                  <span className="text-red-500 text-xs mt-1">Industry is required</span>
-                )}
-              </div>
-
-              <div className="relative">
-                <Input
-                  id="contactPhone"
-                  name="contactPhone"
-                  type="tel"
-                  value={formData.contactPhone}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Contact Phone"
-                  className={`h-[38px] rounded-lg border ${
-                    isRequiredFieldEmpty('contactPhone') ? 'border-red-500' : 'border-[#d2d2d7]'
-                  } bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4`}
-                />
-                {isRequiredFieldEmpty('contactPhone') && (
-                  <span className="text-red-500 text-xs mt-1">Contact phone is required</span>
-                )}
-              </div>
-
-              <div className="relative">
-                <Input
-                  id="contactEmail"
-                  name="contactEmail"
-                  type="email"
-                  value={formData.contactEmail}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Contact Email"
-                  className={`h-[38px] rounded-lg border ${
-                    isRequiredFieldEmpty('contactEmail') ? 'border-red-500' : 'border-[#d2d2d7]'
-                  } bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4`}
-                />
-                {isRequiredFieldEmpty('contactEmail') && (
-                  <span className="text-red-500 text-xs mt-1">Contact email is required</span>
-                )}
-              </div>
-
-              <div className="relative">
-                <Input
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  placeholder="Business Address (Optional)"
-                  className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4"
-                />
-              </div>
-
-              <div className="relative">
-                <Input
-                  id="licenseNumber"
-                  name="licenseNumber"
-                  value={formData.licenseNumber}
-                  onChange={handleInputChange}
-                  placeholder="License Number (Optional)"
-                  className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4"
-                />
-              </div>
-
-              <div className="flex justify-between pt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
-                  disabled={currentStep === OnboardingSteps.BUSINESS_INFO || loading}
-                  className="h-[44px] px-6 text-[17px] font-medium border border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-full"
-                >
-                  Previous
-                </Button>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={loading || !isBusinessInfoValid()}
-                  className={`h-[44px] px-6 text-[17px] font-medium text-white rounded-full ${
-                    isBusinessInfoValid()
-                      ? 'bg-[#0066cc] hover:bg-[#0055b3]'
-                      : 'bg-[#0066cc]/50 cursor-not-allowed'
-                  }`}
-                >
-                  {loading ? "Saving..." : "Next"}
-                </Button>
+                    Previous
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={loading || !isBusinessInfoValid()}
+                    className={`h-[44px] px-6 text-[17px] font-medium text-white rounded-full transition-colors ${
+                      isBusinessInfoValid()
+                        ? 'bg-[#0066cc] hover:bg-[#0055b3]'
+                        : 'bg-[#0066cc]/50 cursor-not-allowed'
+                    }`}
+                  >
+                    {loading ? "Saving..." : "Next"}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
