@@ -292,41 +292,35 @@ const Onboarding = () => {
             </div>
 
             <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-6">
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={() => setActiveColorType('primary')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeColorType === 'primary'
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-500 hover:bg-gray-100'
-                  }`}
-                >
-                  Primary Color
-                </button>
-                <button
-                  onClick={() => setActiveColorType('secondary')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeColorType === 'secondary'
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-500 hover:bg-gray-100'
-                  }`}
-                >
-                  Secondary Color
-                </button>
-              </div>
-
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="relative">
                   <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                    {activeColorType === 'primary' ? 'Primary' : 'Secondary'} Color
+                    Primary Color
                   </label>
-                  <div className="flex items-center">
+                  <div className="flex items-center w-full">
                     <ColorPicker
-                      color={formData[`${activeColorType}Color`]}
+                      color={formData.primaryColor}
                       onChange={(newColor) => {
                         setFormData(prev => ({
                           ...prev,
-                          [`${activeColorType}Color`]: newColor
+                          primaryColor: newColor
+                        }))
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Secondary Color
+                  </label>
+                  <div className="flex items-center w-full">
+                    <ColorPicker
+                      color={formData.secondaryColor}
+                      onChange={(newColor) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          secondaryColor: newColor
                         }))
                       }}
                     />
