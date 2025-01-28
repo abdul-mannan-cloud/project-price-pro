@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -60,17 +59,6 @@ const Onboarding = () => {
 
       if (contractorError) throw contractorError;
 
-      const { error: settingsError } = await supabase
-        .from("contractor_settings")
-        .update({
-          minimum_project_cost: parseFloat(formData.minimumProjectCost),
-          markup_percentage: parseFloat(formData.markupPercentage),
-          tax_rate: parseFloat(formData.taxRate),
-        })
-        .eq("id", user.id);
-
-      if (settingsError) throw settingsError;
-
       toast({
         title: "Onboarding complete!",
         description: "Your account has been set up successfully.",
@@ -93,7 +81,7 @@ const Onboarding = () => {
         return (
           <div className="space-y-6">
             <div>
-              <Label htmlFor="businessName" className="text-[15px] font-medium text-gray-900">
+              <Label htmlFor="businessName" className="text-[17px] font-medium text-[#1d1d1f]">
                 Business Name
               </Label>
               <Input
@@ -102,11 +90,12 @@ const Onboarding = () => {
                 value={formData.businessName}
                 onChange={handleInputChange}
                 required
-                className="mt-2 h-12 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
+                className="mt-2 h-[44px] rounded-xl border border-[#d2d2d7] bg-[#fbfbfd] px-4 text-[17px] shadow-sm transition-colors focus:border-[#0066cc] focus:ring-[#0066cc]"
+                placeholder="Enter your business name"
               />
             </div>
             <div>
-              <Label htmlFor="contactEmail" className="text-[15px] font-medium text-gray-900">
+              <Label htmlFor="contactEmail" className="text-[17px] font-medium text-[#1d1d1f]">
                 Contact Email
               </Label>
               <Input
@@ -116,11 +105,12 @@ const Onboarding = () => {
                 value={formData.contactEmail}
                 onChange={handleInputChange}
                 required
-                className="mt-2 h-12 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
+                className="mt-2 h-[44px] rounded-xl border border-[#d2d2d7] bg-[#fbfbfd] px-4 text-[17px] shadow-sm transition-colors focus:border-[#0066cc] focus:ring-[#0066cc]"
+                placeholder="Enter your email address"
               />
             </div>
             <div>
-              <Label htmlFor="contactPhone" className="text-[15px] font-medium text-gray-900">
+              <Label htmlFor="contactPhone" className="text-[17px] font-medium text-[#1d1d1f]">
                 Contact Phone
               </Label>
               <Input
@@ -129,7 +119,8 @@ const Onboarding = () => {
                 type="tel"
                 value={formData.contactPhone}
                 onChange={handleInputChange}
-                className="mt-2 h-12 rounded-xl border-gray-300 bg-gray-50 px-4 shadow-sm transition-colors focus:border-blue-500 focus:ring-blue-500"
+                className="mt-2 h-[44px] rounded-xl border border-[#d2d2d7] bg-[#fbfbfd] px-4 text-[17px] shadow-sm transition-colors focus:border-[#0066cc] focus:ring-[#0066cc]"
+                placeholder="Enter your phone number"
               />
             </div>
           </div>
@@ -237,15 +228,15 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg p-8 bg-white border border-gray-200 shadow-sm">
-        <div className="mb-8">
-          <h1 className="text-[32px] font-semibold text-gray-900 mb-2">
+    <div className="min-h-screen bg-[#fbfbfd] flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        <div className="text-center mb-8">
+          <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
             {currentStep === OnboardingSteps.BUSINESS_INFO && "Business Information"}
             {currentStep === OnboardingSteps.BRANDING && "Branding"}
             {currentStep === OnboardingSteps.SETTINGS && "Estimate Settings"}
           </h1>
-          <p className="text-[17px] text-gray-500">
+          <p className="text-[19px] text-[#86868b] mt-2">
             {currentStep === OnboardingSteps.BUSINESS_INFO &&
               "Tell us about your business"}
             {currentStep === OnboardingSteps.BRANDING &&
@@ -255,14 +246,16 @@ const Onboarding = () => {
           </p>
         </div>
 
-        <div className="mb-8">{renderStep()}</div>
+        <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 mb-8">
+          {renderStep()}
+        </div>
 
         <div className="flex justify-between">
           <Button
             variant="outline"
             onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
             disabled={currentStep === OnboardingSteps.BUSINESS_INFO || loading}
-            className="h-12 px-6 text-[15px] font-medium border border-gray-300 text-gray-900 hover:bg-gray-50"
+            className="h-[44px] px-6 text-[17px] font-medium border border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-full"
           >
             Previous
           </Button>
@@ -275,7 +268,7 @@ const Onboarding = () => {
               }
             }}
             disabled={loading}
-            className="h-12 px-6 text-[15px] font-medium bg-blue-500 text-white hover:bg-blue-600"
+            className="h-[44px] px-6 text-[17px] font-medium bg-[#0066cc] text-white hover:bg-[#0055b3] rounded-full"
           >
             {loading
               ? "Loading..."
@@ -284,7 +277,7 @@ const Onboarding = () => {
               : "Next"}
           </Button>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };
