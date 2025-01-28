@@ -70,7 +70,13 @@ const Login = () => {
 
         if (signUpError) {
           if (signUpError.message.includes("already registered")) {
-            throw new Error("This email is already registered. Please sign in instead.");
+            setIsSignUp(false); // Switch to sign in mode
+            toast({
+              title: "Account Already Exists",
+              description: "This email is already registered. Please sign in instead.",
+              variant: "destructive",
+            });
+            return;
           }
           throw signUpError;
         }
@@ -199,7 +205,13 @@ const Login = () => {
         <div className="mt-6 text-center">
           <button
             type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setEmail("");
+              setPassword("");
+              setFirstName("");
+              setLastName("");
+            }}
             className="text-[#9b87f5] hover:text-[#8a74f8] transition-colors"
           >
             {isSignUp
