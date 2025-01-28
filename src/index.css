@@ -4,26 +4,32 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 11%;
-    --primary: 211 100% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 3% 97%;
-    --secondary-foreground: 0 0% 11%;
-    --muted: 240 3% 97%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 211 100% 50%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 240 3% 92%;
-    --input: 240 3% 92%;
-    --ring: 211 100% 50%;
-    --radius: 0.75rem;
+    --background: #FFFFFF;
+    --foreground: #1d1d1f;
+    --card: #FFFFFF;
+    --card-foreground: #1d1d1f;
+    --popover: #FFFFFF;
+    --popover-foreground: #1d1d1f;
+    --primary: #007AFF;
+    --primary-foreground: #FFFFFF;
+    --primary-100: #E1F0FF;
+    --primary-200: #B8DAFF;
+    --primary-300: #8FC4FF;
+    --primary-400: #66AEFF;
+    --primary-500: #3D98FF;
+    --primary-600: #1482FF;
+    --primary-700: #006BE6;
+    --secondary: #F5F5F7;
+    --secondary-foreground: #1d1d1f;
+    --muted: #F5F5F7;
+    --muted-foreground: #86868B;
+    --accent: #007AFF;
+    --accent-foreground: #FFFFFF;
+    --destructive: #ff3b30;
+    --destructive-foreground: #FFFFFF;
+    --border: #d2d2d7;
+    --input: #d2d2d7;
+    --ring: #0066cc;
   }
 
   * {
@@ -31,15 +37,15 @@
   }
 
   body {
-    @apply bg-[#FFFFFF] text-[#333333] font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
   }
 
   h1 {
-    @apply text-[40px] font-semibold text-[#1d1d1f] tracking-tight;
+    @apply text-[40px] font-semibold text-foreground tracking-tight;
   }
 
   p {
-    @apply text-[15px] text-[#86868b];
+    @apply text-[15px] text-muted-foreground;
   }
 }
 
@@ -49,20 +55,20 @@
   }
 
   .form-input {
-    @apply h-[52px] w-full rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 pt-5 pb-1 text-[15px] transition-all;
-    @apply focus:border-[#0066cc] focus:ring-[#0066cc] focus:outline-none;
+    @apply h-[52px] w-full rounded-lg border border-input bg-background px-3 pt-5 pb-1 text-[15px] transition-all;
+    @apply focus:border-primary focus:ring-primary focus:outline-none;
     @apply placeholder:text-transparent;
   }
 
   .form-label {
-    @apply absolute left-3 text-[15px] text-[#86868b] transition-all pointer-events-none;
+    @apply absolute left-3 text-[15px] text-muted-foreground transition-all pointer-events-none;
     top: 50%;
     transform: translateY(-50%);
   }
 
   .form-input:focus + .form-label,
   .form-input:not(:placeholder-shown) + .form-label {
-    @apply text-[11px] text-[#86868b];
+    @apply text-[11px] text-muted-foreground;
     top: 8px;
     transform: translateY(0);
   }
@@ -72,53 +78,28 @@
   }
 
   .select-label {
-    @apply absolute left-3 text-[11px] text-[#86868b] pointer-events-none;
+    @apply absolute left-3 text-[11px] text-muted-foreground pointer-events-none;
     top: 16px;
     z-index: 10;
   }
 
   .select-trigger {
-    @apply h-[52px] w-full rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 pt-5 pb-0 text-[15px] transition-all;
-    @apply focus:border-[#0066cc] focus:ring-[#0066cc] focus:outline-none;
+    @apply h-[52px] w-full rounded-lg border border-input bg-background px-3 pt-5 pb-0 text-[15px] transition-all;
+    @apply focus:border-primary focus:ring-primary focus:outline-none;
     @apply flex items-center;
     min-height: 52px;
   }
 
-  /* Global card styling */
   .card {
-    @apply bg-white border border-[#d2d2d7] rounded-xl shadow-sm;
+    @apply bg-background border border-input rounded-xl shadow-sm;
   }
 
-  /* Global button styling */
   .button {
     @apply rounded-lg px-4 py-2 font-medium transition-colors;
-    @apply bg-[#0066cc] text-white hover:bg-[#0055aa];
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
   }
 
-  /* Global container styling */
   .container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
-}
-
-.step-animation-enter {
-  opacity: 0;
-  transform: translateX(100%);
-}
-
-.step-animation-enter-active {
-  opacity: 1;
-  transform: translateX(0%);
-  transition: opacity 300ms, transform 300ms;
-}
-
-.step-animation-exit {
-  opacity: 1;
-  transform: translateX(0%);
-}
-
-.step-animation-exit-active {
-  opacity: 0;
-  transform: translateX(-100%);
-  transition: opacity 300ms, transform 300ms;
 }

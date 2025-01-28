@@ -155,6 +155,51 @@ const Onboarding = () => {
     }
   };
 
+  const updateGlobalColors = (primaryColor: string, secondaryColor: string) => {
+    const root = document.documentElement;
+    
+    // Set primary color and its variants
+    root.style.setProperty('--primary', primaryColor);
+    root.style.setProperty('--primary-foreground', '#FFFFFF');
+    
+    // Calculate primary color variants (you may want to adjust these calculations)
+    const h = primaryColor.match(/\d+(\.\d+)?/g)?.[0] || "0";
+    root.style.setProperty('--primary-100', `hsl(${h}, 100%, 95%)`);
+    root.style.setProperty('--primary-200', `hsl(${h}, 100%, 90%)`);
+    root.style.setProperty('--primary-300', `hsl(${h}, 100%, 85%)`);
+    root.style.setProperty('--primary-400', `hsl(${h}, 100%, 80%)`);
+    root.style.setProperty('--primary-500', `hsl(${h}, 100%, 75%)`);
+    root.style.setProperty('--primary-600', `hsl(${h}, 100%, 70%)`);
+    root.style.setProperty('--primary-700', `hsl(${h}, 100%, 65%)`);
+    
+    // Set secondary color
+    root.style.setProperty('--secondary', secondaryColor);
+    root.style.setProperty('--secondary-foreground', '#1d1d1f');
+    
+    // Update accent color to match primary
+    root.style.setProperty('--accent', primaryColor);
+    root.style.setProperty('--accent-foreground', '#FFFFFF');
+    
+    // Update ring color (focus states)
+    root.style.setProperty('--ring', primaryColor);
+  };
+
+  const handlePrimaryColorChange = (newColor: string) => {
+    setFormData(prev => ({
+      ...prev,
+      primaryColor: newColor
+    }));
+    updateGlobalColors(newColor, formData.secondaryColor);
+  };
+
+  const handleSecondaryColorChange = (newColor: string) => {
+    setFormData(prev => ({
+      ...prev,
+      secondaryColor: newColor
+    }));
+    updateGlobalColors(formData.primaryColor, newColor);
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case OnboardingSteps.BUSINESS_INFO:
@@ -300,12 +345,7 @@ const Onboarding = () => {
                   <div className="flex items-center w-full">
                     <ColorPicker
                       color={formData.primaryColor}
-                      onChange={(newColor) => {
-                        setFormData(prev => ({
-                          ...prev,
-                          primaryColor: newColor
-                        }))
-                      }}
+                      onChange={handlePrimaryColorChange}
                     />
                   </div>
                 </div>
@@ -317,12 +357,7 @@ const Onboarding = () => {
                   <div className="flex items-center w-full">
                     <ColorPicker
                       color={formData.secondaryColor}
-                      onChange={(newColor) => {
-                        setFormData(prev => ({
-                          ...prev,
-                          secondaryColor: newColor
-                        }))
-                      }}
+                      onChange={handleSecondaryColorChange}
                     />
                   </div>
                 </div>
