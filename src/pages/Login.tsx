@@ -17,13 +17,47 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const validateForm = () => {
+    if (!email || !password) {
+      toast({
+        title: "Missing Fields",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Invalid Password",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (isSignUp && (!firstName || !lastName)) {
+      toast({
+        title: "Missing Fields",
+        description: "Please provide both first and last name.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     setLoading(true);
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -34,7 +68,12 @@ const Login = () => {
           },
         });
 
-        if (error) throw error;
+        if (signUpError) {
+          if (signUpError.message.includes("already registered")) {
+            throw new Error("This email is already registered. Please sign in instead.");
+          }
+          throw signUpError;
+        }
 
         toast({
           title: "Account created successfully!",
@@ -42,16 +81,19 @@ const Login = () => {
         });
         navigate("/onboarding");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
-        if (error) {
-          if (error.message === "Invalid login credentials") {
+        if (signInError) {
+          if (signInError.message === "Invalid login credentials") {
             throw new Error("Invalid email or password. Please try again.");
           }
-          throw error;
+          if (signInError.message.includes("Email not confirmed")) {
+            throw new Error("Please verify your email before signing in.");
+          }
+          throw signInError;
         }
 
         // Check if user has completed onboarding
