@@ -40,6 +40,7 @@ const Login = () => {
           title: "Account created successfully!",
           description: "Please check your email to verify your account.",
         });
+        navigate("/onboarding");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -53,11 +54,21 @@ const Login = () => {
           throw error;
         }
 
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        });
-        navigate("/");
+        // Check if user has completed onboarding
+        const { data: contractor } = await supabase
+          .from("contractors")
+          .select("*")
+          .single();
+
+        if (!contractor) {
+          navigate("/onboarding");
+        } else {
+          toast({
+            title: "Welcome back!",
+            description: "You have successfully signed in.",
+          });
+          navigate("/");
+        }
       }
     } catch (error: any) {
       toast({

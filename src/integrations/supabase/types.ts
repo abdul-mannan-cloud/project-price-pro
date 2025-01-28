@@ -9,7 +9,130 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      contractor_settings: {
+        Row: {
+          ai_prompt_template: string | null
+          created_at: string | null
+          id: string
+          markup_percentage: number | null
+          minimum_project_cost: number | null
+          tax_rate: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_prompt_template?: string | null
+          created_at?: string | null
+          id: string
+          markup_percentage?: number | null
+          minimum_project_cost?: number | null
+          tax_rate?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_prompt_template?: string | null
+          created_at?: string | null
+          id?: string
+          markup_percentage?: number | null
+          minimum_project_cost?: number | null
+          tax_rate?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_settings_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contractors: {
+        Row: {
+          branding_colors: Json | null
+          business_logo_url: string | null
+          business_name: string
+          contact_email: string
+          contact_phone: string | null
+          created_at: string | null
+          id: string
+          subscription_status:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
+          updated_at: string | null
+        }
+        Insert: {
+          branding_colors?: Json | null
+          business_logo_url?: string | null
+          business_name: string
+          contact_email: string
+          contact_phone?: string | null
+          created_at?: string | null
+          id: string
+          subscription_status?:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
+          updated_at?: string | null
+        }
+        Update: {
+          branding_colors?: Json | null
+          business_logo_url?: string | null
+          business_name?: string
+          contact_email?: string
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          subscription_status?:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      estimates: {
+        Row: {
+          contractor_id: string | null
+          created_at: string | null
+          customer_email: string
+          id: string
+          project_description: string | null
+          project_title: string
+          status: string | null
+          total_cost: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          contractor_id?: string | null
+          created_at?: string | null
+          customer_email: string
+          id?: string
+          project_description?: string | null
+          project_title: string
+          status?: string | null
+          total_cost?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          contractor_id?: string | null
+          created_at?: string | null
+          customer_email?: string
+          id?: string
+          project_description?: string | null
+          project_title?: string
+          status?: string | null
+          total_cost?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimates_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +141,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      subscription_status: "active" | "inactive" | "trial"
     }
     CompositeTypes: {
       [_ in never]: never

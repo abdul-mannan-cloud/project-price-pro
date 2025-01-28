@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Estimate from "./pages/Estimate";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/estimate" element={<Estimate />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
