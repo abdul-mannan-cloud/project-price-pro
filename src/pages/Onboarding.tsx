@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -174,48 +173,37 @@ const Onboarding = () => {
 
             <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
               <div className="space-y-4">
-                {/* Business Name Input */}
-                <div className="relative">
-                  <Label htmlFor="businessName">Business Name</Label>
-                  <Input
-                    id="businessName"
-                    name="businessName"
-                    value={formData.businessName}
-                    onChange={handleInputChange}
-                    required
-                    className={`business-input ${
-                      isRequiredFieldEmpty('businessName') ? 'border-red-500' : ''
-                    }`}
-                  />
-                  {isRequiredFieldEmpty('businessName') && (
-                    <span className="text-red-500 text-xs mt-1">Business name is required</span>
-                  )}
-                </div>
+                <Input
+                  id="businessName"
+                  name="businessName"
+                  label="Business Name"
+                  value={formData.businessName}
+                  onChange={handleInputChange}
+                  required
+                  className={isRequiredFieldEmpty('businessName') ? 'border-red-500' : ''}
+                />
+                {isRequiredFieldEmpty('businessName') && (
+                  <span className="text-red-500 text-xs mt-1">Business name is required</span>
+                )}
 
-                {/* Full Name Input */}
-                <div className="relative">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    required
-                    className={`business-input ${
-                      isRequiredFieldEmpty('fullName') ? 'border-red-500' : ''
-                    }`}
-                  />
-                  {isRequiredFieldEmpty('fullName') && (
-                    <span className="text-red-500 text-xs mt-1">Full name is required</span>
-                  )}
-                </div>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  label="Full Name"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  required
+                  className={isRequiredFieldEmpty('fullName') ? 'border-red-500' : ''}
+                />
+                {isRequiredFieldEmpty('fullName') && (
+                  <span className="text-red-500 text-xs mt-1">Full name is required</span>
+                )}
 
-                {/* Industry Select */}
                 <div className="relative">
-                  <Label htmlFor="industry">Industry</Label>
+                  <label htmlFor="industry">Industry</label>
                   <Select value={formData.industry} onValueChange={handleSelectChange}>
                     <SelectTrigger 
-                      className={`business-input ${
+                      className={`h-[44px] ${
                         isRequiredFieldEmpty('industry') ? 'border-red-500' : ''
                       }`}
                     >
@@ -234,66 +222,49 @@ const Onboarding = () => {
                   )}
                 </div>
 
-                {/* Contact Phone Input */}
-                <div className="relative">
-                  <Label htmlFor="contactPhone">Contact Phone</Label>
-                  <Input
-                    id="contactPhone"
-                    name="contactPhone"
-                    type="tel"
-                    value={formData.contactPhone}
-                    onChange={handleInputChange}
-                    required
-                    className={`business-input ${
-                      isRequiredFieldEmpty('contactPhone') ? 'border-red-500' : ''
-                    }`}
-                  />
-                  {isRequiredFieldEmpty('contactPhone') && (
-                    <span className="text-red-500 text-xs mt-1">Contact phone is required</span>
-                  )}
-                </div>
+                <Input
+                  id="contactPhone"
+                  name="contactPhone"
+                  label="Contact Phone"
+                  type="tel"
+                  value={formData.contactPhone}
+                  onChange={handleInputChange}
+                  required
+                  className={isRequiredFieldEmpty('contactPhone') ? 'border-red-500' : ''}
+                />
+                {isRequiredFieldEmpty('contactPhone') && (
+                  <span className="text-red-500 text-xs mt-1">Contact phone is required</span>
+                )}
 
-                {/* Contact Email Input */}
-                <div className="relative">
-                  <Label htmlFor="contactEmail">Contact Email</Label>
-                  <Input
-                    id="contactEmail"
-                    name="contactEmail"
-                    type="email"
-                    value={formData.contactEmail}
-                    onChange={handleInputChange}
-                    required
-                    className={`business-input ${
-                      isRequiredFieldEmpty('contactEmail') ? 'border-red-500' : ''
-                    }`}
-                  />
-                  {isRequiredFieldEmpty('contactEmail') && (
-                    <span className="text-red-500 text-xs mt-1">Contact email is required</span>
-                  )}
-                </div>
+                <Input
+                  id="contactEmail"
+                  name="contactEmail"
+                  label="Contact Email"
+                  type="email"
+                  value={formData.contactEmail}
+                  onChange={handleInputChange}
+                  required
+                  className={isRequiredFieldEmpty('contactEmail') ? 'border-red-500' : ''}
+                />
+                {isRequiredFieldEmpty('contactEmail') && (
+                  <span className="text-red-500 text-xs mt-1">Contact email is required</span>
+                )}
 
-                {/* Optional Inputs */}
-                <div className="relative">
-                  <Label htmlFor="address">Business Address (Optional)</Label>
-                  <Input
-                    id="address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    className="business-input"
-                  />
-                </div>
+                <Input
+                  id="address"
+                  name="address"
+                  label="Business Address (Optional)"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                />
 
-                <div className="relative">
-                  <Label htmlFor="licenseNumber">License Number (Optional)</Label>
-                  <Input
-                    id="licenseNumber"
-                    name="licenseNumber"
-                    value={formData.licenseNumber}
-                    onChange={handleInputChange}
-                    className="business-input"
-                  />
-                </div>
+                <Input
+                  id="licenseNumber"
+                  name="licenseNumber"
+                  label="License Number (Optional)"
+                  value={formData.licenseNumber}
+                  onChange={handleInputChange}
+                />
 
                 <div className="flex justify-between pt-6">
                   <Button
@@ -332,7 +303,7 @@ const Onboarding = () => {
             <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
               <div className="space-y-4">
                 <div className="relative">
-                  <Label htmlFor="primaryColor">Primary Color</Label>
+                  <label htmlFor="primaryColor">Primary Color</label>
                   <div className="flex items-center space-x-4">
                     <div 
                       className="w-10 h-10 rounded border border-[#d2d2d7]"
@@ -350,7 +321,7 @@ const Onboarding = () => {
                 </div>
 
                 <div className="relative">
-                  <Label htmlFor="secondaryColor">Secondary Color</Label>
+                  <label htmlFor="secondaryColor">Secondary Color</label>
                   <div className="flex items-center space-x-4">
                     <div 
                       className="w-10 h-10 rounded border border-[#d2d2d7]"
@@ -404,7 +375,7 @@ const Onboarding = () => {
             <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
               <div className="space-y-4">
                 <div className="relative">
-                  <Label htmlFor="minimumProjectCost">Minimum Project Cost ($)</Label>
+                  <label htmlFor="minimumProjectCost">Minimum Project Cost ($)</label>
                   <Input
                     id="minimumProjectCost"
                     name="minimumProjectCost"
@@ -416,7 +387,7 @@ const Onboarding = () => {
                 </div>
 
                 <div className="relative">
-                  <Label htmlFor="markupPercentage">Markup Percentage (%)</Label>
+                  <label htmlFor="markupPercentage">Markup Percentage (%)</label>
                   <Input
                     id="markupPercentage"
                     name="markupPercentage"
@@ -428,7 +399,7 @@ const Onboarding = () => {
                 </div>
 
                 <div className="relative">
-                  <Label htmlFor="taxRate">Tax Rate (%)</Label>
+                  <label htmlFor="taxRate">Tax Rate (%)</label>
                   <Input
                     id="taxRate"
                     name="taxRate"
