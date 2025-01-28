@@ -1,4 +1,3 @@
-<lov-code>
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -276,4 +275,168 @@ const Onboarding = () => {
                   >
                     Previous
                   </Button>
-                 
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!isBusinessInfoValid() || loading}
+                    className="h-[44px] px-6 text-[17px] font-medium bg-[#007aff] text-white hover:bg-[#0066cc] rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? "Saving..." : "Next"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case OnboardingSteps.BRANDING:
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
+                Branding
+              </h1>
+              <p className="text-[15px] text-[#86868b]">
+                Customize your brand colors to match your business identity.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
+              <div className="space-y-4">
+                <div className="relative">
+                  <Label htmlFor="primaryColor">Primary Color</Label>
+                  <Input
+                    id="primaryColor"
+                    name="primaryColor"
+                    type="color"
+                    value={formData.primaryColor}
+                    onChange={handleInputChange}
+                    className="h-[38px] w-full"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Label htmlFor="secondaryColor">Secondary Color</Label>
+                  <Input
+                    id="secondaryColor"
+                    name="secondaryColor"
+                    type="color"
+                    value={formData.secondaryColor}
+                    onChange={handleInputChange}
+                    className="h-[38px] w-full"
+                  />
+                </div>
+
+                <div className="flex justify-between pt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
+                    disabled={loading}
+                    className="h-[44px] px-6 text-[17px] font-medium border border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-full"
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="h-[44px] px-6 text-[17px] font-medium bg-[#007aff] text-white hover:bg-[#0066cc] rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? "Saving..." : "Next"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case OnboardingSteps.SETTINGS:
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
+                Business Settings
+              </h1>
+              <p className="text-[15px] text-[#86868b]">
+                Configure your business settings for estimates and invoices.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
+              <div className="space-y-4">
+                <div className="relative">
+                  <Label htmlFor="minimumProjectCost">Minimum Project Cost ($)</Label>
+                  <Input
+                    id="minimumProjectCost"
+                    name="minimumProjectCost"
+                    type="number"
+                    value={formData.minimumProjectCost}
+                    onChange={handleInputChange}
+                    className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px]"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Label htmlFor="markupPercentage">Markup Percentage (%)</Label>
+                  <Input
+                    id="markupPercentage"
+                    name="markupPercentage"
+                    type="number"
+                    value={formData.markupPercentage}
+                    onChange={handleInputChange}
+                    className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px]"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Label htmlFor="taxRate">Tax Rate (%)</Label>
+                  <Input
+                    id="taxRate"
+                    name="taxRate"
+                    type="number"
+                    value={formData.taxRate}
+                    onChange={handleInputChange}
+                    className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px]"
+                  />
+                </div>
+
+                <div className="flex justify-between pt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
+                    disabled={loading}
+                    className="h-[44px] px-6 text-[17px] font-medium border border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-full"
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="h-[44px] px-6 text-[17px] font-medium bg-[#007aff] text-white hover:bg-[#0066cc] rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? "Saving..." : "Complete"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f5f5f7] py-12">
+      <div className="container max-w-2xl mx-auto">
+        <StepIndicator
+          currentStep={currentStep}
+          steps={[
+            { label: "Business Info", value: OnboardingSteps.BUSINESS_INFO },
+            { label: "Branding", value: OnboardingSteps.BRANDING },
+            { label: "Settings", value: OnboardingSteps.SETTINGS },
+          ]}
+        />
+        {renderStep()}
+      </div>
+    </div>
+  );
+};
+
+export default Onboarding;
