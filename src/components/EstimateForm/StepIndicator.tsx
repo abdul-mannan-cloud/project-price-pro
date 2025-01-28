@@ -15,7 +15,7 @@ export const StepIndicator = ({ currentStep, totalSteps, steps }: StepIndicatorP
   return (
     <div className="w-full max-w-xs mx-auto mb-8">
       <div className="relative">
-        <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-primary-100">
+        <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-white">
           <div
             style={{ width: `${(currentStep / (stepsCount - 1)) * 100}%` }}
             className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-500"
@@ -32,7 +32,7 @@ export const StepIndicator = ({ currentStep, totalSteps, steps }: StepIndicatorP
                     ? "bg-primary text-primary-foreground"
                     : index === currentStep
                     ? "bg-primary-200 text-primary-700"
-                    : "bg-primary-100 text-primary-400"
+                    : "bg-white border border-primary-100 text-primary-400"
                 )}
               >
                 {index + 1}
@@ -48,7 +48,7 @@ export const StepIndicator = ({ currentStep, totalSteps, steps }: StepIndicatorP
                     ? "bg-primary text-primary-foreground"
                     : index === currentStep
                     ? "bg-primary-200 text-primary-700"
-                    : "bg-primary-100 text-primary-400"
+                    : "bg-white border border-primary-100 text-primary-400"
                 )}
               >
                 {index + 1}
