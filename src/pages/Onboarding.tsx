@@ -3,12 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  CustomSelect,
+} from "@/components/ui/custom-select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { StepIndicator } from "@/components/EstimateForm/StepIndicator";
@@ -200,23 +196,16 @@ const Onboarding = () => {
                 )}
 
                 <div className="relative">
-                  <label htmlFor="industry">Industry</label>
-                  <Select value={formData.industry} onValueChange={handleSelectChange}>
-                    <SelectTrigger 
-                      className={`h-[44px] ${
-                        isRequiredFieldEmpty('industry') ? 'border-red-500' : ''
-                      }`}
-                    >
-                      <SelectValue placeholder="Select Industry" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CONSTRUCTION_INDUSTRIES.map((industry) => (
-                        <SelectItem key={industry} value={industry}>
-                          {industry}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CustomSelect
+                    label="Industry"
+                    value={formData.industry}
+                    onValueChange={handleSelectChange}
+                    options={CONSTRUCTION_INDUSTRIES.map(industry => ({
+                      value: industry,
+                      label: industry
+                    }))}
+                    className={isRequiredFieldEmpty('industry') ? 'border-red-500' : ''}
+                  />
                   {isRequiredFieldEmpty('industry') && (
                     <span className="text-red-500 text-xs mt-1">Industry is required</span>
                   )}
