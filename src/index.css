@@ -36,6 +36,13 @@
   }
 }
 
+.business-input {
+  @apply h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all;
+  @apply placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc];
+  @apply focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b];
+  @apply pt-4;
+}
+
 .step-animation-enter {
   opacity: 0;
   transform: translateX(100%);

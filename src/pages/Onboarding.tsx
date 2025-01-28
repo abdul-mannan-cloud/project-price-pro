@@ -174,56 +174,56 @@ const Onboarding = () => {
 
             <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
               <div className="space-y-4">
+                {/* Business Name Input */}
                 <div className="relative">
+                  <Label htmlFor="businessName">Business Name</Label>
                   <Input
                     id="businessName"
                     name="businessName"
                     value={formData.businessName}
                     onChange={handleInputChange}
                     required
-                    placeholder="Business Name"
-                    className={`h-[38px] rounded-lg border ${
-                      isRequiredFieldEmpty('businessName') ? 'border-red-500' : 'border-[#d2d2d7]'
-                    } bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4`}
+                    className={`business-input ${
+                      isRequiredFieldEmpty('businessName') ? 'border-red-500' : ''
+                    }`}
                   />
                   {isRequiredFieldEmpty('businessName') && (
                     <span className="text-red-500 text-xs mt-1">Business name is required</span>
                   )}
                 </div>
 
+                {/* Full Name Input */}
                 <div className="relative">
+                  <Label htmlFor="fullName">Full Name</Label>
                   <Input
                     id="fullName"
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleInputChange}
                     required
-                    placeholder="Full Name"
-                    className={`h-[38px] rounded-lg border ${
-                      isRequiredFieldEmpty('fullName') ? 'border-red-500' : 'border-[#d2d2d7]'
-                    } bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4`}
+                    className={`business-input ${
+                      isRequiredFieldEmpty('fullName') ? 'border-red-500' : ''
+                    }`}
                   />
                   {isRequiredFieldEmpty('fullName') && (
                     <span className="text-red-500 text-xs mt-1">Full name is required</span>
                   )}
                 </div>
 
+                {/* Industry Select */}
                 <div className="relative">
+                  <Label htmlFor="industry">Industry</Label>
                   <Select value={formData.industry} onValueChange={handleSelectChange}>
                     <SelectTrigger 
-                      className={`h-[38px] rounded-lg border ${
-                        isRequiredFieldEmpty('industry') ? 'border-red-500' : 'border-[#d2d2d7]'
-                      } bg-[#fbfbfd] px-3 text-[15px] shadow-sm`}
+                      className={`business-input ${
+                        isRequiredFieldEmpty('industry') ? 'border-red-500' : ''
+                      }`}
                     >
                       <SelectValue placeholder="Select Industry" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border border-[#d2d2d7] shadow-md rounded-lg">
+                    <SelectContent>
                       {CONSTRUCTION_INDUSTRIES.map((industry) => (
-                        <SelectItem 
-                          key={industry} 
-                          value={industry}
-                          className="hover:bg-[#f5f5f7]"
-                        >
+                        <SelectItem key={industry} value={industry}>
                           {industry}
                         </SelectItem>
                       ))}
@@ -234,7 +234,9 @@ const Onboarding = () => {
                   )}
                 </div>
 
+                {/* Contact Phone Input */}
                 <div className="relative">
+                  <Label htmlFor="contactPhone">Contact Phone</Label>
                   <Input
                     id="contactPhone"
                     name="contactPhone"
@@ -242,17 +244,18 @@ const Onboarding = () => {
                     value={formData.contactPhone}
                     onChange={handleInputChange}
                     required
-                    placeholder="Contact Phone"
-                    className={`h-[38px] rounded-lg border ${
-                      isRequiredFieldEmpty('contactPhone') ? 'border-red-500' : 'border-[#d2d2d7]'
-                    } bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4`}
+                    className={`business-input ${
+                      isRequiredFieldEmpty('contactPhone') ? 'border-red-500' : ''
+                    }`}
                   />
                   {isRequiredFieldEmpty('contactPhone') && (
                     <span className="text-red-500 text-xs mt-1">Contact phone is required</span>
                   )}
                 </div>
 
+                {/* Contact Email Input */}
                 <div className="relative">
+                  <Label htmlFor="contactEmail">Contact Email</Label>
                   <Input
                     id="contactEmail"
                     name="contactEmail"
@@ -260,35 +263,35 @@ const Onboarding = () => {
                     value={formData.contactEmail}
                     onChange={handleInputChange}
                     required
-                    placeholder="Contact Email"
-                    className={`h-[38px] rounded-lg border ${
-                      isRequiredFieldEmpty('contactEmail') ? 'border-red-500' : 'border-[#d2d2d7]'
-                    } bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4`}
+                    className={`business-input ${
+                      isRequiredFieldEmpty('contactEmail') ? 'border-red-500' : ''
+                    }`}
                   />
                   {isRequiredFieldEmpty('contactEmail') && (
                     <span className="text-red-500 text-xs mt-1">Contact email is required</span>
                   )}
                 </div>
 
+                {/* Optional Inputs */}
                 <div className="relative">
+                  <Label htmlFor="address">Business Address (Optional)</Label>
                   <Input
                     id="address"
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    placeholder="Business Address (Optional)"
-                    className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4"
+                    className="business-input"
                   />
                 </div>
 
                 <div className="relative">
+                  <Label htmlFor="licenseNumber">License Number (Optional)</Label>
                   <Input
                     id="licenseNumber"
                     name="licenseNumber"
                     value={formData.licenseNumber}
                     onChange={handleInputChange}
-                    placeholder="License Number (Optional)"
-                    className="h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc] focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b] pt-4"
+                    className="business-input"
                   />
                 </div>
 
@@ -304,7 +307,7 @@ const Onboarding = () => {
                   <Button
                     onClick={handleSubmit}
                     disabled={!isBusinessInfoValid() || loading}
-                    className="h-[44px] px-6 text-[17px] font-medium bg-[#007aff] text-white hover:bg-[#0066cc] rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-[44px] px-6 text-[17px] font-medium bg-[#007aff] text-white hover:bg-[#0066cc] rounded-full"
                   >
                     {loading ? "Saving..." : "Next"}
                   </Button>
@@ -330,26 +333,38 @@ const Onboarding = () => {
               <div className="space-y-4">
                 <div className="relative">
                   <Label htmlFor="primaryColor">Primary Color</Label>
-                  <Input
-                    id="primaryColor"
-                    name="primaryColor"
-                    type="color"
-                    value={formData.primaryColor}
-                    onChange={handleInputChange}
-                    className="h-[38px] w-full"
-                  />
+                  <div className="flex items-center space-x-4">
+                    <div 
+                      className="w-10 h-10 rounded border border-[#d2d2d7]"
+                      style={{ backgroundColor: formData.primaryColor }}
+                    />
+                    <Input
+                      id="primaryColor"
+                      name="primaryColor"
+                      type="color"
+                      value={formData.primaryColor}
+                      onChange={handleInputChange}
+                      className="business-input w-full h-[38px]"
+                    />
+                  </div>
                 </div>
 
                 <div className="relative">
                   <Label htmlFor="secondaryColor">Secondary Color</Label>
-                  <Input
-                    id="secondaryColor"
-                    name="secondaryColor"
-                    type="color"
-                    value={formData.secondaryColor}
-                    onChange={handleInputChange}
-                    className="h-[38px] w-full"
-                  />
+                  <div className="flex items-center space-x-4">
+                    <div 
+                      className="w-10 h-10 rounded border border-[#d2d2d7]"
+                      style={{ backgroundColor: formData.secondaryColor }}
+                    />
+                    <Input
+                      id="secondaryColor"
+                      name="secondaryColor"
+                      type="color"
+                      value={formData.secondaryColor}
+                      onChange={handleInputChange}
+                      className="business-input w-full h-[38px]"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex justify-between pt-6">
@@ -364,7 +379,7 @@ const Onboarding = () => {
                   <Button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="h-[44px] px-6 text-[17px] font-medium bg-[#007aff] text-white hover:bg-[#0066cc] rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-[44px] px-6 text-[17px] font-medium bg-[#007aff] text-white hover:bg-[#0066cc] rounded-full"
                   >
                     {loading ? "Saving..." : "Next"}
                   </Button>
@@ -445,6 +460,9 @@ const Onboarding = () => {
             </div>
           </div>
         );
+
+      default:
+        return null;
     }
   };
 
