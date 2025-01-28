@@ -74,11 +74,14 @@
   .select-label {
     @apply absolute left-3 text-[11px] text-[#86868b] pointer-events-none;
     top: 12px;
+    z-index: 10;
   }
 
   .select-trigger {
     @apply h-[52px] w-full rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 pt-5 pb-1 text-[15px] transition-all;
     @apply focus:border-[#0066cc] focus:ring-[#0066cc] focus:outline-none;
+    @apply flex items-center;
+    min-height: 52px;
   }
 
   /* Global card styling */
