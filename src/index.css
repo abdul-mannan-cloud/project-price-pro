@@ -44,11 +44,29 @@
 }
 
 @layer components {
-  .business-input {
-    @apply h-[38px] rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 text-[15px] shadow-sm transition-all;
-    @apply placeholder:text-[13px] focus:border-[#0066cc] focus:ring-[#0066cc];
-    @apply focus:placeholder:-translate-y-4 focus:placeholder:text-[11px] focus:placeholder:text-[#86868b];
-    @apply pt-4;
+  .form-group {
+    @apply relative;
+  }
+
+  .form-input {
+    @apply h-[44px] w-full rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 pt-5 pb-2 text-[15px] transition-all;
+    @apply focus:border-[#0066cc] focus:ring-[#0066cc] focus:outline-none;
+  }
+
+  .form-label {
+    @apply absolute left-3 text-[15px] text-[#86868b] transition-all pointer-events-none;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .form-input:focus + .form-label,
+  .form-input:not(:placeholder-shown) + .form-label {
+    @apply text-[11px] text-[#86868b];
+    top: 8px;
+  }
+
+  .form-input:focus::placeholder {
+    @apply text-transparent;
   }
 
   .apple-card {
