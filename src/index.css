@@ -31,7 +31,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-[#FFFFFF] text-[#333333] font-sans antialiased;
   }
 
   h1 {
@@ -45,12 +45,13 @@
 
 @layer components {
   .form-group {
-    @apply relative;
+    @apply relative mb-6;
   }
 
   .form-input {
     @apply h-[52px] w-full rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 pt-5 pb-1 text-[15px] transition-all;
     @apply focus:border-[#0066cc] focus:ring-[#0066cc] focus:outline-none;
+    @apply placeholder:text-transparent;
   }
 
   .form-label {
@@ -67,7 +68,7 @@
   }
 
   .select-wrapper {
-    @apply relative pt-4;
+    @apply relative pt-4 mb-6;
   }
 
   .select-label {
@@ -78,6 +79,22 @@
   .select-trigger {
     @apply h-[52px] w-full rounded-lg border border-[#d2d2d7] bg-[#fbfbfd] px-3 pt-5 pb-1 text-[15px] transition-all;
     @apply focus:border-[#0066cc] focus:ring-[#0066cc] focus:outline-none;
+  }
+
+  /* Global card styling */
+  .card {
+    @apply bg-white border border-[#d2d2d7] rounded-xl shadow-sm;
+  }
+
+  /* Global button styling */
+  .button {
+    @apply rounded-lg px-4 py-2 font-medium transition-colors;
+    @apply bg-[#0066cc] text-white hover:bg-[#0055aa];
+  }
+
+  /* Global container styling */
+  .container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 }
 
