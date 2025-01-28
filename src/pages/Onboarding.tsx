@@ -91,14 +91,25 @@ const Onboarding = () => {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) throw new Error("No user found");
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "No authenticated user found. Please log in again.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      // First check if contractor exists
-      const { data: existingContractor } = await supabase
+      // First check if contractor exists using maybeSingle() instead of single()
+      const { data: existingContractor, error: fetchError } = await supabase
         .from("contractors")
         .select()
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
+
+      if (fetchError) {
+        throw fetchError;
+      }
 
       if (existingContractor) {
         // If contractor exists, update instead of insert
@@ -145,9 +156,10 @@ const Onboarding = () => {
         setCurrentStep((prev) => (prev + 1) as OnboardingStep);
       }
     } catch (error: any) {
+      console.error('Onboarding error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "An error occurred while saving your information.",
         variant: "destructive",
       });
     } finally {
