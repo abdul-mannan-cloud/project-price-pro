@@ -130,13 +130,13 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#000000] p-4">
-      <Card className="w-full max-w-md p-8 bg-[#111111] border-[#222222]">
+    <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7] p-4">
+      <Card className="w-full max-w-md p-8 bg-white border-[#d2d2d7] shadow-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+          <h1 className="text-2xl font-bold text-[#1d1d1f]">
             {isSignUp ? "Create Account" : "Welcome Back"}
           </h1>
-          <p className="text-gray-400 mt-2">
+          <p className="text-[#86868b] mt-2">
             {isSignUp
               ? "Sign up to start estimating projects"
               : "Sign in to your account"}
@@ -146,53 +146,53 @@ const Login = () => {
           {isSignUp && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-white">First Name</Label>
+                <Label htmlFor="firstName" className="text-[#1d1d1f]">First Name</Label>
                 <Input
                   id="firstName"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
-                  className="bg-[#222222] border-[#333333] text-white"
+                  className="bg-white border-[#d2d2d7] text-[#1d1d1f] focus:border-[#007AFF] focus:ring-[#007AFF]"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-white">Last Name</Label>
+                <Label htmlFor="lastName" className="text-[#1d1d1f]">Last Name</Label>
                 <Input
                   id="lastName"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
-                  className="bg-[#222222] border-[#333333] text-white"
+                  className="bg-white border-[#d2d2d7] text-[#1d1d1f] focus:border-[#007AFF] focus:ring-[#007AFF]"
                 />
               </div>
             </>
           )}
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-white">Email</Label>
+            <Label htmlFor="email" className="text-[#1d1d1f]">Email</Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-[#222222] border-[#333333] text-white"
+              className="bg-white border-[#d2d2d7] text-[#1d1d1f] focus:border-[#007AFF] focus:ring-[#007AFF]"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-white">Password</Label>
+            <Label htmlFor="password" className="text-[#1d1d1f]">Password</Label>
             <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="bg-[#222222] border-[#333333] text-white"
+              className="bg-white border-[#d2d2d7] text-[#1d1d1f] focus:border-[#007AFF] focus:ring-[#007AFF]"
               minLength={6}
             />
           </div>
           <Button
             type="submit"
-            className="w-full bg-[#9b87f5] hover:bg-[#8a74f8] text-white transition-all duration-300"
+            className="w-full bg-[#007AFF] hover:bg-[#0066CC] text-white transition-all duration-300"
             disabled={loading}
           >
             {loading
@@ -212,7 +212,7 @@ const Login = () => {
               setFirstName("");
               setLastName("");
             }}
-            className="text-[#9b87f5] hover:text-[#8a74f8] transition-colors"
+            className="text-[#007AFF] hover:text-[#0066CC] transition-colors"
           >
             {isSignUp
               ? "Already have an account? Sign in"

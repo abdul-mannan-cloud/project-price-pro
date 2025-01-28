@@ -5,14 +5,14 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="index-page min-h-screen bg-[#000000] text-white">
-      <div className="bg-gradient-to-b from-[#222222] to-black">
+    <div className="index-page min-h-screen bg-white text-[#1d1d1f]">
+      <div className="bg-gradient-to-b from-[#f5f5f7] to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center space-y-8">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-fadeIn bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-fadeIn text-[#1d1d1f]">
               Smart Estimates for Home Improvement Projects
             </h1>
-            <p className="text-xl md:text-2xl mb-8 text-gray-400 animate-fadeIn">
+            <p className="text-xl md:text-2xl mb-8 text-[#86868b] animate-fadeIn">
               Get instant, AI-powered cost estimates for your renovation projects
             </p>
             <Button
@@ -28,24 +28,24 @@ const Index = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div className="grid md:grid-cols-3 gap-8">
-          <div className="text-center p-8 rounded-xl bg-[#111111] transition-all duration-300 hover:bg-[#222222] hover:transform hover:scale-105">
+          <div className="text-center p-8 rounded-xl bg-[#f5f5f7] transition-all duration-300 hover:bg-[#e5e5e7] hover:transform hover:scale-105">
             <div className="text-4xl mb-4 text-[#007AFF]">⚡️</div>
-            <h3 className="text-xl font-semibold mb-2 text-white">Instant Estimates</h3>
-            <p className="text-gray-400">
+            <h3 className="text-xl font-semibold mb-2 text-[#1d1d1f]">Instant Estimates</h3>
+            <p className="text-[#86868b]">
               Get detailed cost breakdowns in minutes, not days
             </p>
           </div>
-          <div className="text-center p-8 rounded-xl bg-[#111111] transition-all duration-300 hover:bg-[#222222] hover:transform hover:scale-105">
+          <div className="text-center p-8 rounded-xl bg-[#f5f5f7] transition-all duration-300 hover:bg-[#e5e5e7] hover:transform hover:scale-105">
             <div className="text-4xl mb-4 text-[#007AFF]">🤖</div>
-            <h3 className="text-xl font-semibold mb-2 text-white">AI-Powered</h3>
-            <p className="text-gray-400">
+            <h3 className="text-xl font-semibold mb-2 text-[#1d1d1f]">AI-Powered</h3>
+            <p className="text-[#86868b]">
               Advanced AI technology for accurate predictions
             </p>
           </div>
-          <div className="text-center p-8 rounded-xl bg-[#111111] transition-all duration-300 hover:bg-[#222222] hover:transform hover:scale-105">
+          <div className="text-center p-8 rounded-xl bg-[#f5f5f7] transition-all duration-300 hover:bg-[#e5e5e7] hover:transform hover:scale-105">
             <div className="text-4xl mb-4 text-[#007AFF]">🏗️</div>
-            <h3 className="text-xl font-semibold mb-2 text-white">Professional Grade</h3>
-            <p className="text-gray-400">
+            <h3 className="text-xl font-semibold mb-2 text-[#1d1d1f]">Professional Grade</h3>
+            <p className="text-[#86868b]">
               Trusted by contractors nationwide
             </p>
           </div>
@@ -56,7 +56,7 @@ const Index = () => {
         <Button
           onClick={() => navigate("/login")}
           variant="ghost"
-          className="text-gray-400 hover:text-white hover:bg-[#222222] transition-all duration-300"
+          className="text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] transition-all duration-300"
         >
           Sign In
         </Button>
