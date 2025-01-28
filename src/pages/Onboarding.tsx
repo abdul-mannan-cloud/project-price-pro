@@ -198,9 +198,9 @@ const Onboarding = () => {
     root.style.setProperty('--primary-200', `hsl(${h}, ${s * 100}%, 90%)`);
     root.style.setProperty('--primary-300', `hsl(${h}, ${s * 100}%, 85%)`);
     root.style.setProperty('--primary-400', `hsl(${h}, ${s * 100}%, 80%)`);
-    root.style.setProperty('--primary-500', `hsl(${h}, ${s * 100}%, 75%)`);
-    root.style.setProperty('--primary-600', `hsl(${h}, ${s * 100}%, 70%)`);
-    root.style.setProperty('--primary-700', `hsl(${h}, ${s * 100}%, 65%)`);
+    root.style.setProperty('--primary-500', primaryColor);
+    root.style.setProperty('--primary-600', `hsl(${h}, ${s * 100}%, 45%)`);
+    root.style.setProperty('--primary-700', `hsl(${h}, ${s * 100}%, 40%)`);
     
     // Set secondary color
     root.style.setProperty('--secondary', secondaryColor);
@@ -212,10 +212,6 @@ const Onboarding = () => {
     
     // Update ring color (focus states)
     root.style.setProperty('--ring', primaryColor);
-
-    // Update button styles
-    document.documentElement.style.setProperty('--button-background', primaryColor);
-    document.documentElement.style.setProperty('--button-hover', `hsl(${h}, ${s * 100}%, 45%)`);
   };
 
   const handlePrimaryColorChange = (newColor: string) => {
