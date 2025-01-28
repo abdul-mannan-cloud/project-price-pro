@@ -39,6 +39,7 @@ const Onboarding = () => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(OnboardingSteps.BUSINESS_INFO);
   const [loading, setLoading] = useState(false);
+  const [activeColorType, setActiveColorType] = useState<'primary' | 'secondary'>('primary');
   const [formData, setFormData] = useState({
     businessName: "",
     fullName: "",
@@ -289,40 +290,47 @@ const Onboarding = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
+            <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-6">
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => setActiveColorType('primary')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    activeColorType === 'primary'
+                      ? 'bg-primary-100 text-primary-700'
+                      : 'text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  Primary Color
+                </button>
+                <button
+                  onClick={() => setActiveColorType('secondary')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    activeColorType === 'secondary'
+                      ? 'bg-primary-100 text-primary-700'
+                      : 'text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  Secondary Color
+                </button>
+              </div>
+
               <div className="space-y-4">
                 <div className="relative">
-                  <label htmlFor="primaryColor">Primary Color</label>
+                  <label htmlFor={`${activeColorType}Color`} className="block text-sm font-medium text-gray-700 mb-2">
+                    {activeColorType === 'primary' ? 'Primary' : 'Secondary'} Color
+                  </label>
                   <div className="flex items-center space-x-4">
                     <div 
                       className="w-10 h-10 rounded border border-[#d2d2d7]"
-                      style={{ backgroundColor: formData.primaryColor }}
+                      style={{ backgroundColor: formData[`${activeColorType}Color`] }}
                     />
                     <Input
-                      id="primaryColor"
-                      name="primaryColor"
+                      id={`${activeColorType}Color`}
+                      name={`${activeColorType}Color`}
                       type="color"
-                      value={formData.primaryColor}
+                      value={formData[`${activeColorType}Color`]}
                       onChange={handleInputChange}
-                      className="business-input w-full h-[38px]"
-                    />
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <label htmlFor="secondaryColor">Secondary Color</label>
-                  <div className="flex items-center space-x-4">
-                    <div 
-                      className="w-10 h-10 rounded border border-[#d2d2d7]"
-                      style={{ backgroundColor: formData.secondaryColor }}
-                    />
-                    <Input
-                      id="secondaryColor"
-                      name="secondaryColor"
-                      type="color"
-                      value={formData.secondaryColor}
-                      onChange={handleInputChange}
-                      className="business-input w-full h-[38px]"
+                      className="w-full h-[38px]"
                     />
                   </div>
                 </div>
