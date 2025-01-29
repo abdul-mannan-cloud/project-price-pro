@@ -1,13 +1,32 @@
-import TopMenu from "@/components/TopMenu";
+import { NavBar } from "@/components/ui/tubelight-navbar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { LayoutDashboard, Users, Settings } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const navItems = [
+    { 
+      name: "Dashboard", 
+      url: "/dashboard", 
+      icon: LayoutDashboard 
+    },
+    { 
+      name: "Leads", 
+      url: "/leads", 
+      icon: Users 
+    },
+    { 
+      name: "Settings", 
+      url: "/settings", 
+      icon: Settings 
+    }
+  ];
 
   // Check if user is authenticated
   useEffect(() => {
@@ -63,7 +82,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
-      <TopMenu />
+      <NavBar items={navItems} />
       <div className="container mx-auto py-8">
         <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8">
           <h1 className="text-2xl font-semibold mb-6">
