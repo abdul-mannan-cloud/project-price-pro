@@ -35,6 +35,11 @@ serve(async (req) => {
       "totalCost": number
     }`;
 
+    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
+    if (!llamaApiKey) {
+      throw new Error('LLAMA_API_KEY is not set');
+    }
+
     const messages = [
       { role: "system", content: systemPrompt },
       {
@@ -54,30 +59,30 @@ serve(async (req) => {
       }
     ];
 
-    console.log('Sending request to OpenAI with messages:', messages);
+    console.log('Sending request to Llama with messages:', messages);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.llama-api.com/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${llamaApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'llama3.2-11b-vision',
         messages,
         response_format: { type: "json_object" }
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      throw new Error(`Llama API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('OpenAI response:', data);
+    console.log('Llama response:', data);
 
     if (!data.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response format from OpenAI');
+      throw new Error('Invalid response format from Llama');
     }
 
     const estimateData = JSON.parse(data.choices[0].message.content);
