@@ -61,18 +61,39 @@ serve(async (req) => {
       }),
     });
 
+    if (!response.ok) {
+      console.error('OpenAI API error:', await response.text());
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
     const data = await response.json();
     console.log('AI Response:', data);
 
     if (!data.choices?.[0]?.message?.content) {
-      throw new Error('Invalid AI response format');
+      console.error('Invalid AI response format:', data);
+      throw new Error('Invalid AI response format - no content in response');
     }
 
-    const parsedContent = JSON.parse(data.choices[0].message.content);
+    let parsedContent;
+    try {
+      parsedContent = JSON.parse(data.choices[0].message.content);
+    } catch (error) {
+      console.error('Failed to parse AI response:', data.choices[0].message.content);
+      throw new Error('Invalid JSON in AI response');
+    }
     
     if (!parsedContent.questions || !Array.isArray(parsedContent.questions)) {
+      console.error('Invalid questions format:', parsedContent);
       throw new Error('Invalid questions format in AI response');
     }
+
+    // Validate each question has the required format
+    parsedContent.questions.forEach((q: any, index: number) => {
+      if (!q.question || !Array.isArray(q.options) || q.options.length !== 4) {
+        console.error(`Invalid question format at index ${index}:`, q);
+        throw new Error(`Question ${index + 1} has invalid format`);
+      }
+    });
 
     // Format the questions to match the frontend expectations
     const formattedQuestions = {
