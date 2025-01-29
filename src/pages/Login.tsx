@@ -80,7 +80,10 @@ const Login = () => {
           password,
         });
 
-        if (signInError) throw signInError;
+        if (signInError) {
+          console.error('Sign in error:', signInError);
+          throw signInError;
+        }
 
         // Check if contractor record exists
         const { data: contractor, error: contractorError } = await supabase
@@ -106,8 +109,10 @@ const Login = () => {
     } catch (error: any) {
       console.error("Auth error:", error);
       toast({
-        title: "Error",
-        description: error.message || "An error occurred during authentication.",
+        title: "Authentication Error",
+        description: error.message === "Invalid login credentials" 
+          ? "Invalid email or password. Please try again."
+          : error.message || "An error occurred during authentication.",
         variant: "destructive",
       });
     } finally {

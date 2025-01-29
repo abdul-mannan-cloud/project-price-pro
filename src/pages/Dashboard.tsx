@@ -31,7 +31,19 @@ const Dashboard = () => {
   // Check if user is authenticated
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('Auth error:', authError);
+        toast({
+          title: "Authentication error",
+          description: "Please try signing in again",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
+      }
+
       if (!user) {
         toast({
           title: "Authentication required",
@@ -56,7 +68,10 @@ const Dashboard = () => {
         .eq("id", user.id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Contractor fetch error:', error);
+        throw error;
+      }
       
       if (!data) {
         // If no contractor data is found, redirect to onboarding
