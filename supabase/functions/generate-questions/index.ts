@@ -42,16 +42,16 @@ serve(async (req) => {
       }
     ];
 
-    console.log('Sending request to OpenAI:', messages);
+    console.log('Sending request to Llama:', messages);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${Deno.env.get('LLAMA_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'llama3.2-11b-vision',
         messages,
         temperature: 0.7,
         response_format: { type: "json_object" }
@@ -60,12 +60,12 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      console.error('Llama API error:', errorText);
+      throw new Error(`Llama API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('OpenAI Response:', data);
+    console.log('Llama Response:', data);
 
     if (!data.choices?.[0]?.message?.content) {
       console.error('Invalid AI response format - no content:', data);
