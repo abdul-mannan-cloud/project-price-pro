@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -69,8 +68,9 @@ const Login = () => {
         });
 
         if (signUpError) {
+          console.error("Signup error:", signUpError);
           if (signUpError.message.includes("already registered")) {
-            setIsSignUp(false); // Switch to sign in mode
+            setIsSignUp(false);
             toast({
               title: "Account Already Exists",
               description: "This email is already registered. Please sign in instead.",
@@ -93,16 +93,18 @@ const Login = () => {
         });
 
         if (signInError) {
-          if (signInError.message === "Invalid login credentials") {
-            throw new Error("Invalid email or password. Please try again.");
-          }
+          console.error("Signin error:", signInError);
+          let errorMessage = "Invalid email or password. Please try again.";
+          
           if (signInError.message.includes("Email not confirmed")) {
-            throw new Error("Please verify your email before signing in.");
+            errorMessage = "Please verify your email before signing in.";
+          } else if (signInError.message.includes("Invalid login credentials")) {
+            errorMessage = "Invalid email or password. Please check your credentials and try again.";
           }
-          throw signInError;
+          
+          throw new Error(errorMessage);
         }
 
-        // Check if user has completed onboarding
         const { data: contractor } = await supabase
           .from("contractors")
           .select("*")
@@ -119,6 +121,7 @@ const Login = () => {
         }
       }
     } catch (error: any) {
+      console.error("Auth error:", error);
       toast({
         title: "Error",
         description: error.message,
