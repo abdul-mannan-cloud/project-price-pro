@@ -2,12 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  CustomSelect,
-} from "@/components/ui/custom-select";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { StepIndicator } from "@/components/EstimateForm/StepIndicator";
+import { ProgressSteps } from "@/components/ui/progress-steps";
 import { ColorPicker } from "@/components/ui/color-picker";
 
 type OnboardingStep = 0 | 1 | 2;
@@ -487,7 +485,7 @@ const Onboarding = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] py-12">
       <div className="container max-w-2xl mx-auto">
-        <StepIndicator
+        <ProgressSteps
           currentStep={currentStep}
           steps={[
             { label: "Business Info", value: OnboardingSteps.BUSINESS_INFO },

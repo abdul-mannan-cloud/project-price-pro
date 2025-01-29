@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Camera, SkipForward } from "lucide-react";
 import { useState } from "react";
-import { StepIndicator } from "@/components/EstimateForm/StepIndicator";
+import { ProgressSteps } from "@/components/ui/progress-steps";
 import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 
 interface BrandingColors {
@@ -107,7 +107,7 @@ export const LeadMagnetPreview = () => {
       "--primary": brandColors.primary,
       "--secondary": brandColors.secondary,
     } as React.CSSProperties}>
-      <StepIndicator currentStep={currentStep} steps={steps} />
+      <ProgressSteps currentStep={currentStep} steps={steps} />
       
       {currentStep === 0 && (
         <div className="card p-8">
