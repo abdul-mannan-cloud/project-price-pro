@@ -101,39 +101,36 @@ export const LeadMagnetPreview = () => {
     } as React.CSSProperties}>
       <StepIndicator currentStep={currentStep} totalSteps={questions.length} />
       
-      {currentStep === 0 && (
-        <div className="card p-8">
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-semibold mb-2">
-                🛠 {contractor?.business_name} Project Estimator
-              </h2>
-              <p className="text-muted-foreground">
-                🕒 Quickly estimate your project cost in minutes! Simply take or upload a photo 
-                of what you want to repair or modify (e.g., 'paint this wall').
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center justify-center p-8 bg-secondary rounded-lg mb-6">
-            {/* Placeholder for Rive animation */}
-            <div className="w-full h-64 bg-primary/5 rounded-lg flex items-center justify-center">
-              <p className="text-muted-foreground">Animation Preview</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <Button className="w-full" size="lg" onClick={handleNext}>
-              <Camera className="mr-2" />
-              TAKE A PHOTO
-            </Button>
-            <Button variant="ghost" className="w-full" size="lg" onClick={handleNext}>
-              <SkipForward className="mr-2" />
-              Skip
-            </Button>
+      <div className="card p-8">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-semibold mb-2">
+              🛠 {contractor?.business_name} Project Estimator
+            </h2>
+            <p className="text-muted-foreground">
+              🕒 Quickly estimate your project cost in minutes! Simply take or upload a photo 
+              of what you want to repair or modify (e.g., 'paint this wall').
+            </p>
           </div>
         </div>
-      )}
+
+        <div className="flex flex-col items-center justify-center p-8 bg-secondary rounded-lg mb-6">
+          <div className="w-full h-64 bg-primary/5 rounded-lg flex items-center justify-center">
+            <p className="text-muted-foreground">Animation Preview</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <Button className="w-full" size="lg" onClick={handleNext}>
+            <Camera className="mr-2" />
+            TAKE A PHOTO
+          </Button>
+          <Button variant="ghost" className="w-full" size="lg" onClick={handleNext}>
+            <SkipForward className="mr-2" />
+            Skip
+          </Button>
+        </div>
+      </div>
 
       {currentStep > 0 && (
         <QuestionCard
