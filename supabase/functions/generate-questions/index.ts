@@ -6,8 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const LLAMA_API_KEY = Deno.env.get('LLAMA_API_KEY');
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -16,15 +14,13 @@ serve(async (req) => {
   try {
     const { projectDescription, imageUrl } = await req.json();
 
-    console.log('Generating questions for project:', { projectDescription, imageUrl });
-
     const messages = [
       {
         role: "system",
         content: `You are an AI assistant that generates relevant questions for construction project estimates. 
-        Generate up to 7 high-impact questions in multiple-choice, multi-select, or yes/no formats.
+        Generate up to 7 high-impact questions in multiple-choice format.
         Always include a "Who should supply materials?" question if relevant.
-        Return only a JSON array of questions and options, no additional text.`
+        Return only a JSON object with a questions array containing question objects with 'question' and 'options' properties.`
       },
       {
         role: "user",
@@ -44,7 +40,7 @@ serve(async (req) => {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LLAMA_API_KEY}`,
+        'Authorization': `Bearer ${Deno.env.get('LLAMA_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -55,7 +51,7 @@ serve(async (req) => {
     });
 
     const data = await response.json();
-    console.log('Generated questions:', data);
+    console.log('AI Response:', data);
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

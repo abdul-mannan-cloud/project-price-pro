@@ -13,30 +13,18 @@ import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 
-interface BrandingColors {
-  primary: string;
-  secondary: string;
-}
-
-const isBrandingColors = (value: unknown): value is BrandingColors => {
-  if (typeof value !== 'object' || value === null) return false;
-  const obj = value as Record<string, unknown>;
-  return (
-    typeof obj.primary === 'string' &&
-    typeof obj.secondary === 'string'
-  );
-};
+type FormStage = 'photo' | 'description' | 'questions' | 'contact' | 'estimate';
 
 const EstimatePage = () => {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [stage, setStage] = useState<FormStage>('photo');
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [questions, setQuestions] = useState<Array<{ question: string; options: string[] }>>([]);
+  const [questions, setQuestions] = useState<Array<{ question: string; options: Array<{ id: string; label: string }> }>>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [estimate, setEstimate] = useState<any>(null);
-  const [showContactForm, setShowContactForm] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -96,6 +84,7 @@ const EstimatePage = () => {
         .getPublicUrl(fileName);
 
       setUploadedImageUrl(publicUrl);
+      setStage('description');
       toast({ title: "Success", description: "Image uploaded successfully" });
     } catch (error) {
       console.error('Upload error:', error);
@@ -117,8 +106,22 @@ const EstimatePage = () => {
       });
 
       if (error) throw error;
-      setQuestions(data.choices[0].message.content.questions);
-      setCurrentStep(1);
+
+      // Ensure data.questions exists and is properly formatted
+      if (!data?.questions || !Array.isArray(data.questions)) {
+        throw new Error('Invalid response format from AI');
+      }
+
+      const formattedQuestions = data.questions.map((q: any) => ({
+        question: q.question,
+        options: q.options.map((opt: string, index: number) => ({
+          id: index.toString(),
+          label: opt
+        }))
+      }));
+
+      setQuestions(formattedQuestions);
+      setStage('questions');
     } catch (error) {
       console.error('Error generating questions:', error);
       toast({
@@ -135,12 +138,19 @@ const EstimatePage = () => {
     setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { projectDescription, imageUrl: uploadedImageUrl, answers }
+        body: { 
+          projectDescription, 
+          imageUrl: uploadedImageUrl, 
+          answers: Object.entries(answers).map(([index, value]) => ({
+            question: questions[parseInt(index)].question,
+            answer: questions[parseInt(index)].options.find(opt => opt.id === value)?.label
+          }))
+        }
       });
 
       if (error) throw error;
-      setEstimate(data.choices[0].message.content);
-      setShowContactForm(true);
+      setEstimate(data);
+      setStage('contact');
     } catch (error) {
       console.error('Error generating estimate:', error);
       toast({
@@ -157,15 +167,16 @@ const EstimatePage = () => {
     try {
       const { data, error } = await supabase
         .from('estimates')
-        .insert([{
+        .insert({
           contractor_id: contractor?.id,
+          project_title: "Project Estimate",
           customer_name: contactData.fullName,
           customer_email: contactData.email,
           customer_phone: contactData.phone,
           project_address: contactData.address,
           project_description: projectDescription,
           total_cost: estimate.totalCost,
-        }])
+        })
         .select()
         .single();
 
@@ -183,7 +194,7 @@ const EstimatePage = () => {
           }))
         );
 
-      setShowContactForm(false);
+      setStage('estimate');
     } catch (error) {
       console.error('Error saving estimate:', error);
       toast({
@@ -194,12 +205,11 @@ const EstimatePage = () => {
     }
   };
 
-  const brandColors = isBrandingColors(contractor?.branding_colors) 
-    ? contractor.branding_colors 
-    : {
-        primary: "#6366F1",
-        secondary: "#4F46E5"
-      };
+  const getProgressValue = () => {
+    const stages = ['photo', 'description', 'questions', 'contact', 'estimate'];
+    const currentIndex = stages.indexOf(stage);
+    return ((currentIndex + 1) / stages.length) * 100;
+  };
 
   if (isProcessing) {
     return <LoadingScreen message="Processing your request..." />;
@@ -207,10 +217,7 @@ const EstimatePage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Progress 
-        value={currentStep === 0 ? 0 : (currentStep / (questions.length + 2)) * 100} 
-        className="h-2 rounded-none" 
-      />
+      <Progress value={getProgressValue()} className="h-2 rounded-none" />
       
       {contractor && (
         <button 
@@ -223,7 +230,7 @@ const EstimatePage = () => {
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-12">
-        {currentStep === 0 ? (
+        {stage === 'photo' && (
           <div className="card p-8 animate-fadeIn">
             <div className="flex items-start justify-between mb-6">
               <div>
@@ -231,18 +238,10 @@ const EstimatePage = () => {
                   🛠 {contractor?.business_name || "Project"} Estimator
                 </h2>
                 <p className="text-muted-foreground">
-                  🕒 Quickly estimate your project cost in minutes! Simply take or upload a photo 
-                  of what you want to repair or modify (e.g., 'paint this wall').
+                  Take or upload a photo of what you want to repair or modify
                 </p>
               </div>
             </div>
-
-            <Textarea
-              value={projectDescription}
-              onChange={(e) => setProjectDescription(e.target.value)}
-              placeholder="Describe your project..."
-              className="min-h-[150px] mb-6"
-            />
 
             <div className="space-y-4">
               <label className="relative">
@@ -270,44 +269,65 @@ const EstimatePage = () => {
                 variant="ghost" 
                 className="w-full" 
                 size="lg" 
-                onClick={generateQuestions}
-                disabled={!projectDescription.trim() || isUploading}
+                onClick={() => setStage('description')}
               >
                 <SkipForward className="mr-2" />
-                Continue
+                Skip Photo
               </Button>
             </div>
           </div>
-        ) : showContactForm ? (
-          <div className="animate-fadeIn">
-            <ContactForm onSubmit={handleContactSubmit} />
+        )}
+
+        {stage === 'description' && (
+          <div className="card p-8 animate-fadeIn">
+            <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
+            <Textarea
+              value={projectDescription}
+              onChange={(e) => setProjectDescription(e.target.value)}
+              placeholder="Describe what you need help with..."
+              className="min-h-[150px] mb-6"
+            />
+            <Button 
+              className="w-full"
+              onClick={generateQuestions}
+              disabled={!projectDescription.trim()}
+            >
+              Continue
+            </Button>
           </div>
-        ) : estimate ? (
-          <EstimateDisplay groups={estimate.groups} totalCost={estimate.totalCost} />
-        ) : (
+        )}
+
+        {stage === 'questions' && questions.length > 0 && (
           <>
             <StepIndicator 
-              currentStep={currentStep - 1} 
+              currentStep={currentQuestionIndex} 
               totalSteps={questions.length} 
             />
             <QuestionCard
-              question={questions[currentStep - 1].question}
-              options={questions[currentStep - 1].options.map((option, index) => ({
-                id: index.toString(),
-                label: option
-              }))}
-              selectedOption={answers[currentStep - 1] || ""}
-              onSelect={(value) => setAnswers(prev => ({ ...prev, [currentStep - 1]: value }))}
+              question={questions[currentQuestionIndex].question}
+              options={questions[currentQuestionIndex].options}
+              selectedOption={answers[currentQuestionIndex] || ""}
+              onSelect={(value) => setAnswers(prev => ({ ...prev, [currentQuestionIndex]: value }))}
               onNext={() => {
-                if (currentStep < questions.length) {
-                  setCurrentStep(prev => prev + 1);
+                if (currentQuestionIndex < questions.length - 1) {
+                  setCurrentQuestionIndex(prev => prev + 1);
                 } else {
                   generateEstimate();
                 }
               }}
-              isLastQuestion={currentStep === questions.length}
+              isLastQuestion={currentQuestionIndex === questions.length - 1}
             />
           </>
+        )}
+
+        {stage === 'contact' && (
+          <div className="animate-fadeIn">
+            <ContactForm onSubmit={handleContactSubmit} />
+          </div>
+        )}
+
+        {stage === 'estimate' && estimate && (
+          <EstimateDisplay groups={estimate.groups} totalCost={estimate.totalCost} />
         )}
       </div>
     </div>
