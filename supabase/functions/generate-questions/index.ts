@@ -35,23 +35,19 @@ serve(async (req) => {
       },
       {
         role: "user",
-        content: `Generate questions for this project: ${projectDescription}`
+        content: imageUrl ? [
+          { type: "text", text: projectDescription },
+          { type: "image_url", image_url: imageUrl }
+        ] : projectDescription
       }
     ];
-
-    if (imageUrl) {
-      messages[1].content = [
-        { type: "text", text: messages[1].content },
-        { type: "image_url", image_url: imageUrl }
-      ];
-    }
 
     console.log('Sending request to OpenAI:', messages);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('LLAMA_API_KEY')}`,
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
