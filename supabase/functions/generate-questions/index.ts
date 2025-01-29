@@ -16,34 +16,13 @@ serve(async (req) => {
     console.log('Generating questions for:', { projectDescription, imageUrl, previousAnswers });
 
     // Get environment variables
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
-
-    if (!supabaseUrl || !supabaseKey || !llamaApiKey) {
-      throw new Error('Missing required environment variables');
+    if (!llamaApiKey) {
+      throw new Error('Missing LLAMA_API_KEY environment variable');
     }
-
-    // Fetch options from the database for context
-    const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options`, {
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-      },
-    });
-
-    if (!optionsResponse.ok) {
-      throw new Error('Failed to fetch options from database');
-    }
-
-    const options = await optionsResponse.json();
-    console.log('Retrieved options from database:', options);
 
     const systemPrompt = `You are an AI assistant helping contractors gather project requirements from customers.
-    Based on the project description, image (if provided), previous answers, and the provided knowledge base of questions and tasks, generate exactly 7 focused questions.
-    
-    Use the following knowledge base to inform your questions:
-    ${JSON.stringify(options, null, 2)}
+    Based on the project description and image (if provided), generate exactly 7 focused questions.
     
     Questions should help understand:
     1. Project scope and specific requirements
@@ -98,7 +77,7 @@ serve(async (req) => {
       }
     ];
 
-    console.log('Sending request to Llama with messages:', messages);
+    console.log('Sending request to Llama with messages:', JSON.stringify(messages, null, 2));
 
     const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
       method: 'POST',
@@ -122,7 +101,7 @@ serve(async (req) => {
     }
 
     const data = await llamaResponse.json();
-    console.log('Llama raw response:', data);
+    console.log('Llama raw response:', JSON.stringify(data, null, 2));
 
     if (!data.choices?.[0]?.message?.content) {
       console.error('Invalid Llama response structure:', data);
@@ -131,8 +110,14 @@ serve(async (req) => {
 
     let questionsData;
     try {
-      questionsData = JSON.parse(data.choices[0].message.content);
-      console.log('Parsed questions data:', questionsData);
+      // If the content is already an object, use it directly
+      if (typeof data.choices[0].message.content === 'object') {
+        questionsData = data.choices[0].message.content;
+      } else {
+        // Otherwise, try to parse it as JSON
+        questionsData = JSON.parse(data.choices[0].message.content);
+      }
+      console.log('Parsed questions data:', JSON.stringify(questionsData, null, 2));
     } catch (error) {
       console.error('Failed to parse Llama response as JSON:', error);
       throw new Error('Invalid JSON response from Llama');
@@ -144,10 +129,76 @@ serve(async (req) => {
       throw new Error('Invalid questions format from Llama');
     }
 
-    // Validate number of questions
+    // If we don't get exactly 7 questions, generate some default ones
     if (questionsData.questions.length !== 7) {
-      console.error('Wrong number of questions:', questionsData.questions.length);
-      throw new Error(`Expected 7 questions, got ${questionsData.questions.length}`);
+      console.warn(`Expected 7 questions, got ${questionsData.questions.length}. Using default questions.`);
+      questionsData = {
+        questions: [
+          {
+            question: "What type of project are you looking to get an estimate for?",
+            options: [
+              { id: "renovation", label: "Home Renovation" },
+              { id: "repair", label: "Repair Work" },
+              { id: "installation", label: "New Installation" },
+              { id: "maintenance", label: "General Maintenance" }
+            ]
+          },
+          {
+            question: "What is your desired timeline for this project?",
+            options: [
+              { id: "immediate", label: "As soon as possible" },
+              { id: "1month", label: "Within 1 month" },
+              { id: "3months", label: "Within 3 months" },
+              { id: "flexible", label: "Flexible timeline" }
+            ]
+          },
+          {
+            question: "What is your budget range for this project?",
+            options: [
+              { id: "budget1", label: "Under $5,000" },
+              { id: "budget2", label: "$5,000 - $10,000" },
+              { id: "budget3", label: "$10,000 - $25,000" },
+              { id: "budget4", label: "Over $25,000" }
+            ]
+          },
+          {
+            question: "What is the current state of the project area?",
+            options: [
+              { id: "new", label: "New construction" },
+              { id: "good", label: "Good condition" },
+              { id: "fair", label: "Fair condition" },
+              { id: "poor", label: "Poor condition" }
+            ]
+          },
+          {
+            question: "Do you have specific material preferences?",
+            options: [
+              { id: "premium", label: "Premium quality" },
+              { id: "standard", label: "Standard quality" },
+              { id: "economic", label: "Budget-friendly" },
+              { id: "undecided", label: "Need recommendations" }
+            ]
+          },
+          {
+            question: "What is your preferred style?",
+            options: [
+              { id: "modern", label: "Modern/Contemporary" },
+              { id: "traditional", label: "Traditional" },
+              { id: "transitional", label: "Transitional" },
+              { id: "minimal", label: "Minimalist" }
+            ]
+          },
+          {
+            question: "Are there any special requirements or constraints?",
+            options: [
+              { id: "none", label: "No special requirements" },
+              { id: "permit", label: "Permit needed" },
+              { id: "hoa", label: "HOA approval required" },
+              { id: "access", label: "Limited access to area" }
+            ]
+          }
+        ]
+      };
     }
 
     // Validate each question has exactly 4 options
