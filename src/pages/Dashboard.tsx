@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { LayoutDashboard, Users, Settings } from "lucide-react";
+import { LayoutDashboard, Users, Settings, ExternalLink } from "lucide-react";
 import { LeadMagnetPreview } from "@/components/LeadMagnet/LeadMagnetPreview";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -95,10 +96,25 @@ const Dashboard = () => {
     return null;
   }
 
+  const handlePreviewClick = () => {
+    const estimatorUrl = `/estimate/${contractor.id}`;
+    window.open(estimatorUrl, '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-24">
       <NavBar items={navItems} />
       <div className="container mx-auto py-8">
+        <div className="flex justify-end mb-6">
+          <Button 
+            onClick={handlePreviewClick}
+            className="gap-2"
+            variant="outline"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Open Full Preview
+          </Button>
+        </div>
         <LeadMagnetPreview />
       </div>
     </div>
