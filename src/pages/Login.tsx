@@ -203,7 +203,7 @@ const Login = () => {
               setFirstName("");
               setLastName("");
             }}
-            className="text-primary hover:text-primary-700 transition-colors"
+            className="text-primary hover:text-primary-700 transition-colors border-none"
           >
             {isSignUp
               ? "Already have an account? Sign in"
