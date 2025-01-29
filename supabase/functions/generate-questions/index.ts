@@ -35,18 +35,18 @@ serve(async (req) => {
       },
       {
         role: "user",
-        content: [
-          {
-            type: "text",
-            text: `Generate questions for this project: ${projectDescription}`
-          },
-          imageUrl ? {
-            type: "image_url",
-            image_url: imageUrl
-          } : null
-        ].filter(Boolean)
+        content: `Generate questions for this project: ${projectDescription}`
       }
     ];
+
+    if (imageUrl) {
+      messages[1].content = [
+        { type: "text", text: messages[1].content },
+        { type: "image_url", image_url: imageUrl }
+      ];
+    }
+
+    console.log('Sending request to OpenAI:', messages);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -57,26 +57,29 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages,
+        temperature: 0.7,
         response_format: { type: "json_object" }
       }),
     });
 
     if (!response.ok) {
-      console.error('OpenAI API error:', await response.text());
-      throw new Error(`OpenAI API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('OpenAI API error:', errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('AI Response:', data);
+    console.log('OpenAI Response:', data);
 
     if (!data.choices?.[0]?.message?.content) {
-      console.error('Invalid AI response format:', data);
+      console.error('Invalid AI response format - no content:', data);
       throw new Error('Invalid AI response format - no content in response');
     }
 
     let parsedContent;
     try {
       parsedContent = JSON.parse(data.choices[0].message.content);
+      console.log('Parsed content:', parsedContent);
     } catch (error) {
       console.error('Failed to parse AI response:', data.choices[0].message.content);
       throw new Error('Invalid JSON in AI response');
