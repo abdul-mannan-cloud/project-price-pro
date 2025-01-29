@@ -16,7 +16,7 @@ serve(async (req) => {
     console.log('Received request:', { projectDescription, imageUrl });
 
     const systemPrompt = `You are an AI assistant that generates relevant questions for construction project estimates. 
-    Generate 3 questions in multiple-choice format.
+    Generate exactly 3 questions in multiple-choice format.
     Each question MUST have exactly 4 options.
     The response MUST be a valid JSON object with this exact structure:
     {
@@ -26,7 +26,8 @@ serve(async (req) => {
           "options": ["Small repair", "Medium renovation", "Large remodel", "Complete overhaul"]
         }
       ]
-    }`;
+    }
+    Do not include any additional text or formatting in your response, only the JSON object.`;
 
     const userContent = imageUrl ? 
       `Project description: ${projectDescription}\nImage URL: ${imageUrl}` :
@@ -46,7 +47,7 @@ serve(async (req) => {
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent }
         ],
-        temperature: 0.7,
+        temperature: 0.5,
         max_tokens: 1000,
         response_format: { type: "json_object" }
       }),
@@ -60,9 +61,13 @@ serve(async (req) => {
     const rawResponse = await llamaResponse.text();
     console.log('Raw Llama response:', rawResponse);
 
+    // Try to clean the response if it contains any extra characters
+    const cleanedResponse = rawResponse.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
+    console.log('Cleaned response:', cleanedResponse);
+
     let parsedResponse;
     try {
-      parsedResponse = JSON.parse(rawResponse);
+      parsedResponse = JSON.parse(cleanedResponse);
       console.log('Parsed response:', parsedResponse);
     } catch (error) {
       console.error('Failed to parse Llama response:', error);
@@ -89,7 +94,7 @@ serve(async (req) => {
       throw new Error('Invalid questions format in response');
     }
 
-    // Default questions in case of incomplete response
+    // Default questions as fallback
     const defaultQuestions = [
       {
         question: "What type of project are you looking to estimate?",
@@ -105,37 +110,48 @@ serve(async (req) => {
       }
     ];
 
-    // Validate and format each question, falling back to defaults if needed
+    // Process and validate questions
     const validatedQuestions = questionsData.questions.map((q: any, index: number) => {
-      if (!q.question || !Array.isArray(q.options)) {
-        return defaultQuestions[index] || defaultQuestions[0];
+      // If question is invalid, use default
+      if (!q?.question || !Array.isArray(q?.options)) {
+        return {
+          question: defaultQuestions[index].question,
+          options: defaultQuestions[index].options.map((opt, i) => ({
+            id: i.toString(),
+            label: opt
+          }))
+        };
       }
 
       // Ensure exactly 4 options
-      let options = [...q.options];
+      const options = [...q.options];
       while (options.length < 4) {
         options.push(defaultQuestions[0].options[options.length]);
       }
-      options = options.slice(0, 4);
 
       return {
-        question: q.question,
-        options: options.map((opt: any, i: number) => ({
+        question: String(q.question),
+        options: options.slice(0, 4).map((opt: any, i: number) => ({
           id: i.toString(),
           label: String(opt)
         }))
       };
     });
 
-    // Ensure we have at least 3 questions
-    while (validatedQuestions.length < 3) {
-      validatedQuestions.push(defaultQuestions[validatedQuestions.length]);
+    // Ensure exactly 3 questions
+    const finalQuestions = validatedQuestions.slice(0, 3);
+    while (finalQuestions.length < 3) {
+      const defaultQ = defaultQuestions[finalQuestions.length];
+      finalQuestions.push({
+        question: defaultQ.question,
+        options: defaultQ.options.map((opt, i) => ({
+          id: i.toString(),
+          label: opt
+        }))
+      });
     }
 
-    const formattedResponse = {
-      questions: validatedQuestions.slice(0, 3)
-    };
-
+    const formattedResponse = { questions: finalQuestions };
     console.log('Final formatted response:', formattedResponse);
 
     return new Response(JSON.stringify(formattedResponse), {
