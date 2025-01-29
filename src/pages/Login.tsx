@@ -69,15 +69,6 @@ const Login = () => {
 
         if (signUpError) {
           console.error("Signup error:", signUpError);
-          if (signUpError.message.includes("already registered")) {
-            setIsSignUp(false);
-            toast({
-              title: "Account Already Exists",
-              description: "This email is already registered. Please sign in instead.",
-              variant: "destructive",
-            });
-            return;
-          }
           throw signUpError;
         }
 
@@ -94,15 +85,7 @@ const Login = () => {
 
         if (signInError) {
           console.error("Signin error:", signInError);
-          let errorMessage = "Invalid email or password. Please try again.";
-          
-          if (signInError.message.includes("Email not confirmed")) {
-            errorMessage = "Please verify your email before signing in.";
-          } else if (signInError.message.includes("Invalid login credentials")) {
-            errorMessage = "Invalid email or password. Please check your credentials and try again.";
-          }
-          
-          throw new Error(errorMessage);
+          throw new Error("Invalid email or password. Please check your credentials and try again.");
         }
 
         const { data: contractor } = await supabase
@@ -110,13 +93,14 @@ const Login = () => {
           .select("*")
           .single();
 
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully signed in.",
+        });
+
         if (!contractor) {
           navigate("/onboarding");
         } else {
-          toast({
-            title: "Welcome back!",
-            description: "You have successfully signed in.",
-          });
           navigate("/");
         }
       }
