@@ -132,8 +132,11 @@ export type Database = {
           created_at: string | null
           estimate_id: string | null
           id: string
+          is_follow_up: boolean | null
           options: Json
+          parent_question_id: string | null
           question: string
+          question_order: number
           question_type: Database["public"]["Enums"]["question_type"] | null
           updated_at: string | null
         }
@@ -141,8 +144,11 @@ export type Database = {
           created_at?: string | null
           estimate_id?: string | null
           id?: string
+          is_follow_up?: boolean | null
           options: Json
+          parent_question_id?: string | null
           question: string
+          question_order?: number
           question_type?: Database["public"]["Enums"]["question_type"] | null
           updated_at?: string | null
         }
@@ -150,8 +156,11 @@ export type Database = {
           created_at?: string | null
           estimate_id?: string | null
           id?: string
+          is_follow_up?: boolean | null
           options?: Json
+          parent_question_id?: string | null
           question?: string
+          question_order?: number
           question_type?: Database["public"]["Enums"]["question_type"] | null
           updated_at?: string | null
         }
@@ -161,6 +170,13 @@ export type Database = {
             columns: ["estimate_id"]
             isOneToOne: false
             referencedRelation: "estimates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estimate_questions_parent_question_id_fkey"
+            columns: ["parent_question_id"]
+            isOneToOne: false
+            referencedRelation: "estimate_questions"
             referencedColumns: ["id"]
           },
         ]
