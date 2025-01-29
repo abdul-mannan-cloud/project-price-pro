@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 
 interface BrandingColors {
   primary: string;
@@ -24,7 +25,9 @@ const isBrandingColors = (value: unknown): value is BrandingColors => {
 const EstimatePage = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [projectDescription, setProjectDescription] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const { data: contractor } = useQuery({
     queryKey: ["contractor"],
@@ -52,9 +55,58 @@ const EstimatePage = () => {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      // Handle file upload logic here
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please upload an image smaller than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('project_images')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+
+      // Advance to next step
       setCurrentStep(1);
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "There was an error uploading your image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -71,10 +123,8 @@ const EstimatePage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Progress Bar */}
       <Progress value={getProgress()} className="h-2 rounded-none" />
       
-      {/* Back Button for Owners */}
       {contractor && (
         <button 
           onClick={() => navigate("/dashboard")}
@@ -114,10 +164,11 @@ const EstimatePage = () => {
                   onChange={handleFileUpload}
                   className="hidden"
                   capture="environment"
+                  disabled={isUploading}
                 />
-                <Button className="w-full" size="lg">
+                <Button className="w-full" size="lg" disabled={isUploading}>
                   <Camera className="mr-2" />
-                  TAKE A PHOTO
+                  {isUploading ? "UPLOADING..." : "TAKE A PHOTO"}
                 </Button>
               </label>
               <Button 
@@ -125,6 +176,7 @@ const EstimatePage = () => {
                 className="w-full" 
                 size="lg" 
                 onClick={() => setCurrentStep(1)}
+                disabled={isUploading}
               >
                 <SkipForward className="mr-2" />
                 Skip
