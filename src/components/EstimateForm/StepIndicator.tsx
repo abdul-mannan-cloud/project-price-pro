@@ -23,7 +23,7 @@ export const StepIndicator = ({ currentStep, steps }: StepIndicatorProps) => {
           />
         </div>
         <div className="flex justify-between">
-          {steps.map((step, index) => (
+          {steps.map((step) => (
             <div
               key={step.value}
               className={cn(
