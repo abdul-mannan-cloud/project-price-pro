@@ -25,6 +25,7 @@ export const LeadMagnetPreview = () => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
+  const [questions, setQuestions] = useState<Array<{ question: string; options: Array<{ id: string; label: string }> }>>([]);
 
   const { data: contractor } = useQuery({
     queryKey: ["contractor"],
@@ -43,42 +44,29 @@ export const LeadMagnetPreview = () => {
     },
   });
 
-  const questions = [
-    {
-      question: "What type of project are you looking to estimate?",
-      options: [
-        { id: "renovation", label: "Home Renovation" },
-        { id: "repair", label: "Repair Work" },
-        { id: "installation", label: "New Installation" },
-        { id: "maintenance", label: "Maintenance" },
-      ],
-    },
-    {
-      question: "Which area of your property needs work?",
-      options: [
-        { id: "kitchen", label: "Kitchen" },
-        { id: "bathroom", label: "Bathroom" },
-        { id: "bedroom", label: "Bedroom" },
-        { id: "exterior", label: "Exterior" },
-      ],
-    },
-    {
-      question: "What's your preferred timeline?",
-      options: [
-        { id: "asap", label: "As soon as possible" },
-        { id: "1month", label: "Within 1 month" },
-        { id: "3months", label: "Within 3 months" },
-        { id: "flexible", label: "Flexible" },
-      ],
-    },
-  ];
+  const generateQuestions = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-questions', {
+        body: { 
+          projectDescription: "New project inquiry",
+          previousAnswers: selectedOptions
+        }
+      });
 
-  const steps = [
-    { label: "Start", value: 0 },
-    { label: "Project", value: 1 },
-    { label: "Area", value: 2 },
-    { label: "Timeline", value: 3 }
-  ];
+      if (error) throw error;
+      if (!data?.questions) throw new Error('No questions generated');
+
+      setQuestions(data.questions);
+      setCurrentStep(1);
+    } catch (error) {
+      console.error('Error generating questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate questions. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleOptionSelect = (value: string) => {
     setSelectedOptions(prev => ({
@@ -89,11 +77,19 @@ export const LeadMagnetPreview = () => {
 
   const handleNext = () => {
     if (currentStep === 0) {
-      setCurrentStep(1);
+      generateQuestions();
     } else if (currentStep < questions.length) {
       setCurrentStep(prev => prev + 1);
     }
   };
+
+  const steps = [
+    { label: "Start", value: 0 },
+    ...questions.map((_, index) => ({ 
+      label: `Question ${index + 1}`, 
+      value: index + 1 
+    }))
+  ];
 
   const brandColors = isBrandingColors(contractor?.branding_colors) 
     ? contractor.branding_colors 

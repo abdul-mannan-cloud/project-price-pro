@@ -37,20 +37,25 @@ serve(async (req) => {
     }
 
     const systemPrompt = `You are an AI assistant helping contractors gather project requirements from customers.
-    Based on the project description, image (if provided), previous answers, and the provided knowledge base of questions and tasks, generate at least 7 focused questions.
+    Based on the project description, image (if provided), previous answers, and the provided knowledge base of questions and tasks, generate exactly 7 focused questions.
     
     Use the following knowledge base to inform your questions:
     ${JSON.stringify(options, null, 2)}
     
     Questions should help understand:
-    - Project scope and specific requirements (using Q1, Q2, Q3 from the knowledge base)
-    - Timeline expectations
-    - Budget considerations
-    - Property details and constraints
+    1. Project scope and specific requirements
+    2. Timeline expectations
+    3. Budget considerations
+    4. Property details and constraints
+    5. Material preferences
+    6. Design preferences
+    7. Special requirements or constraints
     
-    Each question should be customer-focused and help contractors better understand the project needs.
-    If previous answers indicate specific areas needing clarification, generate follow-up questions.
-    Each question MUST have exactly 4 relevant options.
+    Each question MUST:
+    - Be customer-focused and help contractors better understand the project needs
+    - Have exactly 4 relevant options
+    - Be specific and actionable
+    - Build upon previous answers if available
     
     Return ONLY a JSON object with this exact structure:
     {
@@ -59,9 +64,7 @@ serve(async (req) => {
           "question": "string (customer-focused question)",
           "options": [
             { "id": "string", "label": "string" }
-          ],
-          "type": "scope" | "timeline" | "budget" | "property",
-          "category": "string (matching Q1 Category from knowledge base if applicable)"
+          ]
         }
       ]
     }`;
@@ -78,8 +81,7 @@ serve(async (req) => {
             Previous Answers: ${JSON.stringify(previousAnswers || {}, null, 2)}
             
             Remember:
-            - Use the knowledge base to inform question generation
-            - Generate at least 7 questions
+            - Generate exactly 7 questions
             - Questions should help contractors understand customer needs
             - Follow-up questions should be based on previous answers
             - All questions should be from customer perspective`
@@ -121,10 +123,17 @@ serve(async (req) => {
     const questionsData = JSON.parse(data.choices[0].message.content);
     console.log('Parsed questions:', questionsData);
 
-    // Validate that we have at least 7 questions
-    if (!questionsData.questions || questionsData.questions.length < 7) {
-      throw new Error('Not enough questions generated');
+    // Validate that we have exactly 7 questions
+    if (!questionsData.questions || questionsData.questions.length !== 7) {
+      throw new Error('Invalid number of questions generated');
     }
+
+    // Validate each question has exactly 4 options
+    questionsData.questions.forEach((q: any, index: number) => {
+      if (!q.options || q.options.length !== 4) {
+        throw new Error(`Question ${index + 1} does not have exactly 4 options`);
+      }
+    });
 
     return new Response(JSON.stringify(questionsData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -141,8 +150,7 @@ serve(async (req) => {
             { id: "repair", label: "Repair Work" },
             { id: "installation", label: "New Installation" },
             { id: "maintenance", label: "General Maintenance" }
-          ],
-          type: "scope"
+          ]
         }
       ]
     }), {
