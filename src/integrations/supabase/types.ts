@@ -89,12 +89,133 @@ export type Database = {
         }
         Relationships: []
       }
+      estimate_details: {
+        Row: {
+          created_at: string | null
+          estimate_id: string | null
+          group_name: string
+          id: string
+          line_items: Json
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          estimate_id?: string | null
+          group_name: string
+          id?: string
+          line_items: Json
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          estimate_id?: string | null
+          group_name?: string
+          id?: string
+          line_items?: Json
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimate_details_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "estimates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estimate_questions: {
+        Row: {
+          created_at: string | null
+          estimate_id: string | null
+          id: string
+          options: Json
+          question: string
+          question_type: Database["public"]["Enums"]["question_type"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          estimate_id?: string | null
+          id?: string
+          options: Json
+          question: string
+          question_type?: Database["public"]["Enums"]["question_type"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          estimate_id?: string | null
+          id?: string
+          options?: Json
+          question?: string
+          question_type?: Database["public"]["Enums"]["question_type"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimate_questions_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "estimates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estimate_responses: {
+        Row: {
+          created_at: string | null
+          estimate_id: string | null
+          id: string
+          question_id: string | null
+          response: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          estimate_id?: string | null
+          id?: string
+          question_id?: string | null
+          response: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          estimate_id?: string | null
+          id?: string
+          question_id?: string | null
+          response?: Json
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimate_responses_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "estimates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estimate_responses_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "estimate_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estimates: {
         Row: {
           contractor_id: string | null
           created_at: string | null
           customer_email: string
+          customer_name: string | null
+          customer_phone: string | null
           id: string
+          project_address: string | null
           project_description: string | null
           project_title: string
           status: string | null
@@ -105,7 +226,10 @@ export type Database = {
           contractor_id?: string | null
           created_at?: string | null
           customer_email: string
+          customer_name?: string | null
+          customer_phone?: string | null
           id?: string
+          project_address?: string | null
           project_description?: string | null
           project_title: string
           status?: string | null
@@ -116,7 +240,10 @@ export type Database = {
           contractor_id?: string | null
           created_at?: string | null
           customer_email?: string
+          customer_name?: string | null
+          customer_phone?: string | null
           id?: string
+          project_address?: string | null
           project_description?: string | null
           project_title?: string
           status?: string | null
@@ -141,6 +268,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      question_type: "multiple_choice" | "multi_select" | "yes_no"
       subscription_status: "active" | "inactive" | "trial"
     }
     CompositeTypes: {
