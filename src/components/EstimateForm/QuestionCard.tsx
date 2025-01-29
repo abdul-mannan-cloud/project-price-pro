@@ -46,22 +46,8 @@ export const QuestionCard = ({
     }, 150);
   };
 
-  const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
-
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-sm animate-fadeIn">
-      <div className="mb-6">
-        <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-primary transition-all duration-500 rounded-full"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <p className="text-sm text-muted-foreground mt-2">
-          Question {currentQuestionIndex + 1} of {totalQuestions}
-        </p>
-      </div>
-
       <h2 className="text-xl font-semibold mb-6">{question}</h2>
       
       <RadioGroup
@@ -99,7 +85,7 @@ export const QuestionCard = ({
 
       {isLastQuestion && selectedOption && (
         <Button 
-          className="w-full mt-6 bg-primary hover:bg-primary/90 text-white font-semibold py-3"
+          className="w-full mt-6 bg-primary hover:bg-primary-600 text-white font-semibold py-3"
           onClick={() => onSelect(selectedOption)}
         >
           Submit and View Estimate

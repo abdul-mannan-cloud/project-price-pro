@@ -6,157 +6,39 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface Option {
-  Task: string;
-  'Q1 Category': string;
-  'Q1 Selection': string;
-  'Q2 Category': string;
-  'Q2 Selection': string;
-  'Q3 Category': string;
-  'Q3 Selection': string;
-  'Material Applicable Question': string;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { projectDescription } = await req.json();
-    console.log('Processing project description:', projectDescription);
+    const { projectDescription, imageUrl, previousAnswers } = await req.json();
+    console.log('Generating questions for:', { projectDescription, imageUrl, previousAnswers });
 
-    // Fetch options from the database
-    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env;
-    const optionsResponse = await fetch(`${SUPABASE_URL}/rest/v1/Options`, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-      },
-    });
-
-    if (!optionsResponse.ok) {
-      throw new Error('Failed to fetch options from database');
-    }
-
-    const options: Option[] = await optionsResponse.json();
-    console.log('Fetched options:', options);
-
-    // Find matching tasks in the description
-    const matchingTasks = options.filter(option => 
-      option.Task && projectDescription.toLowerCase().includes(option.Task.toLowerCase())
-    );
-
-    console.log('Matching tasks:', matchingTasks);
-
-    if (matchingTasks.length > 0) {
-      // Generate questions based on matching tasks
-      const questions = [];
-      
-      // Add square footage question first
-      questions.push({
-        question: "What is the approximate square footage of the project area?",
-        options: [
-          { id: "size1", label: "Less than 100 sq ft" },
-          { id: "size2", label: "100-250 sq ft" },
-          { id: "size3", label: "250-500 sq ft" },
-          { id: "size4", label: "More than 500 sq ft" }
-        ]
-      });
-
-      // Process each matching task
-      for (const task of matchingTasks) {
-        // Add Q1 questions if category exists
-        if (task['Q1 Category'] && task['Q1 Selection']) {
-          const options = task['Q1 Selection'].split(',').map((opt, idx) => ({
-            id: `q1_${idx}`,
-            label: opt.trim()
-          }));
-          
-          if (options.length > 0) {
-            questions.push({
-              question: task['Q1 Category'],
-              options: options.slice(0, 4) // Limit to 4 options
-            });
-          }
-        }
-
-        // Add Q2 questions if category exists
-        if (task['Q2 Category'] && task['Q2 Selection']) {
-          const options = task['Q2 Selection'].split(',').map((opt, idx) => ({
-            id: `q2_${idx}`,
-            label: opt.trim()
-          }));
-          
-          if (options.length > 0) {
-            questions.push({
-              question: task['Q2 Category'],
-              options: options.slice(0, 4)
-            });
-          }
-        }
-
-        // Add Q3 questions if category exists
-        if (task['Q3 Category'] && task['Q3 Selection']) {
-          const options = task['Q3 Selection'].split(',').map((opt, idx) => ({
-            id: `q3_${idx}`,
-            label: opt.trim()
-          }));
-          
-          if (options.length > 0) {
-            questions.push({
-              question: task['Q3 Category'],
-              options: options.slice(0, 4)
-            });
-          }
-        }
-
-        // Add material question if applicable
-        if (task['Material Applicable Question']) {
-          questions.push({
-            question: task['Material Applicable Question'],
-            options: [
-              { id: "mat1", label: "Standard grade" },
-              { id: "mat2", label: "Mid-grade" },
-              { id: "mat3", label: "Premium grade" },
-              { id: "mat4", label: "Need recommendations" }
-            ]
-          });
-        }
-      }
-
-      // Add timeline question last
-      questions.push({
-        question: "When would you like this project completed?",
-        options: [
-          { id: "time1", label: "As soon as possible" },
-          { id: "time2", label: "Within 2 weeks" },
-          { id: "time3", label: "Within 1 month" },
-          { id: "time4", label: "Flexible timeline" }
-        ]
-      });
-
-      console.log('Generated questions:', questions);
-      return new Response(JSON.stringify({ questions }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // If no matching tasks, use Llama API as fallback
-    console.log('No matching tasks found, using Llama API as fallback');
     const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
     if (!llamaApiKey) {
       throw new Error('Missing LLAMA_API_KEY environment variable');
     }
 
-    const systemPrompt = `Generate focused questions about project requirements.
-    Each question MUST:
-    - Be specific and actionable
-    - Focus on scope, measurements, and materials
-    - Have exactly 4 relevant options
-    - Avoid style/design preferences
+    const systemPrompt = `You are an AI assistant helping contractors gather project requirements from customers.
+    Based on the project description and image (if provided), generate exactly 7 focused questions.
     
-    Return a JSON object with this structure:
+    Questions should help understand:
+    1. Project scope and specific requirements
+    2. Timeline expectations
+    3. Budget considerations
+    4. Property details and constraints
+    5. Material preferences
+    6. Design preferences
+    7. Special requirements or constraints
+    
+    Each question MUST:
+    - Be customer-focused and help contractors better understand the project needs
+    - Have exactly 4 relevant options
+    - Be specific and actionable
+    - Build upon previous answers if available
+    
+    Your response MUST be a valid JSON object with this exact structure:
     {
       "questions": [
         {
@@ -168,6 +50,34 @@ serve(async (req) => {
       ]
     }`;
 
+    const messages = [
+      { role: "system", content: systemPrompt },
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: `Generate customer-focused questions for this project:
+            Description: ${projectDescription || "New project inquiry"}
+            Previous Answers: ${JSON.stringify(previousAnswers || {}, null, 2)}
+            
+            Remember:
+            - Generate exactly 7 questions
+            - Each question must have exactly 4 options
+            - Questions should help contractors understand customer needs
+            - Follow-up questions should be based on previous answers
+            - All questions should be from customer perspective`
+          },
+          imageUrl ? {
+            type: "image_url",
+            image_url: imageUrl
+          } : null
+        ].filter(Boolean)
+      }
+    ];
+
+    console.log('Sending request to Llama with messages:', JSON.stringify(messages, null, 2));
+
     const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
       method: 'POST',
       headers: {
@@ -176,59 +86,142 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'llama3.2-11b-vision',
-        messages: [
-          { role: "system", content: systemPrompt },
-          { 
-            role: "user",
-            content: `Generate questions for: ${projectDescription}`
-          }
-        ],
-        response_format: { type: "json_object" }
+        messages,
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        max_tokens: 2000
       }),
     });
 
     if (!llamaResponse.ok) {
-      throw new Error(`Llama API error: ${llamaResponse.status}`);
+      const errorText = await llamaResponse.text();
+      console.error('Llama API error response:', errorText);
+      throw new Error(`Llama API error: ${llamaResponse.status} ${llamaResponse.statusText}`);
     }
 
     const data = await llamaResponse.json();
-    console.log('Llama response:', data);
+    console.log('Llama raw response:', JSON.stringify(data, null, 2));
 
     if (!data.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response format from Llama');
+      console.error('Invalid Llama response structure:', data);
+      return new Response(JSON.stringify(getDefaultQuestions()), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const questionsData = JSON.parse(data.choices[0].message.content);
-    return new Response(JSON.stringify(questionsData), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    let questionsData;
+    try {
+      // Try to parse the content if it's a string, or use it directly if it's already an object
+      const content = data.choices[0].message.content;
+      questionsData = typeof content === 'string' ? JSON.parse(content.trim()) : content;
+      
+      // Validate the structure
+      if (!questionsData.questions || !Array.isArray(questionsData.questions)) {
+        console.error('Invalid questions structure:', questionsData);
+        return new Response(JSON.stringify(getDefaultQuestions()), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
+      // Validate each question has exactly 4 options
+      const isValid = questionsData.questions.every(q => 
+        q.question && 
+        Array.isArray(q.options) && 
+        q.options.length === 4 &&
+        q.options.every(opt => opt.id && opt.label)
+      );
+
+      if (!isValid || questionsData.questions.length !== 7) {
+        console.warn('Invalid question format or count, using defaults');
+        return new Response(JSON.stringify(getDefaultQuestions()), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify(questionsData), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
+    } catch (error) {
+      console.error('Failed to parse or validate Llama response:', error);
+      return new Response(JSON.stringify(getDefaultQuestions()), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
   } catch (error) {
     console.error('Error generating questions:', error);
-    // Return default questions as fallback
-    return new Response(JSON.stringify({
-      questions: [
-        {
-          question: "What is the approximate square footage of the project area?",
-          options: [
-            { id: "size1", label: "Less than 100 sq ft" },
-            { id: "size2", label: "100-250 sq ft" },
-            { id: "size3", label: "250-500 sq ft" },
-            { id: "size4", label: "More than 500 sq ft" }
-          ]
-        },
-        {
-          question: "When would you like this project completed?",
-          options: [
-            { id: "time1", label: "As soon as possible" },
-            { id: "time2", label: "Within 2 weeks" },
-            { id: "time3", label: "Within 1 month" },
-            { id: "time4", label: "Flexible timeline" }
-          ]
-        }
-      ]
-    }), {
+    return new Response(JSON.stringify(getDefaultQuestions()), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
+
+function getDefaultQuestions() {
+  return {
+    questions: [
+      {
+        question: "What type of project are you looking to get an estimate for?",
+        options: [
+          { id: "renovation", label: "Home Renovation" },
+          { id: "repair", label: "Repair Work" },
+          { id: "installation", label: "New Installation" },
+          { id: "maintenance", label: "General Maintenance" }
+        ]
+      },
+      {
+        question: "What is your desired timeline for this project?",
+        options: [
+          { id: "immediate", label: "As soon as possible" },
+          { id: "1month", label: "Within 1 month" },
+          { id: "3months", label: "Within 3 months" },
+          { id: "flexible", label: "Flexible timeline" }
+        ]
+      },
+      {
+        question: "What is your budget range for this project?",
+        options: [
+          { id: "budget1", label: "Under $5,000" },
+          { id: "budget2", label: "$5,000 - $10,000" },
+          { id: "budget3", label: "$10,000 - $25,000" },
+          { id: "budget4", label: "Over $25,000" }
+        ]
+      },
+      {
+        question: "What is the current state of the project area?",
+        options: [
+          { id: "new", label: "New construction" },
+          { id: "good", label: "Good condition" },
+          { id: "fair", label: "Fair condition" },
+          { id: "poor", label: "Poor condition" }
+        ]
+      },
+      {
+        question: "Do you have specific material preferences?",
+        options: [
+          { id: "premium", label: "Premium quality" },
+          { id: "standard", label: "Standard quality" },
+          { id: "economic", label: "Budget-friendly" },
+          { id: "undecided", label: "Need recommendations" }
+        ]
+      },
+      {
+        question: "What is your preferred style?",
+        options: [
+          { id: "modern", label: "Modern/Contemporary" },
+          { id: "traditional", label: "Traditional" },
+          { id: "transitional", label: "Transitional" },
+          { id: "minimal", label: "Minimalist" }
+        ]
+      },
+      {
+        question: "Are there any special requirements or constraints?",
+        options: [
+          { id: "none", label: "No special requirements" },
+          { id: "permit", label: "Permit needed" },
+          { id: "hoa", label: "HOA approval required" },
+          { id: "access", label: "Limited access to area" }
+        ]
+      }
+    ]
+  };
+}
