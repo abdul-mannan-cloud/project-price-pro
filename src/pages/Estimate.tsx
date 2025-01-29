@@ -88,8 +88,21 @@ const EstimatePage = () => {
         .upload(fileName, file);
 
       if (uploadError) {
-        throw uploadError;
+        console.error('Upload error:', uploadError);
+        toast({
+          title: "Upload failed",
+          description: "There was an error uploading your image. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
+
+      // Get the public URL of the uploaded image
+      const { data: { publicUrl } } = supabase.storage
+        .from('project_images')
+        .getPublicUrl(fileName);
+
+      console.log('Uploaded image URL:', publicUrl);
 
       toast({
         title: "Success",
@@ -166,9 +179,16 @@ const EstimatePage = () => {
                   capture="environment"
                   disabled={isUploading}
                 />
-                <Button className="w-full" size="lg" disabled={isUploading}>
-                  <Camera className="mr-2" />
-                  {isUploading ? "UPLOADING..." : "TAKE A PHOTO"}
+                <Button 
+                  className="w-full" 
+                  size="lg" 
+                  disabled={isUploading}
+                  asChild
+                >
+                  <div>
+                    <Camera className="mr-2" />
+                    {isUploading ? "UPLOADING..." : "TAKE A PHOTO"}
+                  </div>
                 </Button>
               </label>
               <Button 
