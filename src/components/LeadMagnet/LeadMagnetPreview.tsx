@@ -74,6 +74,13 @@ export const LeadMagnetPreview = () => {
     },
   ];
 
+  const steps = [
+    { label: "Start", value: 0 },
+    { label: "Project", value: 1 },
+    { label: "Area", value: 2 },
+    { label: "Timeline", value: 3 }
+  ];
+
   const handleOptionSelect = (value: string) => {
     setSelectedOptions(prev => ({
       ...prev,
@@ -101,7 +108,7 @@ export const LeadMagnetPreview = () => {
       "--primary": brandColors.primary,
       "--secondary": brandColors.secondary,
     } as React.CSSProperties}>
-      <StepIndicator currentStep={currentStep} totalSteps={questions.length + 1} />
+      <StepIndicator currentStep={currentStep} steps={steps} />
       
       {currentStep === 0 && (
         <div className="card p-8">

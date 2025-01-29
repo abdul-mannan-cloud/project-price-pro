@@ -213,6 +213,14 @@ const EstimatePage = () => {
     return ((currentIndex + 1) / stages.length) * 100;
   };
 
+  const steps = [
+    { label: "Photo", value: 0 },
+    { label: "Description", value: 1 },
+    { label: "Questions", value: 2 },
+    { label: "Contact", value: 3 },
+    { label: "Estimate", value: 4 }
+  ];
+
   if (isProcessing) {
     return <LoadingScreen message="Processing your request..." />;
   }
@@ -310,7 +318,10 @@ const EstimatePage = () => {
           <>
             <StepIndicator 
               currentStep={currentQuestionIndex} 
-              totalSteps={questions.length} 
+              steps={questions.map((_, index) => ({
+                label: `Q${index + 1}`,
+                value: index
+              }))} 
             />
             <QuestionCard
               question={questions[currentQuestionIndex].question}
