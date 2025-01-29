@@ -98,11 +98,8 @@ const Login = () => {
           description: "You have successfully signed in.",
         });
 
-        if (!contractor) {
-          navigate("/onboarding");
-        } else {
-          navigate("/");
-        }
+        // Navigate to dashboard after successful login
+        navigate("/dashboard");
       }
     } catch (error: any) {
       console.error("Auth error:", error);
