@@ -283,16 +283,23 @@ const EstimatePage = () => {
         {stage === 'description' && (
           <div className="card p-8 animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
-            <Textarea
-              value={projectDescription}
-              onChange={(e) => setProjectDescription(e.target.value)}
-              placeholder="Describe what you need help with..."
-              className="min-h-[150px] mb-6"
-            />
+            <div className="space-y-2">
+              <Textarea
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                placeholder="Describe what you need help with (minimum 30 characters)..."
+                className="min-h-[150px]"
+              />
+              {projectDescription.length > 0 && projectDescription.length < 30 && (
+                <p className="text-sm text-destructive">
+                  Please enter at least {30 - projectDescription.length} more characters
+                </p>
+              )}
+            </div>
             <Button 
-              className="w-full"
+              className="w-full mt-6"
               onClick={generateQuestions}
-              disabled={!projectDescription.trim()}
+              disabled={projectDescription.trim().length < 30}
             >
               Continue
             </Button>
