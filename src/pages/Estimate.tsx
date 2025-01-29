@@ -169,7 +169,7 @@ const EstimatePage = () => {
         .from('estimates')
         .insert({
           contractor_id: contractor?.id,
-          project_title: "Project Estimate",
+          project_title: "New Project Estimate", // Added required field
           customer_name: contactData.fullName,
           customer_email: contactData.email,
           customer_phone: contactData.phone,
@@ -183,16 +183,18 @@ const EstimatePage = () => {
       if (error) throw error;
 
       // Save estimate details
-      await supabase
-        .from('estimate_details')
-        .insert(
-          estimate.groups.map((group: any) => ({
-            estimate_id: data.id,
-            group_name: group.name,
-            line_items: group.items,
-            total_amount: group.items.reduce((sum: number, item: any) => sum + item.totalPrice, 0)
-          }))
-        );
+      if (data) {
+        await supabase
+          .from('estimate_details')
+          .insert(
+            estimate.groups.map((group: any) => ({
+              estimate_id: data.id,
+              group_name: group.name,
+              line_items: group.items,
+              total_amount: group.items.reduce((sum: number, item: any) => sum + item.totalPrice, 0)
+            }))
+          );
+      }
 
       setStage('estimate');
     } catch (error) {
