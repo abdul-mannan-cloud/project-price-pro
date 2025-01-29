@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Database } from "@/integrations/supabase/types";
 
 interface LineItem {
   title: string;
@@ -20,11 +21,8 @@ interface EstimateDisplayProps {
   groups: ItemGroup[];
   totalCost: number;
   isBlurred?: boolean;
-  contractor?: {
-    businessName?: string;
-    logoUrl?: string;
-    contactEmail?: string;
-    contactPhone?: string;
+  contractor?: Database['public']['Tables']['contractors']['Row'] & {
+    contractor_settings: Database['public']['Tables']['contractor_settings']['Row'] | null;
   };
 }
 
@@ -42,20 +40,20 @@ export const EstimateDisplay = ({
       {/* Contractor Header */}
       <div className="flex items-start justify-between mb-8 pb-6 border-b">
         <div className="flex items-center space-x-4">
-          {contractor?.logoUrl && (
+          {contractor?.business_logo_url && (
             <img 
-              src={contractor.logoUrl} 
-              alt={`${contractor?.businessName || 'Business'} logo`}
+              src={contractor.business_logo_url} 
+              alt={`${contractor?.business_name || 'Business'} logo`}
               className="w-16 h-16 object-contain"
             />
           )}
           <div>
-            <h1 className="text-2xl font-bold">{contractor?.businessName || 'Project Estimate'}</h1>
-            {contractor?.contactEmail && (
-              <p className="text-sm text-muted-foreground">{contractor.contactEmail}</p>
+            <h1 className="text-2xl font-bold">{contractor?.business_name || 'Project Estimate'}</h1>
+            {contractor?.contact_email && (
+              <p className="text-sm text-muted-foreground">{contractor.contact_email}</p>
             )}
-            {contractor?.contactPhone && (
-              <p className="text-sm text-muted-foreground">{contractor.contactPhone}</p>
+            {contractor?.contact_phone && (
+              <p className="text-sm text-muted-foreground">{contractor.contact_phone}</p>
             )}
           </div>
         </div>
