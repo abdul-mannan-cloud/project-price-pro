@@ -3,7 +3,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { Progress } from "@/components/ui/progress";
 
 interface Option {
   id: string;
@@ -17,8 +16,6 @@ interface QuestionCardProps {
   onSelect: (value: string) => void;
   onNext: () => void;
   isLastQuestion: boolean;
-  currentQuestionIndex: number;
-  totalQuestions: number;
 }
 
 export const QuestionCard = ({
@@ -28,11 +25,8 @@ export const QuestionCard = ({
   onSelect,
   onNext,
   isLastQuestion,
-  currentQuestionIndex,
-  totalQuestions,
 }: QuestionCardProps) => {
   const [pressedOption, setPressedOption] = useState<string | null>(null);
-  const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
 
   const handleOptionSelect = (value: string) => {
     setPressedOption(value);
@@ -48,14 +42,6 @@ export const QuestionCard = ({
 
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-sm animate-fadeIn">
-      <div className="mb-6">
-        <div className="flex justify-between text-sm text-muted-foreground mb-2">
-          <span>Question {currentQuestionIndex + 1} of {totalQuestions}</span>
-          <span>{Math.round(progress)}% Complete</span>
-        </div>
-        <Progress value={progress} className="h-2" />
-      </div>
-      
       <h2 className="text-xl font-semibold mb-6">{question}</h2>
       
       <RadioGroup
@@ -90,16 +76,6 @@ export const QuestionCard = ({
           </div>
         ))}
       </RadioGroup>
-
-      {!isLastQuestion && (
-        <Button 
-          className="w-full mt-6" 
-          onClick={onNext}
-          disabled={!selectedOption}
-        >
-          Next Question
-        </Button>
-      )}
     </div>
   );
 };
