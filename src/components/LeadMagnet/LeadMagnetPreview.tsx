@@ -7,6 +7,11 @@ import { useState } from "react";
 import { StepIndicator } from "@/components/EstimateForm/StepIndicator";
 import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 
+interface BrandingColors {
+  primary: string;
+  secondary: string;
+}
+
 export const LeadMagnetPreview = () => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
@@ -72,7 +77,7 @@ export const LeadMagnetPreview = () => {
     }
   };
 
-  const brandColors = contractor?.branding_colors || {
+  const brandColors = (contractor?.branding_colors as BrandingColors) || {
     primary: "#6366F1",
     secondary: "#4F46E5"
   };
