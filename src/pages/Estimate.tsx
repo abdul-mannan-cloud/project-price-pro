@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, SkipForward, ArrowLeft, Brush } from "lucide-react";
+import { Camera, SkipForward, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { StepIndicator } from "@/components/EstimateForm/StepIndicator";
+import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
+import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
+import { ContactForm } from "@/components/EstimateForm/ContactForm";
+import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 
 interface BrandingColors {
   primary: string;
@@ -26,6 +31,12 @@ const EstimatePage = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [questions, setQuestions] = useState<Array<{ question: string; options: string[] }>>([]);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [estimate, setEstimate] = useState<any>(null);
+  const [showContactForm, setShowContactForm] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -46,13 +57,6 @@ const EstimatePage = () => {
     },
   });
 
-  const brandColors = isBrandingColors(contractor?.branding_colors) 
-    ? contractor.branding_colors 
-    : {
-        primary: "#007AFF",
-        secondary: "#F5F5F7"
-      };
-
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -60,7 +64,6 @@ const EstimatePage = () => {
     try {
       setIsUploading(true);
 
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         toast({
           title: "Invalid file type",
@@ -70,7 +73,6 @@ const EstimatePage = () => {
         return;
       }
 
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
           title: "File too large",
@@ -87,30 +89,14 @@ const EstimatePage = () => {
         .from('project_images')
         .upload(fileName, file);
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        toast({
-          title: "Upload failed",
-          description: "There was an error uploading your image. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (uploadError) throw uploadError;
 
-      // Get the public URL of the uploaded image
       const { data: { publicUrl } } = supabase.storage
         .from('project_images')
         .getPublicUrl(fileName);
 
-      console.log('Uploaded image URL:', publicUrl);
-
-      toast({
-        title: "Success",
-        description: "Image uploaded successfully",
-      });
-
-      // Advance to next step
-      setCurrentStep(1);
+      setUploadedImageUrl(publicUrl);
+      toast({ title: "Success", description: "Image uploaded successfully" });
     } catch (error) {
       console.error('Upload error:', error);
       toast({
@@ -123,20 +109,108 @@ const EstimatePage = () => {
     }
   };
 
-  const handleNext = () => {
-    if (currentStep === 1 && projectDescription.trim()) {
-      // Handle project description submission
-      console.log("Project description:", projectDescription);
+  const generateQuestions = async () => {
+    setIsProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-questions', {
+        body: { projectDescription, imageUrl: uploadedImageUrl }
+      });
+
+      if (error) throw error;
+      setQuestions(data.choices[0].message.content.questions);
+      setCurrentStep(1);
+    } catch (error) {
+      console.error('Error generating questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate questions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const getProgress = () => {
-    return currentStep === 0 ? 0 : currentStep === 1 ? 50 : 100;
+  const generateEstimate = async () => {
+    setIsProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-estimate', {
+        body: { projectDescription, imageUrl: uploadedImageUrl, answers }
+      });
+
+      if (error) throw error;
+      setEstimate(data.choices[0].message.content);
+      setShowContactForm(true);
+    } catch (error) {
+      console.error('Error generating estimate:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate estimate. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
+
+  const handleContactSubmit = async (contactData: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('estimates')
+        .insert([{
+          contractor_id: contractor?.id,
+          customer_name: contactData.fullName,
+          customer_email: contactData.email,
+          customer_phone: contactData.phone,
+          project_address: contactData.address,
+          project_description: projectDescription,
+          total_cost: estimate.totalCost,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Save estimate details
+      await supabase
+        .from('estimate_details')
+        .insert(
+          estimate.groups.map((group: any) => ({
+            estimate_id: data.id,
+            group_name: group.name,
+            line_items: group.items,
+            total_amount: group.items.reduce((sum: number, item: any) => sum + item.totalPrice, 0)
+          }))
+        );
+
+      setShowContactForm(false);
+    } catch (error) {
+      console.error('Error saving estimate:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save estimate. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const brandColors = isBrandingColors(contractor?.branding_colors) 
+    ? contractor.branding_colors 
+    : {
+        primary: "#6366F1",
+        secondary: "#4F46E5"
+      };
+
+  if (isProcessing) {
+    return <LoadingScreen message="Processing your request..." />;
+  }
 
   return (
     <div className="min-h-screen bg-white">
-      <Progress value={getProgress()} className="h-2 rounded-none" />
+      <Progress 
+        value={currentStep === 0 ? 0 : (currentStep / (questions.length + 2)) * 100} 
+        className="h-2 rounded-none" 
+      />
       
       {contractor && (
         <button 
@@ -163,11 +237,12 @@ const EstimatePage = () => {
               </div>
             </div>
 
-            <div className="flex flex-col items-center justify-center p-8 bg-secondary rounded-lg mb-6">
-              <div className="w-full h-64 bg-primary/5 rounded-lg flex items-center justify-center">
-                <p className="text-muted-foreground">Animation Preview</p>
-              </div>
-            </div>
+            <Textarea
+              value={projectDescription}
+              onChange={(e) => setProjectDescription(e.target.value)}
+              placeholder="Describe your project..."
+              className="min-h-[150px] mb-6"
+            />
 
             <div className="space-y-4">
               <label className="relative">
@@ -195,50 +270,44 @@ const EstimatePage = () => {
                 variant="ghost" 
                 className="w-full" 
                 size="lg" 
-                onClick={() => setCurrentStep(1)}
-                disabled={isUploading}
+                onClick={generateQuestions}
+                disabled={!projectDescription.trim() || isUploading}
               >
                 <SkipForward className="mr-2" />
-                Skip
+                Continue
               </Button>
             </div>
           </div>
-        ) : (
-          <div className="card p-8 animate-fadeIn">
-            <div className="flex flex-col items-center mb-8">
-              <Brush 
-                size={40} 
-                className="mb-4" 
-                style={{ color: brandColors.primary }} 
-              />
-              <h2 className="text-2xl font-semibold text-center">
-                Describe Your Project
-              </h2>
-              <p className="text-muted-foreground text-center mt-2">
-                Include the type of work and any dimensions if you have them.
-              </p>
-            </div>
-
-            <Textarea
-              value={projectDescription}
-              onChange={(e) => setProjectDescription(e.target.value)}
-              placeholder="e.g., Paint the living room walls (15' x 20')"
-              className="min-h-[150px] mb-6"
-            />
-
-            <Button
-              className="w-full"
-              size="lg"
-              disabled={!projectDescription.trim()}
-              onClick={handleNext}
-              style={{
-                backgroundColor: projectDescription.trim() ? brandColors.primary : undefined,
-                opacity: projectDescription.trim() ? 1 : 0.5
-              }}
-            >
-              Continue
-            </Button>
+        ) : showContactForm ? (
+          <div className="animate-fadeIn">
+            <ContactForm onSubmit={handleContactSubmit} />
           </div>
+        ) : estimate ? (
+          <EstimateDisplay groups={estimate.groups} totalCost={estimate.totalCost} />
+        ) : (
+          <>
+            <StepIndicator 
+              currentStep={currentStep - 1} 
+              totalSteps={questions.length} 
+            />
+            <QuestionCard
+              question={questions[currentStep - 1].question}
+              options={questions[currentStep - 1].options.map((option, index) => ({
+                id: index.toString(),
+                label: option
+              }))}
+              selectedOption={answers[currentStep - 1] || ""}
+              onSelect={(value) => setAnswers(prev => ({ ...prev, [currentStep - 1]: value }))}
+              onNext={() => {
+                if (currentStep < questions.length) {
+                  setCurrentStep(prev => prev + 1);
+                } else {
+                  generateEstimate();
+                }
+              }}
+              isLastQuestion={currentStep === questions.length}
+            />
+          </>
         )}
       </div>
     </div>

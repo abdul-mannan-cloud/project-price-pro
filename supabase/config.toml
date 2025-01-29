@@ -1,1 +1,5 @@
 project_id = "sflysnodxcufeszuymxk"
+[functions.generate-questions]
+verify_jwt = false
+[functions.generate-estimate]
+verify_jwt = false
