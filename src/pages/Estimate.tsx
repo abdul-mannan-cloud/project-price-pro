@@ -324,7 +324,7 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'questions' && questions.length > 0 && (
+        {stage === 'questions' && questions.length > 0 && currentQuestionIndex < questions.length && (
           <QuestionCard
             question={questions[currentQuestionIndex].question}
             options={questions[currentQuestionIndex].options}
@@ -347,6 +347,7 @@ const EstimatePage = () => {
               groups={estimate.groups} 
               totalCost={estimate.totalCost} 
               isBlurred={true}
+              contractor={contractor || undefined}
             />
             <div className="mt-8">
               <ContactForm onSubmit={handleContactSubmit} />
@@ -355,7 +356,11 @@ const EstimatePage = () => {
         )}
 
         {stage === 'estimate' && estimate && (
-          <EstimateDisplay groups={estimate.groups} totalCost={estimate.totalCost} />
+          <EstimateDisplay 
+            groups={estimate.groups} 
+            totalCost={estimate.totalCost}
+            contractor={contractor || undefined}
+          />
         )}
       </div>
     </div>
