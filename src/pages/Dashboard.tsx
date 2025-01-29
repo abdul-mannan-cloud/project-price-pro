@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { LayoutDashboard, Users, Settings, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Copy } from "lucide-react";
 import { LeadMagnetPreview } from "@/components/LeadMagnet/LeadMagnetPreview";
 import { Button } from "@/components/ui/button";
 
@@ -98,21 +98,44 @@ const Dashboard = () => {
 
   const handlePreviewClick = () => {
     const estimatorUrl = `/estimate/${contractor.id}`;
-    window.open(estimatorUrl, '_blank');
+    navigate(estimatorUrl);
+  };
+
+  const handleCopyLink = async () => {
+    const estimatorUrl = `${window.location.origin}/estimate/${contractor.id}`;
+    try {
+      await navigator.clipboard.writeText(estimatorUrl);
+      toast({
+        title: "Link copied!",
+        description: "The estimator link has been copied to your clipboard.",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Please try copying the link manually.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-24">
       <NavBar items={navItems} />
       <div className="container mx-auto py-8">
-        <div className="flex justify-end mb-6">
+        <div className="flex justify-end mb-6 gap-4">
           <Button 
-            onClick={handlePreviewClick}
+            onClick={handleCopyLink}
             className="gap-2"
             variant="outline"
           >
-            <ExternalLink className="w-4 h-4" />
-            Open Full Preview
+            <Copy className="w-4 h-4" />
+            Copy Link
+          </Button>
+          <Button 
+            onClick={handlePreviewClick}
+            className="gap-2"
+          >
+            Preview Estimator
           </Button>
         </div>
         <LeadMagnetPreview />

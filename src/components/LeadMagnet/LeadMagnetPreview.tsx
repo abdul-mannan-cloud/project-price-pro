@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, Copy, SkipForward } from "lucide-react";
+import { Camera, SkipForward } from "lucide-react";
 import { useState } from "react";
 import { StepIndicator } from "@/components/EstimateForm/StepIndicator";
 import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
@@ -20,7 +20,7 @@ export const LeadMagnetPreview = () => {
 
       const { data, error } = await supabase
         .from("contractors")
-        .select("*")
+        .select("*, contractor_settings(*)")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -72,26 +72,16 @@ export const LeadMagnetPreview = () => {
     }
   };
 
-  const estimatorUrl = `${window.location.origin}/estimate/${contractor?.id}`;
-
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(estimatorUrl);
-      toast({
-        title: "Link copied!",
-        description: "The estimator link has been copied to your clipboard.",
-      });
-    } catch (error) {
-      toast({
-        title: "Failed to copy",
-        description: "Please try copying the link manually.",
-        variant: "destructive",
-      });
-    }
+  const brandColors = contractor?.branding_colors || {
+    primary: "#6366F1",
+    secondary: "#4F46E5"
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-6 space-y-8 animate-fadeIn">
+    <div className="w-full max-w-3xl mx-auto p-6 space-y-8 animate-fadeIn" style={{
+      "--primary": brandColors.primary,
+      "--secondary": brandColors.secondary,
+    } as React.CSSProperties}>
       <StepIndicator currentStep={currentStep} totalSteps={questions.length} />
       
       {currentStep === 0 && (
@@ -138,13 +128,6 @@ export const LeadMagnetPreview = () => {
           isLastQuestion={currentStep === questions.length - 1}
         />
       )}
-
-      <div className="flex gap-4">
-        <Button className="flex-1" onClick={handleCopyLink}>
-          <Copy className="mr-2" />
-          Copy Link
-        </Button>
-      </div>
     </div>
   );
 };
