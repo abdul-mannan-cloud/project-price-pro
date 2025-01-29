@@ -13,14 +13,25 @@ serve(async (req) => {
 
   try {
     const { projectDescription, imageUrl } = await req.json();
+    console.log('Received request:', { projectDescription, imageUrl });
 
     const messages = [
       {
         role: "system",
         content: `You are an AI assistant that generates relevant questions for construction project estimates. 
-        Generate up to 7 high-impact questions in multiple-choice format.
+        Generate 5 high-impact questions in multiple-choice format.
         Always include a "Who should supply materials?" question if relevant.
-        Return only a JSON object with a questions array containing question objects with 'question' and 'options' properties.`
+        Each question should have 4 options.
+        Return ONLY a JSON object with a 'questions' array containing question objects with 'question' and 'options' properties.
+        Example format:
+        {
+          "questions": [
+            {
+              "question": "What is the scope of work?",
+              "options": ["Option 1", "Option 2", "Option 3", "Option 4"]
+            }
+          ]
+        }`
       },
       {
         role: "user",
@@ -53,7 +64,30 @@ serve(async (req) => {
     const data = await response.json();
     console.log('AI Response:', data);
 
-    return new Response(JSON.stringify(data), {
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error('Invalid AI response format');
+    }
+
+    const parsedContent = JSON.parse(data.choices[0].message.content);
+    
+    if (!parsedContent.questions || !Array.isArray(parsedContent.questions)) {
+      throw new Error('Invalid questions format in AI response');
+    }
+
+    // Format the questions to match the frontend expectations
+    const formattedQuestions = {
+      questions: parsedContent.questions.map(q => ({
+        question: q.question,
+        options: q.options.map((opt: string, index: number) => ({
+          id: index.toString(),
+          label: opt
+        }))
+      }))
+    };
+
+    console.log('Formatted response:', formattedQuestions);
+
+    return new Response(JSON.stringify(formattedQuestions), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
