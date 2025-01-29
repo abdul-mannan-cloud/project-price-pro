@@ -12,24 +12,24 @@ serve(async (req) => {
   }
 
   try {
-    const { projectDescription, imageUrl } = await req.json();
-    console.log('Generating questions for project:', { projectDescription, imageUrl });
+    const { projectDescription, imageUrl, previousAnswers } = await req.json();
+    console.log('Generating questions for project:', { projectDescription, imageUrl, previousAnswers });
 
-    const systemPrompt = `You are an AI assistant that generates relevant questions for construction project estimates. 
-    Based on the project description, generate 5 questions in multiple-choice format.
+    const systemPrompt = `You are an AI assistant that generates relevant questions for contractor project estimates. 
+    Based on the project description and any previous answers, generate 3 focused questions in multiple-choice format.
+    Each question should help contractors better understand the project scope and requirements.
     Each question MUST have exactly 4 options.
-    Questions should cover: project scope, timeline, materials, specific requirements, and budget range.
+    Questions should cover: project specifics, timeline expectations, and budget considerations.
+    Consider previous answers (if any) to generate more specific follow-up questions.
     Return ONLY a JSON object with this exact structure:
     {
       "questions": [
         {
           "question": "string",
           "options": [
-            { "id": "0", "label": "string" },
-            { "id": "1", "label": "string" },
-            { "id": "2", "label": "string" },
-            { "id": "3", "label": "string" }
-          ]
+            { "id": "string", "label": "string" }
+          ],
+          "type": "scope" | "timeline" | "budget"
         }
       ]
     }`;
@@ -46,7 +46,9 @@ serve(async (req) => {
         content: [
           {
             type: "text",
-            text: `Generate questions for this project description: ${projectDescription}`
+            text: `Generate questions for this project:
+            Description: ${projectDescription}
+            Previous Answers: ${JSON.stringify(previousAnswers || {}, null, 2)}`
           },
           imageUrl ? {
             type: "image_url",
@@ -96,11 +98,12 @@ serve(async (req) => {
         {
           question: "What type of project are you looking to estimate?",
           options: [
-            { id: "0", label: "Home Renovation" },
-            { id: "1", label: "Repair Work" },
-            { id: "2", label: "New Installation" },
-            { id: "3", label: "Maintenance" }
-          ]
+            { id: "renovation", label: "Home Renovation" },
+            { id: "repair", label: "Repair Work" },
+            { id: "installation", label: "New Installation" },
+            { id: "maintenance", label: "Maintenance" }
+          ],
+          type: "scope"
         }
       ]
     }), {

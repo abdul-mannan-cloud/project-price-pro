@@ -12,33 +12,54 @@ serve(async (req) => {
   }
 
   try {
-    const { projectDescription, imageUrl, answers } = await req.json();
-    console.log('Generating estimate for:', { projectDescription, imageUrl, answers });
+    const { projectDescription, imageUrl, answers, contractorId } = await req.json();
+    console.log('Generating estimate for:', { projectDescription, imageUrl, answers, contractorId });
 
     const systemPrompt = `You are an AI assistant that generates detailed cost estimates for construction projects.
     Generate line items grouped by category, including quantities and unit prices.
+    Make sure to provide detailed descriptions for each line item.
     Return a JSON object with this exact structure:
     {
       "groups": [
         {
           "name": "string",
+          "description": "string",
           "items": [
             {
               "title": "string",
+              "description": "string",
               "quantity": number,
+              "unit": "string",
               "unitAmount": number,
               "totalPrice": number
             }
           ]
         }
       ],
-      "totalCost": number
+      "totalCost": number,
+      "notes": string[]
     }`;
 
     const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
     if (!llamaApiKey) {
       throw new Error('LLAMA_API_KEY is not set');
     }
+
+    // Fetch contractor details
+    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env;
+    const contractorResponse = await fetch(`${SUPABASE_URL}/rest/v1/contractors?id=eq.${contractorId}&select=*,contractor_settings(*)`, {
+      headers: {
+        'apikey': SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+    });
+
+    if (!contractorResponse.ok) {
+      throw new Error('Failed to fetch contractor details');
+    }
+
+    const [contractor] = await contractorResponse.json();
+    console.log('Contractor details:', contractor);
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -49,7 +70,11 @@ serve(async (req) => {
             type: "text",
             text: `Generate a detailed estimate for this project:
             Description: ${projectDescription}
-            Customer Responses: ${JSON.stringify(answers, null, 2)}`
+            Customer Responses: ${JSON.stringify(answers, null, 2)}
+            Contractor Settings:
+            - Minimum Project Cost: ${contractor?.contractor_settings?.minimum_project_cost || 1000}
+            - Markup Percentage: ${contractor?.contractor_settings?.markup_percentage || 20}
+            - Tax Rate: ${contractor?.contractor_settings?.tax_rate || 8.5}`
           },
           imageUrl ? {
             type: "image_url",
@@ -88,7 +113,18 @@ serve(async (req) => {
     const estimateData = JSON.parse(data.choices[0].message.content);
     console.log('Parsed estimate:', estimateData);
 
-    return new Response(JSON.stringify(estimateData), {
+    // Add contractor information to the response
+    const responseData = {
+      ...estimateData,
+      contractor: {
+        businessName: contractor.business_name,
+        logoUrl: contractor.business_logo_url,
+        contactEmail: contractor.contact_email,
+        contactPhone: contractor.contact_phone
+      }
+    };
+
+    return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
@@ -98,17 +134,22 @@ serve(async (req) => {
       groups: [
         {
           name: "Labor",
+          description: "Initial assessment and basic labor costs",
           items: [
             {
               title: "Initial Assessment",
+              description: "Professional evaluation of project requirements",
               quantity: 1,
+              unit: "hour",
               unitAmount: 150,
               totalPrice: 150
             }
           ]
         }
       ],
-      totalCost: 150
+      totalCost: 150,
+      notes: ["This is a basic estimate. Please contact us for a more detailed assessment."],
+      contractor: null
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
