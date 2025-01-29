@@ -25,36 +25,33 @@ export const QuestionCard = ({
   onNext,
   isLastQuestion = false,
 }: QuestionCardProps) => {
+  const handleOptionSelect = (value: string) => {
+    onSelect(value);
+    // Auto-advance after selection
+    setTimeout(() => onNext(), 500);
+  };
+
   return (
     <Card className="w-full max-w-2xl mx-auto p-6 animate-fadeIn">
-      <h2 className="text-2xl font-semibold mb-6 text-primary">{question}</h2>
+      <h2 className="text-2xl font-semibold mb-6 text-foreground">{question}</h2>
       <RadioGroup
         value={selectedOption}
-        onValueChange={onSelect}
+        onValueChange={handleOptionSelect}
         className="space-y-4"
       >
         {options.map((option) => (
           <div
             key={option.id}
             className="flex items-center space-x-2 rounded-lg border p-4 hover:bg-primary-100 transition-colors cursor-pointer"
-            onClick={() => onSelect(option.id)}
+            onClick={() => handleOptionSelect(option.id)}
           >
             <RadioGroupItem value={option.id} id={option.id} />
             <Label htmlFor={option.id} className="flex-grow cursor-pointer">
-              {option.label.toString()}
+              {option.label}
             </Label>
           </div>
         ))}
       </RadioGroup>
-      <div className="mt-8 flex justify-end">
-        <Button
-          onClick={onNext}
-          disabled={!selectedOption}
-          className="px-8"
-        >
-          {isLastQuestion ? "Generate Estimate" : "Next"}
-        </Button>
-      </div>
     </Card>
   );
 };

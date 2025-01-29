@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface LineItem {
   title: string;
@@ -15,11 +16,15 @@ interface ItemGroup {
 interface EstimateDisplayProps {
   groups: ItemGroup[];
   totalCost: number;
+  isBlurred?: boolean;
 }
 
-export const EstimateDisplay = ({ groups, totalCost }: EstimateDisplayProps) => {
+export const EstimateDisplay = ({ groups, totalCost, isBlurred = false }: EstimateDisplayProps) => {
   return (
-    <Card className="p-6 max-w-4xl mx-auto">
+    <Card className={cn(
+      "p-6 max-w-4xl mx-auto transition-all duration-500",
+      isBlurred && "blur-md pointer-events-none"
+    )}>
       <h2 className="text-2xl font-semibold mb-6">Your Project Estimate</h2>
       
       {groups.map((group, index) => (
