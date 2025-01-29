@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface Option {
   id: string;
@@ -25,14 +26,22 @@ export const QuestionCard = ({
   onNext,
   isLastQuestion,
 }: QuestionCardProps) => {
+  const [pressedOption, setPressedOption] = useState<string | null>(null);
+
   const handleOptionSelect = (value: string) => {
+    setPressedOption(value);
     onSelect(value);
-    // Auto-advance to next question after selection
-    setTimeout(onNext, 500);
+    
+    // Add a small delay for the press animation
+    setTimeout(() => {
+      setPressedOption(null);
+      // Auto-advance to next question after selection
+      setTimeout(onNext, 200);
+    }, 150);
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-sm animate-fadeIn">
+    <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-sm animate-fadeIn">
       <h2 className="text-xl font-semibold mb-6">{question}</h2>
       
       <RadioGroup
@@ -44,10 +53,11 @@ export const QuestionCard = ({
           <div 
             key={option.id} 
             className={cn(
-              "relative p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer",
+              "relative p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer transform",
               selectedOption === option.id 
                 ? "border-primary bg-primary/5" 
-                : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                : "border-gray-200 hover:border-gray-300 hover:bg-gray-50",
+              pressedOption === option.id && "scale-[0.98]"
             )}
             onClick={() => handleOptionSelect(option.id)}
           >

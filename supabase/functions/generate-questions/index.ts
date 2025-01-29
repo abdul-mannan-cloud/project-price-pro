@@ -15,21 +15,36 @@ serve(async (req) => {
     const { projectDescription, imageUrl, previousAnswers } = await req.json();
     console.log('Generating questions for project:', { projectDescription, imageUrl, previousAnswers });
 
-    const systemPrompt = `You are an AI assistant that generates relevant questions for contractor project estimates. 
-    Based on the project description and any previous answers, generate 3 focused questions in multiple-choice format.
-    Each question should help contractors better understand the project scope and requirements.
-    Each question MUST have exactly 4 options.
-    Questions should cover: project specifics, timeline expectations, and budget considerations.
-    Consider previous answers (if any) to generate more specific follow-up questions.
+    const systemPrompt = `You are an AI assistant helping contractors gather project requirements from customers.
+    Based on the project description, image (if provided), and previous answers, generate 3-5 focused questions.
+    Questions should help understand:
+    - Project scope and specific requirements
+    - Timeline expectations
+    - Budget considerations
+    - Property details and constraints
+    
+    Each question should be customer-focused and help contractors better understand the project needs.
+    If previous answers indicate specific areas needing clarification, generate follow-up questions.
+    Each question MUST have exactly 4 relevant options.
+    
     Return ONLY a JSON object with this exact structure:
     {
       "questions": [
         {
-          "question": "string",
+          "question": "string (customer-focused question)",
           "options": [
             { "id": "string", "label": "string" }
           ],
-          "type": "scope" | "timeline" | "budget"
+          "type": "scope" | "timeline" | "budget" | "property",
+          "followUpTriggers": {
+            "optionId": "string (what answer triggers follow-up)",
+            "followUpQuestion": {
+              "question": "string",
+              "options": [
+                { "id": "string", "label": "string" }
+              ]
+            }
+          }
         }
       ]
     }`;
@@ -46,9 +61,14 @@ serve(async (req) => {
         content: [
           {
             type: "text",
-            text: `Generate questions for this project:
+            text: `Generate customer-focused questions for this project:
             Description: ${projectDescription}
-            Previous Answers: ${JSON.stringify(previousAnswers || {}, null, 2)}`
+            Previous Answers: ${JSON.stringify(previousAnswers || {}, null, 2)}
+            
+            Remember:
+            - Questions should help contractors understand customer needs
+            - Follow-up questions should be based on previous answers
+            - All questions should be from customer perspective`
           },
           imageUrl ? {
             type: "image_url",
@@ -96,12 +116,12 @@ serve(async (req) => {
       error: error.message,
       questions: [
         {
-          question: "What type of project are you looking to estimate?",
+          question: "What type of project are you looking to get an estimate for?",
           options: [
             { id: "renovation", label: "Home Renovation" },
             { id: "repair", label: "Repair Work" },
             { id: "installation", label: "New Installation" },
-            { id: "maintenance", label: "Maintenance" }
+            { id: "maintenance", label: "General Maintenance" }
           ],
           type: "scope"
         }

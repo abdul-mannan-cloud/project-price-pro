@@ -76,23 +76,30 @@ export const EstimateDisplay = ({
               )}
             </div>
 
-            <div className="space-y-4">
-              {group.items.map((item, itemIndex) => (
-                <div key={itemIndex} className="bg-white p-4 rounded-md shadow-sm">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <p className="font-medium">{item.title}</p>
-                      {item.description && (
-                        <p className="text-sm text-muted-foreground">{item.description}</p>
-                      )}
-                    </div>
-                    <p className="font-semibold">${item.totalPrice.toFixed(2)}</p>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {item.quantity} {item.unit || 'units'} × ${item.unitAmount.toFixed(2)}
-                  </div>
-                </div>
-              ))}
+            {/* Line Items Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Item</th>
+                    <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Description</th>
+                    <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Qty</th>
+                    <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Unit Price</th>
+                    <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.items.map((item, itemIndex) => (
+                    <tr key={itemIndex} className="border-b border-gray-100">
+                      <td className="py-3 px-4">{item.title}</td>
+                      <td className="py-3 px-4 text-sm text-muted-foreground">{item.description}</td>
+                      <td className="py-3 px-4 text-right">{item.quantity} {item.unit}</td>
+                      <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             {/* Group Subtotal */}
