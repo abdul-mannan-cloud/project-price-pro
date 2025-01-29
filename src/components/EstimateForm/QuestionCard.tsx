@@ -41,7 +41,7 @@ export const QuestionCard = ({
           >
             <RadioGroupItem value={option.id} id={option.id} />
             <Label htmlFor={option.id} className="flex-grow cursor-pointer">
-              {String(option.label)}
+              {option.label}
             </Label>
           </div>
         ))}
