@@ -7,7 +7,6 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { StepIndicator } from "@/components/EstimateForm/StepIndicator";
 import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
@@ -232,14 +231,6 @@ const EstimatePage = () => {
     return ((currentIndex + 1) / stages.length) * 100;
   };
 
-  const steps = [
-    { label: "Photo", value: 0 },
-    { label: "Description", value: 1 },
-    { label: "Questions", value: 2 },
-    { label: "Contact", value: 3 },
-    { label: "Estimate", value: 4 }
-  ];
-
   if (isProcessing) {
     return <LoadingScreen message="Processing your request..." />;
   }
@@ -334,29 +325,20 @@ const EstimatePage = () => {
         )}
 
         {stage === 'questions' && questions.length > 0 && (
-          <>
-            <StepIndicator 
-              currentStep={currentQuestionIndex} 
-              steps={questions.map((_, index) => ({
-                label: `Q${index + 1}`,
-                value: index
-              }))} 
-            />
-            <QuestionCard
-              question={questions[currentQuestionIndex].question}
-              options={questions[currentQuestionIndex].options}
-              selectedOption={answers[currentQuestionIndex] || ""}
-              onSelect={(value) => setAnswers(prev => ({ ...prev, [currentQuestionIndex]: value }))}
-              onNext={() => {
-                if (currentQuestionIndex < questions.length - 1) {
-                  setCurrentQuestionIndex(prev => prev + 1);
-                } else {
-                  generateEstimate();
-                }
-              }}
-              isLastQuestion={currentQuestionIndex === questions.length - 1}
-            />
-          </>
+          <QuestionCard
+            question={questions[currentQuestionIndex].question}
+            options={questions[currentQuestionIndex].options}
+            selectedOption={answers[currentQuestionIndex] || ""}
+            onSelect={(value) => setAnswers(prev => ({ ...prev, [currentQuestionIndex]: value }))}
+            onNext={() => {
+              if (currentQuestionIndex < questions.length - 1) {
+                setCurrentQuestionIndex(prev => prev + 1);
+              } else {
+                generateEstimate();
+              }
+            }}
+            isLastQuestion={currentQuestionIndex === questions.length - 1}
+          />
         )}
 
         {stage === 'contact' && estimate && (
