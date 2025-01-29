@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { LayoutDashboard, Users, Settings, Copy } from "lucide-react";
-import { LeadMagnetPreview } from "@/components/LeadMagnet/LeadMagnetPreview";
 import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
@@ -138,7 +137,6 @@ const Dashboard = () => {
             Preview Estimator
           </Button>
         </div>
-        <LeadMagnetPreview />
       </div>
     </div>
   );
