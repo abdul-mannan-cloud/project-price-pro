@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface Option {
   id: string;
@@ -14,7 +14,7 @@ interface QuestionCardProps {
   selectedOption: string;
   onSelect: (value: string) => void;
   onNext: () => void;
-  isLastQuestion?: boolean;
+  isLastQuestion: boolean;
 }
 
 export const QuestionCard = ({
@@ -23,35 +23,40 @@ export const QuestionCard = ({
   selectedOption,
   onSelect,
   onNext,
-  isLastQuestion = false,
+  isLastQuestion,
 }: QuestionCardProps) => {
-  const handleOptionSelect = (value: string) => {
-    onSelect(value);
-    // Auto-advance after selection
-    setTimeout(() => onNext(), 500);
-  };
-
   return (
-    <Card className="w-full max-w-2xl mx-auto p-6 animate-fadeIn">
-      <h2 className="text-2xl font-semibold mb-6 text-foreground">{question}</h2>
+    <div className="card p-8 animate-fadeIn">
+      <h2 className="text-xl font-semibold mb-6">{question}</h2>
+      
       <RadioGroup
         value={selectedOption}
-        onValueChange={handleOptionSelect}
+        onValueChange={onSelect}
         className="space-y-4"
       >
         {options.map((option) => (
-          <div
-            key={option.id}
-            className="flex items-center space-x-2 rounded-lg border p-4 hover:bg-primary-100 transition-colors cursor-pointer"
-            onClick={() => handleOptionSelect(option.id)}
-          >
+          <div key={option.id} className="flex items-center space-x-2">
             <RadioGroupItem value={option.id} id={option.id} />
-            <Label htmlFor={option.id} className="flex-grow cursor-pointer">
+            <Label
+              htmlFor={option.id}
+              className={cn(
+                "text-base cursor-pointer",
+                selectedOption === option.id ? "text-primary font-medium" : "text-muted-foreground"
+              )}
+            >
               {option.label}
             </Label>
           </div>
         ))}
       </RadioGroup>
-    </Card>
+
+      <Button
+        className="w-full mt-8"
+        onClick={onNext}
+        disabled={!selectedOption}
+      >
+        {isLastQuestion ? "Generate Estimate" : "Next Question"}
+      </Button>
+    </div>
   );
 };
