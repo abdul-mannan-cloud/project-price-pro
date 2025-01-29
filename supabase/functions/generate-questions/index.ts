@@ -18,8 +18,9 @@ serve(async (req) => {
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
 
-    if (!supabaseUrl || !supabaseKey) {
+    if (!supabaseUrl || !supabaseKey || !llamaApiKey) {
       throw new Error('Missing required environment variables');
     }
 
@@ -37,11 +38,6 @@ serve(async (req) => {
 
     const options = await optionsResponse.json();
     console.log('Retrieved options from database:', options);
-
-    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
-    if (!llamaApiKey) {
-      throw new Error('LLAMA_API_KEY is not set');
-    }
 
     const systemPrompt = `You are an AI assistant helping contractors gather project requirements from customers.
     Based on the project description, image (if provided), previous answers, and the provided knowledge base of questions and tasks, generate exactly 7 focused questions.
@@ -64,11 +60,11 @@ serve(async (req) => {
     - Be specific and actionable
     - Build upon previous answers if available
     
-    Return ONLY a JSON object with this exact structure:
+    Your response MUST be a valid JSON object with this exact structure:
     {
       "questions": [
         {
-          "question": "string (customer-focused question)",
+          "question": "string",
           "options": [
             { "id": "string", "label": "string" }
           ]
@@ -89,6 +85,7 @@ serve(async (req) => {
             
             Remember:
             - Generate exactly 7 questions
+            - Each question must have exactly 4 options
             - Questions should help contractors understand customer needs
             - Follow-up questions should be based on previous answers
             - All questions should be from customer perspective`
@@ -103,7 +100,7 @@ serve(async (req) => {
 
     console.log('Sending request to Llama with messages:', messages);
 
-    const response = await fetch('https://api.llama-api.com/chat/completions', {
+    const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${llamaApiKey}`,
@@ -112,34 +109,61 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'llama3.2-11b-vision',
         messages,
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        max_tokens: 2000
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Llama API error: ${response.status} ${response.statusText}`);
+    if (!llamaResponse.ok) {
+      const errorText = await llamaResponse.text();
+      console.error('Llama API error response:', errorText);
+      throw new Error(`Llama API error: ${llamaResponse.status} ${llamaResponse.statusText}`);
     }
 
-    const data = await response.json();
-    console.log('Llama response:', data);
+    const data = await llamaResponse.json();
+    console.log('Llama raw response:', data);
 
     if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid Llama response structure:', data);
       throw new Error('Invalid response format from Llama');
     }
 
-    const questionsData = JSON.parse(data.choices[0].message.content);
-    console.log('Parsed questions:', questionsData);
+    let questionsData;
+    try {
+      questionsData = JSON.parse(data.choices[0].message.content);
+      console.log('Parsed questions data:', questionsData);
+    } catch (error) {
+      console.error('Failed to parse Llama response as JSON:', error);
+      throw new Error('Invalid JSON response from Llama');
+    }
 
-    // Validate that we have exactly 7 questions
-    if (!questionsData.questions || questionsData.questions.length !== 7) {
-      throw new Error('Invalid number of questions generated');
+    // Validate response structure
+    if (!questionsData.questions || !Array.isArray(questionsData.questions)) {
+      console.error('Invalid questions structure:', questionsData);
+      throw new Error('Invalid questions format from Llama');
+    }
+
+    // Validate number of questions
+    if (questionsData.questions.length !== 7) {
+      console.error('Wrong number of questions:', questionsData.questions.length);
+      throw new Error(`Expected 7 questions, got ${questionsData.questions.length}`);
     }
 
     // Validate each question has exactly 4 options
-    questionsData.questions.forEach((q: any, index: number) => {
-      if (!q.options || q.options.length !== 4) {
+    questionsData.questions.forEach((q, index) => {
+      if (!q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+        console.error(`Invalid options for question ${index + 1}:`, q);
         throw new Error(`Question ${index + 1} does not have exactly 4 options`);
       }
+      if (!q.question || typeof q.question !== 'string') {
+        throw new Error(`Question ${index + 1} is missing or has invalid question text`);
+      }
+      q.options.forEach((opt, optIndex) => {
+        if (!opt.id || !opt.label || typeof opt.id !== 'string' || typeof opt.label !== 'string') {
+          throw new Error(`Invalid option format for question ${index + 1}, option ${optIndex + 1}`);
+        }
+      });
     });
 
     return new Response(JSON.stringify(questionsData), {
@@ -147,8 +171,9 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error generating questions:', error);
+    
+    // Return a fallback question if there's an error
     return new Response(JSON.stringify({ 
-      error: error.message,
       questions: [
         {
           question: "What type of project are you looking to get an estimate for?",
