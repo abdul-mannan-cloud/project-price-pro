@@ -12,10 +12,10 @@ serve(async (req) => {
   }
 
   try {
-    const { projectDescription, imageUrl, previousAnswers } = await req.json();
-    console.log('Generating questions for project:', { projectDescription, imageUrl, previousAnswers });
+    const { projectDescription, imageUrl } = await req.json();
+    console.log('Generating questions for:', { projectDescription, imageUrl });
 
-    // Fetch options from the database
+    // Fetch options from the database for context
     const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env;
     const optionsResponse = await fetch(`${SUPABASE_URL}/rest/v1/Options`, {
       headers: {
@@ -32,40 +32,35 @@ serve(async (req) => {
     console.log('Retrieved options from database:', options);
 
     const systemPrompt = `You are an AI assistant helping contractors gather project requirements from customers.
-    Based on the project description, image (if provided), previous answers, and the provided knowledge base of questions and tasks, generate at least 7 focused questions.
+    Based on the project description, image (if provided), and the provided knowledge base of questions and tasks, generate at least 7 focused questions.
     
-    Use the following knowledge base to inform your questions:
+    Use this knowledge base to inform your questions:
     ${JSON.stringify(options, null, 2)}
     
-    Questions should help understand:
-    - Project scope and specific requirements (using Q1, Q2, Q3 from the knowledge base)
-    - Timeline expectations
-    - Budget considerations
-    - Property details and constraints
+    Important rules:
+    1. Generate AT LEAST 7 questions
+    2. Use the Q1, Q2, Q3 categories from the knowledge base when relevant
+    3. Include questions about:
+       - Project scope and specific requirements
+       - Timeline expectations
+       - Budget considerations
+       - Property details
+       - Material preferences
+       - Specific measurements or dimensions
+       - Any potential challenges or constraints
+    4. Each question MUST have exactly 4 relevant options
+    5. Make questions customer-focused and easy to understand
     
-    Each question should be customer-focused and help contractors better understand the project needs.
-    If previous answers indicate specific areas needing clarification, generate follow-up questions.
-    Each question MUST have exactly 4 relevant options.
-    
-    Return ONLY a JSON object with this exact structure:
+    Return a JSON object with this structure:
     {
       "questions": [
         {
-          "question": "string (customer-focused question)",
+          "question": "string",
           "options": [
             { "id": "string", "label": "string" }
           ],
-          "type": "scope" | "timeline" | "budget" | "property",
-          "category": "string (matching Q1 Category from knowledge base if applicable)",
-          "followUpTriggers": {
-            "optionId": "string (what answer triggers follow-up)",
-            "followUpQuestion": {
-              "question": "string",
-              "options": [
-                { "id": "string", "label": "string" }
-              ]
-            }
-          }
+          "type": "scope" | "timeline" | "budget" | "property" | "materials" | "measurements" | "constraints",
+          "category": "string (matching Q1 Category from knowledge base if applicable)"
         }
       ]
     }`;
@@ -82,16 +77,14 @@ serve(async (req) => {
         content: [
           {
             type: "text",
-            text: `Generate customer-focused questions for this project:
+            text: `Generate detailed questions for this project:
             Description: ${projectDescription}
-            Previous Answers: ${JSON.stringify(previousAnswers || {}, null, 2)}
             
             Remember:
             - Use the knowledge base to inform question generation
             - Generate at least 7 questions
-            - Questions should help contractors understand customer needs
-            - Follow-up questions should be based on previous answers
-            - All questions should be from customer perspective`
+            - Make questions customer-focused
+            - Include all required question types`
           },
           imageUrl ? {
             type: "image_url",
@@ -130,9 +123,9 @@ serve(async (req) => {
     const questionsData = JSON.parse(data.choices[0].message.content);
     console.log('Parsed questions:', questionsData);
 
-    // Validate that we have at least 7 questions
+    // Validate minimum requirements
     if (!questionsData.questions || questionsData.questions.length < 7) {
-      throw new Error('Not enough questions generated');
+      throw new Error('Not enough questions generated. Minimum 7 required.');
     }
 
     return new Response(JSON.stringify(questionsData), {
