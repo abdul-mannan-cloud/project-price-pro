@@ -2,6 +2,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 interface Option {
   id: string;
@@ -39,7 +40,9 @@ export const QuestionCard = ({
     setTimeout(() => {
       setPressedOption(null);
       // Auto-advance to next question after selection
-      setTimeout(onNext, 200);
+      if (!isLastQuestion) {
+        setTimeout(onNext, 200);
+      }
     }, 150);
   };
 
@@ -79,6 +82,15 @@ export const QuestionCard = ({
           </div>
         ))}
       </RadioGroup>
+
+      {isLastQuestion && selectedOption && (
+        <Button 
+          className="w-full mt-6 bg-primary hover:bg-primary-600 text-white font-semibold py-3"
+          onClick={() => onSelect(selectedOption)}
+        >
+          Submit and View Estimate
+        </Button>
+      )}
     </div>
   );
 };

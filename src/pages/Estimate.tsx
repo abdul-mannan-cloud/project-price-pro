@@ -1,59 +1,84 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, SkipForward, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 
-type FormStage = 'photo' | 'description' | 'questions' | 'contact' | 'estimate';
-
 const EstimatePage = () => {
-  const [stage, setStage] = useState<FormStage>('photo');
+  const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate'>('photo');
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [questions, setQuestions] = useState<Array<{ 
-    question: string; 
-    options: Array<{ 
-      id: string; 
+  const [questions, setQuestions] = useState<Array<{
+    question: string;
+    options: Array<{
+      id: string;
       label: string;
       triggers_follow_up?: boolean;
       follow_up_question?: {
         question: string;
         options: Array<{ id: string; label: string }>;
       };
-    }> 
+    }>;
   }>>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [estimate, setEstimate] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { contractorId } = useParams();
+
+  // Query for initial questions based on keywords
+  const { data: initialQuestions } = useQuery({
+    queryKey: ["initial-questions", projectDescription],
+    enabled: projectDescription.length > 30,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('Options')
+        .select('*')
+        .textSearch('Task', projectDescription.split(' ').join(' | '));
+      
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const { data: contractor } = useQuery({
-    queryKey: ["contractor"],
+    queryKey: ["contractor", contractorId],
+    enabled: !!contractorId,
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
       const { data, error } = await supabase
         .from("contractors")
         .select("*, contractor_settings(*)")
-        .eq("id", user.id)
+        .eq("id", contractorId)
         .maybeSingle();
 
       if (error) throw error;
       return data;
     },
   });
+
+  useEffect(() => {
+    if (initialQuestions?.length && stage === 'description') {
+      const mappedQuestions = initialQuestions.map(q => ({
+        question: q['Q1 Question for related task'] || 'What is the approximate square footage?',
+        options: (q['Q1 Selection']?.split(',') || ['0-500', '500-1000', '1000-2000', '2000+']).map((opt, idx) => ({
+          id: `${idx}`,
+          label: opt.trim()
+        }))
+      }));
+      setQuestions(mappedQuestions);
+    }
+  }, [initialQuestions, stage]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -121,11 +146,9 @@ const EstimatePage = () => {
 
       if (error) throw error;
 
-      if (!data?.questions || !Array.isArray(data.questions)) {
-        throw new Error('Invalid response format from AI');
+      if (data?.questions) {
+        setQuestions(prevQuestions => [...prevQuestions, ...data.questions]);
       }
-
-      setQuestions(data.questions);
       setStage('questions');
     } catch (error) {
       console.error('Error generating questions:', error);
@@ -146,7 +169,6 @@ const EstimatePage = () => {
     setAnswers(prev => ({ ...prev, [currentQuestionIndex]: value }));
 
     if (selectedOption?.triggers_follow_up && selectedOption.follow_up_question) {
-      // Insert follow-up question after current question
       const newQuestions = [...questions];
       newQuestions.splice(currentQuestionIndex + 1, 0, selectedOption.follow_up_question);
       setQuestions(newQuestions);
@@ -175,7 +197,8 @@ const EstimatePage = () => {
         body: { 
           projectDescription, 
           imageUrl: uploadedImageUrl, 
-          answers: formattedAnswers
+          answers: formattedAnswers,
+          contractorId
         }
       });
 
@@ -266,7 +289,7 @@ const EstimatePage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Progress value={getProgressValue()} className="h-2 rounded-none" />
+      <Progress value={getProgressValue()} className="h-4 rounded-none" />
       
       {contractor && (
         <button 
