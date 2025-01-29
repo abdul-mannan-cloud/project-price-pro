@@ -3,13 +3,16 @@ import { cn } from "@/lib/utils";
 
 interface LineItem {
   title: string;
+  description?: string;
   quantity: number;
+  unit?: string;
   unitAmount: number;
   totalPrice: number;
 }
 
 interface ItemGroup {
   name: string;
+  description?: string;
   items: LineItem[];
 }
 
@@ -17,36 +20,94 @@ interface EstimateDisplayProps {
   groups: ItemGroup[];
   totalCost: number;
   isBlurred?: boolean;
+  contractor?: {
+    businessName?: string;
+    logoUrl?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+  };
 }
 
-export const EstimateDisplay = ({ groups, totalCost, isBlurred = false }: EstimateDisplayProps) => {
+export const EstimateDisplay = ({ 
+  groups, 
+  totalCost, 
+  isBlurred = false,
+  contractor 
+}: EstimateDisplayProps) => {
   return (
     <Card className={cn(
-      "p-6 max-w-4xl mx-auto transition-all duration-500",
+      "p-8 max-w-4xl mx-auto transition-all duration-500",
       isBlurred && "blur-md pointer-events-none"
     )}>
-      <h2 className="text-2xl font-semibold mb-6">Your Project Estimate</h2>
-      
-      {groups.map((group, index) => (
-        <div key={index} className="mb-8">
-          <h3 className="text-lg font-semibold mb-4">{group.name}</h3>
-          <div className="space-y-4">
-            {group.items.map((item, itemIndex) => (
-              <div key={itemIndex} className="flex justify-between items-center border-b pb-2">
-                <div>
-                  <p className="font-medium">{item.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {item.quantity} × ${item.unitAmount.toFixed(2)}
-                  </p>
-                </div>
-                <p className="font-semibold">${item.totalPrice.toFixed(2)}</p>
-              </div>
-            ))}
+      {/* Contractor Header */}
+      <div className="flex items-start justify-between mb-8 pb-6 border-b">
+        <div className="flex items-center space-x-4">
+          {contractor?.logoUrl && (
+            <img 
+              src={contractor.logoUrl} 
+              alt={`${contractor?.businessName || 'Business'} logo`}
+              className="w-16 h-16 object-contain"
+            />
+          )}
+          <div>
+            <h1 className="text-2xl font-bold">{contractor?.businessName || 'Project Estimate'}</h1>
+            {contractor?.contactEmail && (
+              <p className="text-sm text-muted-foreground">{contractor.contactEmail}</p>
+            )}
+            {contractor?.contactPhone && (
+              <p className="text-sm text-muted-foreground">{contractor.contactPhone}</p>
+            )}
           </div>
         </div>
-      ))}
+        <div className="text-right">
+          <p className="text-sm text-muted-foreground">Date</p>
+          <p className="font-medium">{new Date().toLocaleDateString()}</p>
+        </div>
+      </div>
+
+      {/* Estimate Groups */}
+      <div className="space-y-8">
+        {groups.map((group, index) => (
+          <div key={index} className="bg-gray-50 p-6 rounded-lg">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold">{group.name}</h3>
+              {group.description && (
+                <p className="text-sm text-muted-foreground mt-1">{group.description}</p>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              {group.items.map((item, itemIndex) => (
+                <div key={itemIndex} className="bg-white p-4 rounded-md shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <p className="font-medium">{item.title}</p>
+                      {item.description && (
+                        <p className="text-sm text-muted-foreground">{item.description}</p>
+                      )}
+                    </div>
+                    <p className="font-semibold">${item.totalPrice.toFixed(2)}</p>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {item.quantity} {item.unit || 'units'} × ${item.unitAmount.toFixed(2)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Group Subtotal */}
+            <div className="mt-4 pt-4 border-t flex justify-between items-center">
+              <p className="font-medium">Subtotal for {group.name}</p>
+              <p className="font-semibold">
+                ${group.items.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2)}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
       
-      <div className="mt-8 pt-4 border-t">
+      {/* Total */}
+      <div className="mt-8 pt-6 border-t">
         <div className="flex justify-between items-center">
           <p className="text-xl font-semibold">Total Estimate</p>
           <p className="text-2xl font-bold">${totalCost.toFixed(2)}</p>

@@ -25,38 +25,47 @@ export const QuestionCard = ({
   onNext,
   isLastQuestion,
 }: QuestionCardProps) => {
+  const handleOptionSelect = (value: string) => {
+    onSelect(value);
+    // Auto-advance to next question after selection
+    setTimeout(onNext, 500);
+  };
+
   return (
-    <div className="card p-8 animate-fadeIn">
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-sm animate-fadeIn">
       <h2 className="text-xl font-semibold mb-6">{question}</h2>
       
       <RadioGroup
         value={selectedOption}
-        onValueChange={onSelect}
+        onValueChange={handleOptionSelect}
         className="space-y-4"
       >
         {options.map((option) => (
-          <div key={option.id} className="flex items-center space-x-2">
-            <RadioGroupItem value={option.id} id={option.id} />
-            <Label
-              htmlFor={option.id}
-              className={cn(
-                "text-base cursor-pointer",
-                selectedOption === option.id ? "text-primary font-medium" : "text-muted-foreground"
-              )}
-            >
-              {option.label}
-            </Label>
+          <div 
+            key={option.id} 
+            className={cn(
+              "relative p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer",
+              selectedOption === option.id 
+                ? "border-primary bg-primary/5" 
+                : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+            )}
+            onClick={() => handleOptionSelect(option.id)}
+          >
+            <div className="flex items-center space-x-3">
+              <RadioGroupItem value={option.id} id={option.id} />
+              <Label
+                htmlFor={option.id}
+                className={cn(
+                  "text-base cursor-pointer flex-1",
+                  selectedOption === option.id ? "text-primary font-medium" : "text-muted-foreground"
+                )}
+              >
+                {option.label}
+              </Label>
+            </div>
           </div>
         ))}
       </RadioGroup>
-
-      <Button
-        className="w-full mt-8"
-        onClick={onNext}
-        disabled={!selectedOption}
-      >
-        {isLastQuestion ? "Generate Estimate" : "Next Question"}
-      </Button>
     </div>
   );
 };
