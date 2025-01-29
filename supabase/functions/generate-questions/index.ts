@@ -15,148 +15,146 @@ serve(async (req) => {
     const { projectDescription, imageUrl } = await req.json();
     console.log('Received request:', { projectDescription, imageUrl });
 
+    // Default questions to use as fallback
+    const defaultQuestions = {
+      questions: [
+        {
+          question: "What type of project are you looking to estimate?",
+          options: [
+            { id: "0", label: "Home Renovation" },
+            { id: "1", label: "Repair Work" },
+            { id: "2", label: "New Installation" },
+            { id: "3", label: "Maintenance" }
+          ]
+        },
+        {
+          question: "What is your preferred timeline?",
+          options: [
+            { id: "0", label: "As soon as possible" },
+            { id: "1", label: "Within 1 month" },
+            { id: "2", label: "Within 3 months" },
+            { id: "3", label: "Flexible" }
+          ]
+        },
+        {
+          question: "What is your budget range?",
+          options: [
+            { id: "0", label: "Under $5,000" },
+            { id: "1", label: "$5,000 - $15,000" },
+            { id: "2", label: "$15,000 - $30,000" },
+            { id: "3", label: "Over $30,000" }
+          ]
+        }
+      ]
+    };
+
     const systemPrompt = `You are an AI assistant that generates relevant questions for construction project estimates. 
     Generate exactly 3 questions in multiple-choice format.
     Each question MUST have exactly 4 options.
-    The response MUST be a valid JSON object with this exact structure:
+    Return ONLY a JSON object with this exact structure, no other text:
     {
       "questions": [
         {
-          "question": "What is the scope of your project?",
-          "options": ["Small repair", "Medium renovation", "Large remodel", "Complete overhaul"]
+          "question": "string",
+          "options": [
+            { "id": "0", "label": "string" },
+            { "id": "1", "label": "string" },
+            { "id": "2", "label": "string" },
+            { "id": "3", "label": "string" }
+          ]
         }
       ]
-    }
-    Do not include any additional text or formatting in your response, only the JSON object.`;
+    }`;
 
     const userContent = imageUrl ? 
-      `Project description: ${projectDescription}\nImage URL: ${imageUrl}` :
-      projectDescription;
+      `Based on this project description: ${projectDescription}\nAnd this image: ${imageUrl}\nGenerate 3 relevant multiple-choice questions to help estimate the project cost.` :
+      `Based on this project description: ${projectDescription}\nGenerate 3 relevant multiple-choice questions to help estimate the project cost.`;
 
-    console.log('Sending request to Llama API with prompt:', systemPrompt);
+    console.log('Sending request to Llama API with prompt:', { systemPrompt, userContent });
 
-    const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('LLAMA_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama3.2-11b-vision',
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent }
-        ],
-        temperature: 0.5,
-        max_tokens: 1000,
-        response_format: { type: "json_object" }
-      }),
-    });
-
-    if (!llamaResponse.ok) {
-      console.error('Llama API error:', await llamaResponse.text());
-      throw new Error(`Llama API error: ${llamaResponse.status}`);
-    }
-
-    const rawResponse = await llamaResponse.text();
-    console.log('Raw Llama response:', rawResponse);
-
-    // Try to clean the response if it contains any extra characters
-    const cleanedResponse = rawResponse.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
-    console.log('Cleaned response:', cleanedResponse);
-
-    let parsedResponse;
     try {
-      parsedResponse = JSON.parse(cleanedResponse);
+      const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('LLAMA_API_KEY')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama3.2-11b-vision',
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent }
+          ],
+          temperature: 0.5,
+          max_tokens: 1000,
+          response_format: { type: "json_object" }
+        }),
+      });
+
+      if (!llamaResponse.ok) {
+        console.error('Llama API error:', await llamaResponse.text());
+        console.log('Falling back to default questions due to API error');
+        return new Response(JSON.stringify(defaultQuestions), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const rawResponse = await llamaResponse.text();
+      console.log('Raw Llama response:', rawResponse);
+
+      // Try to extract just the JSON part
+      const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('No valid JSON found in response');
+        return new Response(JSON.stringify(defaultQuestions), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const cleanedResponse = jsonMatch[0];
+      console.log('Cleaned response:', cleanedResponse);
+
+      const parsedResponse = JSON.parse(cleanedResponse);
       console.log('Parsed response:', parsedResponse);
+
+      // Validate response structure
+      if (!parsedResponse.questions || !Array.isArray(parsedResponse.questions)) {
+        console.error('Invalid response structure:', parsedResponse);
+        return new Response(JSON.stringify(defaultQuestions), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Format and validate each question
+      const formattedQuestions = parsedResponse.questions.slice(0, 3).map((q: any) => ({
+        question: String(q.question || ""),
+        options: Array.isArray(q.options) 
+          ? q.options.slice(0, 4).map((opt: any, i: number) => ({
+              id: String(i),
+              label: String(typeof opt === 'object' ? opt.label : opt)
+            }))
+          : defaultQuestions.questions[0].options
+      }));
+
+      // Ensure we have exactly 3 questions
+      while (formattedQuestions.length < 3) {
+        formattedQuestions.push(defaultQuestions.questions[formattedQuestions.length]);
+      }
+
+      const finalResponse = { questions: formattedQuestions };
+      console.log('Final formatted response:', finalResponse);
+
+      return new Response(JSON.stringify(finalResponse), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
     } catch (error) {
-      console.error('Failed to parse Llama response:', error);
-      throw new Error('Invalid JSON in Llama response');
-    }
-
-    const content = parsedResponse.choices?.[0]?.message?.content;
-    if (!content) {
-      console.error('No content in response:', parsedResponse);
-      throw new Error('No content in Llama response');
-    }
-
-    let questionsData;
-    try {
-      questionsData = typeof content === 'string' ? JSON.parse(content) : content;
-      console.log('Parsed questions data:', questionsData);
-    } catch (error) {
-      console.error('Failed to parse content:', error);
-      throw new Error('Invalid JSON in questions data');
-    }
-
-    if (!questionsData.questions || !Array.isArray(questionsData.questions)) {
-      console.error('Invalid questions format:', questionsData);
-      throw new Error('Invalid questions format in response');
-    }
-
-    // Default questions as fallback
-    const defaultQuestions = [
-      {
-        question: "What type of project are you looking to estimate?",
-        options: ["Home Renovation", "Repair Work", "New Installation", "Maintenance"]
-      },
-      {
-        question: "What is your preferred timeline?",
-        options: ["As soon as possible", "Within 1 month", "Within 3 months", "Flexible"]
-      },
-      {
-        question: "What is your budget range?",
-        options: ["Under $5,000", "$5,000 - $15,000", "$15,000 - $30,000", "Over $30,000"]
-      }
-    ];
-
-    // Process and validate questions
-    const validatedQuestions = questionsData.questions.map((q: any, index: number) => {
-      // If question is invalid, use default
-      if (!q?.question || !Array.isArray(q?.options)) {
-        return {
-          question: defaultQuestions[index].question,
-          options: defaultQuestions[index].options.map((opt, i) => ({
-            id: i.toString(),
-            label: opt
-          }))
-        };
-      }
-
-      // Ensure exactly 4 options
-      const options = [...q.options];
-      while (options.length < 4) {
-        options.push(defaultQuestions[0].options[options.length]);
-      }
-
-      return {
-        question: String(q.question),
-        options: options.slice(0, 4).map((opt: any, i: number) => ({
-          id: i.toString(),
-          label: String(opt)
-        }))
-      };
-    });
-
-    // Ensure exactly 3 questions
-    const finalQuestions = validatedQuestions.slice(0, 3);
-    while (finalQuestions.length < 3) {
-      const defaultQ = defaultQuestions[finalQuestions.length];
-      finalQuestions.push({
-        question: defaultQ.question,
-        options: defaultQ.options.map((opt, i) => ({
-          id: i.toString(),
-          label: opt
-        }))
+      console.error('Error processing Llama response:', error);
+      return new Response(JSON.stringify(defaultQuestions), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const formattedResponse = { questions: finalQuestions };
-    console.log('Final formatted response:', formattedResponse);
-
-    return new Response(JSON.stringify(formattedResponse), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   } catch (error) {
     console.error('Error in generate-questions:', error);
     return new Response(
