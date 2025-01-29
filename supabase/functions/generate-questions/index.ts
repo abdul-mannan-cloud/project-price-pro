@@ -15,42 +15,23 @@ serve(async (req) => {
     const { projectDescription, imageUrl } = await req.json();
     console.log('Received request:', { projectDescription, imageUrl });
 
-    // Default questions to use as fallback
+    // Default questions as fallback
     const defaultQuestions = {
-      questions: [
-        {
-          question: "What type of project are you looking to estimate?",
-          options: [
-            { id: "0", label: "Home Renovation" },
-            { id: "1", label: "Repair Work" },
-            { id: "2", label: "New Installation" },
-            { id: "3", label: "Maintenance" }
-          ]
-        },
-        {
-          question: "What is your preferred timeline?",
-          options: [
-            { id: "0", label: "As soon as possible" },
-            { id: "1", label: "Within 1 month" },
-            { id: "2", label: "Within 3 months" },
-            { id: "3", label: "Flexible" }
-          ]
-        },
-        {
-          question: "What is your budget range?",
-          options: [
-            { id: "0", label: "Under $5,000" },
-            { id: "1", label: "$5,000 - $15,000" },
-            { id: "2", label: "$15,000 - $30,000" },
-            { id: "3", label: "Over $30,000" }
-          ]
-        }
-      ]
+      questions: Array(8).fill(null).map((_, index) => ({
+        question: `Default Question ${index + 1}`,
+        options: [
+          { id: "0", label: "Option A" },
+          { id: "1", label: "Option B" },
+          { id: "2", label: "Option C" },
+          { id: "3", label: "Option D" }
+        ]
+      }))
     };
 
     const systemPrompt = `You are an AI assistant that generates relevant questions for construction project estimates. 
-    Generate exactly 3 questions in multiple-choice format.
+    Based on the project description, generate between 5 and 8 questions in multiple-choice format.
     Each question MUST have exactly 4 options.
+    Questions should cover: project scope, timeline, materials, specific requirements, and budget range.
     Return ONLY a JSON object with this exact structure, no other text:
     {
       "questions": [
@@ -67,8 +48,8 @@ serve(async (req) => {
     }`;
 
     const userContent = imageUrl ? 
-      `Based on this project description: ${projectDescription}\nAnd this image: ${imageUrl}\nGenerate 3 relevant multiple-choice questions to help estimate the project cost.` :
-      `Based on this project description: ${projectDescription}\nGenerate 3 relevant multiple-choice questions to help estimate the project cost.`;
+      `Based on this project description: ${projectDescription}\nAnd this image: ${imageUrl}\nGenerate between 5 and 8 relevant multiple-choice questions to help estimate the project cost.` :
+      `Based on this project description: ${projectDescription}\nGenerate between 5 and 8 relevant multiple-choice questions to help estimate the project cost.`;
 
     console.log('Sending request to Llama API with prompt:', { systemPrompt, userContent });
 
@@ -85,8 +66,8 @@ serve(async (req) => {
             { role: "system", content: systemPrompt },
             { role: "user", content: userContent }
           ],
-          temperature: 0.5,
-          max_tokens: 1000,
+          temperature: 0.7,
+          max_tokens: 2000,
           response_format: { type: "json_object" }
         }),
       });
@@ -117,7 +98,7 @@ serve(async (req) => {
       const parsedResponse = JSON.parse(cleanedResponse);
       console.log('Parsed response:', parsedResponse);
 
-      // Validate response structure
+      // Validate response structure and ensure between 5-8 questions
       if (!parsedResponse.questions || !Array.isArray(parsedResponse.questions)) {
         console.error('Invalid response structure:', parsedResponse);
         return new Response(JSON.stringify(defaultQuestions), {
@@ -125,19 +106,21 @@ serve(async (req) => {
         });
       }
 
-      // Format and validate each question
-      const formattedQuestions = parsedResponse.questions.slice(0, 3).map((q: any) => ({
-        question: String(q.question || ""),
-        options: Array.isArray(q.options) 
-          ? q.options.slice(0, 4).map((opt: any, i: number) => ({
-              id: String(i),
-              label: String(typeof opt === 'object' ? opt.label : opt)
-            }))
-          : defaultQuestions.questions[0].options
-      }));
+      // Format and validate each question, ensuring between 5-8 questions
+      let formattedQuestions = parsedResponse.questions
+        .slice(0, 8) // Limit to maximum 8 questions
+        .map((q: any) => ({
+          question: String(q.question || ""),
+          options: Array.isArray(q.options) 
+            ? q.options.slice(0, 4).map((opt: any, i: number) => ({
+                id: String(i),
+                label: String(typeof opt === 'object' ? opt.label : opt)
+              }))
+            : defaultQuestions.questions[0].options
+        }));
 
-      // Ensure we have exactly 3 questions
-      while (formattedQuestions.length < 3) {
+      // Ensure minimum 5 questions
+      while (formattedQuestions.length < 5) {
         formattedQuestions.push(defaultQuestions.questions[formattedQuestions.length]);
       }
 
