@@ -1,6 +1,24 @@
 import { useState } from "react";
 import { StepIndicator } from "@/components/EstimateForm/StepIndicator";
 import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
+import { Button } from "@/components/ui/button";
+import { Camera, SkipForward } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+interface BrandingColors {
+  primary: string;
+  secondary: string;
+}
+
+const isBrandingColors = (value: unknown): value is BrandingColors => {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.primary === 'string' &&
+    typeof obj.secondary === 'string'
+  );
+};
 
 const INITIAL_QUESTIONS = [
   {
@@ -39,6 +57,23 @@ const EstimatePage = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
+  const { data: contractor } = useQuery({
+    queryKey: ["contractor"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { data, error } = await supabase
+        .from("contractors")
+        .select("*, contractor_settings(*)")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const handleOptionSelect = (value: string) => {
     setAnswers((prev) => ({
       ...prev,
@@ -55,7 +90,12 @@ const EstimatePage = () => {
     }
   };
 
-  const currentQuestion = INITIAL_QUESTIONS[currentStep];
+  const brandColors = isBrandingColors(contractor?.branding_colors) 
+    ? contractor.branding_colors 
+    : {
+        primary: "#6366F1",
+        secondary: "#4F46E5"
+      };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary-100 to-white py-12 px-4">
@@ -64,17 +104,51 @@ const EstimatePage = () => {
           Project Estimate Calculator
         </h1>
         <StepIndicator
-          currentStep={currentStep + 1}
+          currentStep={currentStep}
           totalSteps={INITIAL_QUESTIONS.length}
         />
-        <QuestionCard
-          question={currentQuestion.question}
-          options={currentQuestion.options}
-          selectedOption={answers[currentQuestion.id] || ""}
-          onSelect={handleOptionSelect}
-          onNext={handleNext}
-          isLastQuestion={currentStep === INITIAL_QUESTIONS.length - 1}
-        />
+        
+        {currentStep === 0 ? (
+          <div className="card p-8 animate-fadeIn">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">
+                  🛠 {contractor?.business_name} Project Estimator
+                </h2>
+                <p className="text-muted-foreground">
+                  🕒 Quickly estimate your project cost in minutes! Simply take or upload a photo 
+                  of what you want to repair or modify (e.g., 'paint this wall').
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center p-8 bg-secondary rounded-lg mb-6">
+              <div className="w-full h-64 bg-primary/5 rounded-lg flex items-center justify-center">
+                <p className="text-muted-foreground">Animation Preview</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Button className="w-full" size="lg" onClick={handleNext}>
+                <Camera className="mr-2" />
+                TAKE A PHOTO
+              </Button>
+              <Button variant="ghost" className="w-full" size="lg" onClick={handleNext}>
+                <SkipForward className="mr-2" />
+                Skip
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <QuestionCard
+            question={INITIAL_QUESTIONS[currentStep - 1].question}
+            options={INITIAL_QUESTIONS[currentStep - 1].options}
+            selectedOption={answers[INITIAL_QUESTIONS[currentStep - 1].id] || ""}
+            onSelect={handleOptionSelect}
+            onNext={handleNext}
+            isLastQuestion={currentStep === INITIAL_QUESTIONS.length}
+          />
+        )}
       </div>
     </div>
   );
