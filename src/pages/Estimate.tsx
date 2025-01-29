@@ -20,7 +20,18 @@ const EstimatePage = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [questions, setQuestions] = useState<Array<{ question: string; options: Array<{ id: string; label: string }> }>>([]);
+  const [questions, setQuestions] = useState<Array<{ 
+    question: string; 
+    options: Array<{ 
+      id: string; 
+      label: string;
+      triggers_follow_up?: boolean;
+      follow_up_question?: {
+        question: string;
+        options: Array<{ id: string; label: string }>;
+      };
+    }> 
+  }>>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [estimate, setEstimate] = useState<any>(null);
@@ -101,7 +112,11 @@ const EstimatePage = () => {
     setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-questions', {
-        body: { projectDescription, imageUrl: uploadedImageUrl }
+        body: { 
+          projectDescription, 
+          imageUrl: uploadedImageUrl,
+          previousAnswers: answers 
+        }
       });
 
       if (error) throw error;
@@ -124,30 +139,37 @@ const EstimatePage = () => {
     }
   };
 
+  const handleAnswerSubmit = async (value: string) => {
+    const currentQuestion = questions[currentQuestionIndex];
+    const selectedOption = currentQuestion.options.find(opt => opt.id === value);
+    
+    setAnswers(prev => ({ ...prev, [currentQuestionIndex]: value }));
+
+    if (selectedOption?.triggers_follow_up && selectedOption.follow_up_question) {
+      // Insert follow-up question after current question
+      const newQuestions = [...questions];
+      newQuestions.splice(currentQuestionIndex + 1, 0, selectedOption.follow_up_question);
+      setQuestions(newQuestions);
+    }
+
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+    } else {
+      setIsProcessing(true);
+      await generateEstimate();
+    }
+  };
+
   const generateEstimate = async () => {
-    setIsProcessing(true);
     try {
-      // Ensure we have valid questions and answers before proceeding
-      if (!questions.length) {
-        throw new Error('No questions available');
-      }
-
-      const formattedAnswers = Object.entries(answers).reduce((acc, [index, value]) => {
-        const questionIndex = parseInt(index);
-        const question = questions[questionIndex];
-        
-        if (!question) return acc;
-
+      const formattedAnswers = Object.entries(answers).map(([index, value]) => {
+        const question = questions[parseInt(index)];
         const selectedOption = question.options.find(opt => opt.id === value);
-        if (!selectedOption) return acc;
-
-        acc.push({
+        return {
           question: question.question,
-          answer: selectedOption.label
-        });
-
-        return acc;
-      }, [] as Array<{ question: string; answer: string }>);
+          answer: selectedOption?.label || value
+        };
+      });
 
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
@@ -158,11 +180,6 @@ const EstimatePage = () => {
       });
 
       if (error) throw error;
-
-      if (!data?.groups || !Array.isArray(data.groups)) {
-        throw new Error('Invalid response format from AI');
-      }
-
       setEstimate(data);
       setStage('contact');
     } catch (error) {
@@ -226,13 +243,25 @@ const EstimatePage = () => {
   };
 
   const getProgressValue = () => {
-    const stages = ['photo', 'description', 'questions', 'contact', 'estimate'];
-    const currentIndex = stages.indexOf(stage);
-    return ((currentIndex + 1) / stages.length) * 100;
+    if (stage === 'photo') return 20;
+    if (stage === 'description') return 40;
+    if (stage === 'questions') {
+      const totalQuestions = questions.length;
+      return totalQuestions > 0 
+        ? 40 + ((currentQuestionIndex + 1) / totalQuestions) * 40
+        : 40;
+    }
+    if (stage === 'contact') return 90;
+    if (stage === 'estimate') return 100;
+    return 0;
   };
 
   if (isProcessing) {
-    return <LoadingScreen message="Processing your request..." />;
+    return <LoadingScreen message={
+      stage === 'questions' && currentQuestionIndex === questions.length - 1
+        ? "Generating your estimate..."
+        : "Processing your request..."
+    } />;
   }
 
   return (
@@ -329,14 +358,8 @@ const EstimatePage = () => {
             question={questions[currentQuestionIndex].question}
             options={questions[currentQuestionIndex].options}
             selectedOption={answers[currentQuestionIndex] || ""}
-            onSelect={(value) => setAnswers(prev => ({ ...prev, [currentQuestionIndex]: value }))}
-            onNext={() => {
-              if (currentQuestionIndex < questions.length - 1) {
-                setCurrentQuestionIndex(prev => prev + 1);
-              } else {
-                generateEstimate();
-              }
-            }}
+            onSelect={handleAnswerSubmit}
+            onNext={() => {}}
             isLastQuestion={currentQuestionIndex === questions.length - 1}
             currentQuestionIndex={currentQuestionIndex}
             totalQuestions={questions.length}
