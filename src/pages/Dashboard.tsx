@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { LayoutDashboard, Users, Settings } from "lucide-react";
+import { LeadMagnetPreview } from "@/components/LeadMagnet/LeadMagnetPreview";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -74,7 +75,6 @@ const Dashboard = () => {
       }
       
       if (!data) {
-        // If no contractor data is found, redirect to onboarding
         navigate("/onboarding");
         return null;
       }
@@ -92,24 +92,14 @@ const Dashboard = () => {
   }
 
   if (!contractor) {
-    return null; // Will redirect in the query function
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
+    <div className="min-h-screen bg-[#f5f5f7] pb-24">
       <NavBar items={navItems} />
       <div className="container mx-auto py-8">
-        <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8">
-          <h1 className="text-2xl font-semibold mb-6">
-            Welcome, {contractor.business_name}
-          </h1>
-          <div className="space-y-4">
-            <p className="text-[#86868b]">
-              This is your dashboard where you can manage your business information,
-              view leads, and access settings.
-            </p>
-          </div>
-        </div>
+        <LeadMagnetPreview />
       </div>
     </div>
   );
