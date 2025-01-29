@@ -37,6 +37,7 @@ export const QuestionCard = ({
           <div
             key={option.id}
             className="flex items-center space-x-2 rounded-lg border p-4 hover:bg-primary-100 transition-colors cursor-pointer"
+            onClick={() => onSelect(option.id)}
           >
             <RadioGroupItem value={option.id} id={option.id} />
             <Label htmlFor={option.id} className="flex-grow cursor-pointer">
