@@ -338,6 +338,8 @@ const EstimatePage = () => {
               }
             }}
             isLastQuestion={currentQuestionIndex === questions.length - 1}
+            currentQuestionIndex={currentQuestionIndex}
+            totalQuestions={questions.length}
           />
         )}
 
