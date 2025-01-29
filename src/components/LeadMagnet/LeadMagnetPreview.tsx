@@ -12,6 +12,16 @@ interface BrandingColors {
   secondary: string;
 }
 
+// Type guard to check if a value matches the BrandingColors interface
+const isBrandingColors = (value: unknown): value is BrandingColors => {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.primary === 'string' &&
+    typeof obj.secondary === 'string'
+  );
+};
+
 export const LeadMagnetPreview = () => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
@@ -77,10 +87,12 @@ export const LeadMagnetPreview = () => {
     }
   };
 
-  const brandColors = (contractor?.branding_colors as BrandingColors) || {
-    primary: "#6366F1",
-    secondary: "#4F46E5"
-  };
+  const brandColors = isBrandingColors(contractor?.branding_colors) 
+    ? contractor.branding_colors 
+    : {
+        primary: "#6366F1",
+        secondary: "#4F46E5"
+      };
 
   return (
     <div className="w-full max-w-3xl mx-auto p-6 space-y-8 animate-fadeIn" style={{
