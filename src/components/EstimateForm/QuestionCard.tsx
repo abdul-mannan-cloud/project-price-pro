@@ -16,6 +16,8 @@ interface QuestionCardProps {
   onSelect: (value: string) => void;
   onNext: () => void;
   isLastQuestion: boolean;
+  currentQuestionIndex: number;
+  totalQuestions: number;
 }
 
 export const QuestionCard = ({
@@ -25,6 +27,8 @@ export const QuestionCard = ({
   onSelect,
   onNext,
   isLastQuestion,
+  currentQuestionIndex,
+  totalQuestions,
 }: QuestionCardProps) => {
   const [pressedOption, setPressedOption] = useState<string | null>(null);
 
@@ -42,6 +46,23 @@ export const QuestionCard = ({
 
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-sm animate-fadeIn">
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm text-muted-foreground">
+            Question {currentQuestionIndex + 1} of {totalQuestions}
+          </span>
+          <span className="text-sm font-medium text-primary">
+            {Math.round(((currentQuestionIndex + 1) / totalQuestions) * 100)}%
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-primary h-2 rounded-full transition-all duration-300"
+            style={{ width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%` }}
+          />
+        </div>
+      </div>
+      
       <h2 className="text-xl font-semibold mb-6">{question}</h2>
       
       <RadioGroup

@@ -13,9 +13,9 @@ serve(async (req) => {
 
   try {
     const { projectDescription, imageUrl, previousAnswers } = await req.json();
-    console.log('Generating questions for project:', { projectDescription, imageUrl, previousAnswers });
+    console.log('Generating questions for:', { projectDescription, imageUrl, previousAnswers });
 
-    // Fetch options from the database
+    // Fetch options from the database for context
     const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env;
     const optionsResponse = await fetch(`${SUPABASE_URL}/rest/v1/Options`, {
       headers: {
@@ -30,6 +30,11 @@ serve(async (req) => {
 
     const options = await optionsResponse.json();
     console.log('Retrieved options from database:', options);
+
+    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
+    if (!llamaApiKey) {
+      throw new Error('LLAMA_API_KEY is not set');
+    }
 
     const systemPrompt = `You are an AI assistant helping contractors gather project requirements from customers.
     Based on the project description, image (if provided), previous answers, and the provided knowledge base of questions and tasks, generate at least 7 focused questions.
@@ -56,24 +61,10 @@ serve(async (req) => {
             { "id": "string", "label": "string" }
           ],
           "type": "scope" | "timeline" | "budget" | "property",
-          "category": "string (matching Q1 Category from knowledge base if applicable)",
-          "followUpTriggers": {
-            "optionId": "string (what answer triggers follow-up)",
-            "followUpQuestion": {
-              "question": "string",
-              "options": [
-                { "id": "string", "label": "string" }
-              ]
-            }
-          }
+          "category": "string (matching Q1 Category from knowledge base if applicable)"
         }
       ]
     }`;
-
-    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
-    if (!llamaApiKey) {
-      throw new Error('LLAMA_API_KEY is not set');
-    }
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -83,7 +74,7 @@ serve(async (req) => {
           {
             type: "text",
             text: `Generate customer-focused questions for this project:
-            Description: ${projectDescription}
+            Description: ${projectDescription || "New project inquiry"}
             Previous Answers: ${JSON.stringify(previousAnswers || {}, null, 2)}
             
             Remember:
