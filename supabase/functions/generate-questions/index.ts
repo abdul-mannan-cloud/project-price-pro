@@ -16,33 +16,23 @@ serve(async (req) => {
     console.log('Received request:', { projectDescription, imageUrl });
 
     const systemPrompt = `You are an AI assistant that generates relevant questions for construction project estimates. 
-    Generate 3-5 high-impact questions in multiple-choice format.
-    Each question should have exactly 4 options.
-    Return a JSON object in this exact format:
+    Generate 3 questions in multiple-choice format.
+    Each question MUST have exactly 4 options.
+    The response MUST be a valid JSON object with this exact structure:
     {
       "questions": [
         {
-          "question": "string",
-          "options": ["string", "string", "string", "string"]
+          "question": "What is the scope of your project?",
+          "options": ["Small repair", "Medium renovation", "Large remodel", "Complete overhaul"]
         }
       ]
     }`;
 
-    const messages = [
-      {
-        role: "system",
-        content: systemPrompt
-      },
-      {
-        role: "user",
-        content: imageUrl ? [
-          { type: "text", text: projectDescription },
-          { type: "image_url", image_url: imageUrl }
-        ] : projectDescription
-      }
-    ];
+    const userContent = imageUrl ? 
+      `Project description: ${projectDescription}\nImage URL: ${imageUrl}` :
+      projectDescription;
 
-    console.log('Sending request to Llama API...');
+    console.log('Sending request to Llama API with prompt:', systemPrompt);
 
     const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
       method: 'POST',
@@ -52,9 +42,12 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'llama3.2-11b-vision',
-        messages,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent }
+        ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 1000,
         response_format: { type: "json_object" }
       }),
     });
@@ -96,36 +89,51 @@ serve(async (req) => {
       throw new Error('Invalid questions format in response');
     }
 
-    // Validate and format each question
-    const validatedQuestions = questionsData.questions.map((q: any, index: number) => {
-      if (!q.question || typeof q.question !== 'string') {
-        throw new Error(`Invalid question at index ${index}`);
+    // Default questions in case of incomplete response
+    const defaultQuestions = [
+      {
+        question: "What type of project are you looking to estimate?",
+        options: ["Home Renovation", "Repair Work", "New Installation", "Maintenance"]
+      },
+      {
+        question: "What is your preferred timeline?",
+        options: ["As soon as possible", "Within 1 month", "Within 3 months", "Flexible"]
+      },
+      {
+        question: "What is your budget range?",
+        options: ["Under $5,000", "$5,000 - $15,000", "$15,000 - $30,000", "Over $30,000"]
       }
+    ];
 
-      if (!Array.isArray(q.options) || q.options.length === 0) {
-        throw new Error(`Invalid options for question at index ${index}`);
+    // Validate and format each question, falling back to defaults if needed
+    const validatedQuestions = questionsData.questions.map((q: any, index: number) => {
+      if (!q.question || !Array.isArray(q.options)) {
+        return defaultQuestions[index] || defaultQuestions[0];
       }
 
       // Ensure exactly 4 options
-      let options = q.options.slice(0, 4);
+      let options = [...q.options];
       while (options.length < 4) {
-        options.push(`Option ${options.length + 1}`);
+        options.push(defaultQuestions[0].options[options.length]);
       }
-
-      // Convert all options to strings
-      options = options.map((opt: any) => String(opt));
+      options = options.slice(0, 4);
 
       return {
         question: q.question,
-        options: options.map((opt: string, i: number) => ({
+        options: options.map((opt: any, i: number) => ({
           id: i.toString(),
-          label: opt
+          label: String(opt)
         }))
       };
     });
 
+    // Ensure we have at least 3 questions
+    while (validatedQuestions.length < 3) {
+      validatedQuestions.push(defaultQuestions[validatedQuestions.length]);
+    }
+
     const formattedResponse = {
-      questions: validatedQuestions.slice(0, 5) // Limit to 5 questions
+      questions: validatedQuestions.slice(0, 3)
     };
 
     console.log('Final formatted response:', formattedResponse);
