@@ -67,10 +67,7 @@ const Login = () => {
           },
         });
 
-        if (signUpError) {
-          console.error("Signup error:", signUpError);
-          throw signUpError;
-        }
+        if (signUpError) throw signUpError;
 
         toast({
           title: "Account created successfully!",
@@ -83,29 +80,34 @@ const Login = () => {
           password,
         });
 
-        if (signInError) {
-          console.error("Signin error:", signInError);
-          throw new Error("Invalid email or password. Please check your credentials and try again.");
-        }
+        if (signInError) throw signInError;
 
-        const { data: contractor } = await supabase
+        // Check if contractor record exists
+        const { data: contractor, error: contractorError } = await supabase
           .from("contractors")
           .select("*")
-          .single();
+          .eq("id", (await supabase.auth.getUser()).data.user?.id)
+          .maybeSingle();
+
+        if (contractorError) throw contractorError;
 
         toast({
           title: "Welcome back!",
           description: "You have successfully signed in.",
         });
 
-        // Navigate to dashboard after successful login
-        navigate("/dashboard");
+        // Navigate based on contractor existence
+        if (contractor) {
+          navigate("/dashboard");
+        } else {
+          navigate("/onboarding");
+        }
       }
     } catch (error: any) {
       console.error("Auth error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "An error occurred during authentication.",
         variant: "destructive",
       });
     } finally {
