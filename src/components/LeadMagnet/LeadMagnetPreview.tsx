@@ -105,7 +105,7 @@ export const LeadMagnetPreview = () => {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h2 className="text-2xl font-semibold mb-2">
-              🛠 {contractor?.business_name} Project Estimator
+              🛠 {contractor?.business_name || "Project"} Estimator
             </h2>
             <p className="text-muted-foreground">
               🕒 Quickly estimate your project cost in minutes! Simply take or upload a photo 
@@ -132,14 +132,14 @@ export const LeadMagnetPreview = () => {
         </div>
       </div>
 
-      {currentStep > 0 && (
+      {currentStep > 0 && questions[currentStep - 1] && (
         <QuestionCard
-          question={questions[currentStep].question}
-          options={questions[currentStep].options}
-          selectedOption={selectedOptions[currentStep] || ""}
+          question={questions[currentStep - 1].question}
+          options={questions[currentStep - 1].options}
+          selectedOption={selectedOptions[currentStep - 1] || ""}
           onSelect={handleOptionSelect}
           onNext={handleNext}
-          isLastQuestion={currentStep === questions.length - 1}
+          isLastQuestion={currentStep === questions.length}
         />
       )}
     </div>
