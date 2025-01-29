@@ -107,20 +107,11 @@ const EstimatePage = () => {
 
       if (error) throw error;
 
-      // Ensure data.questions exists and is properly formatted
       if (!data?.questions || !Array.isArray(data.questions)) {
         throw new Error('Invalid response format from AI');
       }
 
-      const formattedQuestions = data.questions.map((q: any) => ({
-        question: q.question,
-        options: q.options.map((opt: string, index: number) => ({
-          id: index.toString(),
-          label: opt
-        }))
-      }));
-
-      setQuestions(formattedQuestions);
+      setQuestions(data.questions);
       setStage('questions');
     } catch (error) {
       console.error('Error generating questions:', error);
@@ -149,6 +140,11 @@ const EstimatePage = () => {
       });
 
       if (error) throw error;
+
+      if (!data?.groups || !Array.isArray(data.groups)) {
+        throw new Error('Invalid response format from AI');
+      }
+
       setEstimate(data);
       setStage('contact');
     } catch (error) {
@@ -169,7 +165,7 @@ const EstimatePage = () => {
         .from('estimates')
         .insert({
           contractor_id: contractor?.id,
-          project_title: "New Project Estimate", // Added required field
+          project_title: "New Project Estimate",
           customer_name: contactData.fullName,
           customer_email: contactData.email,
           customer_phone: contactData.phone,
@@ -197,6 +193,10 @@ const EstimatePage = () => {
       }
 
       setStage('estimate');
+      toast({
+        title: "Success",
+        description: "Your estimate has been saved!",
+      });
     } catch (error) {
       console.error('Error saving estimate:', error);
       toast({
@@ -340,9 +340,16 @@ const EstimatePage = () => {
           </>
         )}
 
-        {stage === 'contact' && (
+        {stage === 'contact' && estimate && (
           <div className="animate-fadeIn">
-            <ContactForm onSubmit={handleContactSubmit} />
+            <EstimateDisplay 
+              groups={estimate.groups} 
+              totalCost={estimate.totalCost} 
+              isBlurred={true}
+            />
+            <div className="mt-8">
+              <ContactForm onSubmit={handleContactSubmit} />
+            </div>
           </div>
         )}
 
