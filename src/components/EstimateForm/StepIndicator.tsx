@@ -1,5 +1,3 @@
-import { cn } from "@/lib/utils";
-
 interface Step {
   label: string;
   value: number;
@@ -11,33 +9,27 @@ interface StepIndicatorProps {
 }
 
 export const StepIndicator = ({ currentStep, steps }: StepIndicatorProps) => {
-  const totalSteps = steps.length;
-  
   return (
-    <div className="w-full max-w-xs mx-auto mb-8">
-      <div className="relative">
-        <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-primary-100">
+    <div className="flex justify-between mb-8">
+      {steps.map((step) => (
+        <div
+          key={step.value}
+          className={`flex flex-col items-center ${
+            currentStep >= step.value ? 'text-primary' : 'text-muted-foreground'
+          }`}
+        >
           <div
-            style={{ width: `${(currentStep / (totalSteps - 1)) * 100}%` }}
-            className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary transition-all duration-500"
-          />
+            className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${
+              currentStep >= step.value
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted'
+            }`}
+          >
+            {step.value + 1}
+          </div>
+          <span className="text-sm">{step.label}</span>
         </div>
-        <div className="flex justify-between">
-          {steps.map((step) => (
-            <div
-              key={step.value}
-              className={cn(
-                "text-sm",
-                currentStep >= step.value
-                  ? "text-primary font-medium"
-                  : "text-muted-foreground"
-              )}
-            >
-              {step.label}
-            </div>
-          ))}
-        </div>
-      </div>
+      ))}
     </div>
   );
 };

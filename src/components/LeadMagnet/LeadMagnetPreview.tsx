@@ -12,7 +12,6 @@ interface BrandingColors {
   secondary: string;
 }
 
-// Type guard to check if a value matches the BrandingColors interface
 const isBrandingColors = (value: unknown): value is BrandingColors => {
   if (typeof value !== 'object' || value === null) return false;
   const obj = value as Record<string, unknown>;
