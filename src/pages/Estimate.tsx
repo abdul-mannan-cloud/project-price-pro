@@ -128,14 +128,33 @@ const EstimatePage = () => {
   const generateEstimate = async () => {
     setIsProcessing(true);
     try {
+      // Ensure we have valid questions and answers before proceeding
+      if (!questions.length) {
+        throw new Error('No questions available');
+      }
+
+      const formattedAnswers = Object.entries(answers).reduce((acc, [index, value]) => {
+        const questionIndex = parseInt(index);
+        const question = questions[questionIndex];
+        
+        if (!question) return acc;
+
+        const selectedOption = question.options.find(opt => opt.id === value);
+        if (!selectedOption) return acc;
+
+        acc.push({
+          question: question.question,
+          answer: selectedOption.label
+        });
+
+        return acc;
+      }, [] as Array<{ question: string; answer: string }>);
+
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           projectDescription, 
           imageUrl: uploadedImageUrl, 
-          answers: Object.entries(answers).map(([index, value]) => ({
-            question: questions[parseInt(index)].question,
-            answer: questions[parseInt(index)].options.find(opt => opt.id === value)?.label
-          }))
+          answers: formattedAnswers
         }
       });
 
