@@ -44,7 +44,7 @@ serve(async (req) => {
 
     console.log('Sending request to Llama:', messages);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.llama-api.com/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('LLAMA_API_KEY')}`,
