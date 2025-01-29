@@ -15,23 +15,25 @@ serve(async (req) => {
     const { projectDescription, imageUrl } = await req.json();
     console.log('Received request:', { projectDescription, imageUrl });
 
+    const systemPrompt = `You are an AI assistant that generates relevant questions for construction project estimates. 
+    Generate 5 high-impact questions in multiple-choice format.
+    Always include a "Who should supply materials?" question if relevant.
+    Each question should have 4 options.
+    Return ONLY a JSON object with a 'questions' array containing question objects with 'question' and 'options' properties.
+    Example format:
+    {
+      "questions": [
+        {
+          "question": "What is the scope of work?",
+          "options": ["Option 1", "Option 2", "Option 3", "Option 4"]
+        }
+      ]
+    }`;
+
     const messages = [
       {
         role: "system",
-        content: `You are an AI assistant that generates relevant questions for construction project estimates. 
-        Generate 5 high-impact questions in multiple-choice format.
-        Always include a "Who should supply materials?" question if relevant.
-        Each question should have 4 options.
-        Return ONLY a JSON object with a 'questions' array containing question objects with 'question' and 'options' properties.
-        Example format:
-        {
-          "questions": [
-            {
-              "question": "What is the scope of work?",
-              "options": ["Option 1", "Option 2", "Option 3", "Option 4"]
-            }
-          ]
-        }`
+        content: systemPrompt
       },
       {
         role: "user",
@@ -68,89 +70,86 @@ serve(async (req) => {
     const rawData = await llamaResponse.text();
     console.log('Raw Llama response:', rawData);
 
-    // Try to parse the raw response first
-    let data;
+    let parsedResponse;
     try {
-      data = JSON.parse(rawData);
-      console.log('Parsed Llama response:', JSON.stringify(data, null, 2));
+      parsedResponse = JSON.parse(rawData);
+      console.log('Successfully parsed raw response:', JSON.stringify(parsedResponse, null, 2));
     } catch (error) {
-      console.error('Failed to parse raw Llama response:', error);
-      // If the raw response isn't valid JSON, try to extract JSON from it
-      const jsonMatch = rawData.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          data = JSON.parse(jsonMatch[0]);
-          console.log('Extracted and parsed JSON from response:', JSON.stringify(data, null, 2));
-        } catch (innerError) {
-          console.error('Failed to parse extracted JSON:', innerError);
-          throw new Error('Invalid JSON format in Llama response');
-        }
-      } else {
-        console.error('No JSON found in response:', rawData);
-        throw new Error('No valid JSON found in Llama response');
-      }
+      console.error('Failed to parse raw response:', error);
+      throw new Error('Failed to parse Llama API response');
     }
 
-    // Extract the content from the Llama response
-    const content = data.choices?.[0]?.message?.content;
+    const content = parsedResponse.choices?.[0]?.message?.content;
     if (!content) {
-      console.error('No content in Llama response:', data);
-      throw new Error('No content found in Llama response');
+      console.error('No content in response:', parsedResponse);
+      throw new Error('No content in Llama API response');
     }
 
-    // Parse the content if it's a string, or use it directly if it's already an object
-    let parsedContent;
+    let questionsData;
     try {
-      parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
-      console.log('Parsed content:', JSON.stringify(parsedContent, null, 2));
+      // If content is already an object, use it; if it's a string, parse it
+      questionsData = typeof content === 'string' ? JSON.parse(content) : content;
+      console.log('Parsed questions data:', JSON.stringify(questionsData, null, 2));
     } catch (error) {
       console.error('Failed to parse content:', error);
-      console.error('Content that failed to parse:', content);
-      throw new Error('Invalid content format in Llama response');
-    }
-
-    // Validate the questions format
-    if (!parsedContent.questions || !Array.isArray(parsedContent.questions)) {
-      console.error('Invalid questions format:', parsedContent);
       throw new Error('Invalid questions format in response');
     }
 
-    // Ensure each question has the required format
-    parsedContent.questions.forEach((q: any, index: number) => {
-      if (!q.question || !Array.isArray(q.options)) {
-        console.error(`Invalid question format at index ${index}:`, q);
-        throw new Error(`Question ${index + 1} has invalid format`);
+    // Ensure we have a questions array
+    if (!questionsData.questions || !Array.isArray(questionsData.questions)) {
+      console.error('Missing questions array:', questionsData);
+      
+      // Try to create a valid format from the response
+      if (Array.isArray(questionsData)) {
+        questionsData = { questions: questionsData };
+      } else {
+        throw new Error('Invalid response format: missing questions array');
       }
-      // Ensure exactly 4 options
-      if (q.options.length !== 4) {
-        q.options = q.options.slice(0, 4);
-        while (q.options.length < 4) {
-          q.options.push(`Option ${q.options.length + 1}`);
-        }
-      }
-    });
+    }
 
-    // Format the response
-    const formattedQuestions = {
-      questions: parsedContent.questions.map((q: any) => ({
+    // Process and validate each question
+    const validatedQuestions = questionsData.questions.map((q: any, index: number) => {
+      if (!q.question || typeof q.question !== 'string') {
+        throw new Error(`Invalid question at index ${index}: missing or invalid question text`);
+      }
+
+      let options = Array.isArray(q.options) ? q.options : [];
+      
+      // Ensure we have exactly 4 options
+      options = options.slice(0, 4);
+      while (options.length < 4) {
+        options.push(`Option ${options.length + 1}`);
+      }
+
+      // Ensure all options are strings
+      options = options.map((opt: any) => String(opt));
+
+      return {
         question: q.question,
-        options: q.options.map((opt: string, index: number) => ({
-          id: index.toString(),
+        options: options.map((opt: string, i: number) => ({
+          id: i.toString(),
           label: opt
         }))
-      }))
+      };
+    });
+
+    const formattedResponse = {
+      questions: validatedQuestions.slice(0, 5) // Ensure we have at most 5 questions
     };
 
-    console.log('Final formatted response:', JSON.stringify(formattedQuestions, null, 2));
+    console.log('Final formatted response:', JSON.stringify(formattedResponse, null, 2));
 
-    return new Response(JSON.stringify(formattedQuestions), {
+    return new Response(JSON.stringify(formattedResponse), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Error generating questions:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });
