@@ -42,9 +42,9 @@ serve(async (req) => {
       }
     ];
 
-    console.log('Sending request to Llama:', messages);
+    console.log('Sending request to Llama:', JSON.stringify(messages, null, 2));
 
-    const response = await fetch('https://api.llama-api.com/chat/completions', {
+    const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('LLAMA_API_KEY')}`,
@@ -58,32 +58,46 @@ serve(async (req) => {
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Llama API error:', errorText);
-      throw new Error(`Llama API error: ${response.status} - ${errorText}`);
+    if (!llamaResponse.ok) {
+      const errorText = await llamaResponse.text();
+      console.error('Llama API error response:', errorText);
+      throw new Error(`Llama API error: ${llamaResponse.status} - ${errorText}`);
     }
 
-    const data = await response.json();
-    console.log('Llama Response:', data);
+    const rawData = await llamaResponse.text();
+    console.log('Raw Llama response:', rawData);
+
+    let data;
+    try {
+      data = JSON.parse(rawData);
+      console.log('Parsed Llama response:', JSON.stringify(data, null, 2));
+    } catch (error) {
+      console.error('Failed to parse Llama response:', error);
+      console.error('Raw response that failed to parse:', rawData);
+      throw new Error('Invalid JSON in Llama response');
+    }
 
     if (!data.choices?.[0]?.message?.content) {
-      console.error('Invalid AI response format - no content:', data);
-      throw new Error('Invalid AI response format - no content in response');
+      console.error('Invalid Llama response format - no content:', data);
+      throw new Error('Invalid Llama response format - no content in response');
     }
 
     let parsedContent;
     try {
-      parsedContent = JSON.parse(data.choices[0].message.content);
-      console.log('Parsed content:', parsedContent);
+      // If content is already an object, use it directly, otherwise parse it
+      parsedContent = typeof data.choices[0].message.content === 'string' 
+        ? JSON.parse(data.choices[0].message.content)
+        : data.choices[0].message.content;
+      console.log('Parsed content:', JSON.stringify(parsedContent, null, 2));
     } catch (error) {
-      console.error('Failed to parse AI response:', data.choices[0].message.content);
-      throw new Error('Invalid JSON in AI response');
+      console.error('Failed to parse Llama message content:', error);
+      console.error('Content that failed to parse:', data.choices[0].message.content);
+      throw new Error('Invalid JSON in Llama message content');
     }
     
     if (!parsedContent.questions || !Array.isArray(parsedContent.questions)) {
       console.error('Invalid questions format:', parsedContent);
-      throw new Error('Invalid questions format in AI response');
+      throw new Error('Invalid questions format in Llama response');
     }
 
     // Validate each question has the required format
@@ -105,7 +119,7 @@ serve(async (req) => {
       }))
     };
 
-    console.log('Formatted response:', formattedQuestions);
+    console.log('Formatted response:', JSON.stringify(formattedQuestions, null, 2));
 
     return new Response(JSON.stringify(formattedQuestions), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
