@@ -15,9 +15,28 @@ serve(async (req) => {
     const { projectDescription, imageUrl, answers, contractorId } = await req.json();
     console.log('Generating estimate for:', { projectDescription, imageUrl, answers, contractorId });
 
+    // Fetch options from the database for context
+    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env;
+    const optionsResponse = await fetch(`${SUPABASE_URL}/rest/v1/Options`, {
+      headers: {
+        'apikey': SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+    });
+
+    if (!optionsResponse.ok) {
+      throw new Error('Failed to fetch options from database');
+    }
+
+    const options = await optionsResponse.json();
+
     const systemPrompt = `You are an AI assistant that generates detailed cost estimates for construction projects.
-    Generate line items grouped by category, including quantities and unit prices.
+    Use the provided knowledge base and customer answers to generate accurate line items grouped by category.
     Make sure to provide detailed descriptions for each line item.
+    
+    Knowledge Base:
+    ${JSON.stringify(options, null, 2)}
+    
     Return a JSON object with this exact structure:
     {
       "groups": [
@@ -46,7 +65,6 @@ serve(async (req) => {
     }
 
     // Fetch contractor details
-    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env;
     const contractorResponse = await fetch(`${SUPABASE_URL}/rest/v1/contractors?id=eq.${contractorId}&select=*,contractor_settings(*)`, {
       headers: {
         'apikey': SUPABASE_SERVICE_ROLE_KEY,
@@ -71,10 +89,15 @@ serve(async (req) => {
             text: `Generate a detailed estimate for this project:
             Description: ${projectDescription}
             Customer Responses: ${JSON.stringify(answers, null, 2)}
-            Contractor Settings:
+            
+            Use the knowledge base to inform pricing and line items.
+            Consider these contractor settings:
             - Minimum Project Cost: ${contractor?.contractor_settings?.minimum_project_cost || 1000}
             - Markup Percentage: ${contractor?.contractor_settings?.markup_percentage || 20}
-            - Tax Rate: ${contractor?.contractor_settings?.tax_rate || 8.5}`
+            - Tax Rate: ${contractor?.contractor_settings?.tax_rate || 8.5}
+            
+            Generate at least 3 groups with multiple line items in each group.
+            Be specific with quantities and measurements.`
           },
           imageUrl ? {
             type: "image_url",
@@ -112,6 +135,11 @@ serve(async (req) => {
 
     const estimateData = JSON.parse(data.choices[0].message.content);
     console.log('Parsed estimate:', estimateData);
+
+    // Validate minimum requirements
+    if (!estimateData.groups || estimateData.groups.length < 3) {
+      throw new Error('Not enough groups generated');
+    }
 
     // Add contractor information to the response
     const responseData = {

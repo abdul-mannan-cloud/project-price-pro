@@ -15,10 +15,30 @@ serve(async (req) => {
     const { projectDescription, imageUrl, previousAnswers } = await req.json();
     console.log('Generating questions for project:', { projectDescription, imageUrl, previousAnswers });
 
+    // Fetch options from the database
+    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env;
+    const optionsResponse = await fetch(`${SUPABASE_URL}/rest/v1/Options`, {
+      headers: {
+        'apikey': SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+    });
+
+    if (!optionsResponse.ok) {
+      throw new Error('Failed to fetch options from database');
+    }
+
+    const options = await optionsResponse.json();
+    console.log('Retrieved options from database:', options);
+
     const systemPrompt = `You are an AI assistant helping contractors gather project requirements from customers.
-    Based on the project description, image (if provided), and previous answers, generate 3-5 focused questions.
+    Based on the project description, image (if provided), previous answers, and the provided knowledge base of questions and tasks, generate at least 7 focused questions.
+    
+    Use the following knowledge base to inform your questions:
+    ${JSON.stringify(options, null, 2)}
+    
     Questions should help understand:
-    - Project scope and specific requirements
+    - Project scope and specific requirements (using Q1, Q2, Q3 from the knowledge base)
     - Timeline expectations
     - Budget considerations
     - Property details and constraints
@@ -36,6 +56,7 @@ serve(async (req) => {
             { "id": "string", "label": "string" }
           ],
           "type": "scope" | "timeline" | "budget" | "property",
+          "category": "string (matching Q1 Category from knowledge base if applicable)",
           "followUpTriggers": {
             "optionId": "string (what answer triggers follow-up)",
             "followUpQuestion": {
@@ -66,6 +87,8 @@ serve(async (req) => {
             Previous Answers: ${JSON.stringify(previousAnswers || {}, null, 2)}
             
             Remember:
+            - Use the knowledge base to inform question generation
+            - Generate at least 7 questions
             - Questions should help contractors understand customer needs
             - Follow-up questions should be based on previous answers
             - All questions should be from customer perspective`
@@ -106,6 +129,11 @@ serve(async (req) => {
 
     const questionsData = JSON.parse(data.choices[0].message.content);
     console.log('Parsed questions:', questionsData);
+
+    // Validate that we have at least 7 questions
+    if (!questionsData.questions || questionsData.questions.length < 7) {
+      throw new Error('Not enough questions generated');
+    }
 
     return new Response(JSON.stringify(questionsData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
