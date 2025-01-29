@@ -15,12 +15,19 @@ serve(async (req) => {
     const { projectDescription, imageUrl, previousAnswers } = await req.json();
     console.log('Generating questions for:', { projectDescription, imageUrl, previousAnswers });
 
+    // Get environment variables
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing required environment variables');
+    }
+
     // Fetch options from the database for context
-    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env;
-    const optionsResponse = await fetch(`${SUPABASE_URL}/rest/v1/Options`, {
+    const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options`, {
       headers: {
-        'apikey': SUPABASE_SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
       },
     });
 
