@@ -4,7 +4,6 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CheckSquare } from "lucide-react";
 
 interface Option {
   id: string;
@@ -42,8 +41,10 @@ export const QuestionCard = ({
     setPressedOption(value);
     onSelect(value);
     
+    // Add a small delay for the press animation
     setTimeout(() => {
       setPressedOption(null);
+      // Auto-advance to next question after selection
       if (!isLastQuestion) {
         setTimeout(onNext, 200);
       }
@@ -75,16 +76,11 @@ export const QuestionCard = ({
               onClick={() => handleMultiOptionSelect(option.id)}
             >
               <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
-                  <CheckSquare 
-                    className={cn(
-                      "h-6 w-6 transition-colors rounded",
-                      selectedOptions.includes(option.id)
-                        ? "text-primary"
-                        : "text-gray-400"
-                    )}
-                  />
-                </div>
+                <Checkbox
+                  id={option.id}
+                  checked={selectedOptions.includes(option.id)}
+                  onCheckedChange={() => handleMultiOptionSelect(option.id)}
+                />
                 <Label
                   htmlFor={option.id}
                   className={cn(

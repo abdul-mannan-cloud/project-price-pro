@@ -11,7 +11,7 @@ import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
-import { Database } from "@/integrations/supabase/types";
+import { Json } from "@/integrations/supabase/types";
 
 interface Question {
   question: string;
@@ -19,7 +19,7 @@ interface Question {
   isMultiChoice?: boolean;
 }
 
-export const EstimatePage = () => {
+const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate'>('photo');
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -33,29 +33,54 @@ export const EstimatePage = () => {
   const { toast } = useToast();
   const { contractorId } = useParams();
 
-  // Fetch contractor data
+  // Query for template questions based on project description
+  const { data: templateQuestions, isLoading: isLoadingTemplates } = useQuery({
+    queryKey: ["template-questions", projectDescription],
+    enabled: projectDescription.length > 30,
+    queryFn: async () => {
+      const keywords = projectDescription.toLowerCase().split(' ');
+      const { data, error } = await supabase
+        .from('question_templates')
+        .select('*')
+        .filter('task', 'in', `(${keywords.join(',')})`)
+        .order('category');
+      
+      if (error) throw error;
+      
+      // Convert the template data to match the Question interface
+      return data?.map(template => ({
+        question: template.question,
+        options: Array.isArray(template.options) 
+          ? template.options.map((opt: Json, idx: number) => ({
+              id: idx.toString(),
+              label: String(opt) // Ensure the label is converted to string
+            }))
+          : [],
+        isMultiChoice: template.question_type === 'multi_choice'
+      })) || [];
+    }
+  });
+
   const { data: contractor } = useQuery({
     queryKey: ["contractor", contractorId],
+    enabled: !!contractorId,
     queryFn: async () => {
-      if (!contractorId) return null;
-      
       const { data, error } = await supabase
         .from("contractors")
         .select("*, contractor_settings(*)")
         .eq("id", contractorId)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching contractor:", error);
-        return null;
-      }
-
-      return data as Database['public']['Tables']['contractors']['Row'] & {
-        contractor_settings: Database['public']['Tables']['contractor_settings']['Row'] | null;
-      };
+      if (error) throw error;
+      return data;
     },
-    enabled: !!contractorId
   });
+
+  useEffect(() => {
+    if (templateQuestions?.length && stage === 'description') {
+      setQuestions(templateQuestions);
+    }
+  }, [templateQuestions, stage]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -111,15 +136,6 @@ export const EstimatePage = () => {
   };
 
   const generateAIQuestions = async () => {
-    if (projectDescription.trim().length < 30) {
-      toast({
-        title: "More Details Needed",
-        description: "Please provide at least 30 characters describing your project.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-questions', {
@@ -127,41 +143,16 @@ export const EstimatePage = () => {
           projectDescription, 
           imageUrl: uploadedImageUrl,
           previousAnswers: answers,
-          existingQuestions: questions,
-          contractorId
+          existingQuestions: questions
         }
       });
 
       if (error) throw error;
 
-      if (data.needsMoreDetail) {
-        toast({
-          title: "More Details Needed",
-          description: "Please provide more specific details about your project to help us generate accurate questions.",
-          variant: "destructive",
-        });
-        setStage('description');
-        return;
+      if (data?.questions) {
+        setQuestions(prevQuestions => [...prevQuestions, ...data.questions]);
       }
-
-      if (data.questions && data.questions.length > 0) {
-        setQuestions(prevQuestions => {
-          const newQuestions = [...prevQuestions];
-          data.questions.forEach((newQ: any) => {
-            if (!prevQuestions.some(existingQ => existingQ.question === newQ.question)) {
-              newQuestions.push({
-                ...newQ,
-                options: newQ.options.map((opt: any) => ({
-                  ...opt,
-                  label: String(opt.label)
-                }))
-              });
-            }
-          });
-          return newQuestions;
-        });
-        setStage('questions');
-      }
+      setStage('questions');
     } catch (error) {
       console.error('Error generating questions:', error);
       toast({
@@ -236,7 +227,7 @@ export const EstimatePage = () => {
       const { data, error } = await supabase
         .from('estimates')
         .insert({
-          contractor_id: contractorId,
+          contractor_id: contractor?.id,
           project_title: "New Project Estimate",
           customer_name: contactData.fullName,
           customer_email: contactData.email,
@@ -382,7 +373,7 @@ export const EstimatePage = () => {
             <Button 
               className="w-full mt-6"
               onClick={generateAIQuestions}
-              disabled={projectDescription.trim().length < 30}
+              disabled={projectDescription.trim().length < 30 || isLoadingTemplates}
             >
               Continue
             </Button>
@@ -418,7 +409,7 @@ export const EstimatePage = () => {
               groups={estimate.groups} 
               totalCost={estimate.totalCost} 
               isBlurred={true}
-              contractor={contractor}
+              contractor={contractor || undefined}
             />
             <div className="mt-8">
               <ContactForm onSubmit={handleContactSubmit} />
@@ -430,7 +421,7 @@ export const EstimatePage = () => {
           <EstimateDisplay 
             groups={estimate.groups} 
             totalCost={estimate.totalCost}
-            contractor={contractor}
+            contractor={contractor || undefined}
           />
         )}
       </div>
