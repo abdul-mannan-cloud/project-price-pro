@@ -15,9 +15,9 @@ serve(async (req) => {
     const { projectDescription, imageUrl } = await req.json();
     console.log('Processing request for:', { projectDescription, imageUrl });
 
-    // First, get all predefined questions from the Options table
+    // Get questions from Options table
     const { data: optionsData, error: optionsError } = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/rest/v1/Options`,
+      `${Deno.env.get('SUPABASE_URL')}/rest/v1/Options?select=*`,
       {
         headers: {
           'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
@@ -31,25 +31,32 @@ serve(async (req) => {
       throw optionsError;
     }
 
-    // Extract all questions from the Options table
+    // Extract and process questions from Options table
     const predefinedQuestions = [];
     if (optionsData && optionsData.length > 0) {
       const firstRow = optionsData[0];
       for (let i = 1; i <= 4; i++) {
         const questionKey = `Question ${i}`;
         if (firstRow[questionKey]) {
-          predefinedQuestions.push({
-            question: firstRow[questionKey].question,
-            options: firstRow[questionKey].options.map((opt: string, idx: number) => ({
-              id: idx.toString(),
-              label: opt
-            }))
-          });
+          const questionData = firstRow[questionKey];
+          console.log(`Processing ${questionKey}:`, questionData);
+          
+          // Check if the task matches the project description
+          if (questionData.task && projectDescription.toLowerCase().includes(questionData.task.toLowerCase())) {
+            predefinedQuestions.push({
+              question: questionData.question,
+              options: questionData.options.map((opt: string, idx: number) => ({
+                id: idx.toString(),
+                label: opt
+              })),
+              isMultiChoice: questionData.type === 'multi_choice'
+            });
+          }
         }
       }
     }
 
-    console.log('Predefined questions:', predefinedQuestions);
+    console.log('Matched predefined questions:', predefinedQuestions);
 
     // Get template questions based on keywords
     const keywords = projectDescription.toLowerCase().split(' ');
@@ -84,7 +91,7 @@ serve(async (req) => {
 
     console.log('Matching templates:', matchingTemplates);
 
-    // Use AI to analyze project description and select relevant predefined questions
+    // Use AI to analyze project description and generate additional questions
     const generateAIQuestions = async () => {
       try {
         const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
@@ -93,12 +100,35 @@ serve(async (req) => {
           return [];
         }
 
-        const systemPrompt = `Analyze the project description and generate additional relevant questions.
-        Available predefined questions: ${JSON.stringify(predefinedQuestions)}
-        Template questions: ${JSON.stringify(matchingTemplates)}
-        Generate new questions that don't overlap with existing ones.
-        Each question must have exactly 4 relevant options.
-        Focus on timeline, budget, and specific requirements.`;
+        const systemPrompt = `You are an AI assistant that helps generate relevant questions for construction project estimates.
+        
+        Project Description: "${projectDescription}"
+        
+        Current Questions:
+        Predefined: ${JSON.stringify(predefinedQuestions)}
+        Templates: ${JSON.stringify(matchingTemplates)}
+        
+        Generate 2-3 additional relevant questions that don't overlap with existing ones.
+        Each question must:
+        1. Be specific to the project description
+        2. Have exactly 4 relevant options
+        3. Focus on timeline, budget, or specific requirements
+        
+        Return in this exact format:
+        {
+          "questions": [
+            {
+              "question": "string",
+              "options": [
+                { "id": "0", "label": "string" },
+                { "id": "1", "label": "string" },
+                { "id": "2", "label": "string" },
+                { "id": "3", "label": "string" }
+              ],
+              "isMultiChoice": boolean
+            }
+          ]
+        }`;
 
         const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
           method: 'POST',
