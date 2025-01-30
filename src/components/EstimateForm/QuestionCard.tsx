@@ -64,13 +64,7 @@ export const QuestionCard = ({
   }
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-sm animate-fadeIn">
-      <div className="mb-4">
-        <span className="text-sm text-muted-foreground">
-          Question {currentQuestionIndex + 1} of {totalQuestions}
-        </span>
-      </div>
-      
+    <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-sm animate-fadeIn">      
       <h2 className="text-xl font-semibold mb-6">{question}</h2>
       
       {isMultiChoice ? (
