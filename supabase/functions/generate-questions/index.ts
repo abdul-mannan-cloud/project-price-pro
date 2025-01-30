@@ -61,8 +61,7 @@ serve(async (req) => {
           const columnData = options[column] as ColumnData;
           if (columnData?.data && Array.isArray(columnData.data)) {
             columnData.data.forEach(questionObj => {
-              console.log(`Checking task "${questionObj.task}" against description "${description}"`);
-              if (isRelevantTask(description, questionObj.task)) {
+              if (questionObj.task && description.includes(questionObj.task.toLowerCase())) {
                 console.log(`✅ Matched task "${questionObj.task}" in ${column}`);
                 matchedQuestions.push({
                   question: questionObj.question,
@@ -79,44 +78,45 @@ serve(async (req) => {
           console.error(`Error processing ${column}:`, error);
         }
       });
-
-      console.log('Total matched questions:', matchedQuestions.length);
-      console.log('Matched questions:', matchedQuestions);
     }
 
-    // Add final question
-    if (matchedQuestions.length > 0) {
-      matchedQuestions.push({
-        question: "Ready to view your estimate?",
-        options: [
-          { id: "yes", label: "Yes, show me my estimate" }
-        ],
-        isMultiChoice: false,
-        isFinal: true
-      });
-    } else {
-      // Fallback questions if no matches found
+    // If no matches found, provide default questions
+    if (matchedQuestions.length === 0) {
       matchedQuestions = [
         {
-          question: "What is the main focus of your project?",
+          question: "What type of project are you planning?",
           options: [
-            { id: "1", label: "Kitchen Remodel" },
-            { id: "2", label: "Bathroom Remodel" },
-            { id: "3", label: "General Renovation" },
-            { id: "4", label: "Repair" }
+            { id: "kitchen", label: "Kitchen Remodel" },
+            { id: "bathroom", label: "Bathroom Remodel" },
+            { id: "general", label: "General Renovation" },
+            { id: "repair", label: "Repair Work" }
           ],
           isMultiChoice: false
         },
         {
-          question: "Ready to view your estimate?",
+          question: "What is your estimated budget range?",
           options: [
-            { id: "yes", label: "Yes, show me my estimate" }
+            { id: "budget1", label: "$5,000 - $15,000" },
+            { id: "budget2", label: "$15,000 - $30,000" },
+            { id: "budget3", label: "$30,000 - $50,000" },
+            { id: "budget4", label: "$50,000+" }
           ],
-          isMultiChoice: false,
-          isFinal: true
+          isMultiChoice: false
         }
       ];
     }
+
+    // Always add final confirmation question
+    matchedQuestions.push({
+      question: "Ready to view your estimate?",
+      options: [
+        { id: "yes", label: "Yes, show me my estimate" }
+      ],
+      isMultiChoice: false,
+      isFinal: true
+    });
+
+    console.log('Returning questions:', matchedQuestions);
 
     return new Response(JSON.stringify({ questions: matchedQuestions }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -130,44 +130,3 @@ serve(async (req) => {
     });
   }
 });
-
-function isRelevantTask(description: string, task?: string): boolean {
-  if (!task || !description) return false;
-  
-  const normalizedDescription = description.toLowerCase();
-  const normalizedTask = task.toLowerCase();
-
-  // Define task keywords and their variations/misspellings
-  const taskKeywords: Record<string, string[]> = {
-    'kitchen': ['kitchen', 'kitch', 'kitchn', 'kichen', 'cooking', 'countertop', 'cabinet'],
-    'bathroom': ['bathroom', 'bath', 'bathrm', 'bathrom', 'restroom', 'washroom', 'shower', 'toilet'],
-    'basement': ['basement', 'bsmt', 'basment'],
-    'painting': ['paint', 'painting', 'painted', 'paints'],
-    'flooring': ['floor', 'flooring', 'flor', 'floors'],
-    'roofing': ['roof', 'roofing', 'ruf', 'rooves'],
-    'windows': ['window', 'windows', 'windw'],
-    'electrical': ['electric', 'electrical', 'elektric', 'wiring'],
-    'plumbing': ['plumbing', 'plumb', 'plum', 'pipe'],
-    'landscaping': ['landscape', 'landscaping', 'yard', 'garden'],
-    'deck': ['deck', 'decking', 'patio', 'porch'],
-    'remodel': ['remodel', 'renovation', 'renew', 'update', 'upgrade'],
-  };
-
-  // Check if any of the task keywords or their variations are in the description
-  for (const [baseKeyword, variations] of Object.entries(taskKeywords)) {
-    if (normalizedTask.includes(baseKeyword)) {
-      // If the task contains this keyword, check if any of its variations are in the description
-      if (variations.some(variation => normalizedDescription.includes(variation))) {
-        console.log(`Matched keyword "${baseKeyword}" with variation in description`);
-        return true;
-      }
-    }
-  }
-
-  // Direct match check (fallback)
-  const directMatch = normalizedDescription.includes(normalizedTask);
-  if (directMatch) {
-    console.log(`Direct match found for task "${normalizedTask}"`);
-  }
-  return directMatch;
-}
