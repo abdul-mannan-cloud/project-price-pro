@@ -141,9 +141,10 @@ const EstimatePage = () => {
     
     setIsProcessing(true);
     try {
+      // Use double quotes for column names with spaces
       const { data, error } = await supabase
         .from('Options')
-        .select(selectedCategory)
+        .select(`"${selectedCategory}"`)
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
 
