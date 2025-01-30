@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
-import { Question, CategoryQuestions, BranchingLogic } from "@/types/estimate";
+import { Question, CategoryQuestions } from "@/types/estimate";
 
 interface QuestionManagerProps {
   categoryData: CategoryQuestions;
@@ -23,9 +23,8 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
       const nextQuestions = categoryData.branching_logic[questionId][selectedOptions[0]] || [];
       const currentQuestion = questionSequence[currentQuestionIndex];
       
-      if (currentQuestion.is_branching) {
-        const subQuestions = currentQuestion.sub_questions || [];
-        const filteredSubQuestions = subQuestions.filter(q => 
+      if (currentQuestion.is_branching && currentQuestion.sub_questions) {
+        const filteredSubQuestions = currentQuestion.sub_questions.filter(q => 
           nextQuestions.includes(q.id)
         );
         

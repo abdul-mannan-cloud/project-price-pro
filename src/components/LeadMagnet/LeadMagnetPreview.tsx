@@ -13,9 +13,11 @@ interface BrandingColors {
 }
 
 interface Question {
+  id: string;
   question: string;
   options: Array<{ id: string; label: string }>;
-  isMultiChoice?: boolean;
+  multi_choice: boolean;
+  is_branching: boolean;
 }
 
 const isBrandingColors = (value: unknown): value is BrandingColors => {
@@ -62,7 +64,16 @@ export const LeadMagnetPreview = () => {
       if (error) throw error;
       if (!data?.questions) throw new Error('No questions generated');
 
-      setQuestions(data.questions);
+      // Ensure questions conform to the Question interface
+      const formattedQuestions: Question[] = data.questions.map((q: any) => ({
+        id: q.id || crypto.randomUUID(),
+        question: q.question,
+        options: q.options,
+        multi_choice: q.multi_choice || false,
+        is_branching: q.is_branching || false
+      }));
+
+      setQuestions(formattedQuestions);
       setCurrentStep(1);
     } catch (error) {
       console.error('Error generating questions:', error);
@@ -152,7 +163,7 @@ export const LeadMagnetPreview = () => {
           onSelect={handleOptionSelect}
           onNext={handleNext}
           isLastQuestion={currentStep === questions.length}
-          isMultiChoice={questions[currentStep - 1].isMultiChoice || false}
+          isMultiChoice={questions[currentStep - 1].multi_choice || false}
           currentStage={currentStep}
           totalStages={questions.length}
         />

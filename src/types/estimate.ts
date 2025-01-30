@@ -3,20 +3,13 @@ export interface QuestionOption {
   label: string;
 }
 
-export interface SubQuestion {
-  id: string;
-  question: string;
-  multi_choice: boolean;
-  options: QuestionOption[];
-}
-
 export interface Question {
   id: string;
   question: string;
   multi_choice: boolean;
   is_branching: boolean;
   options: QuestionOption[];
-  sub_questions?: SubQuestion[];
+  sub_questions?: Question[];  // Changed from SubQuestion[] to Question[]
 }
 
 export interface BranchingLogic {

@@ -13,11 +13,11 @@ import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 
 interface Question {
-  stage: number;
+  id: string;
   question: string;
   options: Array<{ id: string; label: string }>;
-  isMultiChoice?: boolean;
-  isFinal?: boolean;
+  multi_choice: boolean;
+  is_branching: boolean;
 }
 
 const EstimatePage = () => {
@@ -107,7 +107,6 @@ const EstimatePage = () => {
   const generateAIQuestions = async () => {
     setIsProcessing(true);
     try {
-      console.log('Generating questions for description:', projectDescription);
       const { data, error } = await supabase.functions.invoke('generate-questions', {
         body: { 
           projectDescription,
@@ -116,11 +115,18 @@ const EstimatePage = () => {
       });
 
       if (error) throw error;
-      console.log('Received questions data:', data);
 
       if (data?.questions) {
-        console.log('Setting questions:', data.questions);
-        setQuestions(data.questions);
+        // Ensure questions conform to the Question interface
+        const formattedQuestions: Question[] = data.questions.map((q: any) => ({
+          id: q.id || crypto.randomUUID(),
+          question: q.question,
+          options: q.options,
+          multi_choice: q.multi_choice || false,
+          is_branching: q.is_branching || false
+        }));
+
+        setQuestions(formattedQuestions);
         setTotalStages(data.totalStages);
         setStage('questions');
       }
@@ -358,7 +364,7 @@ const EstimatePage = () => {
             onSelect={handleAnswerSubmit}
             onNext={() => {}}
             isLastQuestion={currentQuestionIndex === questions.length - 1}
-            isMultiChoice={questions[currentQuestionIndex].isMultiChoice}
+            isMultiChoice={questions[currentQuestionIndex].multi_choice}
             selectedOptions={
               Array.isArray(answers[currentQuestionIndex])
                 ? answers[currentQuestionIndex] as string[]
@@ -366,7 +372,7 @@ const EstimatePage = () => {
             }
             currentStage={currentQuestionIndex + 1}
             totalStages={totalStages}
-            isFinal={questions[currentQuestionIndex].isFinal}
+            isFinal={questions[currentQuestionIndex].is_branching}
           />
         )}
 
