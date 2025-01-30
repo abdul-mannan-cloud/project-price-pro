@@ -58,30 +58,43 @@ export const QuestionManager = ({
     let newSequence = [...currentSequence.slice(0, currentIndex + 1)];
     let subQuestionsToAdd: Question[] = [];
 
-    // Process sub-questions for each selected option
-    selectedOptions.forEach(option => {
-      if (currentQuestion.sub_questions && currentQuestion.sub_questions[option]) {
-        const subQuestions = currentQuestion.sub_questions[option];
-        console.log('Found sub-questions for option:', option, subQuestions);
+    selectedOptions.forEach(optionId => {
+      // Find the matching option label
+      const selectedOption = currentQuestion.options.find(opt => opt.id === optionId);
+      if (!selectedOption) return;
+
+      const optionLabel = selectedOption.label;
+      console.log('Processing option:', { optionId, optionLabel });
+
+      // Check for sub-questions using both ID and label
+      const subQuestions = currentQuestion.sub_questions?.[optionId] || 
+                          currentQuestion.sub_questions?.[optionLabel] ||
+                          currentQuestion.sub_questions?.[selectedOption.value || ''];
+
+      if (subQuestions) {
+        console.log('Found sub-questions for option:', optionLabel, subQuestions);
         
         if (Array.isArray(subQuestions)) {
-          const formattedSubQuestions = subQuestions.map((sq: any, index: number) => ({
-            id: sq.id || `sq-${currentQuestion.id}-${option}-${index}`,
-            question: sq.question,
-            options: Array.isArray(sq.selections) 
-              ? sq.selections.map((opt: any, optIndex: number) => ({
-                  id: typeof opt === 'string' 
-                    ? `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`
-                    : opt.value || `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`,
-                  label: typeof opt === 'string' ? opt : opt.label
-                }))
-              : [],
-            multi_choice: sq.multi_choice || false,
-            is_branching: sq.is_branching || false,
-            sub_questions: sq.sub_questions || {}
-          }));
+          const formattedSubQuestions = subQuestions.map((sq: any, index: number) => {
+            const subQuestion: Question = {
+              id: sq.id || `sq-${currentQuestion.id}-${optionId}-${index}`,
+              question: sq.question,
+              options: Array.isArray(sq.selections) 
+                ? sq.selections.map((opt: any, optIndex: number) => ({
+                    id: typeof opt === 'string' 
+                      ? `${sq.id || `sq-${currentQuestion.id}-${optionId}-${index}`}-${optIndex}`
+                      : opt.value || `${sq.id || `sq-${currentQuestion.id}-${optionId}-${index}`}-${optIndex}`,
+                    label: typeof opt === 'string' ? opt : opt.label
+                  }))
+                : [],
+              multi_choice: sq.multi_choice || false,
+              is_branching: sq.is_branching || false,
+              sub_questions: sq.sub_questions || {}
+            };
+            console.log('Formatted sub-question:', subQuestion);
+            return subQuestion;
+          });
 
-          console.log('Formatted sub-questions for option:', option, formattedSubQuestions);
           subQuestionsToAdd = [...subQuestionsToAdd, ...formattedSubQuestions];
         }
       }
