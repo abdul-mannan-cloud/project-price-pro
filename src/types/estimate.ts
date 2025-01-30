@@ -1,15 +1,17 @@
 export interface QuestionOption {
-  id: string;
+  id?: string;
   label: string;
   value?: string;
 }
 
 export interface Question {
-  id: string;
+  id?: string;
   question: string;
-  options: QuestionOption[];
+  options?: QuestionOption[];
+  selections?: (QuestionOption | string)[];
   multi_choice: boolean;
-  is_branching: boolean;
+  is_branching?: boolean;
+  depends_on?: string;
   sub_questions?: {
     [key: string]: Question[];
   };
@@ -23,7 +25,9 @@ export interface BranchingLogic {
 
 export interface CategoryQuestions {
   questions: Question[];
-  branching_logic: BranchingLogic;
+  branching_logic?: BranchingLogic;
+  category?: string;
+  keywords?: string[];
 }
 
 export interface Category {

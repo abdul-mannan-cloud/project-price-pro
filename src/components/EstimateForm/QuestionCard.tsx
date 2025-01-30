@@ -38,9 +38,8 @@ export const QuestionCard = ({
   const handleSingleOptionSelect = (value: string) => {
     console.log('Selected single option:', value);
     setPressedOption(value);
-    onSelect(question.id, [value]);
+    onSelect(question.id || '', [value]);
     
-    // Only auto-advance if it's not a branching question
     if (!question.is_branching) {
       setTimeout(() => {
         setPressedOption(null);
@@ -53,7 +52,7 @@ export const QuestionCard = ({
     const newSelection = selectedOptions.includes(optionId)
       ? selectedOptions.filter(id => id !== optionId)
       : [...selectedOptions, optionId];
-    onSelect(question.id, newSelection);
+    onSelect(question.id || '', newSelection);
   };
 
   const renderOptions = () => {
@@ -67,24 +66,24 @@ export const QuestionCard = ({
               key={option.id}
               className={cn(
                 "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
-                selectedOptions.includes(option.id)
+                selectedOptions.includes(option.id || option.value || '')
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-gray-200"
               )}
-              onClick={() => handleMultiOptionSelect(option.id)}
+              onClick={() => handleMultiOptionSelect(option.id || option.value || '')}
             >
               <div className="flex items-center space-x-4">
                 <Checkbox
-                  id={option.id}
-                  checked={selectedOptions.includes(option.id)}
-                  onCheckedChange={() => handleMultiOptionSelect(option.id)}
+                  id={option.id || option.value}
+                  checked={selectedOptions.includes(option.id || option.value || '')}
+                  onCheckedChange={() => handleMultiOptionSelect(option.id || option.value || '')}
                   className="h-6 w-6 rounded-lg"
                 />
                 <Label
-                  htmlFor={option.id}
+                  htmlFor={option.id || option.value}
                   className={cn(
                     "text-base cursor-pointer flex-1",
-                    selectedOptions.includes(option.id) 
+                    selectedOptions.includes(option.id || option.value || '') 
                       ? "text-gray-900 font-medium" 
                       : "text-gray-600"
                   )}
@@ -117,27 +116,27 @@ export const QuestionCard = ({
       >
         {options.map((option) => (
           <div 
-            key={option.id}
+            key={option.id || option.value}
             className={cn(
               "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
-              selectedOptions[0] === option.id 
+              selectedOptions[0] === (option.id || option.value) 
                 ? "border-primary bg-primary/5 shadow-sm" 
                 : "border-gray-200",
-              pressedOption === option.id && "scale-[0.98]"
+              pressedOption === (option.id || option.value) && "scale-[0.98]"
             )}
-            onClick={() => handleSingleOptionSelect(option.id)}
+            onClick={() => handleSingleOptionSelect(option.id || option.value || '')}
           >
             <div className="flex items-center space-x-4">
               <RadioGroupItem 
-                value={option.id} 
-                id={option.id} 
+                value={option.id || option.value || ''} 
+                id={option.id || option.value} 
                 className="h-6 w-6"
               />
               <Label
-                htmlFor={option.id}
+                htmlFor={option.id || option.value}
                 className={cn(
                   "text-base cursor-pointer flex-1",
-                  selectedOptions[0] === option.id 
+                  selectedOptions[0] === (option.id || option.value) 
                     ? "text-gray-900 font-medium" 
                     : "text-gray-600"
                 )}
