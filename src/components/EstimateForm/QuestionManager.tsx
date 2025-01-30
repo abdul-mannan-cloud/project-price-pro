@@ -49,35 +49,44 @@ export const QuestionManager = ({
     selectedOptions: string[],
     currentSequence: Question[]
   ): Question[] => {
+    console.log('Processing sub-questions for:', { currentQuestion, selectedOptions });
+    
     const currentIndex = currentSequence.indexOf(currentQuestion);
     let newSequence = [...currentSequence.slice(0, currentIndex + 1)];
     
     // Process sub-questions for each selected option
     selectedOptions.forEach(option => {
-      const subQuestions = currentQuestion.sub_questions?.[option] || [];
-      
-      // Map the sub-questions to ensure they have the correct structure
-      const formattedSubQuestions = subQuestions.map((sq: any) => ({
-        id: sq.id || `sq-${currentQuestion.id}-${option}`,
-        question: sq.question,
-        options: Array.isArray(sq.selections) 
-          ? sq.selections.map((opt: any, index: number) => ({
-              id: typeof opt === 'string' 
-                ? `${sq.id || `sq-${currentQuestion.id}-${option}`}-${index}`
-                : opt.value || `${sq.id || `sq-${currentQuestion.id}-${option}`}-${index}`,
-              label: typeof opt === 'string' ? opt : opt.label
-            }))
-          : [],
-        multi_choice: sq.multi_choice || false,
-        is_branching: sq.is_branching || false,
-        sub_questions: sq.sub_questions || {}
-      }));
+      if (currentQuestion.sub_questions && currentQuestion.sub_questions[option]) {
+        const subQuestions = currentQuestion.sub_questions[option];
+        console.log('Found sub-questions for option:', option, subQuestions);
+        
+        // Map the sub-questions to ensure they have the correct structure
+        const formattedSubQuestions = subQuestions.map((sq: any, index: number) => ({
+          id: sq.id || `sq-${currentQuestion.id}-${option}-${index}`,
+          question: sq.question,
+          options: Array.isArray(sq.selections) 
+            ? sq.selections.map((opt: any, optIndex: number) => ({
+                id: typeof opt === 'string' 
+                  ? `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`
+                  : opt.value || `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`,
+                label: typeof opt === 'string' ? opt : opt.label
+              }))
+            : [],
+          multi_choice: sq.multi_choice || false,
+          is_branching: sq.is_branching || false,
+          sub_questions: sq.sub_questions || {}
+        }));
 
-      newSequence = [...newSequence, ...formattedSubQuestions];
+        console.log('Formatted sub-questions:', formattedSubQuestions);
+        newSequence = [...newSequence, ...formattedSubQuestions];
+      }
     });
 
     // Add remaining questions from the original sequence
-    return [...newSequence, ...currentSequence.slice(currentIndex + 1)];
+    const remainingQuestions = currentSequence.slice(currentIndex + 1);
+    console.log('Adding remaining questions:', remainingQuestions);
+    
+    return [...newSequence, ...remainingQuestions];
   };
 
   const handleAnswer = (questionId: string, selectedOptions: string[]) => {
@@ -96,6 +105,18 @@ export const QuestionManager = ({
       
       console.log('New question sequence:', newSequence);
       setQuestionSequence(newSequence);
+    }
+
+    // For non-branching questions or after processing branching logic,
+    // automatically move to the next question if it's single choice
+    if (!currentQuestion.multi_choice && !currentQuestion.is_branching) {
+      setTimeout(() => {
+        if (currentQuestionIndex < questionSequence.length - 1) {
+          setCurrentQuestionIndex(prev => prev + 1);
+        } else {
+          setShowAdditionalServices(true);
+        }
+      }, 300);
     }
   };
 

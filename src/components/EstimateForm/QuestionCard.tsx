@@ -30,16 +30,17 @@ export const QuestionCard = ({
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
-    if (question.multi_choice) {
+    if (question.multi_choice || question.is_branching) {
       setShowNextButton(selectedOptions.length > 0);
     }
-  }, [selectedOptions, question.multi_choice]);
+  }, [selectedOptions, question.multi_choice, question.is_branching]);
 
   const handleSingleOptionSelect = (value: string) => {
     console.log('Selected single option:', value);
     setPressedOption(value);
     onSelect(question.id, [value]);
     
+    // Only auto-advance if it's not a branching question
     if (!question.is_branching) {
       setTimeout(() => {
         setPressedOption(null);
@@ -146,7 +147,7 @@ export const QuestionCard = ({
             </div>
           </div>
         ))}
-        {question.is_branching && selectedOptions[0] && (
+        {(question.is_branching && selectedOptions[0]) && (
           <div className="col-span-full mt-6">
             <Button 
               className="w-full"
