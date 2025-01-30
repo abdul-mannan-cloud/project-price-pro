@@ -26,7 +26,7 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get template questions based on keywords
+    // Get template questions based on keywords - now only requiring one match
     const keywords = projectDescription.toLowerCase().split(/\s+/);
     const { data: templateQuestions, error: templateError } = await supabase
       .from('question_templates')
@@ -44,10 +44,17 @@ serve(async (req) => {
 
     if (optionsError) throw optionsError;
 
-    // If no template matches and no predefined questions, return empty to trigger re-description
-    if ((!templateQuestions || templateQuestions.length === 0) && 
-        (!optionsData || (!optionsData.Question1 && !optionsData.Question2 && 
-         !optionsData.Question3 && !optionsData.Question4))) {
+    // Modified: Only require one match from either templates or predefined questions
+    const hasTemplateMatch = templateQuestions && templateQuestions.length > 0;
+    const hasPredefinedQuestions = optionsData && (
+      optionsData.Question1 || 
+      optionsData.Question2 || 
+      optionsData.Question3 || 
+      optionsData.Question4
+    );
+
+    // If no matches at all, request more details
+    if (!hasTemplateMatch && !hasPredefinedQuestions) {
       return new Response(JSON.stringify({ questions: [], needsMoreDetail: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
