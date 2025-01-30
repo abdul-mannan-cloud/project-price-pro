@@ -74,10 +74,18 @@ export const QuestionManager = ({
   const findDependentQuestions = (selectedValues: string[]): Question[] => {
     if (!categoryData.questions) return [];
 
+    // Get the selected values from the first question's options
+    const firstQuestionOptions = formatOptions(categoryData.questions[0]);
+    const selectedOptionValues = firstQuestionOptions
+      .filter(opt => selectedValues.includes(opt.id))
+      .map(opt => opt.value);
+
+    console.log('Selected option values:', selectedOptionValues);
+
     // Get all questions after the first one that depend on any of the selected values
     return categoryData.questions
       .slice(1) // Skip the first question
-      .filter(q => q.depends_on && selectedValues.includes(q.depends_on))
+      .filter(q => q.depends_on && selectedOptionValues.includes(q.depends_on))
       .map(q => ({
         ...q,
         id: q.id || `q-${Math.random()}`,
