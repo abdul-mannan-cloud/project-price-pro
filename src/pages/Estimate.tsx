@@ -11,6 +11,7 @@ import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
+import { Json } from "@/integrations/supabase/types";
 
 interface Question {
   question: string;
@@ -45,12 +46,16 @@ const EstimatePage = () => {
         .order('category');
       
       if (error) throw error;
+      
+      // Convert the template data to match the Question interface
       return data?.map(template => ({
         question: template.question,
-        options: Array.isArray(template.options) ? template.options.map((opt, idx) => ({
-          id: idx.toString(),
-          label: opt
-        })) : [],
+        options: Array.isArray(template.options) 
+          ? template.options.map((opt: Json, idx: number) => ({
+              id: idx.toString(),
+              label: String(opt) // Ensure the label is converted to string
+            }))
+          : [],
         isMultiChoice: template.question_type === 'multi_choice'
       })) || [];
     }
