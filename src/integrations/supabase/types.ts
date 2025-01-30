@@ -278,25 +278,73 @@ export type Database = {
       }
       Options: {
         Row: {
+          Appliances: Json | null
+          "Basement Remodeling": Json | null
+          "Bathroom Remodel": Json | null
+          Carpenter: Json | null
+          Concrete: Json | null
+          "Deck & porch": Json | null
+          Demolition: Json | null
+          "Door & Window": Json | null
+          Drywall: Json | null
+          Electrician: Json | null
+          "Fence Installation": Json | null
+          "Flooring Installation": Json | null
           "Key Options": string
-          "Question 1": Json | null
-          "Question 2": Json | null
-          "Question 3": Json | null
-          "Question 4": Json | null
+          "Kitchen Remodel": Json | null
+          Landscaping: Json | null
+          "Major Renovation": Json | null
+          "Mold remediation": Json | null
+          Moving: Json | null
+          Painting: Json | null
+          Plumber: Json | null
+          Repairs: Json | null
         }
         Insert: {
+          Appliances?: Json | null
+          "Basement Remodeling"?: Json | null
+          "Bathroom Remodel"?: Json | null
+          Carpenter?: Json | null
+          Concrete?: Json | null
+          "Deck & porch"?: Json | null
+          Demolition?: Json | null
+          "Door & Window"?: Json | null
+          Drywall?: Json | null
+          Electrician?: Json | null
+          "Fence Installation"?: Json | null
+          "Flooring Installation"?: Json | null
           "Key Options"?: string
-          "Question 1"?: Json | null
-          "Question 2"?: Json | null
-          "Question 3"?: Json | null
-          "Question 4"?: Json | null
+          "Kitchen Remodel"?: Json | null
+          Landscaping?: Json | null
+          "Major Renovation"?: Json | null
+          "Mold remediation"?: Json | null
+          Moving?: Json | null
+          Painting?: Json | null
+          Plumber?: Json | null
+          Repairs?: Json | null
         }
         Update: {
+          Appliances?: Json | null
+          "Basement Remodeling"?: Json | null
+          "Bathroom Remodel"?: Json | null
+          Carpenter?: Json | null
+          Concrete?: Json | null
+          "Deck & porch"?: Json | null
+          Demolition?: Json | null
+          "Door & Window"?: Json | null
+          Drywall?: Json | null
+          Electrician?: Json | null
+          "Fence Installation"?: Json | null
+          "Flooring Installation"?: Json | null
           "Key Options"?: string
-          "Question 1"?: Json | null
-          "Question 2"?: Json | null
-          "Question 3"?: Json | null
-          "Question 4"?: Json | null
+          "Kitchen Remodel"?: Json | null
+          Landscaping?: Json | null
+          "Major Renovation"?: Json | null
+          "Mold remediation"?: Json | null
+          Moving?: Json | null
+          Painting?: Json | null
+          Plumber?: Json | null
+          Repairs?: Json | null
         }
         Relationships: []
       }
