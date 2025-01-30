@@ -77,6 +77,18 @@ serve(async (req) => {
       });
     }
 
+    // Start AI question generation in the background
+    const aiQuestionsPromise = generateAIQuestions(projectDescription);
+    
+    // Use EdgeRuntime.waitUntil to handle the background task
+    EdgeRuntime.waitUntil(
+      aiQuestionsPromise.then(aiQuestions => {
+        console.log('AI questions generated:', aiQuestions);
+      }).catch(error => {
+        console.error('Error generating AI questions:', error);
+      })
+    );
+
     // Add final contact info question
     if (matchedQuestions.length > 0) {
       matchedQuestions.push({
@@ -144,6 +156,44 @@ serve(async (req) => {
     });
   }
 });
+
+async function generateAIQuestions(description: string) {
+  const llama_api_key = Deno.env.get('LLAMA_API_KEY');
+  if (!llama_api_key) {
+    throw new Error('Missing Llama API key');
+  }
+
+  // Implementation of AI question generation
+  // This runs in the background and doesn't block the main response
+  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${llama_api_key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-sonar-small-128k-online',
+      messages: [
+        {
+          role: 'system',
+          content: 'Generate relevant questions for a construction project estimate.'
+        },
+        {
+          role: 'user',
+          content: description
+        }
+      ],
+      temperature: 0.2,
+      max_tokens: 1000
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Llama API error: ${response.status}`);
+  }
+
+  return await response.json();
+}
 
 function isTaskRelevant(description: string, task?: string): boolean {
   if (!task || !description) return false;
