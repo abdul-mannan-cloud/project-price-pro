@@ -17,6 +17,33 @@ interface ColumnData {
   data: QuestionData[];
 }
 
+function parseColumn(columnValue: any): QuestionData[] {
+  if (!columnValue) return [];
+
+  let parsed;
+  if (typeof columnValue === 'string') {
+    try {
+      parsed = JSON.parse(columnValue);
+    } catch {
+      parsed = {};
+    }
+  } else {
+    parsed = columnValue;
+  }
+
+  if (Array.isArray(parsed.data)) {
+    return parsed.data;
+  }
+  
+  return [parsed];
+}
+
+function isMatch(taskValue: string, userInput: string): boolean {
+  const taskLower = taskValue.toLowerCase();
+  const inputLower = userInput.toLowerCase();
+  return inputLower.includes(taskLower);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -33,7 +60,8 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options`, {
+    // Fetch the first row from Options table
+    const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options?select=*&limit=1`, {
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
         'apikey': supabaseKey,
@@ -56,20 +84,19 @@ serve(async (req) => {
         try {
           const columnData = options[column] as ColumnData;
           if (columnData?.data && Array.isArray(columnData.data)) {
-            for (const questionObj of columnData.data) {
-              if (questionObj.task && description.includes(questionObj.task.toLowerCase())) {
-                console.log(`✅ Matched task "${questionObj.task}" in ${column}`);
-                allQuestions.push({
-                  stage: parseInt(column.split(' ')[1]),
-                  question: questionObj.question,
-                  options: questionObj.selections.map((label, idx) => ({
-                    id: `${column}-${idx}`,
-                    label: String(label)
-                  })),
-                  isMultiChoice: questionObj.multi_choice
-                });
-              }
-            }
+            const parsedQuestions = parseColumn(columnData);
+            const matchedQuestions = parsedQuestions.filter(q => 
+              q.task && isMatch(q.task, description)
+            ).map((questionObj, idx) => ({
+              stage: parseInt(column.split(' ')[1]),
+              question: questionObj.question,
+              options: questionObj.selections.map((label, optIdx) => ({
+                id: `${column}-${idx}-${optIdx}`,
+                label: String(label)
+              })),
+              isMultiChoice: questionObj.multi_choice
+            }));
+            allQuestions.push(...matchedQuestions);
           }
         } catch (error) {
           console.error(`Error processing ${column}:`, error);
