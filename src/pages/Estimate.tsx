@@ -11,7 +11,7 @@ import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
-import { Json } from "@/integrations/supabase/types";
+import { Database } from "@/integrations/supabase/types";
 
 interface Question {
   question: string;
@@ -33,49 +33,29 @@ export const EstimatePage = () => {
   const { toast } = useToast();
   const { contractorId } = useParams();
 
-  // Query for template questions based on project description
-  const { data: templateQuestions, isLoading: isLoadingTemplates } = useQuery({
-    queryKey: ["template-questions", projectDescription],
-    enabled: projectDescription.length > 30,
+  // Fetch contractor data
+  const { data: contractor } = useQuery({
+    queryKey: ["contractor", contractorId],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('generate-questions', {
-        body: { 
-          projectDescription, 
-          imageUrl: uploadedImageUrl,
-          previousAnswers: answers,
-          existingQuestions: questions
-        }
-      });
-
-      if (error) throw error;
+      if (!contractorId) return null;
       
-      if (data.needsMoreDetail) {
-        toast({
-          title: "More Details Needed",
-          description: "Please provide more specific details about your project to help us generate accurate questions.",
-          variant: "destructive",
-        });
+      const { data, error } = await supabase
+        .from("contractors")
+        .select("*, contractor_settings(*)")
+        .eq("id", contractorId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching contractor:", error);
         return null;
       }
 
-      return data.questions || [];
-    }
+      return data as Database['public']['Tables']['contractors']['Row'] & {
+        contractor_settings: Database['public']['Tables']['contractor_settings']['Row'] | null;
+      };
+    },
+    enabled: !!contractorId
   });
-
-  useEffect(() => {
-    if (templateQuestions) {
-      setQuestions(prevQuestions => {
-        const newQuestions = [...prevQuestions];
-        // Only append new questions that don't exist yet
-        templateQuestions.forEach(newQ => {
-          if (!prevQuestions.some(existingQ => existingQ.question === newQ.question)) {
-            newQuestions.push(newQ);
-          }
-        });
-        return newQuestions;
-      });
-    }
-  }, [templateQuestions]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -147,7 +127,8 @@ export const EstimatePage = () => {
           projectDescription, 
           imageUrl: uploadedImageUrl,
           previousAnswers: answers,
-          existingQuestions: questions
+          existingQuestions: questions,
+          contractorId
         }
       });
 
@@ -166,10 +147,15 @@ export const EstimatePage = () => {
       if (data.questions && data.questions.length > 0) {
         setQuestions(prevQuestions => {
           const newQuestions = [...prevQuestions];
-          // Only append new questions that don't exist yet
-          data.questions.forEach(newQ => {
+          data.questions.forEach((newQ: any) => {
             if (!prevQuestions.some(existingQ => existingQ.question === newQ.question)) {
-              newQuestions.push(newQ);
+              newQuestions.push({
+                ...newQ,
+                options: newQ.options.map((opt: any) => ({
+                  ...opt,
+                  label: String(opt.label)
+                }))
+              });
             }
           });
           return newQuestions;
@@ -250,7 +236,7 @@ export const EstimatePage = () => {
       const { data, error } = await supabase
         .from('estimates')
         .insert({
-          contractor_id: contractor?.id,
+          contractor_id: contractorId,
           project_title: "New Project Estimate",
           customer_name: contactData.fullName,
           customer_email: contactData.email,
@@ -396,7 +382,7 @@ export const EstimatePage = () => {
             <Button 
               className="w-full mt-6"
               onClick={generateAIQuestions}
-              disabled={projectDescription.trim().length < 30 || isLoadingTemplates}
+              disabled={projectDescription.trim().length < 30}
             >
               Continue
             </Button>
@@ -432,7 +418,7 @@ export const EstimatePage = () => {
               groups={estimate.groups} 
               totalCost={estimate.totalCost} 
               isBlurred={true}
-              contractor={contractor || undefined}
+              contractor={contractor}
             />
             <div className="mt-8">
               <ContactForm onSubmit={handleContactSubmit} />
@@ -444,7 +430,7 @@ export const EstimatePage = () => {
           <EstimateDisplay 
             groups={estimate.groups} 
             totalCost={estimate.totalCost}
-            contractor={contractor || undefined}
+            contractor={contractor}
           />
         )}
       </div>
