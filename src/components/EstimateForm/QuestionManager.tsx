@@ -48,9 +48,11 @@ export const QuestionManager = ({
     selectedOption: string,
     currentSequence: Question[]
   ): Question[] => {
+    // Get sub-questions for the selected option from the sub_questions object
     const subQuestions = currentQuestion.sub_questions?.[selectedOption] || [];
     const currentIndex = currentSequence.indexOf(currentQuestion);
     
+    // Return a new sequence with sub-questions inserted after the current question
     return [
       ...currentSequence.slice(0, currentIndex + 1),
       ...subQuestions,
