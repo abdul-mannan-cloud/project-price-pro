@@ -5,17 +5,17 @@ export interface QuestionOption {
 }
 
 export interface SubQuestion {
-  id: string;  // Changed from optional to required
+  id: string;
   question: string;
   selections: (string | QuestionOption)[];
   options: QuestionOption[];
   multi_choice: boolean;
-  is_branching?: boolean;
-  sub_questions?: Record<string, SubQuestion[]>;
+  is_branching: boolean;  // Changed from optional to required
+  sub_questions: Record<string, SubQuestion[]>;  // Changed from optional to required
 }
 
 export interface CategoryQuestion {
-  id: string;  // Changed from optional to required
+  id: string;
   question: string;
   selections: (string | QuestionOption)[];
   options: QuestionOption[];
