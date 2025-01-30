@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, SkipForward, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -256,14 +256,6 @@ const EstimatePage = () => {
     return 0;
   };
 
-  if (isProcessing) {
-    return <LoadingScreen message={
-      stage === 'questions' && currentQuestionIndex === questions.length - 1
-        ? "Generating your estimate..."
-        : "Processing your request..."
-    } />;
-  }
-
   const categories: Category[] = [
     {
       id: "kitchen",
@@ -281,6 +273,14 @@ const EstimatePage = () => {
       description: "Finish or remodel your basement"
     }
   ];
+
+  if (isProcessing) {
+    return <LoadingScreen message={
+      stage === 'questions' && currentQuestionIndex === questions.length - 1
+        ? "Generating your estimate..."
+        : "Processing your request..."
+    } />;
+  }
 
   return (
     <div className="min-h-screen bg-white">
