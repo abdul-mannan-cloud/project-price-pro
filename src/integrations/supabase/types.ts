@@ -278,61 +278,25 @@ export type Database = {
       }
       Options: {
         Row: {
-          "#1 Count Title": string | null
-          "#1 Yes/No Title": string | null
-          "#2 Yes/No Title": string | null
-          "Material Applicable Question": string | null
-          "Q1 Category": string | null
-          "Q1 Multi-select": string | null
-          "Q1 Question for related task": string | null
-          "Q1 Selection": string | null
-          "Q2 Category": string | null
-          "Q2 Multi-select": string | null
-          "Q2 Question for related task": string | null
-          "Q2 Selection": string | null
-          "Q3 Category": string | null
-          "Q3 Multi-select": string | null
-          "Q3 Question for related task": string | null
-          "Q3 Selection": string | null
-          Task: string | null
+          "Key Options": string
+          "Question 1": Json | null
+          "Question 2": Json | null
+          "Question 3": Json | null
+          "Question 4": Json | null
         }
         Insert: {
-          "#1 Count Title"?: string | null
-          "#1 Yes/No Title"?: string | null
-          "#2 Yes/No Title"?: string | null
-          "Material Applicable Question"?: string | null
-          "Q1 Category"?: string | null
-          "Q1 Multi-select"?: string | null
-          "Q1 Question for related task"?: string | null
-          "Q1 Selection"?: string | null
-          "Q2 Category"?: string | null
-          "Q2 Multi-select"?: string | null
-          "Q2 Question for related task"?: string | null
-          "Q2 Selection"?: string | null
-          "Q3 Category"?: string | null
-          "Q3 Multi-select"?: string | null
-          "Q3 Question for related task"?: string | null
-          "Q3 Selection"?: string | null
-          Task?: string | null
+          "Key Options"?: string
+          "Question 1"?: Json | null
+          "Question 2"?: Json | null
+          "Question 3"?: Json | null
+          "Question 4"?: Json | null
         }
         Update: {
-          "#1 Count Title"?: string | null
-          "#1 Yes/No Title"?: string | null
-          "#2 Yes/No Title"?: string | null
-          "Material Applicable Question"?: string | null
-          "Q1 Category"?: string | null
-          "Q1 Multi-select"?: string | null
-          "Q1 Question for related task"?: string | null
-          "Q1 Selection"?: string | null
-          "Q2 Category"?: string | null
-          "Q2 Multi-select"?: string | null
-          "Q2 Question for related task"?: string | null
-          "Q2 Selection"?: string | null
-          "Q3 Category"?: string | null
-          "Q3 Multi-select"?: string | null
-          "Q3 Question for related task"?: string | null
-          "Q3 Selection"?: string | null
-          Task?: string | null
+          "Key Options"?: string
+          "Question 1"?: Json | null
+          "Question 2"?: Json | null
+          "Question 3"?: Json | null
+          "Question 4"?: Json | null
         }
         Relationships: []
       }
