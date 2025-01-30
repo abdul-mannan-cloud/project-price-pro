@@ -2,7 +2,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Question, QuestionOption } from "@/types/estimate";
 
@@ -26,6 +26,14 @@ export const QuestionCard = ({
   totalStages,
 }: QuestionCardProps) => {
   const [pressedOption, setPressedOption] = useState<string | null>(null);
+  const [showNextButton, setShowNextButton] = useState(false);
+
+  useEffect(() => {
+    // Show next button for multi-choice questions only when at least one option is selected
+    if (question.multi_choice) {
+      setShowNextButton(selectedOptions.length > 0);
+    }
+  }, [selectedOptions, question.multi_choice]);
 
   const handleSingleOptionSelect = (value: string) => {
     setPressedOption(value);
@@ -46,6 +54,14 @@ export const QuestionCard = ({
       : [...selectedOptions, optionId];
     onSelect(question.id, newSelection);
   };
+
+  if (question.options.length === 0) {
+    return (
+      <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-sm">
+        <p className="text-red-500">Error: No options available for this question.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-sm animate-fadeIn">      
@@ -99,7 +115,7 @@ export const QuestionCard = ({
               </div>
             </div>
           ))}
-          {selectedOptions.length > 0 && (
+          {showNextButton && (
             <Button 
               className="w-full mt-6"
               onClick={onNext}

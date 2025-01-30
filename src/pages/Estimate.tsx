@@ -141,7 +141,6 @@ const EstimatePage = () => {
     
     setIsProcessing(true);
     try {
-      // Use double quotes for column names with spaces
       const { data, error } = await supabase
         .from('Options')
         .select(`"${selectedCategory}"`)
@@ -157,47 +156,45 @@ const EstimatePage = () => {
       const categoryData = data[selectedCategory];
       console.log('Category data:', categoryData);
 
-      // Ensure we have a questions array
       if (!Array.isArray(categoryData.questions)) {
         throw new Error('Invalid questions format');
       }
 
       const formattedQuestions = categoryData.questions.map((q: any, index: number) => {
-        // Ensure each question has the required properties
         const question: Question = {
           id: q.id || `q-${index}`,
           question: q.question,
-          options: Array.isArray(q.options) 
-            ? q.options.map((opt: any, optIndex: number) => ({
-                id: opt.id || `${index}-${optIndex}`,
-                label: typeof opt === 'string' ? opt : opt.label || ''
+          options: Array.isArray(q.selections) 
+            ? q.selections.map((opt: any, optIndex: number) => ({
+                id: typeof opt === 'string' 
+                  ? `${index}-${optIndex}` 
+                  : opt.value || `${index}-${optIndex}`,
+                label: typeof opt === 'string' ? opt : opt.label
               }))
             : [],
           multi_choice: q.multi_choice || false,
           is_branching: q.is_branching || false,
-          sub_questions: Array.isArray(q.sub_questions) 
-            ? q.sub_questions.map((sq: any, sqIndex: number) => ({
-                id: sq.id || `sq-${index}-${sqIndex}`,
-                question: sq.question,
-                options: Array.isArray(sq.options) 
-                  ? sq.options.map((opt: any, optIndex: number) => ({
-                      id: `${sq.id}-${optIndex}` || `sq-${index}-${sqIndex}-${optIndex}`,
-                      label: typeof opt === 'string' ? opt : opt.label || ''
-                    }))
-                  : [],
-                multi_choice: sq.multi_choice || false,
-                is_branching: false,
-                sub_questions: []
-              }))
-            : []
+          sub_questions: []
         };
 
-        // If no options were provided, create default Yes/No options
-        if (question.options.length === 0) {
-          question.options = [
-            { id: `${question.id}-yes`, label: 'Yes' },
-            { id: `${question.id}-no`, label: 'No' }
-          ];
+        if (q.is_branching && q.sub_questions) {
+          const subQuestions = Object.entries(q.sub_questions).map(([key, questions]: [string, any]) => {
+            return questions.map((sq: any, sqIndex: number) => ({
+              id: `sq-${index}-${key}-${sqIndex}`,
+              question: sq.question,
+              options: Array.isArray(sq.selections)
+                ? sq.selections.map((opt: any, optIndex: number) => ({
+                    id: `sq-${index}-${key}-${sqIndex}-${optIndex}`,
+                    label: typeof opt === 'string' ? opt : opt.label
+                  }))
+                : [],
+              multi_choice: sq.multi_choice || false,
+              is_branching: false,
+              sub_questions: []
+            }));
+          }).flat();
+
+          question.sub_questions = subQuestions;
         }
 
         return question;
