@@ -6,18 +6,11 @@ import { Camera, SkipForward } from "lucide-react";
 import { useState } from "react";
 import { ProgressSteps } from "@/components/ui/progress-steps";
 import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
+import { Question } from "@/types/estimate";
 
 interface BrandingColors {
   primary: string;
   secondary: string;
-}
-
-interface Question {
-  id: string;
-  question: string;
-  options: Array<{ id: string; label: string }>;
-  multi_choice: boolean;
-  is_branching: boolean;
 }
 
 const isBrandingColors = (value: unknown): value is BrandingColors => {
@@ -68,9 +61,13 @@ export const LeadMagnetPreview = () => {
       const formattedQuestions: Question[] = data.questions.map((q: any) => ({
         id: q.id || crypto.randomUUID(),
         question: q.question,
-        options: q.options,
+        options: q.options.map((opt: any) => ({
+          id: opt.id || crypto.randomUUID(),
+          label: opt.label
+        })),
         multi_choice: q.multi_choice || false,
-        is_branching: q.is_branching || false
+        is_branching: q.is_branching || false,
+        sub_questions: q.sub_questions || []
       }));
 
       setQuestions(formattedQuestions);
@@ -157,13 +154,11 @@ export const LeadMagnetPreview = () => {
 
       {currentStep > 0 && currentStep <= questions.length && (
         <QuestionCard
-          question={questions[currentStep - 1].question}
-          options={questions[currentStep - 1].options}
-          selectedOption={selectedOptions[currentStep - 1] || ""}
-          onSelect={handleOptionSelect}
+          question={questions[currentStep - 1]}
+          selectedOptions={selectedOptions[currentStep - 1] ? [selectedOptions[currentStep - 1]] : []}
+          onSelect={(questionId, value) => handleOptionSelect(value[0])}
           onNext={handleNext}
           isLastQuestion={currentStep === questions.length}
-          isMultiChoice={questions[currentStep - 1].multi_choice || false}
           currentStage={currentStep}
           totalStages={questions.length}
         />

@@ -11,14 +11,7 @@ import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
-
-interface Question {
-  id: string;
-  question: string;
-  options: Array<{ id: string; label: string }>;
-  multi_choice: boolean;
-  is_branching: boolean;
-}
+import { Question } from "@/types/estimate";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate'>('photo');
@@ -121,13 +114,17 @@ const EstimatePage = () => {
         const formattedQuestions: Question[] = data.questions.map((q: any) => ({
           id: q.id || crypto.randomUUID(),
           question: q.question,
-          options: q.options,
+          options: q.options.map((opt: any) => ({
+            id: opt.id || crypto.randomUUID(),
+            label: opt.label
+          })),
           multi_choice: q.multi_choice || false,
-          is_branching: q.is_branching || false
+          is_branching: q.is_branching || false,
+          sub_questions: q.sub_questions || []
         }));
 
         setQuestions(formattedQuestions);
-        setTotalStages(data.totalStages);
+        setTotalStages(formattedQuestions.length);
         setStage('questions');
       }
     } catch (error) {
@@ -354,25 +351,17 @@ const EstimatePage = () => {
 
         {stage === 'questions' && questions.length > 0 && currentQuestionIndex < questions.length && (
           <QuestionCard
-            question={questions[currentQuestionIndex].question}
-            options={questions[currentQuestionIndex].options}
-            selectedOption={
-              Array.isArray(answers[currentQuestionIndex])
-                ? (answers[currentQuestionIndex] as string[])[0]
-                : (answers[currentQuestionIndex] as string) || ""
-            }
-            onSelect={handleAnswerSubmit}
-            onNext={() => {}}
-            isLastQuestion={currentQuestionIndex === questions.length - 1}
-            isMultiChoice={questions[currentQuestionIndex].multi_choice}
+            question={questions[currentQuestionIndex]}
             selectedOptions={
               Array.isArray(answers[currentQuestionIndex])
                 ? answers[currentQuestionIndex] as string[]
-                : []
+                : [answers[currentQuestionIndex] as string] || []
             }
+            onSelect={(questionId, value) => handleAnswerSubmit(value)}
+            onNext={() => {}}
+            isLastQuestion={currentQuestionIndex === questions.length - 1}
             currentStage={currentQuestionIndex + 1}
             totalStages={totalStages}
-            isFinal={questions[currentQuestionIndex].is_branching}
           />
         )}
 
