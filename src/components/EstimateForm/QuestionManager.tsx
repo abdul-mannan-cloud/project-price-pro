@@ -43,6 +43,21 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
+  const processSubQuestions = (
+    currentQuestion: Question,
+    selectedOption: string,
+    currentSequence: Question[]
+  ): Question[] => {
+    const subQuestions = currentQuestion.sub_questions?.[selectedOption] || [];
+    const currentIndex = currentSequence.indexOf(currentQuestion);
+    
+    return [
+      ...currentSequence.slice(0, currentIndex + 1),
+      ...subQuestions,
+      ...currentSequence.slice(currentIndex + 1)
+    ];
+  };
+
   const handleAnswer = (questionId: string, selectedOptions: string[]) => {
     console.log('Handling answer:', { questionId, selectedOptions });
     
@@ -50,34 +65,28 @@ export const QuestionManager = ({
 
     const currentQuestion = questionSequence[currentQuestionIndex];
     
-    if (currentQuestion.is_branching && categoryData.branching_logic?.[questionId]) {
-      console.log('Processing branching logic for:', questionId);
-      const nextQuestionIds = categoryData.branching_logic[questionId][selectedOptions[0]] || [];
+    if (currentQuestion.is_branching && !currentQuestion.multi_choice) {
+      const selectedOption = selectedOptions[0];
+      const newSequence = processSubQuestions(
+        currentQuestion,
+        selectedOption,
+        questionSequence
+      );
       
-      if (currentQuestion.sub_questions) {
-        const relevantSubQuestions = currentQuestion.sub_questions.filter(q => 
-          nextQuestionIds.includes(q.id)
-        );
-        
-        console.log('Relevant sub-questions:', relevantSubQuestions);
-        
-        const remainingMainQuestions = categoryData.questions.slice(currentQuestionIndex + 1);
-        const newSequence = [
-          ...questionSequence.slice(0, currentQuestionIndex + 1),
-          ...relevantSubQuestions,
-          ...remainingMainQuestions
-        ];
-        
-        setQuestionSequence(newSequence);
-      }
+      console.log('New question sequence:', newSequence);
+      setQuestionSequence(newSequence);
     }
   };
 
   const handleNext = () => {
-    if (currentQuestionIndex < questionSequence.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-    } else {
+    const currentQuestion = questionSequence[currentQuestionIndex];
+    const isLastMainQuestion = currentQuestionIndex === questionSequence.length - 1;
+    
+    // If it's the last question and not a branching question, show additional services
+    if (isLastMainQuestion && !currentQuestion.is_branching) {
       setShowAdditionalServices(true);
+    } else {
+      setCurrentQuestionIndex(prev => prev + 1);
     }
   };
 
@@ -90,16 +99,10 @@ export const QuestionManager = ({
     onComplete(answers);
   };
 
-  const handleContinueWithAdditional = () => {
-    if (selectedAdditionalCategory) {
-      onSelectAdditionalCategory(selectedAdditionalCategory);
-    }
-  };
-
   if (showAdditionalServices) {
     return (
       <AdditionalServicesGrid
-        categories={categories}
+        categories={categories.filter(cat => !completedCategories.includes(cat.id))}
         selectedCategory={selectedAdditionalCategory}
         onSelect={handleAdditionalCategorySelect}
         onComplete={handleComplete}

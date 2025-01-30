@@ -68,7 +68,7 @@ export const AdditionalServicesGrid = ({
           variant="outline"
           onClick={onComplete}
         >
-          Skip Additional Work
+          Complete Estimate
         </Button>
         {selectedCategory && (
           <Button 
