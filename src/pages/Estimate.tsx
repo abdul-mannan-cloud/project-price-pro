@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, SkipForward, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -117,14 +117,19 @@ const EstimatePage = () => {
     }
   };
 
-  const formatQuestions = (rawQuestions: any[]): Question[] => {
-    return rawQuestions.map((q: any, index: number) => ({
+  const formatQuestions = (rawQuestions: any): Question[] => {
+    if (!Array.isArray(rawQuestions?.questions)) {
+      console.error('Invalid questions format:', rawQuestions);
+      return [];
+    }
+
+    return rawQuestions.questions.map((q: any, index: number) => ({
       id: `${index}`,
       question: q.question,
-      options: q.options.map((opt: any, optIndex: number) => ({
+      options: Array.isArray(q.options) ? q.options.map((opt: any, optIndex: number) => ({
         id: `${index}-${optIndex}`,
-        label: opt
-      })),
+        label: typeof opt === 'string' ? opt : opt.label
+      })) : [],
       multi_choice: q.multi_choice || false,
       is_branching: q.is_branching || false,
       sub_questions: []
@@ -132,21 +137,46 @@ const EstimatePage = () => {
   };
 
   const loadCategoryQuestions = async () => {
-    if (!selectedCategory || !optionsData) return;
+    if (!selectedCategory) return;
     
     setIsProcessing(true);
     try {
-      const formattedQuestions = formatQuestions(optionsData);
+      const { data, error } = await supabase
+        .from('Options')
+        .select(selectedCategory)
+        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .single();
+
+      if (error) throw error;
+
+      if (!data || !data[selectedCategory]) {
+        throw new Error(`No questions found for category: ${selectedCategory}`);
+      }
+
+      const formattedQuestions = formatQuestions(data[selectedCategory]);
+      console.log('Formatted questions:', formattedQuestions);
+      
+      if (formattedQuestions.length === 0) {
+        toast({
+          title: "No questions available",
+          description: "Unable to load questions for this category.",
+          variant: "destructive",
+        });
+        setStage('category');
+        return;
+      }
+
       setQuestions(formattedQuestions);
       setTotalStages(formattedQuestions.length);
       setStage('questions');
     } catch (error) {
-      console.error('Error formatting questions:', error);
+      console.error('Error loading questions:', error);
       toast({
         title: "Error",
         description: "Failed to load questions. Please try again.",
         variant: "destructive",
       });
+      setStage('category');
     } finally {
       setIsProcessing(false);
     }
