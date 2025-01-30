@@ -9,7 +9,7 @@ const corsHeaders = {
 // Enhanced keyword mapping with more specific categories and synonyms
 const keywordMap = {
   kitchen: ['kitchen', 'cooking', 'cabinets', 'countertops', 'appliances', 'sink', 'remodel'],
-  cabinets: ['cabinet', 'cabinets', 'storage', 'drawers', 'shelves', 'base cabinet', 'upper cabinet'],
+  cabinets: ['cabinet', 'cabinets', 'storage', 'drawers', 'shelves', 'base cabinet', 'upper cabinet', 'base and upper'],
   painting: ['paint', 'painting', 'walls', 'ceiling', 'color', 'finish', 'baseboard'],
   flooring: ['floor', 'flooring', 'tile', '12x12', 'hardwood', 'carpet', 'laminate'],
   electrical: ['electrical', 'wiring', 'outlets', 'lights', 'lighting', 'recessed'],
@@ -18,60 +18,44 @@ const keywordMap = {
   backsplash: ['backsplash', 'tile', 'mosaic', 'splash', '12"', 'wall tile'],
   countertop: ['countertop', 'counter', 'quartz', 'granite', 'surface'],
   demolition: ['demo', 'demolition', 'remove', 'gut', 'strip'],
-  trim: ['trim', 'baseboard', 'molding', 'casing', 'finish']
+  trim: ['trim', 'baseboard', 'molding', 'casing', 'finish'],
+  appliances: ['appliance', 'appliances', 'refrigerator', 'stove', 'dishwasher', 'microwave']
 };
 
 function findKeywords(text: string): string[] {
-  const words = text.toLowerCase().split(/[\s,]+/);
+  const normalizedText = text.toLowerCase();
   const keywords = new Set<string>();
   
-  // First pass: direct word matching
-  words.forEach(word => {
-    for (const [category, synonyms] of Object.entries(keywordMap)) {
-      if (synonyms.some(synonym => word.includes(synonym))) {
-        keywords.add(category);
-      }
-    }
-  });
-  
-  // Second pass: phrase matching
+  // First pass: Check for exact category matches
   for (const [category, synonyms] of Object.entries(keywordMap)) {
-    if (synonyms.some(synonym => text.toLowerCase().includes(synonym))) {
+    if (normalizedText.includes(category.toLowerCase())) {
       keywords.add(category);
+      continue;
+    }
+    
+    // Second pass: Check for synonym matches
+    for (const synonym of synonyms) {
+      if (normalizedText.includes(synonym.toLowerCase())) {
+        keywords.add(category);
+        break;
+      }
     }
   }
   
   return Array.from(keywords);
 }
 
-function parseColumn(columnValue: any): any[] {
-  if (!columnValue) return [];
+function processQuestionData(columnData: any): any[] {
+  if (!columnData) return [];
   
-  let parsed;
-  if (typeof columnValue === 'string') {
-    try {
-      parsed = JSON.parse(columnValue);
-    } catch {
-      return [];
-    }
-  } else {
-    parsed = columnValue;
+  try {
+    // Handle both string and object formats
+    const parsed = typeof columnData === 'string' ? JSON.parse(columnData) : columnData;
+    return Array.isArray(parsed.data) ? parsed.data : [parsed];
+  } catch (error) {
+    console.error('Error processing question data:', error);
+    return [];
   }
-  
-  return Array.isArray(parsed.data) ? parsed.data : [parsed];
-}
-
-function isMatch(taskValue: string, keywords: string[]): boolean {
-  const taskLower = taskValue.toLowerCase();
-  
-  return keywords.some(keyword => {
-    // Direct match
-    if (taskLower.includes(keyword)) return true;
-    
-    // Check synonyms
-    const synonyms = keywordMap[keyword as keyof typeof keywordMap] || [];
-    return synonyms.some(synonym => taskLower.includes(synonym));
-  });
 }
 
 serve(async (req) => {
@@ -108,45 +92,60 @@ serve(async (req) => {
     const optionsData = await optionsResponse.json();
     let allQuestions: any[] = [];
     let questionCount = 0;
-    let usedTasks = new Set<string>();
+    let usedQuestions = new Set<string>();
     
     if (optionsData.length > 0) {
       const options = optionsData[0];
       
-      // Process each question column in sequence
-      for (const column of ['Question 1', 'Question 2', 'Question 3', 'Question 4']) {
-        const columnData = options[column];
-        if (columnData?.data && Array.isArray(columnData.data)) {
-          const parsedQuestions = columnData.data;
-          console.log(`Processing ${column} with ${parsedQuestions.length} questions`);
-          
-          // Filter and add questions based on keywords
-          parsedQuestions.forEach((q: any, idx: number) => {
-            if (!q.task || usedTasks.has(q.task)) return;
-            
-            const matches = isMatch(q.task, keywords);
-            if (matches) {
-              usedTasks.add(q.task);
-              console.log(`✅ Matched task "${q.task}" in ${column}`);
-              
-              allQuestions.push({
-                stage: questionCount + 1,
-                question: q.question,
-                options: q.selections.map((label: string, optIdx: number) => ({
-                  id: `${column}-${idx}-${optIdx}`,
-                  label: String(label)
-                })),
-                isMultiChoice: q.multi_choice || false
-              });
-              questionCount++;
-            }
-          });
+      // Process each question column
+      for (let i = 1; i <= 4; i++) {
+        const columnKey = `Question ${i}`;
+        const columnData = options[columnKey];
+        
+        if (!columnData) {
+          console.log(`No data found for ${columnKey}`);
+          continue;
         }
+
+        const questions = processQuestionData(columnData);
+        console.log(`Processing ${columnKey}:`, questions);
+
+        // Match questions based on keywords
+        questions.forEach((q: any) => {
+          if (!q.task || !q.question || usedQuestions.has(q.question)) {
+            return;
+          }
+
+          // Check if the question matches any of our keywords
+          const questionMatches = keywords.some(keyword => {
+            const synonyms = keywordMap[keyword as keyof typeof keywordMap] || [];
+            return synonyms.some(synonym => 
+              q.task.toLowerCase().includes(synonym.toLowerCase())
+            );
+          });
+
+          if (questionMatches) {
+            console.log(`✅ Matched question: "${q.question}" for task: "${q.task}"`);
+            usedQuestions.add(q.question);
+            
+            allQuestions.push({
+              stage: questionCount + 1,
+              question: q.question,
+              options: q.selections.map((label: string, optIdx: number) => ({
+                id: `${columnKey}-${optIdx}`,
+                label: String(label)
+              })),
+              isMultiChoice: q.multi_choice || false
+            });
+            questionCount++;
+          }
+        });
       }
     }
 
-    // Sort questions by stage
+    // Sort questions by stage and ensure we don't exceed 30 questions
     allQuestions.sort((a, b) => a.stage - b.stage);
+    allQuestions = allQuestions.slice(0, 30);
     
     console.log(`Returning ${allQuestions.length} questions:`, allQuestions);
 
