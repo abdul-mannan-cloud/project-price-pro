@@ -11,6 +11,7 @@ import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
+import { Json } from "@/integrations/supabase/types";
 
 interface Question {
   question: string;
@@ -47,9 +48,9 @@ const EstimatePage = () => {
       if (error) throw error;
       return data?.map(template => ({
         question: template.question,
-        options: Array.isArray(template.options) ? template.options.map((opt, idx) => ({
+        options: Array.isArray(template.options) ? template.options.map((opt: Json, idx: number) => ({
           id: idx.toString(),
-          label: opt
+          label: String(opt) // Convert Json type to string
         })) : [],
         isMultiChoice: template.question_type === 'multi_choice'
       })) || [];
@@ -70,12 +71,6 @@ const EstimatePage = () => {
       return data;
     },
   });
-
-  useEffect(() => {
-    if (templateQuestions?.length && stage === 'description') {
-      setQuestions(templateQuestions);
-    }
-  }, [templateQuestions, stage]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -145,7 +140,15 @@ const EstimatePage = () => {
       if (error) throw error;
 
       if (data?.questions) {
-        setQuestions(prevQuestions => [...prevQuestions, ...data.questions]);
+        const typedQuestions: Question[] = data.questions.map((q: any) => ({
+          question: String(q.question),
+          options: q.options.map((opt: any, idx: number) => ({
+            id: String(opt.id || idx),
+            label: String(opt.label)
+          })),
+          isMultiChoice: Boolean(q.isMultiChoice)
+        }));
+        setQuestions(typedQuestions);
       }
       setStage('questions');
     } catch (error) {
