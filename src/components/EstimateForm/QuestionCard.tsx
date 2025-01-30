@@ -21,6 +21,7 @@ interface QuestionCardProps {
   currentQuestionIndex: number;
   totalQuestions: number;
   isMultiChoice?: boolean;
+  isFinal?: boolean;
 }
 
 export const QuestionCard = ({
@@ -34,6 +35,7 @@ export const QuestionCard = ({
   currentQuestionIndex,
   totalQuestions,
   isMultiChoice = false,
+  isFinal = false,
 }: QuestionCardProps) => {
   const [pressedOption, setPressedOption] = useState<string | null>(null);
 
@@ -41,14 +43,12 @@ export const QuestionCard = ({
     setPressedOption(value);
     onSelect(value);
     
-    // Add a small delay for the press animation
-    setTimeout(() => {
-      setPressedOption(null);
-      // Auto-advance to next question after selection
-      if (!isLastQuestion) {
+    if (!isLastQuestion || !isFinal) {
+      setTimeout(() => {
+        setPressedOption(null);
         setTimeout(onNext, 200);
-      }
-    }, 150);
+      }, 150);
+    }
   };
 
   const handleMultiOptionSelect = (optionId: string) => {
@@ -103,7 +103,7 @@ export const QuestionCard = ({
               className="w-full mt-6"
               onClick={onNext}
             >
-              {isLastQuestion ? "Submit and View Estimate" : "Next Question"}
+              {isLastQuestion ? "View Estimate" : "Next"}
             </Button>
           )}
         </div>
@@ -139,6 +139,14 @@ export const QuestionCard = ({
               </div>
             </div>
           ))}
+          {isLastQuestion && isFinal && selectedOption && (
+            <Button 
+              className="w-full mt-6"
+              onClick={onNext}
+            >
+              View Estimate
+            </Button>
+          )}
         </RadioGroup>
       )}
     </div>

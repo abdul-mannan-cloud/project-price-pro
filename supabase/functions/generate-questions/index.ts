@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { projectDescription } = await req.json();
+    const { projectDescription, imageUrl } = await req.json();
     console.log('Processing request with description:', projectDescription);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -23,7 +23,7 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Fetch template questions
+    // Fetch template questions from Options table
     const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options`, {
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
@@ -36,23 +36,18 @@ serve(async (req) => {
     }
 
     const optionsData = await optionsResponse.json();
-    const matchedQuestions = [];
+    let questions = [];
 
-    // Process all template questions first
+    // Process template questions from all columns
     if (optionsData.length > 0) {
       const options = optionsData[0];
       const description = projectDescription.toLowerCase();
       
-      // Process all question columns in order
       ['Question 1', 'Question 2', 'Question 3', 'Question 4'].forEach(column => {
         const questionData = options[column];
         if (questionData && typeof questionData === 'object') {
-          const taskMatches = isTaskRelevant(description, questionData.task?.toLowerCase());
-          console.log(`Checking ${column} with task "${questionData.task}" - Match: ${taskMatches}`);
-          
-          if (taskMatches) {
-            console.log(`Adding matched question from ${column}:`, questionData.question);
-            matchedQuestions.push({
+          if (isTaskRelevant(description, questionData.task?.toLowerCase())) {
+            questions.push({
               question: questionData.question,
               options: questionData.selections?.map((label: string, idx: number) => ({
                 id: idx.toString(),
@@ -65,25 +60,74 @@ serve(async (req) => {
       });
     }
 
-    // Return template questions immediately if we have any
-    if (matchedQuestions.length > 0) {
-      console.log('Returning matched template questions:', matchedQuestions);
-      // Start AI question generation in the background
-      EdgeRuntime.waitUntil(generateAIQuestions(projectDescription, matchedQuestions, supabaseUrl, supabaseKey, llamaApiKey));
-      return new Response(JSON.stringify({ 
-        questions: matchedQuestions,
-        status: 'partial'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Generate additional AI questions
+    if (llamaApiKey) {
+      console.log('Generating additional AI questions');
+      
+      const existingQuestionsText = questions.map(q => q.question).join(', ');
+      const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${llamaApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama3.2-11b',
+          messages: [
+            {
+              role: "system",
+              content: `You are a construction estimator assistant. Generate additional questions for a construction/renovation project. 
+              Avoid duplicating these existing questions: ${existingQuestionsText}.
+              Return a JSON array with this format: [{"question": "Question text?", "options": ["Option 1", "Option 2", "Option 3"], "isMultiChoice": false}]`
+            },
+            {
+              role: "user",
+              content: `Generate 2 questions for this project: ${projectDescription}`
+            }
+          ],
+          response_format: { type: "json_object" }
+        }),
       });
+
+      if (!llamaResponse.ok) {
+        throw new Error(`Llama API error: ${llamaResponse.status}`);
+      }
+
+      const aiResult = await llamaResponse.json();
+      console.log('AI response:', aiResult);
+
+      if (aiResult.choices?.[0]?.message?.content) {
+        try {
+          const aiQuestions = JSON.parse(aiResult.choices[0].message.content);
+          questions = [
+            ...questions,
+            ...aiQuestions.map((q: any) => ({
+              question: q.question,
+              options: q.options.map((label: string, idx: number) => ({
+                id: idx.toString(),
+                label: String(label)
+              })),
+              isMultiChoice: Boolean(q.isMultiChoice)
+            }))
+          ];
+        } catch (error) {
+          console.error('Error parsing AI questions:', error);
+        }
+      }
     }
 
-    // If no template questions, wait for AI questions
-    const aiQuestions = await generateAIQuestions(projectDescription, matchedQuestions, supabaseUrl, supabaseKey, llamaApiKey);
-    return new Response(JSON.stringify({ 
-      questions: aiQuestions,
-      status: 'complete'
-    }), {
+    // Add final contact info question
+    questions.push({
+      question: "Ready to view your estimate?",
+      options: [
+        { id: "yes", label: "Yes, show me my estimate" }
+      ],
+      isMultiChoice: false,
+      isFinal: true
+    });
+
+    console.log('Final questions array:', questions);
+    return new Response(JSON.stringify({ questions }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
@@ -91,7 +135,14 @@ serve(async (req) => {
     console.error('Error in generate-questions function:', error);
     return new Response(JSON.stringify({ 
       error: error.message,
-      questions: [] 
+      questions: [{
+        question: "Ready to view your estimate?",
+        options: [
+          { id: "yes", label: "Yes, show me my estimate" }
+        ],
+        isMultiChoice: false,
+        isFinal: true
+      }]
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -103,103 +154,12 @@ function isTaskRelevant(description: string, task?: string): boolean {
   if (!task) return false;
   
   const taskMappings: Record<string, string[]> = {
-    'kitchen': ['kichen', 'kitchn', 'cooking', 'countertop', 'cabinet', 'appliance'],
-    'painting': ['paint', 'wills', 'walls', 'color', 'finish', 'wallpaper'],
+    'kitchen': ['kitchen', 'cooking', 'countertop', 'cabinet', 'appliance'],
+    'painting': ['paint', 'walls', 'color', 'finish', 'wallpaper'],
     'bathroom': ['bath', 'shower', 'toilet', 'vanity', 'sink'],
     'flooring': ['floor', 'tile', 'hardwood', 'carpet', 'laminate'],
   };
   
   const taskTerms = [task.toLowerCase(), ...(taskMappings[task.toLowerCase()] || [])];
   return taskTerms.some(term => description.includes(term));
-}
-
-async function generateAIQuestions(
-  projectDescription: string, 
-  existingQuestions: any[], 
-  supabaseUrl: string,
-  supabaseKey: string,
-  llamaApiKey: string | undefined
-) {
-  if (!llamaApiKey) return [];
-
-  try {
-    console.log('Generating additional AI questions');
-    
-    const existingQuestionsText = existingQuestions.map(q => q.question).join(', ');
-    const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${llamaApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama3.2-11b',
-        messages: [
-          {
-            role: "system",
-            content: `You are a construction estimator assistant. Generate additional questions for a construction/renovation project. 
-            Avoid duplicating these existing questions: ${existingQuestionsText}.
-            Return ONLY a valid JSON array with this exact format, no other text:
-            [{"question": "Question text here?", "options": ["Option 1", "Option 2", "Option 3"], "isMultiChoice": false}]`
-          },
-          {
-            role: "user",
-            content: `Generate 2 questions for this project: ${projectDescription}`
-          }
-        ],
-        response_format: { type: "json_object" }
-      }),
-    });
-
-    if (!llamaResponse.ok) {
-      throw new Error(`Llama API error: ${llamaResponse.statusText}`);
-    }
-
-    const aiResult = await llamaResponse.json();
-    console.log('Raw AI response:', aiResult);
-
-    if (!aiResult.choices?.[0]?.message?.content) {
-      throw new Error('Invalid AI response format');
-    }
-
-    let parsedContent;
-    try {
-      parsedContent = JSON.parse(aiResult.choices[0].message.content);
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      const jsonMatch = aiResult.choices[0].message.content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        parsedContent = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('Could not parse AI response as JSON');
-      }
-    }
-
-    const formattedQuestions = parsedContent.map((q: any) => ({
-      question: q.question,
-      options: q.options.map((label: string, idx: number) => ({
-        id: idx.toString(),
-        label: String(label)
-      })),
-      isMultiChoice: Boolean(q.isMultiChoice)
-    }));
-
-    await fetch(`${supabaseUrl}/rest/v1/Options?id=eq.1`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'apikey': supabaseKey,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({
-        'AI Generated': formattedQuestions
-      })
-    });
-
-    return formattedQuestions;
-  } catch (error) {
-    console.error('Error generating AI questions:', error);
-    return [];
-  }
 }
