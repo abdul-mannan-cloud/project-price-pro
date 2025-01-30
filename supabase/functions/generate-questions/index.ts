@@ -23,7 +23,7 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Fetch template questions immediately
+    // Fetch template questions
     const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options`, {
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
@@ -38,13 +38,13 @@ serve(async (req) => {
     const optionsData = await optionsResponse.json();
     const matchedQuestions = [];
 
-    // Process template questions first (fast)
+    // Process all template questions first
     if (optionsData.length > 0) {
       const options = optionsData[0];
-      const questionColumns = ['Question 1', 'Question 2', 'Question 3', 'Question 4'];
       const description = projectDescription.toLowerCase();
       
-      for (const column of questionColumns) {
+      // Process all question columns in order
+      ['Question 1', 'Question 2', 'Question 3', 'Question 4'].forEach(column => {
         const questionData = options[column];
         if (questionData && typeof questionData === 'object') {
           const taskMatches = isTaskRelevant(description, questionData.task?.toLowerCase());
@@ -62,17 +62,17 @@ serve(async (req) => {
             });
           }
         }
-      }
+      });
     }
 
     // Return template questions immediately if we have any
     if (matchedQuestions.length > 0) {
       console.log('Returning matched template questions:', matchedQuestions);
+      // Start AI question generation in the background
       EdgeRuntime.waitUntil(generateAIQuestions(projectDescription, matchedQuestions, supabaseUrl, supabaseKey, llamaApiKey));
       return new Response(JSON.stringify({ 
         questions: matchedQuestions,
-        status: 'partial',
-        message: 'Template questions ready, AI questions processing'
+        status: 'partial'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -80,7 +80,6 @@ serve(async (req) => {
 
     // If no template questions, wait for AI questions
     const aiQuestions = await generateAIQuestions(projectDescription, matchedQuestions, supabaseUrl, supabaseKey, llamaApiKey);
-    
     return new Response(JSON.stringify({ 
       questions: aiQuestions,
       status: 'complete'
@@ -103,10 +102,6 @@ serve(async (req) => {
 function isTaskRelevant(description: string, task?: string): boolean {
   if (!task) return false;
   
-  // Direct match
-  if (description.includes(task.toLowerCase())) return true;
-  
-  // Enhanced task mappings with common misspellings and related terms
   const taskMappings: Record<string, string[]> = {
     'kitchen': ['kichen', 'kitchn', 'cooking', 'countertop', 'cabinet', 'appliance'],
     'painting': ['paint', 'wills', 'walls', 'color', 'finish', 'wallpaper'],
@@ -114,8 +109,8 @@ function isTaskRelevant(description: string, task?: string): boolean {
     'flooring': ['floor', 'tile', 'hardwood', 'carpet', 'laminate'],
   };
   
-  const relatedTerms = taskMappings[task.toLowerCase()] || [];
-  return relatedTerms.some(term => description.includes(term));
+  const taskTerms = [task.toLowerCase(), ...(taskMappings[task.toLowerCase()] || [])];
+  return taskTerms.some(term => description.includes(term));
 }
 
 async function generateAIQuestions(
@@ -125,7 +120,7 @@ async function generateAIQuestions(
   supabaseKey: string,
   llamaApiKey: string | undefined
 ) {
-  if (!llamaApiKey || existingQuestions.length >= 4) return [];
+  if (!llamaApiKey) return [];
 
   try {
     console.log('Generating additional AI questions');
@@ -149,11 +144,10 @@ async function generateAIQuestions(
           },
           {
             role: "user",
-            content: `Generate ${4 - existingQuestions.length} questions for this project: ${projectDescription}`
+            content: `Generate 2 questions for this project: ${projectDescription}`
           }
         ],
-        temperature: 0.7,
-        max_tokens: 2000
+        response_format: { type: "json_object" }
       }),
     });
 
@@ -168,16 +162,12 @@ async function generateAIQuestions(
       throw new Error('Invalid AI response format');
     }
 
-    const content = aiResult.choices[0].message.content.trim();
-    console.log('Parsing AI content:', content);
-
     let parsedContent;
     try {
-      parsedContent = JSON.parse(content);
+      parsedContent = JSON.parse(aiResult.choices[0].message.content);
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
-      // Try to extract JSON array if the response contains additional text
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      const jsonMatch = aiResult.choices[0].message.content.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         parsedContent = JSON.parse(jsonMatch[0]);
       } else {
@@ -185,7 +175,6 @@ async function generateAIQuestions(
       }
     }
 
-    // Validate and format the questions
     const formattedQuestions = parsedContent.map((q: any) => ({
       question: q.question,
       options: q.options.map((label: string, idx: number) => ({
@@ -194,9 +183,8 @@ async function generateAIQuestions(
       })),
       isMultiChoice: Boolean(q.isMultiChoice)
     }));
-      
-    // Update existing questions in the database
-    const updateResponse = await fetch(`${supabaseUrl}/rest/v1/Options?id=eq.1`, {
+
+    await fetch(`${supabaseUrl}/rest/v1/Options?id=eq.1`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
@@ -208,10 +196,6 @@ async function generateAIQuestions(
         'AI Generated': formattedQuestions
       })
     });
-
-    if (!updateResponse.ok) {
-      console.error('Failed to update AI questions in database');
-    }
 
     return formattedQuestions;
   } catch (error) {
