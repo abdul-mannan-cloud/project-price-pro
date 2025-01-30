@@ -45,8 +45,11 @@ serve(async (req) => {
     let allQuestions: any[] = [];
     const processedQuestions = new Set(); // To avoid duplicates
 
-    // Keywords from the project description
-    const keywords = projectDescription.toLowerCase().split(/[\s,]+/);
+    // Extract keywords from the project description
+    const keywords = projectDescription.toLowerCase().split(/[\s,\n]+/).filter(word => word.length > 2);
+    const commonKeywords = ['kitchen', 'remodel', 'demo', 'drywall', 'tile', 'cabinets', 'countertops', 
+                          'backsplash', 'sink', 'lights', 'appliances', 'painting', 'floor'];
+    
     console.log('Extracted keywords:', keywords);
 
     // Process each JSONB column (Question 1 through 4)
@@ -62,9 +65,8 @@ serve(async (req) => {
       }
 
       try {
-        // Handle both string and parsed JSON
+        // Parse JSON data
         const questionData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
-        // Ensure we're working with an array of questions
         const questions = Array.isArray(questionData) ? questionData : [questionData];
         
         console.log(`Parsed questions from ${columnKey}:`, questions);
@@ -76,12 +78,14 @@ serve(async (req) => {
           }
 
           // Convert task to lowercase and split into words
-          const taskWords = q.task.toLowerCase().split(/[\s,]+/);
+          const taskWords = q.task.toLowerCase().split(/[\s,\n]+/).filter(word => word.length > 2);
           
-          // Check if any keyword from the project description matches any word in the task
+          // Check for keyword matches
           const matches = keywords.some(keyword => 
             taskWords.some(taskWord => 
-              taskWord.includes(keyword) || keyword.includes(taskWord)
+              taskWord.includes(keyword) || 
+              keyword.includes(taskWord) ||
+              commonKeywords.includes(taskWord)
             )
           );
 
@@ -89,22 +93,28 @@ serve(async (req) => {
             console.log(`✅ Matched question for task "${q.task}":`, q.question);
             processedQuestions.add(q.question);
             
-            allQuestions.push({
-              stage: allQuestions.length + 1,
-              question: q.question,
-              options: Array.isArray(q.options) 
-                ? q.options.map((option: any, idx: number) => ({
-                    id: `${columnKey}-${idx}`,
-                    label: typeof option === 'string' ? option : option.label || String(option)
-                  }))
-                : Array.isArray(q.selections)
-                  ? q.selections.map((label: string, idx: number) => ({
-                      id: `${columnKey}-${idx}`,
-                      label: String(label)
-                    }))
-                  : [],
-              isMultiChoice: q.multi_choice || false
-            });
+            // Prepare options array
+            let options = [];
+            if (Array.isArray(q.options)) {
+              options = q.options.map((opt: any, idx: number) => ({
+                id: `${columnKey}-${idx}`,
+                label: typeof opt === 'string' ? opt : opt.label || String(opt)
+              }));
+            } else if (Array.isArray(q.selections)) {
+              options = q.selections.map((label: string, idx: number) => ({
+                id: `${columnKey}-${idx}`,
+                label: String(label)
+              }));
+            }
+
+            if (options.length > 0) {
+              allQuestions.push({
+                stage: allQuestions.length + 1,
+                question: q.question,
+                options,
+                isMultiChoice: q.multi_choice || false
+              });
+            }
           }
         });
       } catch (error) {
@@ -114,6 +124,9 @@ serve(async (req) => {
 
     console.log(`Total questions matched: ${allQuestions.length}`);
     console.log('Final questions array:', allQuestions);
+
+    // Sort questions by relevance and limit to a reasonable number
+    allQuestions = allQuestions.slice(0, 15); // Limit to 15 questions max
 
     return new Response(JSON.stringify({
       questions: allQuestions,
