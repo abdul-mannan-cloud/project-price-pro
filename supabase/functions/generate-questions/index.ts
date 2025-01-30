@@ -21,6 +21,21 @@ const keywordMap = {
   trim: ['trim', 'baseboard', 'molding', 'casing', 'finish']
 };
 
+function findKeywords(text: string): string[] {
+  const words = text.toLowerCase().split(/[\s,]+/);
+  const keywords = new Set<string>();
+  
+  words.forEach(word => {
+    for (const [category, synonyms] of Object.entries(keywordMap)) {
+      if (synonyms.some(synonym => word.includes(synonym))) {
+        keywords.add(category);
+      }
+    }
+  });
+  
+  return Array.from(keywords);
+}
+
 function parseColumn(columnValue: any): any[] {
   if (!columnValue) return [];
   
@@ -36,21 +51,6 @@ function parseColumn(columnValue: any): any[] {
   }
   
   return Array.isArray(parsed.data) ? parsed.data : [parsed];
-}
-
-function findKeywords(text: string): string[] {
-  const words = text.toLowerCase().split(/\s+/);
-  const keywords = new Set<string>();
-  
-  words.forEach(word => {
-    for (const [category, synonyms] of Object.entries(keywordMap)) {
-      if (synonyms.some(synonym => word.includes(synonym))) {
-        keywords.add(category);
-      }
-    }
-  });
-  
-  return Array.from(keywords);
 }
 
 function isMatch(taskValue: string, keywords: string[]): boolean {
@@ -107,82 +107,50 @@ serve(async (req) => {
       
       // Process each question column in sequence
       for (const column of ['Question 1', 'Question 2', 'Question 3', 'Question 4']) {
-        try {
-          const columnData = options[column];
-          if (columnData?.data && Array.isArray(columnData.data)) {
-            const parsedQuestions = parseColumn(columnData);
-            console.log(`Processing ${column} with ${parsedQuestions.length} questions`);
-            
-            // Filter questions based on keywords and avoid duplicates
-            const matchedQuestions = parsedQuestions
-              .filter(q => {
-                if (!q.task || usedTasks.has(q.task)) return false;
-                const matches = isMatch(q.task, keywords);
-                if (matches) {
-                  usedTasks.add(q.task);
-                  console.log(`✅ Matched task "${q.task}" in ${column}`);
-                }
-                return matches;
-              })
-              .map((questionObj, idx) => ({
-                stage: questionCount + idx + 1,
-                question: questionObj.question,
-                options: questionObj.selections.map((label: string, optIdx: number) => ({
-                  id: `${column}-${idx}-${optIdx}`,
-                  label: String(label)
-                })),
-                isMultiChoice: questionObj.multi_choice || false
-              }));
-            
-            allQuestions.push(...matchedQuestions);
-            questionCount += matchedQuestions.length;
-            
-            if (questionCount >= 30) break;
-          }
-        } catch (error) {
-          console.error(`Error processing ${column}:`, error);
+        const columnData = options[column];
+        if (columnData?.data && Array.isArray(columnData.data)) {
+          const parsedQuestions = parseColumn(columnData);
+          console.log(`Processing ${column} with ${parsedQuestions.length} questions`);
+          
+          // Filter questions based on keywords and avoid duplicates
+          const matchedQuestions = parsedQuestions
+            .filter(q => {
+              if (!q.task || usedTasks.has(q.task)) return false;
+              const matches = isMatch(q.task, keywords);
+              if (matches) {
+                usedTasks.add(q.task);
+                console.log(`✅ Matched task "${q.task}" in ${column}`);
+              }
+              return matches;
+            })
+            .map((questionObj, idx) => ({
+              stage: questionCount + idx + 1,
+              question: questionObj.question,
+              options: questionObj.selections.map((label: string, optIdx: number) => ({
+                id: `${column}-${idx}-${optIdx}`,
+                label: String(label)
+              })),
+              isMultiChoice: questionObj.multi_choice || false
+            }));
+          
+          allQuestions.push(...matchedQuestions);
+          questionCount += matchedQuestions.length;
+          
+          if (questionCount >= 30) break;
         }
       }
     }
 
     // If we have matched questions from the database, don't use default questions
-    if (allQuestions.length > 0) {
-      // Generate additional AI questions for uncovered aspects
-      try {
-        const remainingSlots = 30 - allQuestions.length;
-        if (remainingSlots > 0) {
-          const { data: aiQuestions } = await supabase.functions.invoke('generate-ai-questions', {
-            body: { 
-              projectDescription,
-              keywords,
-              existingTasks: Array.from(usedTasks),
-              maxQuestions: remainingSlots
-            }
-          });
-
-          if (aiQuestions?.length) {
-            const formattedAiQuestions = aiQuestions.map((q: any, idx: number) => ({
-              stage: questionCount + idx + 1,
-              question: q.question,
-              options: q.options.map((opt: string, optIdx: number) => ({
-                id: `ai-${idx}-${optIdx}`,
-                label: opt
-              })),
-              isMultiChoice: q.isMultiChoice || false
-            }));
-
-            allQuestions.push(...formattedAiQuestions);
-          }
-        }
-      } catch (error) {
-        console.error('Error generating AI questions:', error);
-      }
+    if (allQuestions.length === 0) {
+      console.log('No matching questions found, generating AI questions');
+      // Generate AI questions here if needed
     }
 
     // Sort questions by stage
     allQuestions.sort((a, b) => a.stage - b.stage);
 
-    console.log('Returning questions:', allQuestions);
+    console.log(`Returning ${allQuestions.length} questions`);
 
     return new Response(JSON.stringify({ 
       questions: allQuestions,
