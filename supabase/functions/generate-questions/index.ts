@@ -33,7 +33,6 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Fetch template questions from Options table
     const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options`, {
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
@@ -46,24 +45,22 @@ serve(async (req) => {
     }
 
     const optionsData = await optionsResponse.json();
-    console.log('Fetched options data:', optionsData);
+    let allQuestions = [];
     
-    let matchedQuestions = [];
-
     if (optionsData.length > 0) {
       const options = optionsData[0];
       const description = projectDescription.toLowerCase();
       
-      // Process each question column in order
-      ['Question 1', 'Question 2', 'Question 3', 'Question 4'].forEach(column => {
+      // Process each question column in sequence
+      for (const column of ['Question 1', 'Question 2', 'Question 3', 'Question 4']) {
         try {
-          console.log(`Processing ${column}:`, options[column]);
           const columnData = options[column] as ColumnData;
           if (columnData?.data && Array.isArray(columnData.data)) {
-            columnData.data.forEach(questionObj => {
+            for (const questionObj of columnData.data) {
               if (questionObj.task && description.includes(questionObj.task.toLowerCase())) {
                 console.log(`✅ Matched task "${questionObj.task}" in ${column}`);
-                matchedQuestions.push({
+                allQuestions.push({
+                  stage: parseInt(column.split(' ')[1]),
                   question: questionObj.question,
                   options: questionObj.selections.map((label, idx) => ({
                     id: `${column}-${idx}`,
@@ -72,18 +69,22 @@ serve(async (req) => {
                   isMultiChoice: questionObj.multi_choice
                 });
               }
-            });
+            }
           }
         } catch (error) {
           console.error(`Error processing ${column}:`, error);
         }
-      });
+      }
     }
 
+    // Sort questions by stage
+    allQuestions.sort((a, b) => a.stage - b.stage);
+
     // If no matches found, provide default questions
-    if (matchedQuestions.length === 0) {
-      matchedQuestions = [
+    if (allQuestions.length === 0) {
+      allQuestions = [
         {
+          stage: 1,
           question: "What type of project are you planning?",
           options: [
             { id: "kitchen", label: "Kitchen Remodel" },
@@ -94,6 +95,7 @@ serve(async (req) => {
           isMultiChoice: false
         },
         {
+          stage: 2,
           question: "What is your estimated budget range?",
           options: [
             { id: "budget1", label: "$5,000 - $15,000" },
@@ -107,7 +109,8 @@ serve(async (req) => {
     }
 
     // Always add final confirmation question
-    matchedQuestions.push({
+    allQuestions.push({
+      stage: allQuestions.length + 1,
       question: "Ready to view your estimate?",
       options: [
         { id: "yes", label: "Yes, show me my estimate" }
@@ -116,9 +119,12 @@ serve(async (req) => {
       isFinal: true
     });
 
-    console.log('Returning questions:', matchedQuestions);
+    console.log('Returning questions:', allQuestions);
 
-    return new Response(JSON.stringify({ questions: matchedQuestions }), {
+    return new Response(JSON.stringify({ 
+      questions: allQuestions,
+      totalStages: allQuestions.length
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

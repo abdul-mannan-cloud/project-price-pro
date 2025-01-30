@@ -13,9 +13,11 @@ import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 
 interface Question {
+  stage: number;
   question: string;
   options: Array<{ id: string; label: string }>;
   isMultiChoice?: boolean;
+  isFinal?: boolean;
 }
 
 const EstimatePage = () => {
@@ -28,6 +30,7 @@ const EstimatePage = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
   const [estimate, setEstimate] = useState<any>(null);
+  const [totalStages, setTotalStages] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
@@ -118,6 +121,7 @@ const EstimatePage = () => {
       if (data?.questions) {
         console.log('Setting questions:', data.questions);
         setQuestions(data.questions);
+        setTotalStages(data.totalStages);
         setStage('questions');
       }
     } catch (error) {
@@ -231,10 +235,7 @@ const EstimatePage = () => {
     if (stage === 'photo') return 20;
     if (stage === 'description') return 40;
     if (stage === 'questions') {
-      const totalQuestions = questions.length;
-      return totalQuestions > 0 
-        ? 40 + ((currentQuestionIndex + 1) / totalQuestions) * 30
-        : 40;
+      return 40 + ((currentQuestionIndex + 1) / questions.length) * 30;
     }
     if (stage === 'contact') return 90;
     if (stage === 'estimate') return 100;
@@ -356,6 +357,9 @@ const EstimatePage = () => {
                 ? answers[currentQuestionIndex] as string[]
                 : []
             }
+            currentStage={currentQuestionIndex + 1}
+            totalStages={totalStages}
+            isFinal={questions[currentQuestionIndex].isFinal}
           />
         )}
 
