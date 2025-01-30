@@ -73,9 +73,15 @@ export const QuestionManager = ({
     if (!categoryData.questions) return [];
 
     // Get all questions after the first one that depend on any of the selected values
-    return categoryData.questions
+    const dependentQuestions = categoryData.questions
       .slice(1) // Skip the first question
-      .filter(q => q.depends_on && selectedOptionValues.includes(q.depends_on));
+      .filter(q => {
+        // Only include questions where depends_on matches one of our selected values
+        return q.depends_on && selectedOptionValues.includes(q.depends_on);
+      });
+
+    console.log('Found dependent questions:', dependentQuestions);
+    return dependentQuestions;
   };
 
   const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
