@@ -25,12 +25,13 @@ const EstimatePage = () => {
   const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
   const [estimate, setEstimate] = useState<any>(null);
   const [totalStages, setTotalStages] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
 
-  // Query for template questions based on project description
+  // Query for contractor data
   const { data: contractor } = useQuery({
     queryKey: ["contractor", contractorId],
     enabled: !!contractorId,
@@ -43,6 +44,22 @@ const EstimatePage = () => {
 
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Query for options data
+  const { data: optionsData } = useQuery({
+    queryKey: ["options", selectedCategory],
+    enabled: !!selectedCategory,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("Options")
+        .select(`"${selectedCategory}"`)
+        .eq("Key Options", "42e64c9c-53b2-49bd-ad77-995ecb3106c6")
+        .single();
+
+      if (error) throw error;
+      return data[selectedCategory] as any[];
     },
   });
 
@@ -100,39 +117,30 @@ const EstimatePage = () => {
   };
 
   const generateAIQuestions = async () => {
+    if (!selectedCategory || !optionsData) return;
+    
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-questions', {
-        body: { 
-          projectDescription,
-          imageUrl: uploadedImageUrl
-        }
-      });
+      const formattedQuestions: Question[] = optionsData.map((q: any, index: number) => ({
+        id: `${index}`,
+        question: q.question,
+        options: q.options.map((opt: any, optIndex: number) => ({
+          id: `${index}-${optIndex}`,
+          label: opt
+        })),
+        multi_choice: q.multi_choice || false,
+        is_branching: q.is_branching || false,
+        sub_questions: []
+      }));
 
-      if (error) throw error;
-
-      if (data?.questions) {
-        const formattedQuestions: Question[] = data.questions.map((q: any) => ({
-          id: q.id || crypto.randomUUID(),
-          question: q.question,
-          options: q.options.map((opt: any) => ({
-            id: opt.id || crypto.randomUUID(),
-            label: opt.label
-          })),
-          multi_choice: q.multi_choice || false,
-          is_branching: q.is_branching || false,
-          sub_questions: q.sub_questions || []
-        }));
-
-        setQuestions(formattedQuestions);
-        setTotalStages(formattedQuestions.length);
-        setStage('questions');
-      }
+      setQuestions(formattedQuestions);
+      setTotalStages(formattedQuestions.length);
+      setStage('questions');
     } catch (error) {
-      console.error('Error generating questions:', error);
+      console.error('Error formatting questions:', error);
       toast({
         title: "Error",
-        description: "Failed to generate questions. Please try again.",
+        description: "Failed to load questions. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -258,17 +266,17 @@ const EstimatePage = () => {
 
   const categories: Category[] = [
     {
-      id: "kitchen",
+      id: "Kitchen Remodel",
       name: "Kitchen Remodeling",
       description: "Update or renovate your kitchen"
     },
     {
-      id: "bathroom",
+      id: "Bathroom Remodel",
       name: "Bathroom Remodeling",
       description: "Renovate your bathroom"
     },
     {
-      id: "basement",
+      id: "Basement Remodeling",
       name: "Basement Finishing",
       description: "Finish or remodel your basement"
     }
@@ -363,7 +371,7 @@ const EstimatePage = () => {
             </div>
             <Button 
               className="w-full mt-6"
-              onClick={generateAIQuestions}
+              onClick={() => setStage('category')}
               disabled={projectDescription.trim().length < 30}
             >
               Continue
@@ -391,13 +399,15 @@ const EstimatePage = () => {
 
         {stage === 'category' && (
           <div className="animate-fadeIn">
-            <h2 className="text-2xl font-semibold mb-6">Additional Services</h2>
+            <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
             <CategoryGrid 
               categories={categories}
               onSelectCategory={(categoryId) => {
+                setSelectedCategory(categoryId);
                 setStage('questions');
                 setCurrentQuestionIndex(0);
                 setAnswers({});
+                generateAIQuestions();
               }}
               completedCategories={completedCategories}
             />
