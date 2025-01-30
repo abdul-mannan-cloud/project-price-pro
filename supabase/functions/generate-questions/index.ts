@@ -61,59 +61,85 @@ serve(async (req) => {
       });
     }
 
-    // Generate additional AI questions for uncovered aspects
-    if (llamaApiKey) {
-      console.log('Generating additional AI questions');
-      
-      const existingQuestionsText = questions.map(q => q.question).join(', ');
-      const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${llamaApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'llama3.2-11b',
-          messages: [
-            {
-              role: "system",
-              content: `You are a construction estimator assistant. Generate additional questions for aspects of the project not covered by these existing questions: ${existingQuestionsText}.
-              Each question must specify if it's multi-choice (isMultiChoice: true) or single-choice (isMultiChoice: false).
-              Return a JSON array with this format: [{"question": "Question text?", "options": ["Option 1", "Option 2", "Option 3"], "isMultiChoice": false}]`
-            },
-            {
-              role: "user",
-              content: `Generate relevant questions for uncovered aspects of this project: ${projectDescription}`
-            }
-          ],
-          response_format: { type: "json_object" }
-        }),
+    // If we have template questions, use them directly
+    if (questions.length > 0) {
+      console.log('Using template questions:', questions);
+      return new Response(JSON.stringify({ questions }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
 
-      if (!llamaResponse.ok) {
-        throw new Error(`Llama API error: ${llamaResponse.status}`);
-      }
+    // Only try AI if we don't have template questions and have an API key
+    if (llamaApiKey) {
+      console.log('No template questions found, attempting AI generation');
+      try {
+        const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${llamaApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama3.2-11b',
+            messages: [
+              {
+                role: "system",
+                content: `You are a construction estimator assistant. Generate questions for aspects of the project.
+                Each question must specify if it's multi-choice (isMultiChoice: true) or single-choice (isMultiChoice: false).
+                Return a JSON array with this format: [{"question": "Question text?", "options": ["Option 1", "Option 2", "Option 3"], "isMultiChoice": false}]`
+              },
+              {
+                role: "user",
+                content: `Generate relevant questions for this project: ${projectDescription}`
+              }
+            ],
+            response_format: { type: "json_object" }
+          }),
+          signal: AbortSignal.timeout(10000) // 10 second timeout
+        });
 
-      const aiResult = await llamaResponse.json();
-      console.log('AI response:', aiResult);
-
-      if (aiResult.choices?.[0]?.message?.content) {
-        try {
-          const aiQuestions = JSON.parse(aiResult.choices[0].message.content);
-          questions = [
-            ...questions,
-            ...aiQuestions.map((q: any) => ({
-              question: q.question,
-              options: q.options.map((label: string, idx: number) => ({
-                id: idx.toString(),
-                label: String(label)
-              })),
-              isMultiChoice: Boolean(q.isMultiChoice)
-            }))
-          ];
-        } catch (error) {
-          console.error('Error parsing AI questions:', error);
+        if (!llamaResponse.ok) {
+          throw new Error(`Llama API error: ${llamaResponse.status}`);
         }
+
+        const aiResult = await llamaResponse.json();
+        console.log('AI response:', aiResult);
+
+        if (aiResult.choices?.[0]?.message?.content) {
+          const aiQuestions = JSON.parse(aiResult.choices[0].message.content);
+          questions = aiQuestions.map((q: any) => ({
+            question: q.question,
+            options: q.options.map((label: string, idx: number) => ({
+              id: idx.toString(),
+              label: String(label)
+            })),
+            isMultiChoice: Boolean(q.isMultiChoice)
+          }));
+        }
+      } catch (aiError) {
+        console.error('AI generation failed:', aiError);
+        // If AI fails, use default questions
+        questions = [
+          {
+            question: "What is the main focus of your project?",
+            options: [
+              { id: "1", label: "New Construction" },
+              { id: "2", label: "Renovation" },
+              { id: "3", label: "Repair" }
+            ],
+            isMultiChoice: false
+          },
+          {
+            question: "What is your desired timeline?",
+            options: [
+              { id: "1", label: "As soon as possible" },
+              { id: "2", label: "Within 1-3 months" },
+              { id: "3", label: "3-6 months" },
+              { id: "4", label: "6+ months" }
+            ],
+            isMultiChoice: false
+          }
+        ];
       }
     }
 
@@ -134,8 +160,29 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in generate-questions function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      questions: [
+        {
+          question: "What type of project are you interested in?",
+          options: [
+            { id: "1", label: "New Construction" },
+            { id: "2", label: "Renovation" },
+            { id: "3", label: "Repair" }
+          ],
+          isMultiChoice: false
+        },
+        {
+          question: "Ready to view your estimate?",
+          options: [
+            { id: "yes", label: "Yes, show me my estimate" }
+          ],
+          isMultiChoice: false,
+          isFinal: true
+        }
+      ]
+    }), {
+      status: 200, // Return 200 even on error, but with fallback questions
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
@@ -164,6 +211,5 @@ function isTaskRelevant(description: string, task?: string): boolean {
     ...(taskMappings[task.toLowerCase()] || [])
   ];
   
-  // Check if any task-related terms appear in the description
   return taskTerms.some(term => description.includes(term));
 }
