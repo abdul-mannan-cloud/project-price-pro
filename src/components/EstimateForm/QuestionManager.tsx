@@ -13,29 +13,37 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
   const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
 
   useEffect(() => {
-    setQuestionSequence(categoryData.questions);
+    // Initialize with only the first question
+    setQuestionSequence([categoryData.questions[0]]);
   }, [categoryData]);
 
   const handleAnswer = (questionId: string, selectedOptions: string[]) => {
     setAnswers(prev => ({ ...prev, [questionId]: selectedOptions }));
 
-    if (categoryData.branching_logic[questionId]) {
-      const nextQuestions = categoryData.branching_logic[questionId][selectedOptions[0]] || [];
-      const currentQuestion = questionSequence[currentQuestionIndex];
+    const currentQuestion = questionSequence[currentQuestionIndex];
+    
+    if (currentQuestion.is_branching && categoryData.branching_logic[questionId]) {
+      const nextQuestionIds = categoryData.branching_logic[questionId][selectedOptions[0]] || [];
       
-      if (currentQuestion.is_branching && currentQuestion.sub_questions) {
-        const filteredSubQuestions = currentQuestion.sub_questions.filter(q => 
-          nextQuestions.includes(q.id)
+      if (currentQuestion.sub_questions) {
+        const relevantSubQuestions = currentQuestion.sub_questions.filter(q => 
+          nextQuestionIds.includes(q.id)
         );
         
+        // Update sequence with only the relevant sub-questions
         const newSequence = [
           ...questionSequence.slice(0, currentQuestionIndex + 1),
-          ...filteredSubQuestions,
-          ...questionSequence.slice(currentQuestionIndex + 1)
+          ...relevantSubQuestions,
+          ...categoryData.questions.slice(1) // Add remaining main questions
         ];
         
         setQuestionSequence(newSequence);
       }
+    } else if (currentQuestionIndex === questionSequence.length - 1 && 
+               currentQuestionIndex < categoryData.questions.length - 1) {
+      // If we're at the last question in our sequence but there are more main questions,
+      // add the next main question
+      setQuestionSequence(prev => [...prev, categoryData.questions[prev.length]]);
     }
   };
 

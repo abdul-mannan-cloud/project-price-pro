@@ -31,7 +31,8 @@ export const QuestionCard = ({
     setPressedOption(value);
     onSelect(question.id, [value]);
     
-    if (!isLastQuestion && !question.is_branching) {
+    // Only auto-advance if it's not a branching question
+    if (!question.is_branching) {
       setTimeout(() => {
         setPressedOption(null);
         setTimeout(onNext, 200);
@@ -51,7 +52,7 @@ export const QuestionCard = ({
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm text-muted-foreground">
-            Question {currentStage} of {totalStages}
+            Progress
           </span>
           <span className="text-sm font-medium text-primary">
             {Math.round((currentStage / totalStages) * 100)}%
