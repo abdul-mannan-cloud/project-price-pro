@@ -186,10 +186,15 @@ const EstimatePage = () => {
 
   const handleContactSubmit = async (contactData: any) => {
     try {
+      // Make sure we have the contractor ID from the route params
+      if (!contractorId) {
+        throw new Error("No contractor ID provided");
+      }
+
       const { data, error } = await supabase
         .from('estimates')
         .insert({
-          contractor_id: contractor?.id,
+          contractor_id: contractorId, // Explicitly set the contractor_id
           project_title: "New Project Estimate",
           customer_name: contactData.fullName,
           customer_email: contactData.email,
@@ -204,7 +209,7 @@ const EstimatePage = () => {
       if (error) throw error;
 
       if (data) {
-        await supabase
+        const { error: detailsError } = await supabase
           .from('estimate_details')
           .insert(
             estimate.groups.map((group: any) => ({
@@ -214,6 +219,8 @@ const EstimatePage = () => {
               total_amount: group.items.reduce((sum: number, item: any) => sum + item.totalPrice, 0)
             }))
           );
+
+        if (detailsError) throw detailsError;
       }
 
       setStage('estimate');
