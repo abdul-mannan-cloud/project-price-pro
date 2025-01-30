@@ -43,6 +43,7 @@ export const QuestionCard = ({
     setPressedOption(value);
     onSelect(value);
     
+    // For single-choice questions, automatically proceed after selection
     if (!isLastQuestion || !isFinal) {
       setTimeout(() => {
         setPressedOption(null);

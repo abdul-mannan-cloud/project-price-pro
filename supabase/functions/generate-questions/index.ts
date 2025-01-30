@@ -6,52 +6,42 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface QuestionData {
-  task: string;
-  question: string;
-  multi_choice: boolean;
-  selections: string[];
-}
-
-// Define keyword synonyms and related terms
+// Enhanced keyword mapping with more synonyms and categories
 const keywordMap = {
   kitchen: ['kitchen', 'cooking', 'cabinets', 'countertops', 'appliances', 'sink'],
-  bathroom: ['bathroom', 'bath', 'shower', 'toilet', 'vanity'],
+  cabinets: ['cabinet', 'cabinets', 'storage', 'drawers', 'shelves'],
+  painting: ['paint', 'painting', 'walls', 'ceiling', 'color', 'finish'],
   flooring: ['floor', 'flooring', 'tile', 'hardwood', 'carpet', 'laminate'],
-  painting: ['paint', 'painting', 'walls', 'ceiling', 'color'],
-  electrical: ['electrical', 'wiring', 'outlets', 'lights', 'lighting'],
-  plumbing: ['plumbing', 'pipes', 'water', 'faucet', 'drain'],
-  windows: ['window', 'windows', 'glass', 'frame'],
-  doors: ['door', 'doors', 'entry', 'doorway'],
-  general: ['renovation', 'remodel', 'repair', 'fix', 'upgrade', 'improve']
+  electrical: ['electrical', 'wiring', 'outlets', 'lights', 'lighting', 'recessed'],
+  plumbing: ['plumbing', 'pipes', 'water', 'faucet', 'drain', 'sink'],
+  drywall: ['drywall', 'sheetrock', 'wall', 'ceiling', 'texture', 'repair'],
+  backsplash: ['backsplash', 'tile', 'mosaic', 'splash', 'wall tile'],
+  countertop: ['countertop', 'counter', 'quartz', 'granite', 'surface'],
+  demolition: ['demo', 'demolition', 'remove', 'gut', 'strip'],
+  trim: ['trim', 'baseboard', 'molding', 'casing', 'finish']
 };
 
-function parseColumn(columnValue: any): QuestionData[] {
+function parseColumn(columnValue: any): any[] {
   if (!columnValue) return [];
-
+  
   let parsed;
   if (typeof columnValue === 'string') {
     try {
       parsed = JSON.parse(columnValue);
     } catch {
-      parsed = {};
+      return [];
     }
   } else {
     parsed = columnValue;
   }
-
-  if (Array.isArray(parsed.data)) {
-    return parsed.data;
-  }
   
-  return [parsed];
+  return Array.isArray(parsed.data) ? parsed.data : [parsed];
 }
 
 function findKeywords(text: string): string[] {
   const words = text.toLowerCase().split(/\s+/);
   const keywords = new Set<string>();
-
-  // Check each word against our keyword map
+  
   words.forEach(word => {
     for (const [category, synonyms] of Object.entries(keywordMap)) {
       if (synonyms.some(synonym => word.includes(synonym))) {
@@ -59,14 +49,13 @@ function findKeywords(text: string): string[] {
       }
     }
   });
-
+  
   return Array.from(keywords);
 }
 
 function isMatch(taskValue: string, keywords: string[]): boolean {
   const taskLower = taskValue.toLowerCase();
   
-  // Check if any of our keywords match the task
   return keywords.some(keyword => {
     // Direct match
     if (taskLower.includes(keyword)) return true;
@@ -77,66 +66,6 @@ function isMatch(taskValue: string, keywords: string[]): boolean {
   });
 }
 
-const defaultQuestions = [
-  {
-    stage: 1,
-    question: "What type of project are you planning?",
-    options: [
-      { id: "type-1", label: "Kitchen Remodel" },
-      { id: "type-2", label: "Bathroom Renovation" },
-      { id: "type-3", label: "Flooring Installation" },
-      { id: "type-4", label: "Painting" },
-      { id: "type-5", label: "General Repairs" },
-      { id: "type-6", label: "Multiple Rooms" }
-    ],
-    isMultiChoice: true
-  },
-  {
-    stage: 2,
-    question: "What is the current condition of the space?",
-    options: [
-      { id: "condition-1", label: "Needs Complete Renovation" },
-      { id: "condition-2", label: "Requires Minor Updates" },
-      { id: "condition-3", label: "Damaged/Repair Needed" },
-      { id: "condition-4", label: "Outdated but Functional" }
-    ],
-    isMultiChoice: false
-  },
-  {
-    stage: 3,
-    question: "What is your estimated timeline for this project?",
-    options: [
-      { id: "timeline-1", label: "As Soon as Possible" },
-      { id: "timeline-2", label: "Within 1-3 Months" },
-      { id: "timeline-3", label: "3-6 Months" },
-      { id: "timeline-4", label: "6+ Months" }
-    ],
-    isMultiChoice: false
-  },
-  {
-    stage: 4,
-    question: "What is your estimated budget range?",
-    options: [
-      { id: "budget-1", label: "Under $5,000" },
-      { id: "budget-2", label: "$5,000 - $15,000" },
-      { id: "budget-3", label: "$15,000 - $30,000" },
-      { id: "budget-4", label: "$30,000+" }
-    ],
-    isMultiChoice: false
-  },
-  {
-    stage: 5,
-    question: "Do you need any of these additional services?",
-    options: [
-      { id: "services-1", label: "Design Consultation" },
-      { id: "services-2", label: "Permit Handling" },
-      { id: "services-3", label: "Debris Removal" },
-      { id: "services-4", label: "Material Selection Help" }
-    ],
-    isMultiChoice: true
-  }
-];
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -146,16 +75,15 @@ serve(async (req) => {
     const { projectDescription } = await req.json();
     console.log('Processing request with description:', projectDescription);
 
+    const keywords = findKeywords(projectDescription);
+    console.log('Extracted keywords:', keywords);
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!supabaseUrl || !supabaseKey) {
       throw new Error('Missing Supabase configuration');
     }
-
-    // Extract keywords from the project description
-    const keywords = findKeywords(projectDescription);
-    console.log('Extracted keywords:', keywords);
 
     // Fetch template questions
     const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options?select=*&limit=1`, {
@@ -170,8 +98,9 @@ serve(async (req) => {
     }
 
     const optionsData = await optionsResponse.json();
-    let allQuestions = [];
+    let allQuestions: any[] = [];
     let questionCount = 0;
+    let usedTasks = new Set<string>();
     
     if (optionsData.length > 0) {
       const options = optionsData[0];
@@ -184,27 +113,29 @@ serve(async (req) => {
             const parsedQuestions = parseColumn(columnData);
             console.log(`Processing ${column} with ${parsedQuestions.length} questions`);
             
-            const matchedQuestions = parsedQuestions.filter(q => {
-              const matches = q.task && isMatch(q.task, keywords);
-              if (matches) {
-                console.log(`✅ Matched task "${q.task}" in ${column}`);
-              }
-              return matches;
-            }).map((questionObj, idx) => ({
-              stage: parseInt(column.split(' ')[1]),
-              question: questionObj.question,
-              options: questionObj.selections.map((label, optIdx) => ({
-                id: `${column}-${idx}-${optIdx}`,
-                label: String(label)
-              })),
-              isMultiChoice: questionObj.multi_choice
-            }));
+            // Filter questions based on keywords and avoid duplicates
+            const matchedQuestions = parsedQuestions
+              .filter(q => {
+                if (!q.task || usedTasks.has(q.task)) return false;
+                const matches = isMatch(q.task, keywords);
+                if (matches) {
+                  usedTasks.add(q.task);
+                  console.log(`✅ Matched task "${q.task}" in ${column}`);
+                }
+                return matches;
+              })
+              .map((questionObj, idx) => ({
+                stage: questionCount + idx + 1,
+                question: questionObj.question,
+                options: questionObj.selections.map((label: string, optIdx: number) => ({
+                  id: `${column}-${idx}-${optIdx}`,
+                  label: String(label)
+                })),
+                isMultiChoice: questionObj.multi_choice || false
+              }));
             
-            // Only add questions if we haven't exceeded the limit
-            const remainingSlots = 30 - questionCount;
-            const questionsToAdd = matchedQuestions.slice(0, remainingSlots);
-            allQuestions.push(...questionsToAdd);
-            questionCount += questionsToAdd.length;
+            allQuestions.push(...matchedQuestions);
+            questionCount += matchedQuestions.length;
             
             if (questionCount >= 30) break;
           }
@@ -214,26 +145,34 @@ serve(async (req) => {
       }
     }
 
-    // If we have room for default questions, add them
-    if (questionCount < 30) {
-      const remainingSlots = 30 - questionCount;
-      const defaultsToAdd = defaultQuestions.slice(0, remainingSlots);
-      allQuestions.push(...defaultsToAdd);
-    }
-
-    // Generate additional AI questions if we still have room
-    if (allQuestions.length < 30) {
+    // If we have matched questions from the database, don't use default questions
+    if (allQuestions.length > 0) {
+      // Generate additional AI questions for uncovered aspects
       try {
-        const { data, error } = await supabase.functions.invoke('generate-ai-questions', {
-          body: { 
-            projectDescription,
-            keywords,
-            maxQuestions: 30 - allQuestions.length
-          }
-        });
+        const remainingSlots = 30 - allQuestions.length;
+        if (remainingSlots > 0) {
+          const { data: aiQuestions } = await supabase.functions.invoke('generate-ai-questions', {
+            body: { 
+              projectDescription,
+              keywords,
+              existingTasks: Array.from(usedTasks),
+              maxQuestions: remainingSlots
+            }
+          });
 
-        if (!error && data?.questions) {
-          allQuestions.push(...data.questions);
+          if (aiQuestions?.length) {
+            const formattedAiQuestions = aiQuestions.map((q: any, idx: number) => ({
+              stage: questionCount + idx + 1,
+              question: q.question,
+              options: q.options.map((opt: string, optIdx: number) => ({
+                id: `ai-${idx}-${optIdx}`,
+                label: opt
+              })),
+              isMultiChoice: q.isMultiChoice || false
+            }));
+
+            allQuestions.push(...formattedAiQuestions);
+          }
         }
       } catch (error) {
         console.error('Error generating AI questions:', error);
@@ -254,10 +193,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in generate-questions function:', error);
-    return new Response(JSON.stringify({ 
-      questions: defaultQuestions,
-      totalStages: defaultQuestions.length
-    }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500
     });
