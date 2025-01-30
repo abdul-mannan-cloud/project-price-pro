@@ -355,7 +355,9 @@ const EstimatePage = () => {
             selectedOptions={
               Array.isArray(answers[currentQuestionIndex])
                 ? answers[currentQuestionIndex] as string[]
-                : [answers[currentQuestionIndex] as string] || []
+                : answers[currentQuestionIndex] 
+                  ? [answers[currentQuestionIndex] as string] 
+                  : []
             }
             onSelect={(questionId, value) => handleAnswerSubmit(value)}
             onNext={() => {}}
