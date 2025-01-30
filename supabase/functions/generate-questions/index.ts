@@ -17,6 +17,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
 
     if (!supabaseUrl || !supabaseKey) {
       throw new Error('Missing Supabase configuration');
@@ -46,7 +47,6 @@ serve(async (req) => {
       for (const column of questionColumns) {
         const questionData = options[column];
         if (questionData && typeof questionData === 'object') {
-          // Enhanced task matching logic
           const taskMatches = isTaskRelevant(description, questionData.task?.toLowerCase());
           console.log(`Checking ${column} with task "${questionData.task}" - Match: ${taskMatches}`);
           
@@ -68,7 +68,7 @@ serve(async (req) => {
     // Return template questions immediately if we have any
     if (matchedQuestions.length > 0) {
       console.log('Returning matched template questions:', matchedQuestions);
-      EdgeRuntime.waitUntil(generateAIQuestions(projectDescription, matchedQuestions, supabaseUrl, supabaseKey));
+      EdgeRuntime.waitUntil(generateAIQuestions(projectDescription, matchedQuestions, supabaseUrl, supabaseKey, llamaApiKey));
       return new Response(JSON.stringify({ 
         questions: matchedQuestions,
         status: 'partial',
@@ -79,7 +79,7 @@ serve(async (req) => {
     }
 
     // If no template questions, wait for AI questions
-    const aiQuestions = await generateAIQuestions(projectDescription, matchedQuestions, supabaseUrl, supabaseKey);
+    const aiQuestions = await generateAIQuestions(projectDescription, matchedQuestions, supabaseUrl, supabaseKey, llamaApiKey);
     
     return new Response(JSON.stringify({ 
       questions: aiQuestions,
@@ -122,9 +122,9 @@ async function generateAIQuestions(
   projectDescription: string, 
   existingQuestions: any[], 
   supabaseUrl: string,
-  supabaseKey: string
+  supabaseKey: string,
+  llamaApiKey: string | undefined
 ) {
-  const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
   if (!llamaApiKey || existingQuestions.length >= 4) return [];
 
   try {
@@ -142,17 +142,14 @@ async function generateAIQuestions(
         messages: [
           {
             role: "system",
-            content: `Generate additional questions for a construction/renovation project. 
+            content: `You are a construction estimator assistant. Generate additional questions for a construction/renovation project. 
             Avoid duplicating these existing questions: ${existingQuestionsText}.
-            Each question should:
-            - Be specific and actionable
-            - Have 3-4 relevant options
-            - Help understand project requirements better
-            Format as JSON array: [{"question": "...", "options": ["opt1", "opt2", "opt3"], "isMultiChoice": boolean}]`
+            Return ONLY a valid JSON array with this exact format, no other text:
+            [{"question": "Question text here?", "options": ["Option 1", "Option 2", "Option 3"], "isMultiChoice": false}]`
           },
           {
             role: "user",
-            content: `Generate ${4 - existingQuestions.length} additional questions for this project: ${projectDescription}`
+            content: `Generate ${4 - existingQuestions.length} questions for this project: ${projectDescription}`
           }
         ],
         temperature: 0.7,
@@ -160,40 +157,65 @@ async function generateAIQuestions(
       }),
     });
 
-    if (llamaResponse.ok) {
-      const aiResult = await llamaResponse.json();
-      const content = aiResult.choices[0].message.content;
-      const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
-      
-      // Update existing questions in the database
-      const updateResponse = await fetch(`${supabaseUrl}/rest/v1/Options?id=eq.1`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'apikey': supabaseKey,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          'AI Generated': parsedContent
-        })
-      });
-
-      if (!updateResponse.ok) {
-        console.error('Failed to update AI questions in database');
-      }
-
-      return parsedContent.map((q: any) => ({
-        question: q.question,
-        options: q.options.map((label: string, idx: number) => ({
-          id: idx.toString(),
-          label: String(label)
-        })),
-        isMultiChoice: q.isMultiChoice || false
-      }));
+    if (!llamaResponse.ok) {
+      throw new Error(`Llama API error: ${llamaResponse.statusText}`);
     }
+
+    const aiResult = await llamaResponse.json();
+    console.log('Raw AI response:', aiResult);
+
+    if (!aiResult.choices?.[0]?.message?.content) {
+      throw new Error('Invalid AI response format');
+    }
+
+    const content = aiResult.choices[0].message.content.trim();
+    console.log('Parsing AI content:', content);
+
+    let parsedContent;
+    try {
+      parsedContent = JSON.parse(content);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      // Try to extract JSON array if the response contains additional text
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        parsedContent = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('Could not parse AI response as JSON');
+      }
+    }
+
+    // Validate and format the questions
+    const formattedQuestions = parsedContent.map((q: any) => ({
+      question: q.question,
+      options: q.options.map((label: string, idx: number) => ({
+        id: idx.toString(),
+        label: String(label)
+      })),
+      isMultiChoice: Boolean(q.isMultiChoice)
+    }));
+      
+    // Update existing questions in the database
+    const updateResponse = await fetch(`${supabaseUrl}/rest/v1/Options?id=eq.1`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'apikey': supabaseKey,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        'AI Generated': formattedQuestions
+      })
+    });
+
+    if (!updateResponse.ok) {
+      console.error('Failed to update AI questions in database');
+    }
+
+    return formattedQuestions;
   } catch (error) {
     console.error('Error generating AI questions:', error);
+    return [];
   }
-  return [];
 }
