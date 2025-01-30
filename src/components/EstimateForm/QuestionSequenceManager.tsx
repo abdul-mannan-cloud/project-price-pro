@@ -112,15 +112,16 @@ export const QuestionSequenceManager = ({
     return null;
   }
 
-  // Convert the current question to match the Question interface
   const currentQuestion: Question = {
     ...questionSequence[currentIndex].currentQuestion,
     id: questionSequence[currentIndex].questionId,
+    selections: questionSequence[currentIndex].currentQuestion.selections,
     options: questionSequence[currentIndex].currentQuestion.selections.map((selection, index) => ({
-      id: typeof selection === 'string' ? `${index}` : selection.value,
+      id: typeof selection === 'string' ? `${index}` : selection.id || selection.value,
       label: typeof selection === 'string' ? selection : selection.label,
       value: typeof selection === 'string' ? selection : selection.value
-    }))
+    })),
+    is_branching: questionSequence[currentIndex].currentQuestion.is_branching || false
   };
 
   return (

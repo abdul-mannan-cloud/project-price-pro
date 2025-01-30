@@ -1,4 +1,5 @@
 export interface QuestionOption {
+  id: string;
   label: string;
   value: string;
 }
@@ -7,7 +8,7 @@ export interface SubQuestion {
   id?: string;
   question: string;
   selections: (string | QuestionOption)[];
-  options: QuestionOption[];  // Added to match Question interface
+  options: QuestionOption[];
   multi_choice: boolean;
   is_branching?: boolean;
   sub_questions?: Record<string, SubQuestion[]>;
@@ -17,16 +18,10 @@ export interface CategoryQuestion {
   id?: string;
   question: string;
   selections: (string | QuestionOption)[];
-  options: QuestionOption[];  // Added to match Question interface
+  options: QuestionOption[];
   is_branching: boolean;
   multi_choice: boolean;
   sub_questions: Record<string, SubQuestion[]>;
-}
-
-export interface QuestionState {
-  questionId: string;
-  selectedOptions: string[];
-  parentValue?: string;
 }
 
 export interface QuestionSequence {
