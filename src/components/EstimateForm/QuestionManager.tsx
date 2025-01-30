@@ -33,13 +33,12 @@ export const QuestionManager = ({
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
     if (categoryData?.questions?.length > 0) {
-      const initialQuestions = categoryData.questions.map((q, index) => ({
-        ...q,
-        id: q.id || `q-${index}`,
-        options: formatOptions(q)
-      }));
-      
-      const firstQuestion = initialQuestions.find(q => !q.depends_on) || initialQuestions[0];
+      // Start with just the first question
+      const firstQuestion = {
+        ...categoryData.questions[0],
+        id: categoryData.questions[0].id || 'q-0',
+        options: formatOptions(categoryData.questions[0])
+      };
       setQuestionSequence([firstQuestion]);
       setCurrentQuestionIndex(0);
       setAnswers({});
@@ -75,13 +74,15 @@ export const QuestionManager = ({
   const findDependentQuestions = (selectedValues: string[]): Question[] => {
     if (!categoryData.questions) return [];
 
-    return categoryData.questions.filter(q => 
-      q.depends_on && selectedValues.includes(q.depends_on)
-    ).map(q => ({
-      ...q,
-      id: q.id || `q-${Math.random()}`,
-      options: formatOptions(q)
-    }));
+    // Get all questions after the first one that depend on any of the selected values
+    return categoryData.questions
+      .slice(1) // Skip the first question
+      .filter(q => q.depends_on && selectedValues.includes(q.depends_on))
+      .map(q => ({
+        ...q,
+        id: q.id || `q-${Math.random()}`,
+        options: formatOptions(q)
+      }));
   };
 
   const handleAnswer = (questionId: string, selectedOptions: string[]) => {
@@ -91,24 +92,21 @@ export const QuestionManager = ({
 
     const currentQuestion = questionSequence[currentQuestionIndex];
     
-    if (currentQuestion.is_branching || currentQuestion.multi_choice) {
+    if (currentQuestionIndex === 0 && currentQuestion.is_branching) {
+      // For the first branching question, update the entire sequence
       const dependentQuestions = findDependentQuestions(selectedOptions);
+      console.log('Found dependent questions:', dependentQuestions);
       
       if (dependentQuestions.length > 0) {
-        console.log('Adding dependent questions:', dependentQuestions);
-        const updatedSequence = [
-          ...questionSequence.slice(0, currentQuestionIndex + 1),
-          ...dependentQuestions,
-          ...questionSequence.slice(currentQuestionIndex + 1)
-        ];
+        const updatedSequence = [currentQuestion, ...dependentQuestions];
+        console.log('Setting new question sequence:', updatedSequence);
         setQuestionSequence(updatedSequence);
       }
-      
-      if (!currentQuestion.multi_choice || selectedOptions.length === 0) {
-        handleNext();
-      }
-    } else {
-      setTimeout(() => handleNext(), 300);
+    }
+
+    // Automatically advance for single-choice questions or when no options are selected
+    if (!currentQuestion.multi_choice || selectedOptions.length === 0) {
+      handleNext();
     }
   };
 
