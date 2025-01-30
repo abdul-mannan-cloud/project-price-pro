@@ -30,7 +30,7 @@ export const QuestionManager = ({
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    console.log('Initializing question sequence with category data:', categoryData);
+    console.log("Initializing question sequence with category data:", categoryData);
     if (categoryData?.questions?.length > 0) {
       const initialQuestion = categoryData.questions[0];
       setQuestionSequence([initialQuestion]);
@@ -51,50 +51,48 @@ export const QuestionManager = ({
     selectedOptions: string[],
     currentSequence: Question[]
   ): Question[] => {
-    console.log('Processing sub-questions for:', { currentQuestion, selectedOptions });
+    console.log("Processing sub-questions for:", { currentQuestion, selectedOptions });
     
     const currentIndex = currentSequence.indexOf(currentQuestion);
     let newSequence = [...currentSequence.slice(0, currentIndex + 1)];
-    
+
     selectedOptions.forEach(option => {
       if (currentQuestion.sub_questions && currentQuestion.sub_questions[option]) {
         const subQuestions = currentQuestion.sub_questions[option];
-        console.log('Found sub-questions for option:', option, subQuestions);
-        
+        console.log("Found sub-questions for option:", option, subQuestions);
+
         const formattedSubQuestions = subQuestions.map((sq: any, index: number) => ({
           id: sq.id || `sq-${currentQuestion.id}-${option}-${index}`,
           question: sq.question,
-          options: Array.isArray(sq.selections) 
-            ? sq.selections.map((opt: any, optIndex: number) => ({
-                id: typeof opt === 'string' 
-                  ? `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`
-                  : opt.value || `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`,
-                label: typeof opt === 'string' ? opt : opt.label
-              }))
-            : [],
+          options: sq.selections.map((opt: any, optIndex: number) => ({
+            id: typeof opt === "string" 
+              ? `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`
+              : opt.value || `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`,
+            label: typeof opt === "string" ? opt : opt.label
+          })),
           multi_choice: sq.multi_choice || false,
           is_branching: sq.is_branching || false,
           sub_questions: sq.sub_questions || {}
         }));
 
-        console.log('Formatted sub-questions:', formattedSubQuestions);
+        console.log("Formatted sub-questions:", formattedSubQuestions);
         newSequence = [...newSequence, ...formattedSubQuestions];
       }
     });
 
     const remainingQuestions = currentSequence.slice(currentIndex + 1);
-    console.log('New question sequence:', [...newSequence, ...remainingQuestions]);
+    console.log("New question sequence:", [...newSequence, ...remainingQuestions]);
     
     return [...newSequence, ...remainingQuestions];
   };
 
   const handleAnswer = (questionId: string, selectedOptions: string[]) => {
-    console.log('Handling answer:', { questionId, selectedOptions });
+    console.log("Handling answer:", { questionId, selectedOptions });
     
     setAnswers(prev => ({ ...prev, [questionId]: selectedOptions }));
 
     const currentQuestion = questionSequence[currentQuestionIndex];
-    
+
     if (currentQuestion.is_branching) {
       const newSequence = processSubQuestions(
         currentQuestion,
@@ -105,7 +103,7 @@ export const QuestionManager = ({
       setQuestionSequence(newSequence);
     }
 
-    // For non-branching questions, automatically advance
+    // Auto-advance for non-multi-choice, non-branching questions
     if (!currentQuestion.multi_choice && !currentQuestion.is_branching) {
       setTimeout(() => {
         if (currentQuestionIndex < questionSequence.length - 1) {
@@ -128,7 +126,7 @@ export const QuestionManager = ({
   };
 
   const handleComplete = async () => {
-    console.log('Completing category with answers:', answers);
+    console.log("Completing category with answers:", answers);
     if (Object.keys(answers).length === 0) {
       toast({
         title: "Error",
@@ -140,8 +138,7 @@ export const QuestionManager = ({
 
     setIsProcessing(true);
     try {
-      // Process answers with Llama 3.2 before showing additional services
-      const { data, error } = await supabase.functions.invoke('generate-estimate', {
+      const { data, error } = await supabase.functions.invoke("generate-estimate", {
         body: { 
           answers,
           category: currentCategory
@@ -150,10 +147,9 @@ export const QuestionManager = ({
 
       if (error) throw error;
       
-      // After successful processing, show additional services
       setShowAdditionalServices(true);
     } catch (error) {
-      console.error('Error processing answers:', error);
+      console.error("Error processing answers:", error);
       toast({
         title: "Error",
         description: "Failed to process your answers. Please try again.",
@@ -188,7 +184,7 @@ export const QuestionManager = ({
   const currentQuestion = questionSequence[currentQuestionIndex];
   
   if (!currentQuestion) {
-    console.log('No current question available');
+    console.log("No current question available");
     return null;
   }
 
