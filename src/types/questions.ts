@@ -7,6 +7,7 @@ export interface QuestionOption {
 export interface SubQuestion {
   id: string;
   question: string;
+  description?: string;  // Added description as optional
   selections: (string | QuestionOption)[];
   options: QuestionOption[];
   multi_choice: boolean;
@@ -17,6 +18,7 @@ export interface SubQuestion {
 export interface CategoryQuestion {
   id: string;
   question: string;
+  description?: string;  // Added description as optional
   selections: (string | QuestionOption)[];
   options: QuestionOption[];
   is_branching: boolean;

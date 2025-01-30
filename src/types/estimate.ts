@@ -7,6 +7,7 @@ export interface QuestionOption {
 export interface Question {
   id: string;
   question: string;
+  description?: string;  // Added description as optional
   options: QuestionOption[];
   selections: (string | QuestionOption)[];
   multi_choice: boolean;
