@@ -46,12 +46,11 @@ serve(async (req) => {
     let followUpQuestions: any[] = [];
     const processedQuestions = new Set();
 
-    // Extract keywords from the project description
-    const keywords = projectDescription.toLowerCase().split(/[\s,\n]+/).filter(word => word.length > 2);
-    const commonKeywords = ['kitchen', 'remodel', 'demo', 'drywall', 'tile', 'cabinets', 'countertops', 
-                          'backsplash', 'sink', 'lights', 'appliances', 'painting', 'floor'];
-    
-    console.log('Extracted keywords:', keywords);
+    // Define relevant categories and keywords for kitchen remodel
+    const relevantKeywords = [
+      'kitchen', 'remodel', 'cabinet', 'countertop', 'backsplash', 'sink',
+      'appliance', 'lighting', 'paint', 'floor', 'tile', 'demo', 'drywall'
+    ];
 
     // Process each JSONB column (Question 1 through 4)
     for (let i = 1; i <= 4; i++) {
@@ -60,33 +59,23 @@ serve(async (req) => {
       
       console.log(`Processing ${columnKey}:`, jsonData);
 
-      if (!jsonData) {
-        console.log(`No data in ${columnKey}`);
-        continue;
-      }
+      if (!jsonData) continue;
 
       try {
         const questionData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
         const questions = Array.isArray(questionData) ? questionData : [questionData];
         
-        console.log(`Parsed questions from ${columnKey}:`, questions);
-
         questions.forEach((q: any) => {
-          if (!q.task || !q.question || processedQuestions.has(q.question)) {
-            return;
-          }
+          if (!q.task || !q.question || processedQuestions.has(q.question)) return;
 
-          const taskWords = q.task.toLowerCase().split(/[\s,\n]+/).filter(word => word.length > 2);
+          const taskWords = q.task.toLowerCase().split(/[\s,\n]+/);
           
-          const matches = keywords.some(keyword => 
-            taskWords.some(taskWord => 
-              taskWord.includes(keyword) || 
-              keyword.includes(taskWord) ||
-              commonKeywords.includes(taskWord)
-            )
+          // Check if task matches any relevant keywords
+          const isRelevant = relevantKeywords.some(keyword => 
+            taskWords.some(word => word.includes(keyword) || keyword.includes(word))
           );
 
-          if (matches) {
+          if (isRelevant) {
             console.log(`✅ Matched question for task "${q.task}":`, q.question);
             processedQuestions.add(q.question);
             
@@ -111,7 +100,6 @@ serve(async (req) => {
                 isMultiChoice: q.multi_choice || false
               };
 
-              // If this question has follow-ups, process them
               if (q.follow_up_questions && Array.isArray(q.follow_up_questions)) {
                 questionObj.isFinal = false;
                 allQuestions.push(questionObj);
@@ -152,19 +140,16 @@ serve(async (req) => {
       }
     }
 
-    // Combine main questions and follow-ups
-    const finalQuestions = [...allQuestions, ...followUpQuestions];
+    // Combine and sort questions
+    const finalQuestions = [...allQuestions, ...followUpQuestions]
+      .sort((a, b) => a.stage - b.stage);
+
     console.log(`Total questions matched: ${finalQuestions.length}`);
     console.log('Final questions array:', finalQuestions);
 
-    // Sort questions by stage and limit to a reasonable number
-    const limitedQuestions = finalQuestions
-      .sort((a, b) => a.stage - b.stage)
-      .slice(0, 15);
-
     return new Response(JSON.stringify({
-      questions: limitedQuestions,
-      totalStages: limitedQuestions.length
+      questions: finalQuestions,
+      totalStages: finalQuestions.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
