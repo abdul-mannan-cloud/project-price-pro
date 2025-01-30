@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -22,51 +23,6 @@ serve(async (req) => {
     if (!supabaseUrl || !supabaseKey || !llamaApiKey) {
       throw new Error('Missing required configuration');
     }
-
-    // Enhanced project analysis with Llama
-    const analysisResponse = await fetch('https://api.llama-api.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${llamaApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama3.2-11b',
-        messages: [
-          {
-            role: 'system',
-            content: `Analyze the construction project description and extract:
-            1. Main project categories (e.g., kitchen, bathroom, flooring)
-            2. Specific tasks involved (e.g., demolition, installation)
-            3. Materials mentioned (e.g., tile, wood)
-            4. Measurements and dimensions
-            5. Special requirements or preferences
-            
-            Return a JSON object with these fields:
-            {
-              "categories": string[],
-              "tasks": string[],
-              "materials": string[],
-              "dimensions": string[],
-              "requirements": string[],
-              "keywords": string[]
-            }`
-          },
-          {
-            role: 'user',
-            content: projectDescription
-          }
-        ],
-        response_format: { type: "json_object" }
-      }),
-    });
-
-    if (!analysisResponse.ok) {
-      throw new Error('Failed to analyze project description');
-    }
-
-    const analysis = await analysisResponse.json();
-    console.log('Enhanced project analysis:', analysis);
 
     // Fetch questions from Options table with specific UUID
     const optionsResponse = await fetch(
@@ -90,25 +46,10 @@ serve(async (req) => {
       throw new Error('No Options data found');
     }
 
+    // Process questions from the Options table
     const firstRow = optionsData[0];
-    let allQuestions = [];
-    let followUpQuestions = [];
+    const allQuestions = [];
     const processedQuestions = new Set();
-
-    // Extract analysis data
-    const analysisContent = analysis.choices[0].message.content;
-    const {
-      categories = [],
-      tasks = [],
-      materials = [],
-      dimensions = [],
-      requirements = [],
-      keywords = []
-    } = typeof analysisContent === 'string' ? JSON.parse(analysisContent) : analysisContent;
-
-    // Combine all relevant terms for matching
-    const relevantTerms = [...categories, ...tasks, ...materials, ...dimensions, ...requirements, ...keywords];
-    console.log('Relevant terms for matching:', relevantTerms);
 
     // Process each JSONB column (Question 1 through 4)
     for (let i = 1; i <= 4; i++) {
@@ -126,68 +67,28 @@ serve(async (req) => {
             return;
           }
 
-          // Enhanced relevance checking
-          const isRelevant = relevantTerms.some(term => 
-            q.task.toLowerCase().includes(term.toLowerCase()) ||
-            q.question.toLowerCase().includes(term.toLowerCase())
-          );
-
-          if (isRelevant) {
-            processedQuestions.add(q.question);
-            
-            const options = Array.isArray(q.options) 
-              ? q.options.map((opt, idx) => ({
+          processedQuestions.add(q.question);
+          
+          const options = Array.isArray(q.options) 
+            ? q.options.map((opt, idx) => ({
+                id: `${columnKey}-${idx}`,
+                label: typeof opt === 'string' ? opt : opt.label || String(opt)
+              }))
+            : Array.isArray(q.selections)
+              ? q.selections.map((label, idx) => ({
                   id: `${columnKey}-${idx}`,
-                  label: typeof opt === 'string' ? opt : opt.label || String(opt)
+                  label: String(label)
                 }))
-              : Array.isArray(q.selections)
-                ? q.selections.map((label, idx) => ({
-                    id: `${columnKey}-${idx}`,
-                    label: String(label)
-                  }))
-                : [];
+              : [];
 
-            if (options.length > 0) {
-              const questionObj = {
-                stage: allQuestions.length + followUpQuestions.length + 1,
-                question: q.question,
-                options,
-                isMultiChoice: q.multi_choice || false
-              };
-
-              if (q.follow_up_questions && Array.isArray(q.follow_up_questions)) {
-                questionObj.isFinal = false;
-                allQuestions.push(questionObj);
-
-                q.follow_up_questions.forEach((followUp, index) => {
-                  if (followUp.question && (Array.isArray(followUp.options) || Array.isArray(followUp.selections))) {
-                    const followUpOptions = Array.isArray(followUp.options) 
-                      ? followUp.options.map((opt, idx) => ({
-                          id: `${columnKey}-followup-${index}-${idx}`,
-                          label: typeof opt === 'string' ? opt : opt.label || String(opt)
-                        }))
-                      : followUp.selections.map((label, idx) => ({
-                          id: `${columnKey}-followup-${index}-${idx}`,
-                          label: String(label)
-                        }));
-
-                    if (followUpOptions.length > 0) {
-                      followUpQuestions.push({
-                        stage: allQuestions.length + followUpQuestions.length + 1,
-                        question: followUp.question,
-                        options: followUpOptions,
-                        isMultiChoice: followUp.multi_choice || false,
-                        isFollowUp: true,
-                        parentQuestionId: questionObj.stage
-                      });
-                    }
-                  }
-                });
-              } else {
-                questionObj.isFinal = true;
-                allQuestions.push(questionObj);
-              }
-            }
+          if (options.length > 0) {
+            allQuestions.push({
+              stage: allQuestions.length + 1,
+              question: q.question,
+              options,
+              isMultiChoice: q.multi_choice || false,
+              isFinal: true
+            });
           }
         });
       } catch (error) {
@@ -195,24 +96,13 @@ serve(async (req) => {
       }
     }
 
-    // Sort and limit questions
-    const finalQuestions = [...allQuestions, ...followUpQuestions]
-      .sort((a, b) => a.stage - b.stage)
-      .slice(0, 30);
-
+    // Limit to 30 questions
+    const finalQuestions = allQuestions.slice(0, 30);
     console.log(`Generated ${finalQuestions.length} questions`);
-    console.log('Final questions:', JSON.stringify(finalQuestions, null, 2));
 
     return new Response(JSON.stringify({
       questions: finalQuestions,
-      totalStages: finalQuestions.length,
-      analysis: {
-        categories,
-        tasks,
-        materials,
-        dimensions,
-        requirements
-      }
+      totalStages: finalQuestions.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
