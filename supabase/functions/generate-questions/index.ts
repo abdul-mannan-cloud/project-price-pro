@@ -12,8 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const { projectDescription, imageUrl, previousAnswers, existingQuestions } = await req.json();
-    console.log('Generating questions for:', { projectDescription, imageUrl, previousAnswers, existingQuestions });
+    const { projectDescription, imageUrl } = await req.json();
+    console.log('Processing request for:', { projectDescription, imageUrl });
 
     // First, get all predefined questions from the Options table
     const { data: optionsData, error: optionsError } = await fetch(
@@ -49,6 +49,8 @@ serve(async (req) => {
       }
     }
 
+    console.log('Predefined questions:', predefinedQuestions);
+
     // Get template questions based on keywords
     const keywords = projectDescription.toLowerCase().split(' ');
     const { data: templateData, error: templateError } = await fetch(
@@ -80,7 +82,9 @@ serve(async (req) => {
       isMultiChoice: template.question_type === 'multi_choice'
     })) || [];
 
-    // Generate AI questions in the background
+    console.log('Matching templates:', matchingTemplates);
+
+    // Use AI to analyze project description and select relevant predefined questions
     const generateAIQuestions = async () => {
       try {
         const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
@@ -89,10 +93,12 @@ serve(async (req) => {
           return [];
         }
 
-        const systemPrompt = `Generate additional questions that don't overlap with existing ones.
-        Previous questions: ${JSON.stringify([...predefinedQuestions, ...matchingTemplates])}
-        Focus on timeline, budget, and special requirements.
-        Each question must have exactly 4 relevant options.`;
+        const systemPrompt = `Analyze the project description and generate additional relevant questions.
+        Available predefined questions: ${JSON.stringify(predefinedQuestions)}
+        Template questions: ${JSON.stringify(matchingTemplates)}
+        Generate new questions that don't overlap with existing ones.
+        Each question must have exactly 4 relevant options.
+        Focus on timeline, budget, and specific requirements.`;
 
         const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
           method: 'POST',
@@ -124,6 +130,8 @@ serve(async (req) => {
         }
 
         const data = await llamaResponse.json();
+        console.log('AI response:', data);
+        
         const content = data.choices[0].message.content;
         const aiQuestions = typeof content === 'string' ? JSON.parse(content.trim()) : content;
         
@@ -134,14 +142,15 @@ serve(async (req) => {
       }
     };
 
+    // Start with predefined and template questions
+    const initialQuestions = [...predefinedQuestions, ...matchingTemplates];
+    console.log('Initial questions:', initialQuestions);
+
     // Start AI question generation in the background
     const aiQuestionsPromise = generateAIQuestions();
     EdgeRuntime.waitUntil(aiQuestionsPromise.then(aiQuestions => {
       console.log('AI questions generated:', aiQuestions);
     }));
-
-    // Combine predefined and template questions
-    const initialQuestions = [...predefinedQuestions, ...matchingTemplates];
 
     return new Response(JSON.stringify({ 
       questions: initialQuestions,
