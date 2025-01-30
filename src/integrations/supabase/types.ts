@@ -300,6 +300,39 @@ export type Database = {
         }
         Relationships: []
       }
+      question_templates: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          options: Json
+          question: string
+          question_type: Database["public"]["Enums"]["question_template_type"]
+          task: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          options?: Json
+          question: string
+          question_type?: Database["public"]["Enums"]["question_template_type"]
+          task: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          options?: Json
+          question?: string
+          question_type?: Database["public"]["Enums"]["question_template_type"]
+          task?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -308,6 +341,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      question_template_type: "single_choice" | "multi_choice"
       question_type: "multiple_choice" | "multi_select" | "yes_no"
       subscription_status: "active" | "inactive" | "trial"
     }

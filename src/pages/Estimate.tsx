@@ -12,43 +12,47 @@ import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 
+interface Question {
+  question: string;
+  options: Array<{ id: string; label: string }>;
+  isMultiChoice?: boolean;
+}
+
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate'>('photo');
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [questions, setQuestions] = useState<Array<{
-    question: string;
-    options: Array<{
-      id: string;
-      label: string;
-      triggers_follow_up?: boolean;
-      follow_up_question?: {
-        question: string;
-        options: Array<{ id: string; label: string }>;
-      };
-    }>;
-  }>>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
   const [estimate, setEstimate] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
 
-  // Query for initial questions based on keywords
-  const { data: initialQuestions } = useQuery({
-    queryKey: ["initial-questions", projectDescription],
+  // Query for template questions based on project description
+  const { data: templateQuestions, isLoading: isLoadingTemplates } = useQuery({
+    queryKey: ["template-questions", projectDescription],
     enabled: projectDescription.length > 30,
     queryFn: async () => {
+      const keywords = projectDescription.toLowerCase().split(' ');
       const { data, error } = await supabase
-        .from('Options')
+        .from('question_templates')
         .select('*')
-        .textSearch('Task', projectDescription.split(' ').join(' | '));
+        .filter('task', 'in', `(${keywords.join(',')})`)
+        .order('category');
       
       if (error) throw error;
-      return data;
+      return data?.map(template => ({
+        question: template.question,
+        options: Array.isArray(template.options) ? template.options.map((opt, idx) => ({
+          id: idx.toString(),
+          label: opt
+        })) : [],
+        isMultiChoice: template.question_type === 'multi_choice'
+      })) || [];
     }
   });
 
@@ -68,17 +72,10 @@ const EstimatePage = () => {
   });
 
   useEffect(() => {
-    if (initialQuestions?.length && stage === 'description') {
-      const mappedQuestions = initialQuestions.map(q => ({
-        question: q['Q1 Question for related task'] || 'What is the approximate square footage?',
-        options: (q['Q1 Selection']?.split(',') || ['0-500', '500-1000', '1000-2000', '2000+']).map((opt, idx) => ({
-          id: `${idx}`,
-          label: opt.trim()
-        }))
-      }));
-      setQuestions(mappedQuestions);
+    if (templateQuestions?.length && stage === 'description') {
+      setQuestions(templateQuestions);
     }
-  }, [initialQuestions, stage]);
+  }, [templateQuestions, stage]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -133,14 +130,15 @@ const EstimatePage = () => {
     }
   };
 
-  const generateQuestions = async () => {
+  const generateAIQuestions = async () => {
     setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-questions', {
         body: { 
           projectDescription, 
           imageUrl: uploadedImageUrl,
-          previousAnswers: answers 
+          previousAnswers: answers,
+          existingQuestions: questions
         }
       });
 
@@ -162,23 +160,24 @@ const EstimatePage = () => {
     }
   };
 
-  const handleAnswerSubmit = async (value: string) => {
+  const handleAnswerSubmit = async (value: string | string[]) => {
     const currentQuestion = questions[currentQuestionIndex];
-    const selectedOption = currentQuestion.options.find(opt => opt.id === value);
     
     setAnswers(prev => ({ ...prev, [currentQuestionIndex]: value }));
 
-    if (selectedOption?.triggers_follow_up && selectedOption.follow_up_question) {
-      const newQuestions = [...questions];
-      newQuestions.splice(currentQuestionIndex + 1, 0, selectedOption.follow_up_question);
-      setQuestions(newQuestions);
-    }
-
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+      if (!currentQuestion.isMultiChoice) {
+        setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
+      }
     } else {
       setIsProcessing(true);
       await generateEstimate();
+    }
+  };
+
+  const handleNext = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
     }
   };
 
@@ -186,10 +185,11 @@ const EstimatePage = () => {
     try {
       const formattedAnswers = Object.entries(answers).map(([index, value]) => {
         const question = questions[parseInt(index)];
-        const selectedOption = question.options.find(opt => opt.id === value);
         return {
           question: question.question,
-          answer: selectedOption?.label || value
+          answer: Array.isArray(value) 
+            ? value.map(v => question.options.find(opt => opt.id === v)?.label || v)
+            : question.options.find(opt => opt.id === value)?.label || value
         };
       });
 
@@ -236,7 +236,6 @@ const EstimatePage = () => {
 
       if (error) throw error;
 
-      // Save estimate details
       if (data) {
         await supabase
           .from('estimate_details')
@@ -289,7 +288,7 @@ const EstimatePage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Progress value={getProgressValue()} className="h-4 rounded-none" />
+      <Progress value={getProgressValue()} className="h-8 rounded-none" />
       
       {contractor && (
         <button 
@@ -368,8 +367,8 @@ const EstimatePage = () => {
             </div>
             <Button 
               className="w-full mt-6"
-              onClick={generateQuestions}
-              disabled={projectDescription.trim().length < 30}
+              onClick={generateAIQuestions}
+              disabled={projectDescription.trim().length < 30 || isLoadingTemplates}
             >
               Continue
             </Button>
@@ -380,12 +379,22 @@ const EstimatePage = () => {
           <QuestionCard
             question={questions[currentQuestionIndex].question}
             options={questions[currentQuestionIndex].options}
-            selectedOption={answers[currentQuestionIndex] || ""}
+            selectedOption={
+              Array.isArray(answers[currentQuestionIndex])
+                ? (answers[currentQuestionIndex] as string[])[0]
+                : (answers[currentQuestionIndex] as string) || ""
+            }
             onSelect={handleAnswerSubmit}
-            onNext={() => {}}
+            onNext={handleNext}
             isLastQuestion={currentQuestionIndex === questions.length - 1}
             currentQuestionIndex={currentQuestionIndex}
             totalQuestions={questions.length}
+            isMultiChoice={questions[currentQuestionIndex].isMultiChoice}
+            selectedOptions={
+              Array.isArray(answers[currentQuestionIndex])
+                ? answers[currentQuestionIndex] as string[]
+                : []
+            }
           />
         )}
 
