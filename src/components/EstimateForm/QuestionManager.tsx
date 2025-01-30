@@ -29,6 +29,7 @@ export const QuestionManager = ({
   const [showAdditionalServices, setShowAdditionalServices] = useState(false);
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedValues, setSelectedValues] = useState<string[]>([]);
 
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
@@ -43,6 +44,7 @@ export const QuestionManager = ({
       setCurrentQuestionIndex(0);
       setAnswers({});
       setShowAdditionalServices(false);
+      setSelectedValues([]);
     } else {
       toast({
         title: "Error",
@@ -100,6 +102,7 @@ export const QuestionManager = ({
         .map(opt => opt.value || '');
 
       console.log('Selected option values:', selectedOptionValues);
+      setSelectedValues(selectedOptionValues);
       
       // Update question sequence with only the dependent questions
       const dependentQuestions = findDependentQuestions(selectedOptionValues);
@@ -118,8 +121,8 @@ export const QuestionManager = ({
           .insert({
             category: currentCategory,
             answers: { [questionId]: selectedOptions },
-            contractor_id: null, // Will be set when contractor claims the lead
-            user_name: '', // Will be set in contact form
+            contractor_id: null,
+            user_name: '',
             user_email: '',
             user_phone: '',
             status: 'new'
