@@ -10,8 +10,8 @@ export interface SubQuestion {
   selections: (string | QuestionOption)[];
   options: QuestionOption[];
   multi_choice: boolean;
-  is_branching: boolean;  // Changed from optional to required
-  sub_questions: Record<string, SubQuestion[]>;  // Changed from optional to required
+  is_branching: boolean;
+  sub_questions: Record<string, SubQuestion[]>;
 }
 
 export interface CategoryQuestion {

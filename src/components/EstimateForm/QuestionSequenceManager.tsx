@@ -113,8 +113,8 @@ export const QuestionSequenceManager = ({
   }
 
   const currentQuestion: Question = {
-    ...questionSequence[currentIndex].currentQuestion,
     id: questionSequence[currentIndex].questionId,
+    question: questionSequence[currentIndex].currentQuestion.question,
     selections: questionSequence[currentIndex].currentQuestion.selections,
     options: questionSequence[currentIndex].currentQuestion.selections.map((selection, index) => ({
       id: typeof selection === 'string' ? `${index}` : selection.id || selection.value,
@@ -122,6 +122,7 @@ export const QuestionSequenceManager = ({
       value: typeof selection === 'string' ? selection : selection.value
     })),
     is_branching: questionSequence[currentIndex].currentQuestion.is_branching,
+    multi_choice: questionSequence[currentIndex].currentQuestion.multi_choice,
     sub_questions: questionSequence[currentIndex].currentQuestion.sub_questions
   };
 
