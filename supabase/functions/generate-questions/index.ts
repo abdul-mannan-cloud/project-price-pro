@@ -58,8 +58,9 @@ serve(async (req) => {
           const columnData = options[column] as ColumnData;
           if (columnData?.data && Array.isArray(columnData.data)) {
             columnData.data.forEach(questionObj => {
+              console.log(`Checking task "${questionObj.task}" against description "${description}"`);
               if (isRelevantTask(description, questionObj.task)) {
-                console.log(`Matched task "${questionObj.task}" in ${column}`);
+                console.log(`✅ Matched task "${questionObj.task}" in ${column}`);
                 matchedQuestions.push({
                   question: questionObj.question,
                   options: questionObj.selections.map((label, idx) => ({
@@ -76,7 +77,7 @@ serve(async (req) => {
         }
       });
 
-      console.log('Matched questions:', matchedQuestions);
+      console.log('Total matched questions:', matchedQuestions.length);
     }
 
     // Start AI question generation in the background
@@ -128,28 +129,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in generate-questions function:', error);
-    return new Response(JSON.stringify({ 
-      questions: [
-        {
-          question: "What type of project are you interested in?",
-          options: [
-            { id: "1", label: "New Construction" },
-            { id: "2", label: "Renovation" },
-            { id: "3", label: "Repair" }
-          ],
-          isMultiChoice: false
-        },
-        {
-          question: "Ready to view your estimate?",
-          options: [
-            { id: "yes", label: "Yes, show me my estimate" }
-          ],
-          isMultiChoice: false,
-          isFinal: true
-        }
-      ]
-    }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500
     });
   }
 });
@@ -157,14 +139,13 @@ serve(async (req) => {
 function isRelevantTask(description: string, task?: string): boolean {
   if (!task || !description) return false;
   
-  // Convert both strings to lowercase for case-insensitive comparison
   const normalizedDescription = description.toLowerCase();
   const normalizedTask = task.toLowerCase();
 
   // Define task keywords and their variations/misspellings
   const taskKeywords: Record<string, string[]> = {
-    'kitchen': ['kitchen', 'kitch', 'kitchn', 'kichen', 'cooking'],
-    'bathroom': ['bathroom', 'bath', 'bathrm', 'bathrom', 'restroom', 'washroom'],
+    'kitchen': ['kitchen', 'kitch', 'kitchn', 'kichen', 'cooking', 'countertop', 'cabinet'],
+    'bathroom': ['bathroom', 'bath', 'bathrm', 'bathrom', 'restroom', 'washroom', 'shower', 'toilet'],
     'basement': ['basement', 'bsmt', 'basment'],
     'painting': ['paint', 'painting', 'painted', 'paints'],
     'flooring': ['floor', 'flooring', 'flor', 'floors'],
@@ -182,13 +163,18 @@ function isRelevantTask(description: string, task?: string): boolean {
     if (normalizedTask.includes(baseKeyword)) {
       // If the task contains this keyword, check if any of its variations are in the description
       if (variations.some(variation => normalizedDescription.includes(variation))) {
+        console.log(`Matched keyword "${baseKeyword}" with variation in description`);
         return true;
       }
     }
   }
 
   // Direct match check (fallback)
-  return normalizedDescription.includes(normalizedTask);
+  const directMatch = normalizedDescription.includes(normalizedTask);
+  if (directMatch) {
+    console.log(`Direct match found for task "${normalizedTask}"`);
+  }
+  return directMatch;
 }
 
 async function generateAIQuestions(description: string) {
