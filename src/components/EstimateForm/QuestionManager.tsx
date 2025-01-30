@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
 import { AdditionalServicesGrid } from "./AdditionalServicesGrid";
+import { LoadingScreen } from "./LoadingScreen";
 import { Question, CategoryQuestions, Category } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 
@@ -26,6 +27,7 @@ export const QuestionManager = ({
   const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
   const [showAdditionalServices, setShowAdditionalServices] = useState(false);
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
@@ -81,7 +83,7 @@ export const QuestionManager = ({
     });
 
     const remainingQuestions = currentSequence.slice(currentIndex + 1);
-    console.log('Adding remaining questions:', remainingQuestions);
+    console.log('New question sequence:', [...newSequence, ...remainingQuestions]);
     
     return [...newSequence, ...remainingQuestions];
   };
@@ -100,13 +102,11 @@ export const QuestionManager = ({
         questionSequence
       );
       
-      console.log('New question sequence:', newSequence);
       setQuestionSequence(newSequence);
     }
 
-    // For non-branching questions or after processing branching logic,
-    // automatically move to the next question if it's single choice
-    if (!currentQuestion.multi_choice) {
+    // For non-branching questions, automatically advance
+    if (!currentQuestion.multi_choice && !currentQuestion.is_branching) {
       setTimeout(() => {
         if (currentQuestionIndex < questionSequence.length - 1) {
           setCurrentQuestionIndex(prev => prev + 1);
@@ -127,7 +127,7 @@ export const QuestionManager = ({
     }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     console.log('Completing category with answers:', answers);
     if (Object.keys(answers).length === 0) {
       toast({
@@ -137,13 +137,41 @@ export const QuestionManager = ({
       });
       return;
     }
-    setShowAdditionalServices(true);
+
+    setIsProcessing(true);
+    try {
+      // Process answers with Llama 3.2 before showing additional services
+      const { data, error } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          answers,
+          category: currentCategory
+        }
+      });
+
+      if (error) throw error;
+      
+      // After successful processing, show additional services
+      setShowAdditionalServices(true);
+    } catch (error) {
+      console.error('Error processing answers:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process your answers. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleAdditionalCategorySelect = (categoryId: string) => {
     setSelectedAdditionalCategory(categoryId);
     onSelectAdditionalCategory(categoryId);
   };
+
+  if (isProcessing) {
+    return <LoadingScreen message="Processing your answers..." />;
+  }
 
   if (showAdditionalServices) {
     return (
