@@ -18,8 +18,6 @@ interface QuestionCardProps {
   onSelect: (value: string | string[]) => void;
   onNext: () => void;
   isLastQuestion: boolean;
-  currentQuestionIndex: number;
-  totalQuestions: number;
   isMultiChoice?: boolean;
   isFinal?: boolean;
 }

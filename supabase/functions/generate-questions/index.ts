@@ -43,7 +43,6 @@ serve(async (req) => {
       const options = optionsData[0];
       const description = projectDescription.toLowerCase();
       
-      // Process each question column in order
       ['Question 1', 'Question 2', 'Question 3', 'Question 4'].forEach(column => {
         const questionData = options[column];
         if (questionData && typeof questionData === 'object') {
@@ -54,7 +53,7 @@ serve(async (req) => {
                 id: idx.toString(),
                 label: String(label)
               })) || [],
-              isMultiChoice: questionData.multi_choice || false
+              isMultiChoice: Boolean(questionData.multi_choice)
             });
           }
         }
@@ -78,6 +77,7 @@ serve(async (req) => {
             {
               role: "system",
               content: `You are a construction estimator assistant. Generate additional questions for aspects of the project not covered by these existing questions: ${existingQuestionsText}.
+              Each question must specify if it's multi-choice (isMultiChoice: true) or single-choice (isMultiChoice: false).
               Return a JSON array with this format: [{"question": "Question text?", "options": ["Option 1", "Option 2", "Option 3"], "isMultiChoice": false}]`
             },
             {
