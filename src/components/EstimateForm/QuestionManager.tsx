@@ -29,7 +29,6 @@ export const QuestionManager = ({
   const [showAdditionalServices, setShowAdditionalServices] = useState(false);
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [pendingSubQuestions, setPendingSubQuestions] = useState<Question[]>([]);
 
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
@@ -38,7 +37,6 @@ export const QuestionManager = ({
       setQuestionSequence([initialQuestion]);
       setCurrentQuestionIndex(0);
       setAnswers({});
-      setPendingSubQuestions([]);
       setShowAdditionalServices(false);
     } else {
       toast({
@@ -49,57 +47,58 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
-  const processSubQuestions = (
+  const findSubQuestions = (
     currentQuestion: Question,
-    selectedOptions: string[]
+    selectedValue: string
   ): Question[] => {
-    console.log('Processing sub-questions for:', { currentQuestion, selectedOptions });
+    console.log('Finding sub-questions for:', { currentQuestion, selectedValue });
     
-    let subQuestionsToAdd: Question[] = [];
+    // Check sub_questions using the value
+    if (currentQuestion.sub_questions?.[selectedValue]) {
+      return currentQuestion.sub_questions[selectedValue].map((sq: any) => ({
+        id: sq.id || `${currentQuestion.id}-${selectedValue}-${Math.random()}`,
+        question: sq.question,
+        options: Array.isArray(sq.selections) 
+          ? sq.selections.map((opt: any, index: number) => ({
+              id: typeof opt === 'string' 
+                ? `${sq.id || currentQuestion.id}-${selectedValue}-${index}`
+                : opt.value || `${sq.id || currentQuestion.id}-${selectedValue}-${index}`,
+              label: typeof opt === 'string' ? opt : opt.label,
+              value: typeof opt === 'string' ? opt : opt.value
+            }))
+          : [],
+        multi_choice: sq.multi_choice || false,
+        is_branching: sq.is_branching || false,
+        sub_questions: sq.sub_questions || {}
+      }));
+    }
 
-    selectedOptions.forEach(optionId => {
-      const selectedOption = currentQuestion.options.find(opt => opt.id === optionId);
-      if (!selectedOption) return;
+    // If no sub-questions found using value, try finding by option label
+    const selectedOption = currentQuestion.options.find(opt => 
+      opt.id === selectedValue || opt.value === selectedValue
+    );
+    
+    if (selectedOption && currentQuestion.sub_questions?.[selectedOption.value || selectedOption.label]) {
+      const subQuestions = currentQuestion.sub_questions[selectedOption.value || selectedOption.label];
+      return subQuestions.map((sq: any) => ({
+        id: sq.id || `${currentQuestion.id}-${selectedValue}-${Math.random()}`,
+        question: sq.question,
+        options: Array.isArray(sq.selections) 
+          ? sq.selections.map((opt: any, index: number) => ({
+              id: typeof opt === 'string' 
+                ? `${sq.id || currentQuestion.id}-${selectedValue}-${index}`
+                : opt.value || `${sq.id || currentQuestion.id}-${selectedValue}-${index}`,
+              label: typeof opt === 'string' ? opt : opt.label,
+              value: typeof opt === 'string' ? opt : opt.value
+            }))
+          : [],
+        multi_choice: sq.multi_choice || false,
+        is_branching: sq.is_branching || false,
+        sub_questions: sq.sub_questions || {}
+      }));
+    }
 
-      const optionLabel = selectedOption.label;
-      console.log('Processing option:', { optionId, optionLabel });
-
-      // Check for sub-questions using both ID and label
-      const subQuestions = currentQuestion.sub_questions?.[optionId] || 
-                          currentQuestion.sub_questions?.[optionLabel] ||
-                          currentQuestion.sub_questions?.[selectedOption.value || ''];
-
-      if (subQuestions) {
-        console.log('Found sub-questions for option:', optionLabel, subQuestions);
-        
-        if (Array.isArray(subQuestions)) {
-          const formattedSubQuestions = subQuestions.map((sq: any, index: number) => {
-            const subQuestion: Question = {
-              id: sq.id || `sq-${currentQuestion.id}-${optionId}-${index}`,
-              question: sq.question,
-              options: Array.isArray(sq.selections) 
-                ? sq.selections.map((opt: any, optIndex: number) => ({
-                    id: typeof opt === 'string' 
-                      ? `${sq.id || `sq-${currentQuestion.id}-${optionId}-${index}`}-${optIndex}`
-                      : opt.value || `${sq.id || `sq-${currentQuestion.id}-${optionId}-${index}`}-${optIndex}`,
-                    label: typeof opt === 'string' ? opt : opt.label
-                  }))
-                : [],
-              multi_choice: sq.multi_choice || false,
-              is_branching: sq.is_branching || false,
-              sub_questions: sq.sub_questions || {}
-            };
-            console.log('Formatted sub-question:', subQuestion);
-            return subQuestion;
-          });
-
-          subQuestionsToAdd = [...subQuestionsToAdd, ...formattedSubQuestions];
-        }
-      }
-    });
-
-    console.log('All sub-questions to add:', subQuestionsToAdd);
-    return subQuestionsToAdd;
+    return [];
   };
 
   const handleAnswer = (questionId: string, selectedOptions: string[]) => {
@@ -110,19 +109,32 @@ export const QuestionManager = ({
     const currentQuestion = questionSequence[currentQuestionIndex];
     
     if (currentQuestion.is_branching) {
-      const subQuestions = processSubQuestions(currentQuestion, selectedOptions);
-      if (subQuestions.length > 0) {
-        setPendingSubQuestions(subQuestions);
-        // Move to the first sub-question
-        const newSequence = [...questionSequence, ...subQuestions];
-        setQuestionSequence(newSequence);
+      let newQuestions: Question[] = [];
+      
+      // For multi-choice questions, collect sub-questions for all selected options
+      if (currentQuestion.multi_choice) {
+        selectedOptions.forEach(option => {
+          const subQuestions = findSubQuestions(currentQuestion, option);
+          newQuestions = [...newQuestions, ...subQuestions];
+        });
+      } else {
+        // For single-choice questions, get sub-questions for the selected option
+        newQuestions = findSubQuestions(currentQuestion, selectedOptions[0]);
+      }
+
+      if (newQuestions.length > 0) {
+        console.log('Adding sub-questions:', newQuestions);
+        const updatedSequence = [
+          ...questionSequence.slice(0, currentQuestionIndex + 1),
+          ...newQuestions,
+          ...questionSequence.slice(currentQuestionIndex + 1)
+        ];
+        setQuestionSequence(updatedSequence);
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
-        // No sub-questions, move to next main question
         handleNext();
       }
     } else if (!currentQuestion.multi_choice) {
-      // For non-branching single-choice questions, automatically advance
       setTimeout(() => handleNext(), 300);
     }
   };
