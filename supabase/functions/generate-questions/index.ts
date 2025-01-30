@@ -46,6 +46,8 @@ serve(async (req) => {
     }
 
     const optionsData = await optionsResponse.json();
+    console.log('Fetched options data:', optionsData);
+    
     let matchedQuestions = [];
 
     if (optionsData.length > 0) {
@@ -55,6 +57,7 @@ serve(async (req) => {
       // Process each question column in order
       ['Question 1', 'Question 2', 'Question 3', 'Question 4'].forEach(column => {
         try {
+          console.log(`Processing ${column}:`, options[column]);
           const columnData = options[column] as ColumnData;
           if (columnData?.data && Array.isArray(columnData.data)) {
             columnData.data.forEach(questionObj => {
@@ -78,18 +81,8 @@ serve(async (req) => {
       });
 
       console.log('Total matched questions:', matchedQuestions.length);
+      console.log('Matched questions:', matchedQuestions);
     }
-
-    // Start AI question generation in the background
-    const aiQuestionsPromise = generateAIQuestions(projectDescription);
-    
-    EdgeRuntime.waitUntil(
-      aiQuestionsPromise.then(aiQuestions => {
-        console.log('AI questions generated:', aiQuestions);
-      }).catch(error => {
-        console.error('Error generating AI questions:', error);
-      })
-    );
 
     // Add final question
     if (matchedQuestions.length > 0) {
@@ -102,13 +95,15 @@ serve(async (req) => {
         isFinal: true
       });
     } else {
+      // Fallback questions if no matches found
       matchedQuestions = [
         {
           question: "What is the main focus of your project?",
           options: [
-            { id: "1", label: "New Construction" },
-            { id: "2", label: "Renovation" },
-            { id: "3", label: "Repair" }
+            { id: "1", label: "Kitchen Remodel" },
+            { id: "2", label: "Bathroom Remodel" },
+            { id: "3", label: "General Renovation" },
+            { id: "4", label: "Repair" }
           ],
           isMultiChoice: false
         },
@@ -175,40 +170,4 @@ function isRelevantTask(description: string, task?: string): boolean {
     console.log(`Direct match found for task "${normalizedTask}"`);
   }
   return directMatch;
-}
-
-async function generateAIQuestions(description: string) {
-  const llama_api_key = Deno.env.get('LLAMA_API_KEY');
-  if (!llama_api_key) {
-    throw new Error('Missing Llama API key');
-  }
-
-  const response = await fetch('https://api.llama-api.com/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${llama_api_key}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'llama-3.2-11b-vision',
-      messages: [
-        {
-          role: 'system',
-          content: 'Generate relevant questions for a construction project estimate.'
-        },
-        {
-          role: 'user',
-          content: description
-        }
-      ],
-      temperature: 0.2,
-      max_tokens: 1000
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Llama API error: ${response.status}`);
-  }
-
-  return await response.json();
 }
