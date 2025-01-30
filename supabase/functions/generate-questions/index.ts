@@ -41,13 +41,17 @@ serve(async (req) => {
     if (optionsData.length > 0) {
       const options = optionsData[0];
       const questionColumns = ['Question 1', 'Question 2', 'Question 3', 'Question 4'];
+      const description = projectDescription.toLowerCase();
       
       for (const column of questionColumns) {
         const questionData = options[column];
         if (questionData && typeof questionData === 'object') {
-          const isRelevant = isTaskRelevant(projectDescription.toLowerCase(), questionData.task?.toLowerCase());
+          // Enhanced task matching logic
+          const taskMatches = isTaskRelevant(description, questionData.task?.toLowerCase());
+          console.log(`Checking ${column} with task "${questionData.task}" - Match: ${taskMatches}`);
           
-          if (isRelevant) {
+          if (taskMatches) {
+            console.log(`Adding matched question from ${column}:`, questionData.question);
             matchedQuestions.push({
               question: questionData.question,
               options: questionData.selections?.map((label: string, idx: number) => ({
@@ -63,6 +67,7 @@ serve(async (req) => {
 
     // Return template questions immediately if we have any
     if (matchedQuestions.length > 0) {
+      console.log('Returning matched template questions:', matchedQuestions);
       EdgeRuntime.waitUntil(generateAIQuestions(projectDescription, matchedQuestions, supabaseUrl, supabaseKey));
       return new Response(JSON.stringify({ 
         questions: matchedQuestions,
@@ -94,6 +99,24 @@ serve(async (req) => {
     });
   }
 });
+
+function isTaskRelevant(description: string, task?: string): boolean {
+  if (!task) return false;
+  
+  // Direct match
+  if (description.includes(task.toLowerCase())) return true;
+  
+  // Enhanced task mappings with common misspellings and related terms
+  const taskMappings: Record<string, string[]> = {
+    'kitchen': ['kichen', 'kitchn', 'cooking', 'countertop', 'cabinet', 'appliance'],
+    'painting': ['paint', 'wills', 'walls', 'color', 'finish', 'wallpaper'],
+    'bathroom': ['bath', 'shower', 'toilet', 'vanity', 'sink'],
+    'flooring': ['floor', 'tile', 'hardwood', 'carpet', 'laminate'],
+  };
+  
+  const relatedTerms = taskMappings[task.toLowerCase()] || [];
+  return relatedTerms.some(term => description.includes(term));
+}
 
 async function generateAIQuestions(
   projectDescription: string, 
@@ -173,20 +196,4 @@ async function generateAIQuestions(
     console.error('Error generating AI questions:', error);
   }
   return [];
-}
-
-function isTaskRelevant(description: string, task?: string): boolean {
-  if (!task) return false;
-  
-  if (description.includes(task)) return true;
-  
-  const taskMappings: Record<string, string[]> = {
-    'kitchen': ['cooking', 'countertop', 'cabinet', 'appliance'],
-    'bathroom': ['bath', 'shower', 'toilet', 'vanity'],
-    'painting': ['paint', 'color', 'wall', 'finish'],
-    'flooring': ['floor', 'tile', 'hardwood', 'carpet'],
-  };
-  
-  const relatedTerms = taskMappings[task] || [];
-  return relatedTerms.some(term => description.includes(term));
 }
