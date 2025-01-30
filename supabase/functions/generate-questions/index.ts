@@ -6,58 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Enhanced keyword mapping with more specific categories and synonyms
-const keywordMap = {
-  kitchen: ['kitchen', 'cooking', 'cabinets', 'countertops', 'appliances', 'sink', 'remodel'],
-  cabinets: ['cabinet', 'cabinets', 'storage', 'drawers', 'shelves', 'base cabinet', 'upper cabinet', 'base and upper'],
-  painting: ['paint', 'painting', 'walls', 'ceiling', 'color', 'finish', 'baseboard'],
-  flooring: ['floor', 'flooring', 'tile', '12x12', 'hardwood', 'carpet', 'laminate'],
-  electrical: ['electrical', 'wiring', 'outlets', 'lights', 'lighting', 'recessed'],
-  plumbing: ['plumbing', 'pipes', 'water', 'faucet', 'drain', 'sink'],
-  drywall: ['drywall', 'sheetrock', 'wall', 'ceiling', 'texture', 'repair'],
-  backsplash: ['backsplash', 'tile', 'mosaic', 'splash', '12"', 'wall tile'],
-  countertop: ['countertop', 'counter', 'quartz', 'granite', 'surface'],
-  demolition: ['demo', 'demolition', 'remove', 'gut', 'strip'],
-  trim: ['trim', 'baseboard', 'molding', 'casing', 'finish'],
-  appliances: ['appliance', 'appliances', 'refrigerator', 'stove', 'dishwasher', 'microwave']
-};
-
-function findKeywords(text: string): string[] {
-  const normalizedText = text.toLowerCase();
-  const keywords = new Set<string>();
-  
-  // First pass: Check for exact category matches
-  for (const [category, synonyms] of Object.entries(keywordMap)) {
-    if (normalizedText.includes(category.toLowerCase())) {
-      keywords.add(category);
-      continue;
-    }
-    
-    // Second pass: Check for synonym matches
-    for (const synonym of synonyms) {
-      if (normalizedText.includes(synonym.toLowerCase())) {
-        keywords.add(category);
-        break;
-      }
-    }
-  }
-  
-  return Array.from(keywords);
-}
-
-function processQuestionData(columnData: any): any[] {
-  if (!columnData) return [];
-  
-  try {
-    // Handle both string and object formats
-    const parsed = typeof columnData === 'string' ? JSON.parse(columnData) : columnData;
-    return Array.isArray(parsed.data) ? parsed.data : [parsed];
-  } catch (error) {
-    console.error('Error processing question data:', error);
-    return [];
-  }
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -67,9 +15,6 @@ serve(async (req) => {
     const { projectDescription } = await req.json();
     console.log('Processing request with description:', projectDescription);
 
-    const keywords = findKeywords(projectDescription);
-    console.log('Extracted keywords:', keywords);
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -77,8 +22,8 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Fetch template questions from Options table
-    const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options?select=*`, {
+    // Fetch first row from Options table
+    const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options?limit=1`, {
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
         'apikey': supabaseKey,
@@ -86,70 +31,83 @@ serve(async (req) => {
     });
 
     if (!optionsResponse.ok) {
-      throw new Error('Failed to fetch template questions');
+      throw new Error('Failed to fetch Options data');
     }
 
     const optionsData = await optionsResponse.json();
+    console.log('Raw Options data:', optionsData);
+
+    if (!optionsData || !optionsData.length) {
+      throw new Error('No Options data found');
+    }
+
+    const firstRow = optionsData[0];
     let allQuestions: any[] = [];
-    let questionCount = 0;
-    let usedQuestions = new Set<string>();
-    
-    if (optionsData.length > 0) {
-      const options = optionsData[0];
+    const processedQuestions = new Set(); // To avoid duplicates
+
+    // Process each JSONB column (Question 1 through 4)
+    for (let i = 1; i <= 4; i++) {
+      const columnKey = `Question ${i}`;
+      const jsonData = firstRow[columnKey];
       
-      // Process each question column
-      for (let i = 1; i <= 4; i++) {
-        const columnKey = `Question ${i}`;
-        const columnData = options[columnKey];
+      console.log(`Processing ${columnKey}:`, jsonData);
+
+      if (!jsonData) {
+        console.log(`No data in ${columnKey}`);
+        continue;
+      }
+
+      let questionData;
+      try {
+        // Handle both string and parsed JSON
+        questionData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+        // Ensure we're working with the data array
+        const questions = questionData.data || [questionData];
         
-        if (!columnData) {
-          console.log(`No data found for ${columnKey}`);
-          continue;
-        }
+        console.log(`Parsed questions from ${columnKey}:`, questions);
 
-        const questions = processQuestionData(columnData);
-        console.log(`Processing ${columnKey}:`, questions);
-
-        // Match questions based on keywords
+        // Process each question in the column
         questions.forEach((q: any) => {
-          if (!q.task || !q.question || usedQuestions.has(q.question)) {
+          if (!q.task || !q.question || processedQuestions.has(q.question)) {
             return;
           }
 
-          // Check if the question matches any of our keywords
-          const questionMatches = keywords.some(keyword => {
-            const synonyms = keywordMap[keyword as keyof typeof keywordMap] || [];
-            return synonyms.some(synonym => 
-              q.task.toLowerCase().includes(synonym.toLowerCase())
-            );
-          });
+          // Convert input and task to lowercase for case-insensitive matching
+          const lowercaseInput = projectDescription.toLowerCase();
+          const lowercaseTask = q.task.toLowerCase();
 
-          if (questionMatches) {
-            console.log(`✅ Matched question: "${q.question}" for task: "${q.task}"`);
-            usedQuestions.add(q.question);
+          // Check if any word from the task matches in the input
+          const taskWords = lowercaseTask.split(/\s+/);
+          const matches = taskWords.some(word => 
+            lowercaseInput.includes(word) && word.length > 2 // Ignore very short words
+          );
+
+          if (matches) {
+            console.log(`✅ Matched question for task "${q.task}":`, q.question);
+            processedQuestions.add(q.question);
             
             allQuestions.push({
-              stage: questionCount + 1,
+              stage: allQuestions.length + 1,
               question: q.question,
-              options: q.selections.map((label: string, optIdx: number) => ({
-                id: `${columnKey}-${optIdx}`,
-                label: String(label)
-              })),
+              options: Array.isArray(q.selections) 
+                ? q.selections.map((label: string, idx: number) => ({
+                    id: `${columnKey}-${idx}`,
+                    label: String(label)
+                  }))
+                : [],
               isMultiChoice: q.multi_choice || false
             });
-            questionCount++;
           }
         });
+      } catch (error) {
+        console.error(`Error processing ${columnKey}:`, error);
       }
     }
 
-    // Sort questions by stage and ensure we don't exceed 30 questions
-    allQuestions.sort((a, b) => a.stage - b.stage);
-    allQuestions = allQuestions.slice(0, 30);
-    
-    console.log(`Returning ${allQuestions.length} questions:`, allQuestions);
+    console.log(`Total questions matched: ${allQuestions.length}`);
+    console.log('Final questions array:', allQuestions);
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       questions: allQuestions,
       totalStages: allQuestions.length
     }), {
@@ -158,7 +116,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in generate-questions function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      questions: [],
+      totalStages: 0
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500
     });
