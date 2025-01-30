@@ -54,13 +54,11 @@ export const QuestionManager = ({
     const currentIndex = currentSequence.indexOf(currentQuestion);
     let newSequence = [...currentSequence.slice(0, currentIndex + 1)];
     
-    // Process sub-questions for each selected option
     selectedOptions.forEach(option => {
       if (currentQuestion.sub_questions && currentQuestion.sub_questions[option]) {
         const subQuestions = currentQuestion.sub_questions[option];
         console.log('Found sub-questions for option:', option, subQuestions);
         
-        // Map the sub-questions to ensure they have the correct structure
         const formattedSubQuestions = subQuestions.map((sq: any, index: number) => ({
           id: sq.id || `sq-${currentQuestion.id}-${option}-${index}`,
           question: sq.question,
@@ -82,7 +80,6 @@ export const QuestionManager = ({
       }
     });
 
-    // Add remaining questions from the original sequence
     const remainingQuestions = currentSequence.slice(currentIndex + 1);
     console.log('Adding remaining questions:', remainingQuestions);
     
@@ -109,12 +106,12 @@ export const QuestionManager = ({
 
     // For non-branching questions or after processing branching logic,
     // automatically move to the next question if it's single choice
-    if (!currentQuestion.multi_choice && !currentQuestion.is_branching) {
+    if (!currentQuestion.multi_choice) {
       setTimeout(() => {
         if (currentQuestionIndex < questionSequence.length - 1) {
           setCurrentQuestionIndex(prev => prev + 1);
         } else {
-          setShowAdditionalServices(true);
+          handleComplete();
         }
       }, 300);
     }
@@ -124,20 +121,28 @@ export const QuestionManager = ({
     const isLastQuestion = currentQuestionIndex === questionSequence.length - 1;
     
     if (isLastQuestion) {
-      setShowAdditionalServices(true);
+      handleComplete();
     } else {
       setCurrentQuestionIndex(prev => prev + 1);
     }
   };
 
+  const handleComplete = () => {
+    console.log('Completing category with answers:', answers);
+    if (Object.keys(answers).length === 0) {
+      toast({
+        title: "Error",
+        description: "Please answer at least one question before continuing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowAdditionalServices(true);
+  };
+
   const handleAdditionalCategorySelect = (categoryId: string) => {
     setSelectedAdditionalCategory(categoryId);
     onSelectAdditionalCategory(categoryId);
-  };
-
-  const handleComplete = () => {
-    console.log('Completing category with answers:', answers);
-    onComplete(answers);
   };
 
   if (showAdditionalServices) {
@@ -146,7 +151,7 @@ export const QuestionManager = ({
         categories={categories.filter(cat => !completedCategories.includes(cat.id))}
         selectedCategory={selectedAdditionalCategory}
         onSelect={handleAdditionalCategorySelect}
-        onComplete={handleComplete}
+        onComplete={() => onComplete(answers)}
         completedCategories={completedCategories}
       />
     );
