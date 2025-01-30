@@ -4,12 +4,16 @@ type CategoryMatch = {
 };
 
 const categoryKeywords: Record<string, string[]> = {
+  "Painting": [
+    "paint", "painting", "walls", "ceilings", "trim", "interior paint",
+    "exterior paint", "cabinet paint", "coats", "primer"
+  ],
   "Kitchen Remodel": [
-    "kitchen", "cabinets", "countertops", "appliances", "sink", "faucet",
+    "kitchen remodel", "cabinets", "countertops", "appliances", "sink", "faucet",
     "backsplash", "pantry", "cooking", "refrigerator", "stove", "oven"
   ],
   "Bathroom Remodel": [
-    "bathroom", "shower", "tub", "toilet", "vanity", "tile", "plumbing",
+    "bathroom remodel", "shower", "tub", "toilet", "vanity", "tile", "plumbing",
     "faucet", "mirror", "bath"
   ],
   "Basement Remodeling": [
@@ -23,16 +27,27 @@ export const findBestMatchingCategory = (description: string): CategoryMatch | n
   
   const lowercaseDescription = description.toLowerCase();
   let bestMatch: CategoryMatch | null = null;
+  let highestConfidence = 0;
 
   Object.entries(categoryKeywords).forEach(([categoryId, keywords]) => {
-    const matchCount = keywords.reduce((count, keyword) => {
-      return count + (lowercaseDescription.includes(keyword.toLowerCase()) ? 1 : 0);
-    }, 0);
+    let matchCount = 0;
+    let totalKeywords = keywords.length;
 
-    const confidence = matchCount / keywords.length;
+    keywords.forEach(keyword => {
+      if (lowercaseDescription.includes(keyword.toLowerCase())) {
+        // Give higher weight to matches at the start of the description
+        const keywordIndex = lowercaseDescription.indexOf(keyword.toLowerCase());
+        const positionWeight = 1 - (keywordIndex / lowercaseDescription.length);
+        matchCount += 1 + positionWeight;
+      }
+    });
 
-    if (confidence > 0 && (!bestMatch || confidence > bestMatch.confidence)) {
+    const confidence = matchCount / totalKeywords;
+
+    // Prioritize matches that appear earlier in the text
+    if (confidence > 0 && confidence > highestConfidence) {
       bestMatch = { categoryId, confidence };
+      highestConfidence = confidence;
     }
   });
 

@@ -16,7 +16,10 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
     if (categoryData?.questions?.length > 0) {
+      // Start with just the first question
       setQuestionSequence([categoryData.questions[0]]);
+      setCurrentQuestionIndex(0);
+      setAnswers({});
     } else {
       toast({
         title: "Error",
@@ -28,6 +31,8 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
 
   const handleAnswer = (questionId: string, selectedOptions: string[]) => {
     console.log('Handling answer:', { questionId, selectedOptions });
+    
+    // Update answers
     setAnswers(prev => ({ ...prev, [questionId]: selectedOptions }));
 
     const currentQuestion = questionSequence[currentQuestionIndex];
@@ -44,19 +49,25 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
         console.log('Relevant sub-questions:', relevantSubQuestions);
         
         // Update sequence with only the relevant sub-questions
+        const remainingMainQuestions = categoryData.questions.slice(currentQuestionIndex + 1);
         const newSequence = [
           ...questionSequence.slice(0, currentQuestionIndex + 1),
           ...relevantSubQuestions,
-          ...categoryData.questions.slice(currentQuestionIndex + 1) // Add remaining main questions
+          ...remainingMainQuestions
         ];
         
         setQuestionSequence(newSequence);
       }
     } else if (currentQuestionIndex === questionSequence.length - 1 && 
                currentQuestionIndex < categoryData.questions.length - 1) {
-      // If we're at the last question in our sequence but there are more main questions,
-      // add the next main question
-      setQuestionSequence(prev => [...prev, categoryData.questions[prev.length]]);
+      // Add the next main question to the sequence
+      const nextMainQuestion = categoryData.questions[currentQuestionIndex + 1];
+      setQuestionSequence(prev => [...prev, nextMainQuestion]);
+    }
+
+    // For non-branching single-choice questions, auto-advance
+    if (!currentQuestion.is_branching && !currentQuestion.multi_choice) {
+      setTimeout(() => handleNext(), 300);
     }
   };
 
@@ -64,9 +75,19 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
     console.log('Handling next:', { currentQuestionIndex, totalQuestions: questionSequence.length });
     if (currentQuestionIndex < questionSequence.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
-    } else {
-      console.log('Completing category with answers:', answers);
-      onComplete(answers);
+    } else if (currentQuestionIndex === questionSequence.length - 1) {
+      // Check if there are more main questions to add
+      const nextMainQuestionIndex = categoryData.questions.findIndex(q => 
+        !questionSequence.some(sq => sq.id === q.id)
+      );
+      
+      if (nextMainQuestionIndex !== -1) {
+        setQuestionSequence(prev => [...prev, categoryData.questions[nextMainQuestionIndex]]);
+        setCurrentQuestionIndex(prev => prev + 1);
+      } else {
+        console.log('Completing category with answers:', answers);
+        onComplete(answers);
+      }
     }
   };
 
@@ -85,7 +106,10 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
       selectedOptions={answers[currentQuestion.id] || []}
       onSelect={handleAnswer}
       onNext={handleNext}
-      isLastQuestion={currentQuestionIndex === questionSequence.length - 1}
+      isLastQuestion={currentQuestionIndex === questionSequence.length - 1 && 
+                     !categoryData.questions.some(q => 
+                       !questionSequence.some(sq => sq.id === q.id)
+                     )}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />
