@@ -164,14 +164,6 @@ const EstimatePage = () => {
         const question: Question = {
           id: q.id || `q-${index}`,
           question: q.question,
-          selections: Array.isArray(q.selections) 
-            ? q.selections.map((opt: any, optIndex: number) => ({
-                id: typeof opt === 'string' 
-                  ? `${index}-${optIndex}` 
-                  : opt.value || `${index}-${optIndex}`,
-                label: typeof opt === 'string' ? opt : opt.label
-              }))
-            : [],
           options: Array.isArray(q.selections) 
             ? q.selections.map((opt: any, optIndex: number) => ({
                 id: typeof opt === 'string' 
@@ -188,12 +180,6 @@ const EstimatePage = () => {
               (questions as any[]).map((sq: any, sqIndex: number) => ({
                 id: `sq-${index}-${key}-${sqIndex}`,
                 question: sq.question,
-                selections: Array.isArray(sq.selections)
-                  ? sq.selections.map((opt: any, optIndex: number) => ({
-                      id: `sq-${index}-${key}-${sqIndex}-${optIndex}`,
-                      label: typeof opt === 'string' ? opt : opt.label
-                    }))
-                  : [],
                 options: Array.isArray(sq.selections)
                   ? sq.selections.map((opt: any, optIndex: number) => ({
                       id: `sq-${index}-${key}-${sqIndex}-${optIndex}`,

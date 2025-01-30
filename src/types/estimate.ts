@@ -1,18 +1,18 @@
 export interface QuestionOption {
   id: string;
   label: string;
-  value: string;
+  value?: string;
 }
 
 export interface Question {
   id: string;
   question: string;
-  description?: string;  // Added description as optional
   options: QuestionOption[];
-  selections: (string | QuestionOption)[];
   multi_choice: boolean;
   is_branching: boolean;
-  sub_questions: Record<string, Question[]>;
+  sub_questions?: {
+    [key: string]: Question[];
+  };
 }
 
 export interface BranchingLogic {
