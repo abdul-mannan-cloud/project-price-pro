@@ -12,7 +12,7 @@ import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
-import { Question } from "@/types/estimate";
+import { Question, Category } from "@/types/estimate";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
@@ -264,6 +264,24 @@ const EstimatePage = () => {
     } />;
   }
 
+  const categories: Category[] = [
+    {
+      id: "kitchen",
+      name: "Kitchen Remodeling",
+      description: "Update or renovate your kitchen"
+    },
+    {
+      id: "bathroom",
+      name: "Bathroom Remodeling",
+      description: "Renovate your bathroom"
+    },
+    {
+      id: "basement",
+      name: "Basement Finishing",
+      description: "Finish or remodel your basement"
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-white">
       <Progress value={getProgressValue()} className="h-8 rounded-none" />
@@ -375,9 +393,8 @@ const EstimatePage = () => {
           <div className="animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Additional Services</h2>
             <CategoryGrid 
-              categories={/* your categories array */}
+              categories={categories}
               onSelectCategory={(categoryId) => {
-                // Handle category selection
                 setStage('questions');
                 setCurrentQuestionIndex(0);
                 setAnswers({});
