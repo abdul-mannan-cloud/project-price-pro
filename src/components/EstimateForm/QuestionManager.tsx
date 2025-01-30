@@ -29,6 +29,7 @@ export const QuestionManager = ({
   const [showAdditionalServices, setShowAdditionalServices] = useState(false);
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedValues, setSelectedValues] = useState<string[]>([]);
 
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
@@ -43,6 +44,7 @@ export const QuestionManager = ({
       setCurrentQuestionIndex(0);
       setAnswers({});
       setShowAdditionalServices(false);
+      setSelectedValues([]);
     } else {
       toast({
         title: "Error",
@@ -71,16 +73,8 @@ export const QuestionManager = ({
     });
   };
 
-  const findDependentQuestions = (selectedValues: string[]): Question[] => {
+  const findDependentQuestions = (selectedOptionValues: string[]): Question[] => {
     if (!categoryData.questions) return [];
-
-    // Get the selected values from the first question's options
-    const firstQuestionOptions = formatOptions(categoryData.questions[0]);
-    const selectedOptionValues = firstQuestionOptions
-      .filter(opt => selectedValues.includes(opt.id))
-      .map(opt => opt.value);
-
-    console.log('Selected option values:', selectedOptionValues);
 
     // Get all questions after the first one that depend on any of the selected values
     return categoryData.questions
@@ -93,7 +87,7 @@ export const QuestionManager = ({
       }));
   };
 
-  const handleAnswer = (questionId: string, selectedOptions: string[]) => {
+  const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
     console.log('Handling answer:', { questionId, selectedOptions });
     
     setAnswers(prev => ({ ...prev, [questionId]: selectedOptions }));
@@ -101,14 +95,47 @@ export const QuestionManager = ({
     const currentQuestion = questionSequence[currentQuestionIndex];
     
     if (currentQuestionIndex === 0 && currentQuestion.is_branching) {
-      // For the first branching question, update the entire sequence
-      const dependentQuestions = findDependentQuestions(selectedOptions);
+      // For the first branching question, get the selected values
+      const firstQuestionOptions = formatOptions(currentQuestion);
+      const selectedOptionValues = firstQuestionOptions
+        .filter(opt => selectedOptions.includes(opt.id))
+        .map(opt => opt.value || '');
+
+      console.log('Selected option values:', selectedOptionValues);
+      setSelectedValues(selectedOptionValues);
+      
+      // Update question sequence with only the dependent questions
+      const dependentQuestions = findDependentQuestions(selectedOptionValues);
       console.log('Found dependent questions:', dependentQuestions);
       
       if (dependentQuestions.length > 0) {
         const updatedSequence = [currentQuestion, ...dependentQuestions];
         console.log('Setting new question sequence:', updatedSequence);
         setQuestionSequence(updatedSequence);
+      }
+
+      // Save to leads table
+      try {
+        const { error } = await supabase
+          .from('leads')
+          .insert({
+            category: currentCategory,
+            answers: { [questionId]: selectedOptions },
+            contractor_id: null, // Will be set when contractor claims the lead
+            user_name: '', // Will be set in contact form
+            user_email: '',
+            user_phone: '',
+            status: 'new'
+          });
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error saving to leads:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save your response. Please try again.",
+          variant: "destructive",
+        });
       }
     }
 
