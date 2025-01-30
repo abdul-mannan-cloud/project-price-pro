@@ -1,7 +1,7 @@
 export interface QuestionOption {
   id: string;
   label: string;
-  value?: string;
+  value: string;
 }
 
 export interface Question {

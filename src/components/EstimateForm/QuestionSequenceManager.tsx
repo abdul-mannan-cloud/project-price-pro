@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CategoryQuestion, QuestionSequence, SubQuestion } from "@/types/questions";
+import { Question } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { QuestionCard } from "./QuestionCard";
 
@@ -30,12 +31,10 @@ export const QuestionSequenceManager = ({
   ): SubQuestion[] => {
     if (!question.sub_questions) return [];
     
-    // Try to find sub-questions using the value directly
     if (question.sub_questions[selectedValue]) {
       return question.sub_questions[selectedValue];
     }
 
-    // If not found, try to find by matching the option's value
     const selections = question.selections as any[];
     const matchingOption = selections.find(opt => 
       (typeof opt === 'string' ? opt : opt.value) === selectedValue
@@ -113,9 +112,20 @@ export const QuestionSequenceManager = ({
     return null;
   }
 
+  // Convert the current question to match the Question interface
+  const currentQuestion: Question = {
+    ...questionSequence[currentIndex].currentQuestion,
+    id: questionSequence[currentIndex].questionId,
+    options: questionSequence[currentIndex].currentQuestion.selections.map((selection, index) => ({
+      id: typeof selection === 'string' ? `${index}` : selection.value,
+      label: typeof selection === 'string' ? selection : selection.label,
+      value: typeof selection === 'string' ? selection : selection.value
+    }))
+  };
+
   return (
     <QuestionCard
-      question={questionSequence[currentIndex].currentQuestion}
+      question={currentQuestion}
       selectedOptions={answers[questionSequence[currentIndex].questionId] || []}
       onSelect={(_, value) => handleAnswer(value)}
       onNext={handleNext}
