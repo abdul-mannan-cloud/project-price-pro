@@ -13,9 +13,18 @@ interface QuestionData {
   selections: string[];
 }
 
-interface ColumnData {
-  data: QuestionData[];
-}
+// Define keyword synonyms and related terms
+const keywordMap = {
+  kitchen: ['kitchen', 'cooking', 'cabinets', 'countertops', 'appliances', 'sink'],
+  bathroom: ['bathroom', 'bath', 'shower', 'toilet', 'vanity'],
+  flooring: ['floor', 'flooring', 'tile', 'hardwood', 'carpet', 'laminate'],
+  painting: ['paint', 'painting', 'walls', 'ceiling', 'color'],
+  electrical: ['electrical', 'wiring', 'outlets', 'lights', 'lighting'],
+  plumbing: ['plumbing', 'pipes', 'water', 'faucet', 'drain'],
+  windows: ['window', 'windows', 'glass', 'frame'],
+  doors: ['door', 'doors', 'entry', 'doorway'],
+  general: ['renovation', 'remodel', 'repair', 'fix', 'upgrade', 'improve']
+};
 
 function parseColumn(columnValue: any): QuestionData[] {
   if (!columnValue) return [];
@@ -38,11 +47,95 @@ function parseColumn(columnValue: any): QuestionData[] {
   return [parsed];
 }
 
-function isMatch(taskValue: string, userInput: string): boolean {
-  const taskLower = taskValue.toLowerCase();
-  const inputLower = userInput.toLowerCase();
-  return inputLower.includes(taskLower);
+function findKeywords(text: string): string[] {
+  const words = text.toLowerCase().split(/\s+/);
+  const keywords = new Set<string>();
+
+  // Check each word against our keyword map
+  words.forEach(word => {
+    for (const [category, synonyms] of Object.entries(keywordMap)) {
+      if (synonyms.some(synonym => word.includes(synonym))) {
+        keywords.add(category);
+      }
+    }
+  });
+
+  return Array.from(keywords);
 }
+
+function isMatch(taskValue: string, keywords: string[]): boolean {
+  const taskLower = taskValue.toLowerCase();
+  
+  // Check if any of our keywords match the task
+  return keywords.some(keyword => {
+    // Direct match
+    if (taskLower.includes(keyword)) return true;
+    
+    // Check synonyms
+    const synonyms = keywordMap[keyword as keyof typeof keywordMap] || [];
+    return synonyms.some(synonym => taskLower.includes(synonym));
+  });
+}
+
+const defaultQuestions = [
+  {
+    stage: 1,
+    question: "What type of project are you planning?",
+    options: [
+      { id: "type-1", label: "Kitchen Remodel" },
+      { id: "type-2", label: "Bathroom Renovation" },
+      { id: "type-3", label: "Flooring Installation" },
+      { id: "type-4", label: "Painting" },
+      { id: "type-5", label: "General Repairs" },
+      { id: "type-6", label: "Multiple Rooms" }
+    ],
+    isMultiChoice: true
+  },
+  {
+    stage: 2,
+    question: "What is the current condition of the space?",
+    options: [
+      { id: "condition-1", label: "Needs Complete Renovation" },
+      { id: "condition-2", label: "Requires Minor Updates" },
+      { id: "condition-3", label: "Damaged/Repair Needed" },
+      { id: "condition-4", label: "Outdated but Functional" }
+    ],
+    isMultiChoice: false
+  },
+  {
+    stage: 3,
+    question: "What is your estimated timeline for this project?",
+    options: [
+      { id: "timeline-1", label: "As Soon as Possible" },
+      { id: "timeline-2", label: "Within 1-3 Months" },
+      { id: "timeline-3", label: "3-6 Months" },
+      { id: "timeline-4", label: "6+ Months" }
+    ],
+    isMultiChoice: false
+  },
+  {
+    stage: 4,
+    question: "What is your estimated budget range?",
+    options: [
+      { id: "budget-1", label: "Under $5,000" },
+      { id: "budget-2", label: "$5,000 - $15,000" },
+      { id: "budget-3", label: "$15,000 - $30,000" },
+      { id: "budget-4", label: "$30,000+" }
+    ],
+    isMultiChoice: false
+  },
+  {
+    stage: 5,
+    question: "Do you need any of these additional services?",
+    options: [
+      { id: "services-1", label: "Design Consultation" },
+      { id: "services-2", label: "Permit Handling" },
+      { id: "services-3", label: "Debris Removal" },
+      { id: "services-4", label: "Material Selection Help" }
+    ],
+    isMultiChoice: true
+  }
+];
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -60,7 +153,11 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Fetch the first row from Options table
+    // Extract keywords from the project description
+    const keywords = findKeywords(projectDescription);
+    console.log('Extracted keywords:', keywords);
+
+    // Fetch template questions
     const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options?select=*&limit=1`, {
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
@@ -74,21 +171,21 @@ serve(async (req) => {
 
     const optionsData = await optionsResponse.json();
     let allQuestions = [];
+    let questionCount = 0;
     
     if (optionsData.length > 0) {
       const options = optionsData[0];
-      const description = projectDescription.toLowerCase();
       
       // Process each question column in sequence
       for (const column of ['Question 1', 'Question 2', 'Question 3', 'Question 4']) {
         try {
-          const columnData = options[column] as ColumnData;
+          const columnData = options[column];
           if (columnData?.data && Array.isArray(columnData.data)) {
             const parsedQuestions = parseColumn(columnData);
             console.log(`Processing ${column} with ${parsedQuestions.length} questions`);
             
             const matchedQuestions = parsedQuestions.filter(q => {
-              const matches = q.task && isMatch(q.task, description);
+              const matches = q.task && isMatch(q.task, keywords);
               if (matches) {
                 console.log(`✅ Matched task "${q.task}" in ${column}`);
               }
@@ -103,7 +200,13 @@ serve(async (req) => {
               isMultiChoice: questionObj.multi_choice
             }));
             
-            allQuestions.push(...matchedQuestions);
+            // Only add questions if we haven't exceeded the limit
+            const remainingSlots = 30 - questionCount;
+            const questionsToAdd = matchedQuestions.slice(0, remainingSlots);
+            allQuestions.push(...questionsToAdd);
+            questionCount += questionsToAdd.length;
+            
+            if (questionCount >= 30) break;
           }
         } catch (error) {
           console.error(`Error processing ${column}:`, error);
@@ -111,48 +214,34 @@ serve(async (req) => {
       }
     }
 
-    // Sort questions by stage
-    allQuestions.sort((a, b) => a.stage - b.stage);
-
-    // If no matches found, provide default questions
-    if (allQuestions.length === 0) {
-      console.log('No matching questions found, using defaults');
-      allQuestions = [
-        {
-          stage: 1,
-          question: "What type of project are you planning?",
-          options: [
-            { id: "kitchen", label: "Kitchen Remodel" },
-            { id: "bathroom", label: "Bathroom Remodel" },
-            { id: "general", label: "General Renovation" },
-            { id: "repair", label: "Repair Work" }
-          ],
-          isMultiChoice: false
-        },
-        {
-          stage: 2,
-          question: "What is your estimated budget range?",
-          options: [
-            { id: "budget1", label: "$5,000 - $15,000" },
-            { id: "budget2", label: "$15,000 - $30,000" },
-            { id: "budget3", label: "$30,000 - $50,000" },
-            { id: "budget4", label: "$50,000+" }
-          ],
-          isMultiChoice: false
-        }
-      ];
+    // If we have room for default questions, add them
+    if (questionCount < 30) {
+      const remainingSlots = 30 - questionCount;
+      const defaultsToAdd = defaultQuestions.slice(0, remainingSlots);
+      allQuestions.push(...defaultsToAdd);
     }
 
-    // Always add final confirmation question
-    allQuestions.push({
-      stage: allQuestions.length + 1,
-      question: "Ready to view your estimate?",
-      options: [
-        { id: "yes", label: "Yes, show me my estimate" }
-      ],
-      isMultiChoice: false,
-      isFinal: true
-    });
+    // Generate additional AI questions if we still have room
+    if (allQuestions.length < 30) {
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-ai-questions', {
+          body: { 
+            projectDescription,
+            keywords,
+            maxQuestions: 30 - allQuestions.length
+          }
+        });
+
+        if (!error && data?.questions) {
+          allQuestions.push(...data.questions);
+        }
+      } catch (error) {
+        console.error('Error generating AI questions:', error);
+      }
+    }
+
+    // Sort questions by stage
+    allQuestions.sort((a, b) => a.stage - b.stage);
 
     console.log('Returning questions:', allQuestions);
 
@@ -165,7 +254,10 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in generate-questions function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      questions: defaultQuestions,
+      totalStages: defaultQuestions.length
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500
     });
