@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { projectDescription } = await req.json();
+    const { projectDescription, imageUrl } = await req.json();
     console.log('Processing request with description:', projectDescription);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -23,7 +23,7 @@ serve(async (req) => {
       throw new Error('Missing required configuration');
     }
 
-    // First, use Llama to analyze the project description
+    // Enhanced project analysis with Llama
     const analysisResponse = await fetch('https://api.llama-api.com/chat/completions', {
       method: 'POST',
       headers: {
@@ -35,7 +35,22 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'Analyze the project description and extract key aspects that need to be addressed. Return a JSON object with categories and keywords.'
+            content: `Analyze the construction project description and extract:
+            1. Main project categories (e.g., kitchen, bathroom, flooring)
+            2. Specific tasks involved (e.g., demolition, installation)
+            3. Materials mentioned (e.g., tile, wood)
+            4. Measurements and dimensions
+            5. Special requirements or preferences
+            
+            Return a JSON object with these fields:
+            {
+              "categories": string[],
+              "tasks": string[],
+              "materials": string[],
+              "dimensions": string[],
+              "requirements": string[],
+              "keywords": string[]
+            }`
           },
           {
             role: 'user',
@@ -51,9 +66,9 @@ serve(async (req) => {
     }
 
     const analysis = await analysisResponse.json();
-    console.log('Project analysis:', analysis);
+    console.log('Enhanced project analysis:', analysis);
 
-    // Fetch questions from Options table
+    // Fetch questions from Options table with specific UUID
     const optionsResponse = await fetch(
       `${supabaseUrl}/rest/v1/Options?Key%20Options=eq.42e64c9c-53b2-49bd-ad77-995ecb3106c6`,
       {
@@ -69,23 +84,31 @@ serve(async (req) => {
     }
 
     const optionsData = await optionsResponse.json();
-    console.log('Raw Options data:', optionsData);
+    console.log('Options data fetched:', optionsData);
 
     if (!optionsData || !optionsData.length) {
       throw new Error('No Options data found');
     }
 
     const firstRow = optionsData[0];
-    let allQuestions: any[] = [];
-    let followUpQuestions: any[] = [];
+    let allQuestions = [];
+    let followUpQuestions = [];
     const processedQuestions = new Set();
 
-    // Extract categories and keywords from Llama analysis
-    const categories = analysis.choices[0].message.content.categories || [];
-    const keywords = analysis.choices[0].message.content.keywords || [];
+    // Extract analysis data
+    const analysisContent = analysis.choices[0].message.content;
+    const {
+      categories = [],
+      tasks = [],
+      materials = [],
+      dimensions = [],
+      requirements = [],
+      keywords = []
+    } = typeof analysisContent === 'string' ? JSON.parse(analysisContent) : analysisContent;
 
-    console.log('Identified categories:', categories);
-    console.log('Identified keywords:', keywords);
+    // Combine all relevant terms for matching
+    const relevantTerms = [...categories, ...tasks, ...materials, ...dimensions, ...requirements, ...keywords];
+    console.log('Relevant terms for matching:', relevantTerms);
 
     // Process each JSONB column (Question 1 through 4)
     for (let i = 1; i <= 4; i++) {
@@ -98,33 +121,31 @@ serve(async (req) => {
         const questionData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
         const questions = Array.isArray(questionData) ? questionData : [questionData];
         
-        questions.forEach((q: any) => {
+        questions.forEach((q) => {
           if (!q.task || !q.question || processedQuestions.has(q.question)) {
             return;
           }
 
-          // Check if question matches project categories or keywords
-          const isRelevant = categories.some((category: string) => 
-            q.task.toLowerCase().includes(category.toLowerCase())
-          ) || keywords.some((keyword: string) => 
-            q.task.toLowerCase().includes(keyword.toLowerCase())
+          // Enhanced relevance checking
+          const isRelevant = relevantTerms.some(term => 
+            q.task.toLowerCase().includes(term.toLowerCase()) ||
+            q.question.toLowerCase().includes(term.toLowerCase())
           );
 
           if (isRelevant) {
             processedQuestions.add(q.question);
             
-            let options = [];
-            if (Array.isArray(q.options)) {
-              options = q.options.map((opt: any, idx: number) => ({
-                id: `${columnKey}-${idx}`,
-                label: typeof opt === 'string' ? opt : opt.label || String(opt)
-              }));
-            } else if (Array.isArray(q.selections)) {
-              options = q.selections.map((label: string, idx: number) => ({
-                id: `${columnKey}-${idx}`,
-                label: String(label)
-              }));
-            }
+            const options = Array.isArray(q.options) 
+              ? q.options.map((opt, idx) => ({
+                  id: `${columnKey}-${idx}`,
+                  label: typeof opt === 'string' ? opt : opt.label || String(opt)
+                }))
+              : Array.isArray(q.selections)
+                ? q.selections.map((label, idx) => ({
+                    id: `${columnKey}-${idx}`,
+                    label: String(label)
+                  }))
+                : [];
 
             if (options.length > 0) {
               const questionObj = {
@@ -138,14 +159,14 @@ serve(async (req) => {
                 questionObj.isFinal = false;
                 allQuestions.push(questionObj);
 
-                q.follow_up_questions.forEach((followUp: any, index: number) => {
+                q.follow_up_questions.forEach((followUp, index) => {
                   if (followUp.question && (Array.isArray(followUp.options) || Array.isArray(followUp.selections))) {
                     const followUpOptions = Array.isArray(followUp.options) 
-                      ? followUp.options.map((opt: any, idx: number) => ({
+                      ? followUp.options.map((opt, idx) => ({
                           id: `${columnKey}-followup-${index}-${idx}`,
                           label: typeof opt === 'string' ? opt : opt.label || String(opt)
                         }))
-                      : followUp.selections.map((label: string, idx: number) => ({
+                      : followUp.selections.map((label, idx) => ({
                           id: `${columnKey}-followup-${index}-${idx}`,
                           label: String(label)
                         }));
@@ -174,17 +195,24 @@ serve(async (req) => {
       }
     }
 
-    // Combine and sort questions, limiting to 30
+    // Sort and limit questions
     const finalQuestions = [...allQuestions, ...followUpQuestions]
       .sort((a, b) => a.stage - b.stage)
       .slice(0, 30);
 
-    console.log(`Total questions matched: ${finalQuestions.length}`);
-    console.log('Final questions array:', JSON.stringify(finalQuestions, null, 2));
+    console.log(`Generated ${finalQuestions.length} questions`);
+    console.log('Final questions:', JSON.stringify(finalQuestions, null, 2));
 
     return new Response(JSON.stringify({
       questions: finalQuestions,
-      totalStages: finalQuestions.length
+      totalStages: finalQuestions.length,
+      analysis: {
+        categories,
+        tasks,
+        materials,
+        dimensions,
+        requirements
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
