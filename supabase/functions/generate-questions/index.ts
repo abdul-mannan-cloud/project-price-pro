@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { projectDescription, imageUrl } = await req.json();
+    const { projectDescription } = await req.json();
     console.log('Processing request with description:', projectDescription);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -38,11 +38,12 @@ serve(async (req) => {
     const optionsData = await optionsResponse.json();
     let questions = [];
 
-    // Process template questions from all columns
+    // Process all question columns
     if (optionsData.length > 0) {
       const options = optionsData[0];
       const description = projectDescription.toLowerCase();
       
+      // Process each question column in order
       ['Question 1', 'Question 2', 'Question 3', 'Question 4'].forEach(column => {
         const questionData = options[column];
         if (questionData && typeof questionData === 'object') {
@@ -60,7 +61,7 @@ serve(async (req) => {
       });
     }
 
-    // Generate additional AI questions
+    // Generate additional AI questions for uncovered aspects
     if (llamaApiKey) {
       console.log('Generating additional AI questions');
       
@@ -76,13 +77,12 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: `You are a construction estimator assistant. Generate additional questions for a construction/renovation project. 
-              Avoid duplicating these existing questions: ${existingQuestionsText}.
+              content: `You are a construction estimator assistant. Generate additional questions for aspects of the project not covered by these existing questions: ${existingQuestionsText}.
               Return a JSON array with this format: [{"question": "Question text?", "options": ["Option 1", "Option 2", "Option 3"], "isMultiChoice": false}]`
             },
             {
               role: "user",
-              content: `Generate 2 questions for this project: ${projectDescription}`
+              content: `Generate relevant questions for uncovered aspects of this project: ${projectDescription}`
             }
           ],
           response_format: { type: "json_object" }
@@ -133,17 +133,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in generate-questions function:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      questions: [{
-        question: "Ready to view your estimate?",
-        options: [
-          { id: "yes", label: "Yes, show me my estimate" }
-        ],
-        isMultiChoice: false,
-        isFinal: true
-      }]
-    }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -153,13 +143,26 @@ serve(async (req) => {
 function isTaskRelevant(description: string, task?: string): boolean {
   if (!task) return false;
   
+  // Define task-specific keywords and related terms
   const taskMappings: Record<string, string[]> = {
-    'kitchen': ['kitchen', 'cooking', 'countertop', 'cabinet', 'appliance'],
-    'painting': ['paint', 'walls', 'color', 'finish', 'wallpaper'],
-    'bathroom': ['bath', 'shower', 'toilet', 'vanity', 'sink'],
-    'flooring': ['floor', 'tile', 'hardwood', 'carpet', 'laminate'],
+    'kitchen': ['kitchen', 'cooking', 'countertop', 'cabinet', 'appliance', 'sink', 'stove', 'oven', 'refrigerator'],
+    'painting': ['paint', 'walls', 'color', 'finish', 'wallpaper', 'coating', 'primer', 'brush', 'roller'],
+    'bathroom': ['bath', 'shower', 'toilet', 'vanity', 'sink', 'plumbing', 'tile', 'faucet'],
+    'flooring': ['floor', 'tile', 'hardwood', 'carpet', 'laminate', 'vinyl', 'concrete'],
+    'electrical': ['electric', 'wiring', 'outlet', 'switch', 'light', 'fixture', 'panel'],
+    'plumbing': ['plumb', 'pipe', 'water', 'drain', 'faucet', 'sink', 'toilet'],
+    'roofing': ['roof', 'shingle', 'gutter', 'flashing', 'leak', 'vent'],
+    'windows': ['window', 'glass', 'frame', 'seal', 'pane', 'screen'],
+    'doors': ['door', 'frame', 'handle', 'lock', 'hinge', 'knob'],
+    'deck': ['deck', 'patio', 'porch', 'railing', 'stair', 'board'],
+    'landscaping': ['yard', 'garden', 'lawn', 'plant', 'tree', 'shrub', 'grass'],
   };
   
-  const taskTerms = [task.toLowerCase(), ...(taskMappings[task.toLowerCase()] || [])];
+  const taskTerms = [
+    task.toLowerCase(), 
+    ...(taskMappings[task.toLowerCase()] || [])
+  ];
+  
+  // Check if any task-related terms appear in the description
   return taskTerms.some(term => description.includes(term));
 }

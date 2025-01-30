@@ -32,8 +32,6 @@ export const QuestionCard = ({
   onSelect,
   onNext,
   isLastQuestion,
-  currentQuestionIndex,
-  totalQuestions,
   isMultiChoice = false,
   isFinal = false,
 }: QuestionCardProps) => {
