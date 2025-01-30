@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, SkipForward, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -28,6 +28,7 @@ const EstimatePage = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
   const [estimate, setEstimate] = useState<any>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
@@ -114,17 +115,42 @@ const EstimatePage = () => {
       if (error) throw error;
 
       if (data?.questions) {
-        const typedQuestions: Question[] = data.questions.map((q: any) => ({
-          question: String(q.question),
-          options: q.options.map((opt: any, idx: number) => ({
-            id: String(opt.id || idx),
-            label: String(opt.label)
-          })),
-          isMultiChoice: Boolean(q.isMultiChoice)
-        }));
-        setQuestions(typedQuestions);
+        setQuestions(data.questions);
+        setStage('questions');
+        
+        // If there are more questions being processed
+        if (data.status === 'partial') {
+          setIsLoadingMore(true);
+          // Poll for additional questions
+          const pollInterval = setInterval(async () => {
+            const { data: updatedData, error: pollError } = await supabase
+              .from('Options')
+              .select('AI Generated')
+              .single();
+
+            if (!pollError && updatedData['AI Generated']) {
+              const aiQuestions = updatedData['AI Generated'].map((q: any) => ({
+                question: q.question,
+                options: q.options.map((label: string, idx: number) => ({
+                  id: idx.toString(),
+                  label: String(label)
+                })),
+                isMultiChoice: q.isMultiChoice || false
+              }));
+              
+              setQuestions(prev => [...prev, ...aiQuestions]);
+              setIsLoadingMore(false);
+              clearInterval(pollInterval);
+            }
+          }, 2000); // Poll every 2 seconds
+
+          // Clear interval after 30 seconds if no response
+          setTimeout(() => {
+            clearInterval(pollInterval);
+            setIsLoadingMore(false);
+          }, 30000);
+        }
       }
-      setStage('questions');
     } catch (error) {
       console.error('Error generating questions:', error);
       toast({
@@ -353,26 +379,33 @@ const EstimatePage = () => {
         )}
 
         {stage === 'questions' && questions.length > 0 && currentQuestionIndex < questions.length && (
-          <QuestionCard
-            question={questions[currentQuestionIndex].question}
-            options={questions[currentQuestionIndex].options}
-            selectedOption={
-              Array.isArray(answers[currentQuestionIndex])
-                ? (answers[currentQuestionIndex] as string[])[0]
-                : (answers[currentQuestionIndex] as string) || ""
-            }
-            onSelect={handleAnswerSubmit}
-            onNext={handleNext}
-            isLastQuestion={currentQuestionIndex === questions.length - 1}
-            currentQuestionIndex={currentQuestionIndex}
-            totalQuestions={questions.length}
-            isMultiChoice={questions[currentQuestionIndex].isMultiChoice}
-            selectedOptions={
-              Array.isArray(answers[currentQuestionIndex])
-                ? answers[currentQuestionIndex] as string[]
-                : []
-            }
-          />
+          <>
+            <QuestionCard
+              question={questions[currentQuestionIndex].question}
+              options={questions[currentQuestionIndex].options}
+              selectedOption={
+                Array.isArray(answers[currentQuestionIndex])
+                  ? (answers[currentQuestionIndex] as string[])[0]
+                  : (answers[currentQuestionIndex] as string) || ""
+              }
+              onSelect={handleAnswerSubmit}
+              onNext={handleNext}
+              isLastQuestion={currentQuestionIndex === questions.length - 1 && !isLoadingMore}
+              currentQuestionIndex={currentQuestionIndex}
+              totalQuestions={questions.length}
+              isMultiChoice={questions[currentQuestionIndex].isMultiChoice}
+              selectedOptions={
+                Array.isArray(answers[currentQuestionIndex])
+                  ? answers[currentQuestionIndex] as string[]
+                  : []
+              }
+            />
+            {isLoadingMore && (
+              <div className="text-center mt-4 text-muted-foreground">
+                <p>Loading additional questions...</p>
+              </div>
+            )}
+          </>
         )}
 
         {stage === 'contact' && estimate && (
