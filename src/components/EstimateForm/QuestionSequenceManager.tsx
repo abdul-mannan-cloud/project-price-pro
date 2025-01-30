@@ -16,6 +16,7 @@ export const QuestionSequenceManager = ({
   const [questionSequence, setQuestionSequence] = useState<QuestionSequence[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
+  const [totalQuestions, setTotalQuestions] = useState(0);
 
   useEffect(() => {
     setQuestionSequence([{
@@ -23,7 +24,24 @@ export const QuestionSequenceManager = ({
       questionId: "initial",
       depth: 0
     }]);
+    // Calculate initial total including potential sub-questions
+    calculateTotalQuestions(initialQuestion);
   }, [initialQuestion]);
+
+  const calculateTotalQuestions = (question: CategoryQuestion | SubQuestion) => {
+    let count = 1; // Count the current question
+    
+    if (question.sub_questions) {
+      Object.values(question.sub_questions).forEach(subQuestions => {
+        subQuestions.forEach(sq => {
+          count += calculateTotalQuestions(sq);
+        });
+      });
+    }
+    
+    setTotalQuestions(count);
+    return count;
+  };
 
   const findSubQuestions = (
     question: CategoryQuestion | SubQuestion,
@@ -74,12 +92,17 @@ export const QuestionSequenceManager = ({
       });
 
       if (newQuestions.length > 0) {
-        setQuestionSequence(prev => [
-          ...prev.slice(0, currentIndex + 1),
+        const updatedSequence = [
+          ...questionSequence.slice(0, currentIndex + 1),
           ...newQuestions,
-          ...prev.slice(currentIndex + 1)
-        ]);
+          ...questionSequence.slice(currentIndex + 1)
+        ];
+        setQuestionSequence(updatedSequence);
         setCurrentIndex(prev => prev + 1);
+        
+        // Update total questions count based on new sequence
+        const newTotal = calculateTotalQuestions(initialQuestion);
+        setTotalQuestions(Math.max(newTotal, updatedSequence.length));
       } else {
         handleNext();
       }
@@ -126,6 +149,9 @@ export const QuestionSequenceManager = ({
     sub_questions: questionSequence[currentIndex].currentQuestion.sub_questions
   };
 
+  // Calculate progress including sub-questions
+  const progress = ((currentIndex + 1) / totalQuestions) * 100;
+
   return (
     <QuestionCard
       question={currentQuestion}
@@ -134,7 +160,7 @@ export const QuestionSequenceManager = ({
       onNext={handleNext}
       isLastQuestion={currentIndex === questionSequence.length - 1}
       currentStage={currentIndex + 1}
-      totalStages={questionSequence.length}
+      totalStages={totalQuestions}
     />
   );
 };
