@@ -57,9 +57,9 @@ serve(async (req) => {
         try {
           const columnData = options[column] as ColumnData;
           if (columnData?.data && Array.isArray(columnData.data)) {
-            // Process each question object in the column's data array
             columnData.data.forEach(questionObj => {
-              if (isTaskRelevant(description, questionObj.task?.toLowerCase())) {
+              if (isRelevantTask(description, questionObj.task)) {
+                console.log(`Matched task "${questionObj.task}" in ${column}`);
                 matchedQuestions.push({
                   question: questionObj.question,
                   options: questionObj.selections.map((label, idx) => ({
@@ -101,7 +101,6 @@ serve(async (req) => {
         isFinal: true
       });
     } else {
-      // Fallback questions if no matches found
       matchedQuestions = [
         {
           question: "What is the main focus of your project?",
@@ -155,6 +154,43 @@ serve(async (req) => {
   }
 });
 
+function isRelevantTask(description: string, task?: string): boolean {
+  if (!task || !description) return false;
+  
+  // Convert both strings to lowercase for case-insensitive comparison
+  const normalizedDescription = description.toLowerCase();
+  const normalizedTask = task.toLowerCase();
+
+  // Define task keywords and their variations/misspellings
+  const taskKeywords: Record<string, string[]> = {
+    'kitchen': ['kitchen', 'kitch', 'kitchn', 'kichen', 'cooking'],
+    'bathroom': ['bathroom', 'bath', 'bathrm', 'bathrom', 'restroom', 'washroom'],
+    'basement': ['basement', 'bsmt', 'basment'],
+    'painting': ['paint', 'painting', 'painted', 'paints'],
+    'flooring': ['floor', 'flooring', 'flor', 'floors'],
+    'roofing': ['roof', 'roofing', 'ruf', 'rooves'],
+    'windows': ['window', 'windows', 'windw'],
+    'electrical': ['electric', 'electrical', 'elektric', 'wiring'],
+    'plumbing': ['plumbing', 'plumb', 'plum', 'pipe'],
+    'landscaping': ['landscape', 'landscaping', 'yard', 'garden'],
+    'deck': ['deck', 'decking', 'patio', 'porch'],
+    'remodel': ['remodel', 'renovation', 'renew', 'update', 'upgrade'],
+  };
+
+  // Check if any of the task keywords or their variations are in the description
+  for (const [baseKeyword, variations] of Object.entries(taskKeywords)) {
+    if (normalizedTask.includes(baseKeyword)) {
+      // If the task contains this keyword, check if any of its variations are in the description
+      if (variations.some(variation => normalizedDescription.includes(variation))) {
+        return true;
+      }
+    }
+  }
+
+  // Direct match check (fallback)
+  return normalizedDescription.includes(normalizedTask);
+}
+
 async function generateAIQuestions(description: string) {
   const llama_api_key = Deno.env.get('LLAMA_API_KEY');
   if (!llama_api_key) {
@@ -189,29 +225,4 @@ async function generateAIQuestions(description: string) {
   }
 
   return await response.json();
-}
-
-function isTaskRelevant(description: string, task?: string): boolean {
-  if (!task || !description) return false;
-  
-  // Define task-specific keywords and related terms
-  const taskMappings: Record<string, string[]> = {
-    'kitchen': ['kitchen', 'cooking', 'countertop', 'cabinet', 'appliance', 'sink', 'stove', 'oven', 'refrigerator'],
-    'bathroom': ['bath', 'shower', 'toilet', 'vanity', 'sink', 'plumbing', 'tile', 'faucet'],
-    'flooring': ['floor', 'tile', 'hardwood', 'carpet', 'laminate', 'vinyl', 'concrete'],
-    'lighting': ['light', 'fixture', 'chandelier', 'lamp', 'sconce', 'pendant', 'recessed'],
-    'painting': ['paint', 'walls', 'color', 'finish', 'wallpaper', 'coating'],
-    'electrical': ['electric', 'wiring', 'outlet', 'switch', 'panel'],
-    'plumbing': ['plumb', 'pipe', 'water', 'drain', 'faucet', 'sink', 'toilet'],
-    'outdoor': ['outdoor', 'exterior', 'yard', 'garden', 'patio', 'deck'],
-    'windows': ['window', 'glass', 'frame', 'seal', 'pane'],
-    'doors': ['door', 'frame', 'handle', 'lock', 'hinge'],
-  };
-  
-  const taskTerms = [
-    task.toLowerCase(), 
-    ...(taskMappings[task.toLowerCase()] || [])
-  ];
-  
-  return taskTerms.some(term => description.includes(term));
 }
