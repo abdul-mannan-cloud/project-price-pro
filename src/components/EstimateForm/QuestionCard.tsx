@@ -4,47 +4,34 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-
-interface Option {
-  id: string;
-  label: string;
-}
+import { Question, QuestionOption } from "@/types/estimate";
 
 interface QuestionCardProps {
-  question: string;
-  options: Option[];
-  selectedOption: string;
-  selectedOptions?: string[];
-  onSelect: (value: string | string[]) => void;
+  question: Question;
+  selectedOptions: string[];
+  onSelect: (questionId: string, value: string[]) => void;
   onNext: () => void;
   isLastQuestion: boolean;
-  isMultiChoice?: boolean;
-  isFinal?: boolean;
   currentStage: number;
   totalStages: number;
 }
 
 export const QuestionCard = ({
   question,
-  options,
-  selectedOption,
-  selectedOptions = [],
+  selectedOptions,
   onSelect,
   onNext,
   isLastQuestion,
-  isMultiChoice = false,
-  isFinal = false,
   currentStage,
-  totalStages
+  totalStages,
 }: QuestionCardProps) => {
   const [pressedOption, setPressedOption] = useState<string | null>(null);
 
   const handleSingleOptionSelect = (value: string) => {
     setPressedOption(value);
-    onSelect(value);
+    onSelect(question.id, [value]);
     
-    // For single-choice questions, automatically proceed after selection
-    if (!isLastQuestion || !isFinal) {
+    if (!isLastQuestion && !question.is_branching) {
       setTimeout(() => {
         setPressedOption(null);
         setTimeout(onNext, 200);
@@ -56,13 +43,8 @@ export const QuestionCard = ({
     const newSelection = selectedOptions.includes(optionId)
       ? selectedOptions.filter(id => id !== optionId)
       : [...selectedOptions, optionId];
-    onSelect(newSelection);
+    onSelect(question.id, newSelection);
   };
-
-  if (!question || !options || options.length === 0) {
-    console.error('Invalid question data:', { question, options });
-    return null;
-  }
 
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-sm animate-fadeIn">      
@@ -83,11 +65,11 @@ export const QuestionCard = ({
         </div>
       </div>
 
-      <h2 className="text-xl font-semibold mb-6">{question}</h2>
+      <h2 className="text-xl font-semibold mb-6">{question.question}</h2>
       
-      {isMultiChoice ? (
+      {question.multi_choice ? (
         <div className="space-y-4">
-          {options.map((option) => (
+          {question.options.map((option) => (
             <div
               key={option.id}
               className={cn(
@@ -127,16 +109,16 @@ export const QuestionCard = ({
         </div>
       ) : (
         <RadioGroup
-          value={selectedOption}
+          value={selectedOptions[0]}
           onValueChange={handleSingleOptionSelect}
           className="space-y-4"
         >
-          {options.map((option) => (
+          {question.options.map((option) => (
             <div 
               key={option.id} 
               className={cn(
                 "relative p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer transform",
-                selectedOption === option.id 
+                selectedOptions[0] === option.id 
                   ? "border-primary bg-primary/5" 
                   : "border-gray-200 hover:border-gray-300 hover:bg-gray-50",
                 pressedOption === option.id && "scale-[0.98]"
@@ -149,7 +131,7 @@ export const QuestionCard = ({
                   htmlFor={option.id}
                   className={cn(
                     "text-base cursor-pointer flex-1",
-                    selectedOption === option.id ? "text-primary font-medium" : "text-muted-foreground"
+                    selectedOptions[0] === option.id ? "text-primary font-medium" : "text-muted-foreground"
                   )}
                 >
                   {option.label}
@@ -157,12 +139,12 @@ export const QuestionCard = ({
               </div>
             </div>
           ))}
-          {isLastQuestion && isFinal && selectedOption && (
+          {question.is_branching && selectedOptions[0] && (
             <Button 
               className="w-full mt-6"
               onClick={onNext}
             >
-              View Estimate
+              Next
             </Button>
           )}
         </RadioGroup>
