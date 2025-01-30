@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
 import { Question, CategoryQuestions } from "@/types/estimate";
+import { toast } from "@/hooks/use-toast";
 
 interface QuestionManagerProps {
   categoryData: CategoryQuestions;
@@ -13,16 +14,26 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
   const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
 
   useEffect(() => {
-    // Initialize with only the first question
-    setQuestionSequence([categoryData.questions[0]]);
+    console.log('Initializing question sequence with category data:', categoryData);
+    if (categoryData?.questions?.length > 0) {
+      setQuestionSequence([categoryData.questions[0]]);
+    } else {
+      toast({
+        title: "Error",
+        description: "No questions available for this category.",
+        variant: "destructive",
+      });
+    }
   }, [categoryData]);
 
   const handleAnswer = (questionId: string, selectedOptions: string[]) => {
+    console.log('Handling answer:', { questionId, selectedOptions });
     setAnswers(prev => ({ ...prev, [questionId]: selectedOptions }));
 
     const currentQuestion = questionSequence[currentQuestionIndex];
     
-    if (currentQuestion.is_branching && categoryData.branching_logic[questionId]) {
+    if (currentQuestion.is_branching && categoryData.branching_logic?.[questionId]) {
+      console.log('Processing branching logic for:', questionId);
       const nextQuestionIds = categoryData.branching_logic[questionId][selectedOptions[0]] || [];
       
       if (currentQuestion.sub_questions) {
@@ -30,11 +41,13 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
           nextQuestionIds.includes(q.id)
         );
         
+        console.log('Relevant sub-questions:', relevantSubQuestions);
+        
         // Update sequence with only the relevant sub-questions
         const newSequence = [
           ...questionSequence.slice(0, currentQuestionIndex + 1),
           ...relevantSubQuestions,
-          ...categoryData.questions.slice(1) // Add remaining main questions
+          ...categoryData.questions.slice(currentQuestionIndex + 1) // Add remaining main questions
         ];
         
         setQuestionSequence(newSequence);
@@ -48,16 +61,23 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
   };
 
   const handleNext = () => {
+    console.log('Handling next:', { currentQuestionIndex, totalQuestions: questionSequence.length });
     if (currentQuestionIndex < questionSequence.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
+      console.log('Completing category with answers:', answers);
       onComplete(answers);
     }
   };
 
   const currentQuestion = questionSequence[currentQuestionIndex];
   
-  if (!currentQuestion) return null;
+  if (!currentQuestion) {
+    console.log('No current question available');
+    return null;
+  }
+
+  console.log('Rendering question:', currentQuestion);
 
   return (
     <QuestionCard
