@@ -45,6 +45,10 @@ serve(async (req) => {
     let allQuestions: any[] = [];
     const processedQuestions = new Set(); // To avoid duplicates
 
+    // Keywords from the project description
+    const keywords = projectDescription.toLowerCase().split(/[\s,]+/);
+    console.log('Extracted keywords:', keywords);
+
     // Process each JSONB column (Question 1 through 4)
     for (let i = 1; i <= 4; i++) {
       const columnKey = `Question ${i}`;
@@ -57,12 +61,11 @@ serve(async (req) => {
         continue;
       }
 
-      let questionData;
       try {
         // Handle both string and parsed JSON
-        questionData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
-        // Ensure we're working with the data array
-        const questions = questionData.data || [questionData];
+        const questionData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+        // Ensure we're working with an array of questions
+        const questions = Array.isArray(questionData) ? questionData : [questionData];
         
         console.log(`Parsed questions from ${columnKey}:`, questions);
 
@@ -72,14 +75,14 @@ serve(async (req) => {
             return;
           }
 
-          // Convert input and task to lowercase for case-insensitive matching
-          const lowercaseInput = projectDescription.toLowerCase();
-          const lowercaseTask = q.task.toLowerCase();
-
-          // Check if any word from the task matches in the input
-          const taskWords = lowercaseTask.split(/\s+/);
-          const matches = taskWords.some(word => 
-            lowercaseInput.includes(word) && word.length > 2 // Ignore very short words
+          // Convert task to lowercase and split into words
+          const taskWords = q.task.toLowerCase().split(/[\s,]+/);
+          
+          // Check if any keyword from the project description matches any word in the task
+          const matches = keywords.some(keyword => 
+            taskWords.some(taskWord => 
+              taskWord.includes(keyword) || keyword.includes(taskWord)
+            )
           );
 
           if (matches) {
@@ -89,12 +92,17 @@ serve(async (req) => {
             allQuestions.push({
               stage: allQuestions.length + 1,
               question: q.question,
-              options: Array.isArray(q.selections) 
-                ? q.selections.map((label: string, idx: number) => ({
+              options: Array.isArray(q.options) 
+                ? q.options.map((option: any, idx: number) => ({
                     id: `${columnKey}-${idx}`,
-                    label: String(label)
+                    label: typeof option === 'string' ? option : option.label || String(option)
                   }))
-                : [],
+                : Array.isArray(q.selections)
+                  ? q.selections.map((label: string, idx: number) => ({
+                      id: `${columnKey}-${idx}`,
+                      label: String(label)
+                    }))
+                  : [],
               isMultiChoice: q.multi_choice || false
             });
           }
