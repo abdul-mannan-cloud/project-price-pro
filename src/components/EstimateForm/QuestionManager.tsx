@@ -75,12 +75,7 @@ export const QuestionManager = ({
     // Get all questions after the first one that depend on any of the selected values
     return categoryData.questions
       .slice(1) // Skip the first question
-      .filter(q => q.depends_on && selectedOptionValues.includes(q.depends_on))
-      .map(q => ({
-        ...q,
-        id: q.id || `q-${Math.random()}`,
-        options: formatOptions(q)
-      }));
+      .filter(q => q.depends_on && selectedOptionValues.includes(q.depends_on));
   };
 
   const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
@@ -108,6 +103,10 @@ export const QuestionManager = ({
         const updatedSequence = [currentQuestion, ...dependentQuestions];
         console.log('Setting new question sequence:', updatedSequence);
         setQuestionSequence(updatedSequence);
+      } else {
+        // If no dependent questions, move to completion
+        handleComplete();
+        return;
       }
 
       // Save to leads table
