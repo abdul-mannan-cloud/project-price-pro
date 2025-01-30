@@ -85,9 +85,15 @@ serve(async (req) => {
           const columnData = options[column] as ColumnData;
           if (columnData?.data && Array.isArray(columnData.data)) {
             const parsedQuestions = parseColumn(columnData);
-            const matchedQuestions = parsedQuestions.filter(q => 
-              q.task && isMatch(q.task, description)
-            ).map((questionObj, idx) => ({
+            console.log(`Processing ${column} with ${parsedQuestions.length} questions`);
+            
+            const matchedQuestions = parsedQuestions.filter(q => {
+              const matches = q.task && isMatch(q.task, description);
+              if (matches) {
+                console.log(`✅ Matched task "${q.task}" in ${column}`);
+              }
+              return matches;
+            }).map((questionObj, idx) => ({
               stage: parseInt(column.split(' ')[1]),
               question: questionObj.question,
               options: questionObj.selections.map((label, optIdx) => ({
@@ -96,6 +102,7 @@ serve(async (req) => {
               })),
               isMultiChoice: questionObj.multi_choice
             }));
+            
             allQuestions.push(...matchedQuestions);
           }
         } catch (error) {
@@ -109,6 +116,7 @@ serve(async (req) => {
 
     // If no matches found, provide default questions
     if (allQuestions.length === 0) {
+      console.log('No matching questions found, using defaults');
       allQuestions = [
         {
           stage: 1,
