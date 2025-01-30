@@ -105,6 +105,7 @@ const EstimatePage = () => {
   const generateAIQuestions = async () => {
     setIsProcessing(true);
     try {
+      console.log('Generating questions for description:', projectDescription);
       const { data, error } = await supabase.functions.invoke('generate-questions', {
         body: { 
           projectDescription,
@@ -113,12 +114,13 @@ const EstimatePage = () => {
       });
 
       if (error) throw error;
+      console.log('Received questions data:', data);
 
       if (data?.questions) {
+        console.log('Setting questions:', data.questions);
         setQuestions(data.questions);
         setStage('questions');
         
-        // If there are more questions being processed
         if (data.status === 'partial') {
           setIsLoadingMore(true);
           // Poll for additional questions
@@ -129,6 +131,7 @@ const EstimatePage = () => {
               .single();
 
             if (!pollError && updatedData['AI Generated']) {
+              console.log('Received additional questions:', updatedData['AI Generated']);
               const aiQuestions = updatedData['AI Generated'].map((q: any) => ({
                 question: q.question,
                 options: q.options.map((label: string, idx: number) => ({
@@ -142,9 +145,8 @@ const EstimatePage = () => {
               setIsLoadingMore(false);
               clearInterval(pollInterval);
             }
-          }, 2000); // Poll every 2 seconds
+          }, 2000);
 
-          // Clear interval after 30 seconds if no response
           setTimeout(() => {
             clearInterval(pollInterval);
             setIsLoadingMore(false);

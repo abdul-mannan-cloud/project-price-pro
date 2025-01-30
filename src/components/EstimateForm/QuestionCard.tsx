@@ -58,8 +58,19 @@ export const QuestionCard = ({
     onSelect(newSelection);
   };
 
+  if (!question || !options || options.length === 0) {
+    console.error('Invalid question data:', { question, options });
+    return null;
+  }
+
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-sm animate-fadeIn">
+      <div className="mb-4">
+        <span className="text-sm text-muted-foreground">
+          Question {currentQuestionIndex + 1} of {totalQuestions}
+        </span>
+      </div>
+      
       <h2 className="text-xl font-semibold mb-6">{question}</h2>
       
       {isMultiChoice ? (
@@ -96,7 +107,7 @@ export const QuestionCard = ({
           {selectedOptions.length > 0 && (
             <Button 
               className="w-full mt-6"
-              onClick={() => onNext()}
+              onClick={onNext}
             >
               {isLastQuestion ? "Submit and View Estimate" : "Next Question"}
             </Button>
