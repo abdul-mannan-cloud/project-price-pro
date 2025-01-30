@@ -43,7 +43,8 @@ serve(async (req) => {
 
     const firstRow = optionsData[0];
     let allQuestions: any[] = [];
-    const processedQuestions = new Set(); // To avoid duplicates
+    let followUpQuestions: any[] = [];
+    const processedQuestions = new Set();
 
     // Extract keywords from the project description
     const keywords = projectDescription.toLowerCase().split(/[\s,\n]+/).filter(word => word.length > 2);
@@ -65,22 +66,18 @@ serve(async (req) => {
       }
 
       try {
-        // Parse JSON data
         const questionData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
         const questions = Array.isArray(questionData) ? questionData : [questionData];
         
         console.log(`Parsed questions from ${columnKey}:`, questions);
 
-        // Process each question in the column
         questions.forEach((q: any) => {
           if (!q.task || !q.question || processedQuestions.has(q.question)) {
             return;
           }
 
-          // Convert task to lowercase and split into words
           const taskWords = q.task.toLowerCase().split(/[\s,\n]+/).filter(word => word.length > 2);
           
-          // Check for keyword matches
           const matches = keywords.some(keyword => 
             taskWords.some(taskWord => 
               taskWord.includes(keyword) || 
@@ -93,7 +90,6 @@ serve(async (req) => {
             console.log(`✅ Matched question for task "${q.task}":`, q.question);
             processedQuestions.add(q.question);
             
-            // Prepare options array
             let options = [];
             if (Array.isArray(q.options)) {
               options = q.options.map((opt: any, idx: number) => ({
@@ -108,12 +104,46 @@ serve(async (req) => {
             }
 
             if (options.length > 0) {
-              allQuestions.push({
-                stage: allQuestions.length + 1,
+              const questionObj = {
+                stage: allQuestions.length + followUpQuestions.length + 1,
                 question: q.question,
                 options,
                 isMultiChoice: q.multi_choice || false
-              });
+              };
+
+              // If this question has follow-ups, process them
+              if (q.follow_up_questions && Array.isArray(q.follow_up_questions)) {
+                questionObj.isFinal = false;
+                allQuestions.push(questionObj);
+
+                q.follow_up_questions.forEach((followUp: any, index: number) => {
+                  if (followUp.question && (Array.isArray(followUp.options) || Array.isArray(followUp.selections))) {
+                    const followUpOptions = Array.isArray(followUp.options) 
+                      ? followUp.options.map((opt: any, idx: number) => ({
+                          id: `${columnKey}-followup-${index}-${idx}`,
+                          label: typeof opt === 'string' ? opt : opt.label || String(opt)
+                        }))
+                      : followUp.selections.map((label: string, idx: number) => ({
+                          id: `${columnKey}-followup-${index}-${idx}`,
+                          label: String(label)
+                        }));
+
+                    if (followUpOptions.length > 0) {
+                      followUpQuestions.push({
+                        stage: allQuestions.length + followUpQuestions.length + 1,
+                        question: followUp.question,
+                        options: followUpOptions,
+                        isMultiChoice: followUp.multi_choice || false,
+                        isFollowUp: true,
+                        parentQuestionId: questionObj.stage
+                      });
+                    }
+                  }
+                });
+              } else {
+                questionObj.isFinal = true;
+                allQuestions.push(questionObj);
+              }
             }
           }
         });
@@ -122,15 +152,19 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Total questions matched: ${allQuestions.length}`);
-    console.log('Final questions array:', allQuestions);
+    // Combine main questions and follow-ups
+    const finalQuestions = [...allQuestions, ...followUpQuestions];
+    console.log(`Total questions matched: ${finalQuestions.length}`);
+    console.log('Final questions array:', finalQuestions);
 
-    // Sort questions by relevance and limit to a reasonable number
-    allQuestions = allQuestions.slice(0, 15); // Limit to 15 questions max
+    // Sort questions by stage and limit to a reasonable number
+    const limitedQuestions = finalQuestions
+      .sort((a, b) => a.stage - b.stage)
+      .slice(0, 15);
 
     return new Response(JSON.stringify({
-      questions: allQuestions,
-      totalStages: allQuestions.length
+      questions: limitedQuestions,
+      totalStages: limitedQuestions.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
