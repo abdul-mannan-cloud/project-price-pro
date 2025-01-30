@@ -35,11 +35,7 @@ export const QuestionManager = ({
     console.log('Initializing question sequence with category data:', categoryData);
     if (categoryData?.questions?.length > 0) {
       // Start with just the first question
-      const firstQuestion = {
-        ...categoryData.questions[0],
-        id: categoryData.questions[0].id || 'q-0',
-        options: formatOptions(categoryData.questions[0])
-      };
+      const firstQuestion = categoryData.questions[0];
       setQuestionSequence([firstQuestion]);
       setCurrentQuestionIndex(0);
       setAnswers({});
@@ -94,8 +90,8 @@ export const QuestionManager = ({
 
     const currentQuestion = questionSequence[currentQuestionIndex];
     
-    if (currentQuestionIndex === 0 && currentQuestion.is_branching) {
-      // For the first branching question, get the selected values
+    if (currentQuestionIndex === 0) {
+      // For the first question, get the selected values
       const firstQuestionOptions = formatOptions(currentQuestion);
       const selectedOptionValues = firstQuestionOptions
         .filter(opt => selectedOptions.includes(opt.id))
@@ -139,8 +135,8 @@ export const QuestionManager = ({
       }
     }
 
-    // Automatically advance for single-choice questions or when no options are selected
-    if (!currentQuestion.multi_choice || selectedOptions.length === 0) {
+    // Automatically advance for single-choice questions
+    if (!currentQuestion.multi_choice) {
       handleNext();
     }
   };
