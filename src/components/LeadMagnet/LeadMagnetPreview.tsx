@@ -153,6 +153,8 @@ export const LeadMagnetPreview = () => {
           onNext={handleNext}
           isLastQuestion={currentStep === questions.length}
           isMultiChoice={questions[currentStep - 1].isMultiChoice || false}
+          currentStage={currentStep}
+          totalStages={questions.length}
         />
       )}
     </div>
