@@ -30,7 +30,8 @@ export const QuestionManager = ({
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
     if (categoryData?.questions?.length > 0) {
-      setQuestionSequence([categoryData.questions[0]]);
+      const initialQuestion = categoryData.questions[0];
+      setQuestionSequence([initialQuestion]);
       setCurrentQuestionIndex(0);
       setAnswers({});
       setShowAdditionalServices(false);
@@ -48,14 +49,29 @@ export const QuestionManager = ({
     selectedOption: string,
     currentSequence: Question[]
   ): Question[] => {
-    // Get sub-questions for the selected option from the sub_questions object
     const subQuestions = currentQuestion.sub_questions?.[selectedOption] || [];
     const currentIndex = currentSequence.indexOf(currentQuestion);
     
-    // Return a new sequence with sub-questions inserted after the current question
+    // Map the sub-questions to ensure they have the correct structure
+    const formattedSubQuestions = subQuestions.map((sq: any) => ({
+      id: sq.id || `sq-${currentQuestion.id}-${selectedOption}`,
+      question: sq.question,
+      options: Array.isArray(sq.selections) 
+        ? sq.selections.map((opt: any, index: number) => ({
+            id: typeof opt === 'string' 
+              ? `${sq.id || `sq-${currentQuestion.id}-${selectedOption}`}-${index}`
+              : opt.value || `${sq.id || `sq-${currentQuestion.id}-${selectedOption}`}-${index}`,
+            label: typeof opt === 'string' ? opt : opt.label
+          }))
+        : [],
+      multi_choice: sq.multi_choice || false,
+      is_branching: sq.is_branching || false,
+      sub_questions: sq.sub_questions || {}
+    }));
+
     return [
       ...currentSequence.slice(0, currentIndex + 1),
-      ...subQuestions,
+      ...formattedSubQuestions,
       ...currentSequence.slice(currentIndex + 1)
     ];
   };
@@ -67,25 +83,38 @@ export const QuestionManager = ({
 
     const currentQuestion = questionSequence[currentQuestionIndex];
     
-    if (currentQuestion.is_branching && !currentQuestion.multi_choice) {
-      const selectedOption = selectedOptions[0];
-      const newSequence = processSubQuestions(
-        currentQuestion,
-        selectedOption,
-        questionSequence
-      );
-      
-      console.log('New question sequence:', newSequence);
-      setQuestionSequence(newSequence);
+    if (currentQuestion.is_branching) {
+      if (!currentQuestion.multi_choice) {
+        const selectedOption = selectedOptions[0];
+        const newSequence = processSubQuestions(
+          currentQuestion,
+          selectedOption,
+          questionSequence
+        );
+        
+        console.log('New question sequence:', newSequence);
+        setQuestionSequence(newSequence);
+      } else {
+        // For multi-choice questions, process sub-questions for each selected option
+        let newSequence = [...questionSequence];
+        selectedOptions.forEach(option => {
+          newSequence = processSubQuestions(
+            currentQuestion,
+            option,
+            newSequence
+          );
+        });
+        
+        console.log('New question sequence (multi):', newSequence);
+        setQuestionSequence(newSequence);
+      }
     }
   };
 
   const handleNext = () => {
-    const currentQuestion = questionSequence[currentQuestionIndex];
-    const isLastMainQuestion = currentQuestionIndex === questionSequence.length - 1;
+    const isLastQuestion = currentQuestionIndex === questionSequence.length - 1;
     
-    // If it's the last question and not a branching question, show additional services
-    if (isLastMainQuestion && !currentQuestion.is_branching) {
+    if (isLastQuestion) {
       setShowAdditionalServices(true);
     } else {
       setCurrentQuestionIndex(prev => prev + 1);
@@ -94,6 +123,7 @@ export const QuestionManager = ({
 
   const handleAdditionalCategorySelect = (categoryId: string) => {
     setSelectedAdditionalCategory(categoryId);
+    onSelectAdditionalCategory(categoryId);
   };
 
   const handleComplete = () => {
