@@ -63,7 +63,7 @@ serve(async (req) => {
                 matchedQuestions.push({
                   question: questionObj.question,
                   options: questionObj.selections.map((label, idx) => ({
-                    id: idx.toString(),
+                    id: `${column}-${idx}`,
                     label: String(label)
                   })),
                   isMultiChoice: questionObj.multi_choice
@@ -75,12 +75,13 @@ serve(async (req) => {
           console.error(`Error processing ${column}:`, error);
         }
       });
+
+      console.log('Matched questions:', matchedQuestions);
     }
 
     // Start AI question generation in the background
     const aiQuestionsPromise = generateAIQuestions(projectDescription);
     
-    // Use EdgeRuntime.waitUntil to handle the background task
     EdgeRuntime.waitUntil(
       aiQuestionsPromise.then(aiQuestions => {
         console.log('AI questions generated:', aiQuestions);
@@ -89,7 +90,7 @@ serve(async (req) => {
       })
     );
 
-    // Add final contact info question
+    // Add final question
     if (matchedQuestions.length > 0) {
       matchedQuestions.push({
         question: "Ready to view your estimate?",
@@ -122,14 +123,12 @@ serve(async (req) => {
       ];
     }
 
-    console.log('Final matched questions:', matchedQuestions);
     return new Response(JSON.stringify({ questions: matchedQuestions }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in generate-questions function:', error);
-    // Return fallback questions with 200 status
     return new Response(JSON.stringify({ 
       questions: [
         {
@@ -151,7 +150,6 @@ serve(async (req) => {
         }
       ]
     }), {
-      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
@@ -163,16 +161,14 @@ async function generateAIQuestions(description: string) {
     throw new Error('Missing Llama API key');
   }
 
-  // Implementation of AI question generation
-  // This runs in the background and doesn't block the main response
-  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+  const response = await fetch('https://api.llama-api.com/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${llama_api_key}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'llama-3.1-sonar-small-128k-online',
+      model: 'llama-3.2-11b-vision',
       messages: [
         {
           role: 'system',
