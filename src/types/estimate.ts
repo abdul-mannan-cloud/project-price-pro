@@ -8,6 +8,7 @@ export interface Question {
   id: string;
   question: string;
   options: QuestionOption[];
+  selections?: (string | QuestionOption)[];
   multi_choice: boolean;
   is_branching: boolean;
   sub_questions?: {

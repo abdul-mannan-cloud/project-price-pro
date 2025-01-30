@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { CategoryQuestion, QuestionSequence, SubQuestion } from "@/types/questions";
 import { toast } from "@/hooks/use-toast";
+import { QuestionCard } from "./QuestionCard";
 
 interface QuestionSequenceManagerProps {
   initialQuestion: CategoryQuestion;

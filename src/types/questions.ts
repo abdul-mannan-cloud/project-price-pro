@@ -4,16 +4,18 @@ export interface QuestionOption {
 }
 
 export interface SubQuestion {
+  id?: string;
   question: string;
-  selections: string[] | QuestionOption[];
+  selections: (string | QuestionOption)[];
   multi_choice: boolean;
   is_branching?: boolean;
   sub_questions?: Record<string, SubQuestion[]>;
 }
 
 export interface CategoryQuestion {
+  id?: string;
   question: string;
-  selections: QuestionOption[];
+  selections: (string | QuestionOption)[];
   is_branching: boolean;
   multi_choice: boolean;
   sub_questions: Record<string, SubQuestion[]>;
