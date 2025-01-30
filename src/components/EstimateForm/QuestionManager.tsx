@@ -4,6 +4,7 @@ import { AdditionalServicesGrid } from "./AdditionalServicesGrid";
 import { LoadingScreen } from "./LoadingScreen";
 import { Question, CategoryQuestions, Category } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuestionManagerProps {
   categoryData: CategoryQuestions;
