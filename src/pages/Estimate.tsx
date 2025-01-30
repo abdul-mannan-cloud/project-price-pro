@@ -132,7 +132,7 @@ const EstimatePage = () => {
       })) : [],
       multi_choice: q.multi_choice || false,
       is_branching: q.is_branching || false,
-      sub_questions: []
+      sub_questions: {}
     }));
   };
 
@@ -174,28 +174,25 @@ const EstimatePage = () => {
             : [],
           multi_choice: q.multi_choice || false,
           is_branching: q.is_branching || false,
-          sub_questions: []
+          sub_questions: q.sub_questions ? Object.fromEntries(
+            Object.entries(q.sub_questions).map(([key, questions]) => [
+              key,
+              (questions as any[]).map((sq: any, sqIndex: number) => ({
+                id: `sq-${index}-${key}-${sqIndex}`,
+                question: sq.question,
+                options: Array.isArray(sq.selections)
+                  ? sq.selections.map((opt: any, optIndex: number) => ({
+                      id: `sq-${index}-${key}-${sqIndex}-${optIndex}`,
+                      label: typeof opt === 'string' ? opt : opt.label
+                    }))
+                  : [],
+                multi_choice: sq.multi_choice || false,
+                is_branching: false,
+                sub_questions: {}
+              }))
+            ])
+          ) : {}
         };
-
-        if (q.is_branching && q.sub_questions) {
-          const subQuestions = Object.entries(q.sub_questions).map(([key, questions]: [string, any]) => {
-            return questions.map((sq: any, sqIndex: number) => ({
-              id: `sq-${index}-${key}-${sqIndex}`,
-              question: sq.question,
-              options: Array.isArray(sq.selections)
-                ? sq.selections.map((opt: any, optIndex: number) => ({
-                    id: `sq-${index}-${key}-${sqIndex}-${optIndex}`,
-                    label: typeof opt === 'string' ? opt : opt.label
-                  }))
-                : [],
-              multi_choice: sq.multi_choice || false,
-              is_branching: false,
-              sub_questions: []
-            }));
-          }).flat();
-
-          question.sub_questions = subQuestions;
-        }
 
         return question;
       });
