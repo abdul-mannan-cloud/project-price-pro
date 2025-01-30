@@ -1,25 +1,39 @@
 import { useState, useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
-import { Question, CategoryQuestions } from "@/types/estimate";
+import { AdditionalServicesGrid } from "./AdditionalServicesGrid";
+import { Question, CategoryQuestions, Category } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 
 interface QuestionManagerProps {
   categoryData: CategoryQuestions;
   onComplete: (answers: Record<string, string[]>) => void;
+  categories: Category[];
+  currentCategory: string;
+  onSelectAdditionalCategory: (categoryId: string) => void;
+  completedCategories: string[];
 }
 
-export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerProps) => {
+export const QuestionManager = ({ 
+  categoryData, 
+  onComplete,
+  categories,
+  currentCategory,
+  onSelectAdditionalCategory,
+  completedCategories
+}: QuestionManagerProps) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
+  const [showAdditionalServices, setShowAdditionalServices] = useState(false);
+  const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
     if (categoryData?.questions?.length > 0) {
-      // Start with just the first question
       setQuestionSequence([categoryData.questions[0]]);
       setCurrentQuestionIndex(0);
       setAnswers({});
+      setShowAdditionalServices(false);
     } else {
       toast({
         title: "Error",
@@ -32,7 +46,6 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
   const handleAnswer = (questionId: string, selectedOptions: string[]) => {
     console.log('Handling answer:', { questionId, selectedOptions });
     
-    // Update answers
     setAnswers(prev => ({ ...prev, [questionId]: selectedOptions }));
 
     const currentQuestion = questionSequence[currentQuestionIndex];
@@ -48,7 +61,6 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
         
         console.log('Relevant sub-questions:', relevantSubQuestions);
         
-        // Update sequence with only the relevant sub-questions
         const remainingMainQuestions = categoryData.questions.slice(currentQuestionIndex + 1);
         const newSequence = [
           ...questionSequence.slice(0, currentQuestionIndex + 1),
@@ -58,38 +70,43 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
         
         setQuestionSequence(newSequence);
       }
-    } else if (currentQuestionIndex === questionSequence.length - 1 && 
-               currentQuestionIndex < categoryData.questions.length - 1) {
-      // Add the next main question to the sequence
-      const nextMainQuestion = categoryData.questions[currentQuestionIndex + 1];
-      setQuestionSequence(prev => [...prev, nextMainQuestion]);
-    }
-
-    // For non-branching single-choice questions, auto-advance
-    if (!currentQuestion.is_branching && !currentQuestion.multi_choice) {
-      setTimeout(() => handleNext(), 300);
     }
   };
 
   const handleNext = () => {
-    console.log('Handling next:', { currentQuestionIndex, totalQuestions: questionSequence.length });
     if (currentQuestionIndex < questionSequence.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
-    } else if (currentQuestionIndex === questionSequence.length - 1) {
-      // Check if there are more main questions to add
-      const nextMainQuestionIndex = categoryData.questions.findIndex(q => 
-        !questionSequence.some(sq => sq.id === q.id)
-      );
-      
-      if (nextMainQuestionIndex !== -1) {
-        setQuestionSequence(prev => [...prev, categoryData.questions[nextMainQuestionIndex]]);
-        setCurrentQuestionIndex(prev => prev + 1);
-      } else {
-        console.log('Completing category with answers:', answers);
-        onComplete(answers);
-      }
+    } else {
+      setShowAdditionalServices(true);
     }
   };
+
+  const handleAdditionalCategorySelect = (categoryId: string) => {
+    setSelectedAdditionalCategory(categoryId);
+  };
+
+  const handleComplete = () => {
+    console.log('Completing category with answers:', answers);
+    onComplete(answers);
+  };
+
+  const handleContinueWithAdditional = () => {
+    if (selectedAdditionalCategory) {
+      onSelectAdditionalCategory(selectedAdditionalCategory);
+    }
+  };
+
+  if (showAdditionalServices) {
+    return (
+      <AdditionalServicesGrid
+        categories={categories}
+        selectedCategory={selectedAdditionalCategory}
+        onSelect={handleAdditionalCategorySelect}
+        onComplete={handleComplete}
+        completedCategories={completedCategories}
+      />
+    );
+  }
 
   const currentQuestion = questionSequence[currentQuestionIndex];
   
@@ -98,18 +115,13 @@ export const QuestionManager = ({ categoryData, onComplete }: QuestionManagerPro
     return null;
   }
 
-  console.log('Rendering question:', currentQuestion);
-
   return (
     <QuestionCard
       question={currentQuestion}
       selectedOptions={answers[currentQuestion.id] || []}
       onSelect={handleAnswer}
       onNext={handleNext}
-      isLastQuestion={currentQuestionIndex === questionSequence.length - 1 && 
-                     !categoryData.questions.some(q => 
-                       !questionSequence.some(sq => sq.id === q.id)
-                     )}
+      isLastQuestion={currentQuestionIndex === questionSequence.length - 1}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />
