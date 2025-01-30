@@ -22,13 +22,16 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Fetch first row from Options table
-    const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options?limit=1`, {
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'apikey': supabaseKey,
-      },
-    });
+    // Fetch specific row from Options table using the UUID
+    const optionsResponse = await fetch(
+      `${supabaseUrl}/rest/v1/Options?Key%20Options=eq.42e64c9c-53b2-49bd-ad77-995ecb3106c6`,
+      {
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey,
+        },
+      }
+    );
 
     if (!optionsResponse.ok) {
       throw new Error('Failed to fetch Options data');
@@ -57,16 +60,24 @@ serve(async (req) => {
       const columnKey = `Question ${i}`;
       const jsonData = firstRow[columnKey];
       
-      console.log(`Processing ${columnKey}:`, jsonData);
+      console.log(`Processing ${columnKey}:`, JSON.stringify(jsonData, null, 2));
 
       if (!jsonData) continue;
 
       try {
         const questionData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+        console.log(`Parsed question data for ${columnKey}:`, JSON.stringify(questionData, null, 2));
+        
+        // Handle both array and single object formats
         const questions = Array.isArray(questionData) ? questionData : [questionData];
         
         questions.forEach((q: any) => {
-          if (!q.task || !q.question || processedQuestions.has(q.question)) return;
+          console.log(`Processing question:`, JSON.stringify(q, null, 2));
+          
+          if (!q.task || !q.question || processedQuestions.has(q.question)) {
+            console.log('Skipping question due to missing data or duplicate');
+            return;
+          }
 
           const taskWords = q.task.toLowerCase().split(/[\s,\n]+/);
           
@@ -145,7 +156,7 @@ serve(async (req) => {
       .sort((a, b) => a.stage - b.stage);
 
     console.log(`Total questions matched: ${finalQuestions.length}`);
-    console.log('Final questions array:', finalQuestions);
+    console.log('Final questions array:', JSON.stringify(finalQuestions, null, 2));
 
     return new Response(JSON.stringify({
       questions: finalQuestions,
