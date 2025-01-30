@@ -62,30 +62,84 @@ export const QuestionCard = ({
     
     if (question.multi_choice) {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {options.map((option) => (
+              <div
+                key={option.id}
+                className={cn(
+                  "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
+                  selectedOptions.includes(option.id)
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-gray-200"
+                )}
+                onClick={() => handleMultiOptionSelect(option.id)}
+              >
+                <div className="flex items-center space-x-4">
+                  <Checkbox
+                    id={option.id}
+                    checked={selectedOptions.includes(option.id)}
+                    onCheckedChange={() => handleMultiOptionSelect(option.id)}
+                    className="h-6 w-6 rounded-lg"
+                  />
+                  <Label
+                    htmlFor={option.id}
+                    className={cn(
+                      "text-base cursor-pointer flex-1",
+                      selectedOptions.includes(option.id) 
+                        ? "text-gray-900 font-medium" 
+                        : "text-gray-600"
+                    )}
+                  >
+                    {option.label}
+                  </Label>
+                </div>
+              </div>
+            ))}
+          </div>
+          {showNextButton && (
+            <Button 
+              className="w-full mt-4"
+              onClick={onNext}
+              size="lg"
+            >
+              {isLastQuestion ? "Generate Estimate" : "Next Question"}
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <RadioGroup
+          value={selectedOptions[0]}
+          onValueChange={handleSingleOptionSelect}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
           {options.map((option) => (
-            <div
+            <div 
               key={option.id}
               className={cn(
                 "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
-                selectedOptions.includes(option.id)
-                  ? "border-primary bg-primary/5 shadow-sm"
-                  : "border-gray-200"
+                selectedOptions[0] === option.id 
+                  ? "border-primary bg-primary/5 shadow-sm" 
+                  : "border-gray-200",
+                pressedOption === option.id && "scale-[0.98]"
               )}
-              onClick={() => handleMultiOptionSelect(option.id)}
+              onClick={() => handleSingleOptionSelect(option.id)}
             >
               <div className="flex items-center space-x-4">
-                <Checkbox
-                  id={option.id}
-                  checked={selectedOptions.includes(option.id)}
-                  onCheckedChange={() => handleMultiOptionSelect(option.id)}
-                  className="h-6 w-6 rounded-lg"
+                <RadioGroupItem 
+                  value={option.id} 
+                  id={option.id} 
+                  className="h-6 w-6"
                 />
                 <Label
                   htmlFor={option.id}
                   className={cn(
                     "text-base cursor-pointer flex-1",
-                    selectedOptions.includes(option.id) 
+                    selectedOptions[0] === option.id 
                       ? "text-gray-900 font-medium" 
                       : "text-gray-600"
                   )}
@@ -95,71 +149,17 @@ export const QuestionCard = ({
               </div>
             </div>
           ))}
-          {showNextButton && (
-            <div className="col-span-full mt-6">
-              <Button 
-                className="w-full"
-                onClick={onNext}
-                size="lg"
-              >
-                {isLastQuestion ? "Generate Estimate" : "Next Question"}
-              </Button>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <RadioGroup
-        value={selectedOptions[0]}
-        onValueChange={handleSingleOptionSelect}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-      >
-        {options.map((option) => (
-          <div 
-            key={option.id}
-            className={cn(
-              "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
-              selectedOptions[0] === option.id 
-                ? "border-primary bg-primary/5 shadow-sm" 
-                : "border-gray-200",
-              pressedOption === option.id && "scale-[0.98]"
-            )}
-            onClick={() => handleSingleOptionSelect(option.id)}
-          >
-            <div className="flex items-center space-x-4">
-              <RadioGroupItem 
-                value={option.id} 
-                id={option.id} 
-                className="h-6 w-6"
-              />
-              <Label
-                htmlFor={option.id}
-                className={cn(
-                  "text-base cursor-pointer flex-1",
-                  selectedOptions[0] === option.id 
-                    ? "text-gray-900 font-medium" 
-                    : "text-gray-600"
-                )}
-              >
-                {option.label}
-              </Label>
-            </div>
-          </div>
-        ))}
+        </RadioGroup>
         {(question.is_branching && selectedOptions[0]) && (
-          <div className="col-span-full mt-6">
-            <Button 
-              className="w-full"
-              onClick={onNext}
-              size="lg"
-            >
-              {isLastQuestion ? "Generate Estimate" : "Next Question"}
-            </Button>
-          </div>
+          <Button 
+            className="w-full mt-4"
+            onClick={onNext}
+            size="lg"
+          >
+            {isLastQuestion ? "Generate Estimate" : "Next Question"}
+          </Button>
         )}
-      </RadioGroup>
+      </div>
     );
   };
 
@@ -187,6 +187,9 @@ export const QuestionCard = ({
           <h2 className="text-xl font-bold text-gray-900">
             {question.question}
           </h2>
+          {question.description && (
+            <p className="mt-2 text-gray-600">{question.description}</p>
+          )}
         </div>
         
         <div className="p-6">

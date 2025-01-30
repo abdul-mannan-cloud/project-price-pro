@@ -24,12 +24,11 @@ export const QuestionSequenceManager = ({
       questionId: "initial",
       depth: 0
     }]);
-    // Calculate initial total including potential sub-questions
     calculateTotalQuestions(initialQuestion);
   }, [initialQuestion]);
 
   const calculateTotalQuestions = (question: CategoryQuestion | SubQuestion) => {
-    let count = 1; // Count the current question
+    let count = 1;
     
     if (question.sub_questions) {
       Object.values(question.sub_questions).forEach(subQuestions => {
@@ -105,14 +104,12 @@ export const QuestionSequenceManager = ({
         setQuestionSequence(updatedSequence);
         setCurrentIndex(prev => prev + 1);
         
-        // Update total questions count based on new sequence
-        const newTotal = calculateTotalQuestions(initialQuestion);
-        setTotalQuestions(Math.max(newTotal, updatedSequence.length));
+        // Update total questions count
+        setTotalQuestions(Math.max(totalQuestions, updatedSequence.length));
       } else {
         handleNext();
       }
     } else if (!currentQuestion.currentQuestion.multi_choice) {
-      // For single-choice non-branching questions, automatically move to next
       setTimeout(() => handleNext(), 300);
     }
   };
@@ -144,6 +141,7 @@ export const QuestionSequenceManager = ({
   const currentQuestion: Question = {
     id: questionSequence[currentIndex].questionId,
     question: questionSequence[currentIndex].currentQuestion.question,
+    description: questionSequence[currentIndex].currentQuestion.description,
     selections: questionSequence[currentIndex].currentQuestion.selections,
     options: questionSequence[currentIndex].currentQuestion.selections.map((selection, index) => ({
       id: typeof selection === 'string' ? `${index}` : selection.value || selection.id || `${index}`,
@@ -154,9 +152,6 @@ export const QuestionSequenceManager = ({
     multi_choice: questionSequence[currentIndex].currentQuestion.multi_choice,
     sub_questions: questionSequence[currentIndex].currentQuestion.sub_questions
   };
-
-  // Calculate progress including sub-questions
-  const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
   return (
     <QuestionCard
