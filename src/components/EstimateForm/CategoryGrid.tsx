@@ -6,16 +6,23 @@ interface CategoryGridProps {
   categories: Category[];
   selectedCategory?: string;
   onSelectCategory: (categoryId: string) => void;
+  completedCategories?: string[]; // New prop to track completed categories
 }
 
 export const CategoryGrid = ({
   categories,
   selectedCategory,
   onSelectCategory,
+  completedCategories = [], // Default to empty array if not provided
 }: CategoryGridProps) => {
+  // Filter out completed categories
+  const availableCategories = categories.filter(
+    (category) => !completedCategories.includes(category.id)
+  );
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {categories.map((category) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fadeIn">
+      {availableCategories.map((category) => (
         <Card
           key={category.id}
           className={cn(
@@ -26,10 +33,9 @@ export const CategoryGrid = ({
           )}
           onClick={() => onSelectCategory(category.id)}
         >
-          <h3 className="text-lg font-semibold mb-2">{category.name}</h3>
-          {category.description && (
-            <p className="text-sm text-muted-foreground">{category.description}</p>
-          )}
+          <p className="text-sm text-muted-foreground">
+            {category.description || "Select this option"}
+          </p>
         </Card>
       ))}
     </div>

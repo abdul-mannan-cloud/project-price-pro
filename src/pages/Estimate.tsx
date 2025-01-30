@@ -11,10 +11,11 @@ import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
+import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question } from "@/types/estimate";
 
 const EstimatePage = () => {
-  const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate'>('photo');
+  const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
@@ -24,6 +25,7 @@ const EstimatePage = () => {
   const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
   const [estimate, setEstimate] = useState<any>(null);
   const [totalStages, setTotalStages] = useState(0);
+  const [completedCategories, setCompletedCategories] = useState<string[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
@@ -110,7 +112,6 @@ const EstimatePage = () => {
       if (error) throw error;
 
       if (data?.questions) {
-        // Ensure questions conform to the Question interface
         const formattedQuestions: Question[] = data.questions.map((q: any) => ({
           id: q.id || crypto.randomUUID(),
           question: q.question,
@@ -150,6 +151,11 @@ const EstimatePage = () => {
     }
   };
 
+  const handleCategoryComplete = (categoryId: string) => {
+    setCompletedCategories(prev => [...prev, categoryId]);
+    setStage('category'); // Show category selection again
+  };
+
   const generateEstimate = async () => {
     try {
       const formattedAnswers = Object.entries(answers).map(([index, value]) => {
@@ -173,7 +179,6 @@ const EstimatePage = () => {
 
       if (error) throw error;
       setEstimate(data);
-      // Changed: Always go to contact form after estimate generation
       setStage('contact');
     } catch (error) {
       console.error('Error generating estimate:', error);
@@ -189,7 +194,6 @@ const EstimatePage = () => {
 
   const handleContactSubmit = async (contactData: any) => {
     try {
-      // Make sure we have the contractor ID from the route params
       if (!contractorId) {
         throw new Error("No contractor ID provided");
       }
@@ -197,7 +201,7 @@ const EstimatePage = () => {
       const { data, error } = await supabase
         .from('estimates')
         .insert({
-          contractor_id: contractorId, // Explicitly set the contractor_id
+          contractor_id: contractorId,
           project_title: "New Project Estimate",
           customer_name: contactData.fullName,
           customer_email: contactData.email,
@@ -359,12 +363,28 @@ const EstimatePage = () => {
                   ? [answers[currentQuestionIndex] as string] 
                   : []
             }
-            onSelect={(questionId, value) => handleAnswerSubmit(value)}
+            onSelect={handleAnswerSubmit}
             onNext={() => {}}
             isLastQuestion={currentQuestionIndex === questions.length - 1}
             currentStage={currentQuestionIndex + 1}
             totalStages={totalStages}
           />
+        )}
+
+        {stage === 'category' && (
+          <div className="animate-fadeIn">
+            <h2 className="text-2xl font-semibold mb-6">Additional Services</h2>
+            <CategoryGrid 
+              categories={/* your categories array */}
+              onSelectCategory={(categoryId) => {
+                // Handle category selection
+                setStage('questions');
+                setCurrentQuestionIndex(0);
+                setAnswers({});
+              }}
+              completedCategories={completedCategories}
+            />
+          </div>
         )}
 
         {stage === 'contact' && estimate && (
