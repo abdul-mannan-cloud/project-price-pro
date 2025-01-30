@@ -13,6 +13,7 @@ import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category } from "@/types/estimate";
+import { findBestMatchingCategory } from "@/utils/categoryMatcher";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
@@ -148,6 +149,19 @@ const EstimatePage = () => {
       });
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleDescriptionSubmit = () => {
+    const match = findBestMatchingCategory(projectDescription);
+    
+    if (match) {
+      setSelectedCategory(match.categoryId);
+      setCurrentQuestionIndex(0);
+      setAnswers({});
+      loadCategoryQuestions();
+    } else {
+      setStage('category');
     }
   };
 
@@ -386,7 +400,7 @@ const EstimatePage = () => {
             </div>
             <Button 
               className="w-full mt-6"
-              onClick={() => setStage('category')}
+              onClick={handleDescriptionSubmit}
               disabled={projectDescription.trim().length < 30}
             >
               Continue
