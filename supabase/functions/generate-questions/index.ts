@@ -17,12 +17,43 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
 
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase configuration');
+    if (!supabaseUrl || !supabaseKey || !llamaApiKey) {
+      throw new Error('Missing required configuration');
     }
 
-    // Fetch specific row from Options table using the UUID
+    // First, use Llama to analyze the project description
+    const analysisResponse = await fetch('https://api.llama-api.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${llamaApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama3.2-11b',
+        messages: [
+          {
+            role: 'system',
+            content: 'Analyze the project description and extract key aspects that need to be addressed. Return a JSON object with categories and keywords.'
+          },
+          {
+            role: 'user',
+            content: projectDescription
+          }
+        ],
+        response_format: { type: "json_object" }
+      }),
+    });
+
+    if (!analysisResponse.ok) {
+      throw new Error('Failed to analyze project description');
+    }
+
+    const analysis = await analysisResponse.json();
+    console.log('Project analysis:', analysis);
+
+    // Fetch questions from Options table
     const optionsResponse = await fetch(
       `${supabaseUrl}/rest/v1/Options?Key%20Options=eq.42e64c9c-53b2-49bd-ad77-995ecb3106c6`,
       {
@@ -49,45 +80,37 @@ serve(async (req) => {
     let followUpQuestions: any[] = [];
     const processedQuestions = new Set();
 
-    // Define relevant categories and keywords for kitchen remodel
-    const relevantKeywords = [
-      'kitchen', 'remodel', 'cabinet', 'countertop', 'backsplash', 'sink',
-      'appliance', 'lighting', 'paint', 'floor', 'tile', 'demo', 'drywall'
-    ];
+    // Extract categories and keywords from Llama analysis
+    const categories = analysis.choices[0].message.content.categories || [];
+    const keywords = analysis.choices[0].message.content.keywords || [];
+
+    console.log('Identified categories:', categories);
+    console.log('Identified keywords:', keywords);
 
     // Process each JSONB column (Question 1 through 4)
     for (let i = 1; i <= 4; i++) {
       const columnKey = `Question ${i}`;
       const jsonData = firstRow[columnKey];
       
-      console.log(`Processing ${columnKey}:`, JSON.stringify(jsonData, null, 2));
-
       if (!jsonData) continue;
 
       try {
         const questionData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
-        console.log(`Parsed question data for ${columnKey}:`, JSON.stringify(questionData, null, 2));
-        
-        // Handle both array and single object formats
         const questions = Array.isArray(questionData) ? questionData : [questionData];
         
         questions.forEach((q: any) => {
-          console.log(`Processing question:`, JSON.stringify(q, null, 2));
-          
           if (!q.task || !q.question || processedQuestions.has(q.question)) {
-            console.log('Skipping question due to missing data or duplicate');
             return;
           }
 
-          const taskWords = q.task.toLowerCase().split(/[\s,\n]+/);
-          
-          // Check if task matches any relevant keywords
-          const isRelevant = relevantKeywords.some(keyword => 
-            taskWords.some(word => word.includes(keyword) || keyword.includes(word))
+          // Check if question matches project categories or keywords
+          const isRelevant = categories.some((category: string) => 
+            q.task.toLowerCase().includes(category.toLowerCase())
+          ) || keywords.some((keyword: string) => 
+            q.task.toLowerCase().includes(keyword.toLowerCase())
           );
 
           if (isRelevant) {
-            console.log(`✅ Matched question for task "${q.task}":`, q.question);
             processedQuestions.add(q.question);
             
             let options = [];
@@ -151,9 +174,10 @@ serve(async (req) => {
       }
     }
 
-    // Combine and sort questions
+    // Combine and sort questions, limiting to 30
     const finalQuestions = [...allQuestions, ...followUpQuestions]
-      .sort((a, b) => a.stage - b.stage);
+      .sort((a, b) => a.stage - b.stage)
+      .slice(0, 30);
 
     console.log(`Total questions matched: ${finalQuestions.length}`);
     console.log('Final questions array:', JSON.stringify(finalQuestions, null, 2));
