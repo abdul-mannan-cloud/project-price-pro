@@ -40,7 +40,6 @@ export const QuestionCard = ({
     setPressedOption(value);
     onSelect(question.id, [value]);
     
-    // Auto-advance for non-branching questions after a brief delay
     if (!question.is_branching) {
       setTimeout(() => {
         setPressedOption(null);
@@ -56,7 +55,6 @@ export const QuestionCard = ({
     onSelect(question.id, newSelection);
   };
 
-  // Show error message if no options are available
   if (!question.options || question.options.length === 0) {
     return (
       <Card className="max-w-xl mx-auto p-8 bg-white rounded-xl shadow-sm">
@@ -67,7 +65,6 @@ export const QuestionCard = ({
     );
   }
 
-  // Convert branching questions to Yes/No if needed
   const options = question.is_branching && question.options.length === 0
     ? [
         { id: 'yes', label: 'Yes' },
@@ -96,7 +93,6 @@ export const QuestionCard = ({
       </div>
 
       <Card className="bg-white rounded-xl shadow-sm overflow-hidden">
-        {/* Question text */}
         <div className="p-6 border-b">
           <h2 className="text-xl font-bold text-gray-900">
             {question.question}
@@ -104,14 +100,13 @@ export const QuestionCard = ({
         </div>
         
         <div className="p-6">
-          {/* Multi-choice (checkbox) options */}
           {question.multi_choice ? (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {options.map((option) => (
                 <div
                   key={option.id}
                   className={cn(
-                    "relative p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
+                    "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50 h-full",
                     selectedOptions.includes(option.id)
                       ? "border-primary bg-primary/5 shadow-sm"
                       : "border-gray-200"
@@ -123,6 +118,7 @@ export const QuestionCard = ({
                       id={option.id}
                       checked={selectedOptions.includes(option.id)}
                       onCheckedChange={() => handleMultiOptionSelect(option.id)}
+                      className="h-5 w-5"
                     />
                     <Label
                       htmlFor={option.id}
@@ -139,27 +135,28 @@ export const QuestionCard = ({
                 </div>
               ))}
               {showNextButton && (
-                <Button 
-                  className="w-full mt-6"
-                  onClick={onNext}
-                  size="lg"
-                >
-                  {isLastQuestion ? "Generate Estimate" : "Next Question"}
-                </Button>
+                <div className="col-span-full mt-6">
+                  <Button 
+                    className="w-full"
+                    onClick={onNext}
+                    size="lg"
+                  >
+                    {isLastQuestion ? "Generate Estimate" : "Next Question"}
+                  </Button>
+                </div>
               )}
             </div>
           ) : (
-            // Single-choice (radio) options
             <RadioGroup
               value={selectedOptions[0]}
               onValueChange={handleSingleOptionSelect}
-              className="space-y-4"
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
               {options.map((option) => (
                 <div 
                   key={option.id} 
                   className={cn(
-                    "relative p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50 transform",
+                    "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50 transform h-full",
                     selectedOptions[0] === option.id 
                       ? "border-primary bg-primary/5 shadow-sm" 
                       : "border-gray-200",
@@ -168,7 +165,7 @@ export const QuestionCard = ({
                   onClick={() => handleSingleOptionSelect(option.id)}
                 >
                   <div className="flex items-center space-x-3">
-                    <RadioGroupItem value={option.id} id={option.id} />
+                    <RadioGroupItem value={option.id} id={option.id} className="h-5 w-5" />
                     <Label
                       htmlFor={option.id}
                       className={cn(
@@ -183,15 +180,16 @@ export const QuestionCard = ({
                   </div>
                 </div>
               ))}
-              {/* Only show Next button for branching questions after selection */}
               {question.is_branching && selectedOptions[0] && (
-                <Button 
-                  className="w-full mt-6"
-                  onClick={onNext}
-                  size="lg"
-                >
-                  {isLastQuestion ? "Generate Estimate" : "Next Question"}
-                </Button>
+                <div className="col-span-full mt-6">
+                  <Button 
+                    className="w-full"
+                    onClick={onNext}
+                    size="lg"
+                  >
+                    {isLastQuestion ? "Generate Estimate" : "Next Question"}
+                  </Button>
+                </div>
               )}
             </RadioGroup>
           )}
