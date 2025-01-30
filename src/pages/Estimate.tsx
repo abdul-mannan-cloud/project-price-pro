@@ -307,37 +307,23 @@ const EstimatePage = () => {
         throw new Error("No contractor ID provided");
       }
 
-      const { data, error } = await supabase
-        .from('estimates')
+      // Create a new lead instead of an estimate
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
         .insert({
           contractor_id: contractorId,
-          project_title: "New Project Estimate",
-          customer_name: contactData.fullName,
-          customer_email: contactData.email,
-          customer_phone: contactData.phone,
+          user_name: contactData.fullName,
+          user_email: contactData.email,
+          user_phone: contactData.phone,
           project_address: contactData.address,
-          project_description: projectDescription,
-          total_cost: estimate.totalCost,
+          category: selectedCategory || '',
+          answers: answers,
+          estimate_data: estimate
         })
         .select()
         .single();
 
-      if (error) throw error;
-
-      if (data) {
-        const { error: detailsError } = await supabase
-          .from('estimate_details')
-          .insert(
-            estimate.groups.map((group: any) => ({
-              estimate_id: data.id,
-              group_name: group.name,
-              line_items: group.items,
-              total_amount: group.items.reduce((sum: number, item: any) => sum + item.totalPrice, 0)
-            }))
-          );
-
-        if (detailsError) throw detailsError;
-      }
+      if (leadError) throw leadError;
 
       setStage('estimate');
       toast({
@@ -345,10 +331,10 @@ const EstimatePage = () => {
         description: "Your estimate has been saved!",
       });
     } catch (error) {
-      console.error('Error saving estimate:', error);
+      console.error('Error saving lead:', error);
       toast({
         title: "Error",
-        description: "Failed to save estimate. Please try again.",
+        description: "Failed to save your information. Please try again.",
         variant: "destructive",
       });
     }

@@ -276,6 +276,59 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          answers: Json
+          category: string
+          contractor_id: string | null
+          created_at: string | null
+          estimate_data: Json | null
+          id: string
+          project_address: string | null
+          status: string | null
+          updated_at: string | null
+          user_email: string
+          user_name: string
+          user_phone: string
+        }
+        Insert: {
+          answers?: Json
+          category: string
+          contractor_id?: string | null
+          created_at?: string | null
+          estimate_data?: Json | null
+          id?: string
+          project_address?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_email: string
+          user_name: string
+          user_phone: string
+        }
+        Update: {
+          answers?: Json
+          category?: string
+          contractor_id?: string | null
+          created_at?: string | null
+          estimate_data?: Json | null
+          id?: string
+          project_address?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_email?: string
+          user_name?: string
+          user_phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       Options: {
         Row: {
           Appliances: Json | null
