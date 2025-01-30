@@ -30,6 +30,7 @@ export const QuestionCard = ({
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
+    // Show next button for multi-choice or branching questions when at least one option is selected
     if (question.multi_choice || question.is_branching) {
       setShowNextButton(selectedOptions.length > 0);
     }

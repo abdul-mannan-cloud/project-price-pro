@@ -49,10 +49,12 @@ export const QuestionSequenceManager = ({
   ): SubQuestion[] => {
     if (!question.sub_questions) return [];
     
+    // First try direct match with the value
     if (question.sub_questions[selectedValue]) {
       return question.sub_questions[selectedValue];
     }
 
+    // If not found, try to match with the value property of selection objects
     const selections = question.selections as any[];
     const matchingOption = selections.find(opt => 
       (typeof opt === 'string' ? opt : opt.value) === selectedValue
@@ -69,6 +71,7 @@ export const QuestionSequenceManager = ({
     const currentQuestion = questionSequence[currentIndex];
     console.log('Handling answer:', { currentQuestion, selectedOptions });
 
+    // Save the answer
     setAnswers(prev => ({
       ...prev,
       [currentQuestion.questionId]: selectedOptions
@@ -77,10 +80,12 @@ export const QuestionSequenceManager = ({
     if (currentQuestion.currentQuestion.is_branching) {
       let newQuestions: QuestionSequence[] = [];
 
+      // For each selected option in a branching question
       selectedOptions.forEach(option => {
         const subQuestions = findSubQuestions(currentQuestion.currentQuestion, option);
         console.log('Found sub-questions for option:', option, subQuestions);
 
+        // Add each sub-question to the sequence
         subQuestions.forEach((sq, index) => {
           newQuestions.push({
             currentQuestion: sq,
@@ -107,6 +112,7 @@ export const QuestionSequenceManager = ({
         handleNext();
       }
     } else if (!currentQuestion.currentQuestion.multi_choice) {
+      // For single-choice non-branching questions, automatically move to next
       setTimeout(() => handleNext(), 300);
     }
   };
@@ -140,7 +146,7 @@ export const QuestionSequenceManager = ({
     question: questionSequence[currentIndex].currentQuestion.question,
     selections: questionSequence[currentIndex].currentQuestion.selections,
     options: questionSequence[currentIndex].currentQuestion.selections.map((selection, index) => ({
-      id: typeof selection === 'string' ? `${index}` : selection.id || selection.value,
+      id: typeof selection === 'string' ? `${index}` : selection.value || selection.id || `${index}`,
       label: typeof selection === 'string' ? selection : selection.label,
       value: typeof selection === 'string' ? selection : selection.value
     })),
