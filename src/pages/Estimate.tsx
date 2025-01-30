@@ -47,8 +47,8 @@ const EstimatePage = () => {
     },
   });
 
-  // Query for options data
-  const { data: optionsData } = useQuery({
+  // Query for options data - only when category is selected
+  const { data: optionsData, isLoading: isLoadingOptions } = useQuery({
     queryKey: ["options", selectedCategory],
     enabled: !!selectedCategory,
     queryFn: async () => {
@@ -91,7 +91,7 @@ const EstimatePage = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('project_images')
         .upload(fileName, file);
 
@@ -116,23 +116,26 @@ const EstimatePage = () => {
     }
   };
 
-  const generateAIQuestions = async () => {
+  const formatQuestions = (rawQuestions: any[]): Question[] => {
+    return rawQuestions.map((q: any, index: number) => ({
+      id: `${index}`,
+      question: q.question,
+      options: q.options.map((opt: any, optIndex: number) => ({
+        id: `${index}-${optIndex}`,
+        label: opt
+      })),
+      multi_choice: q.multi_choice || false,
+      is_branching: q.is_branching || false,
+      sub_questions: []
+    }));
+  };
+
+  const loadCategoryQuestions = async () => {
     if (!selectedCategory || !optionsData) return;
     
     setIsProcessing(true);
     try {
-      const formattedQuestions: Question[] = optionsData.map((q: any, index: number) => ({
-        id: `${index}`,
-        question: q.question,
-        options: q.options.map((opt: any, optIndex: number) => ({
-          id: `${index}-${optIndex}`,
-          label: opt
-        })),
-        multi_choice: q.multi_choice || false,
-        is_branching: q.is_branching || false,
-        sub_questions: []
-      }));
-
+      const formattedQuestions = formatQuestions(optionsData);
       setQuestions(formattedQuestions);
       setTotalStages(formattedQuestions.length);
       setStage('questions');
@@ -148,14 +151,22 @@ const EstimatePage = () => {
     }
   };
 
-  const handleAnswerSubmit = async (value: string | string[]) => {
-    setAnswers(prev => ({ ...prev, [currentQuestionIndex]: value }));
+  const handleAnswerSubmit = async (questionId: string, value: string | string[]) => {
+    const currentQuestion = questions[currentQuestionIndex];
+    
+    setAnswers(prev => ({ 
+      ...prev, 
+      [currentQuestionIndex]: Array.isArray(value) ? value : [value]
+    }));
 
-    if (currentQuestionIndex < questions.length - 1) {
-      setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
-    } else {
-      setIsProcessing(true);
-      await generateEstimate();
+    // Only proceed automatically for non-branching single-choice questions
+    if (!currentQuestion.is_branching && !currentQuestion.multi_choice) {
+      if (currentQuestionIndex < questions.length - 1) {
+        setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
+      } else {
+        setIsProcessing(true);
+        await generateEstimate();
+      }
     }
   };
 
@@ -290,6 +301,10 @@ const EstimatePage = () => {
     } />;
   }
 
+  if (isLoadingOptions && stage === 'questions') {
+    return <LoadingScreen message="Loading questions..." />;
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Progress value={getProgressValue()} className="h-8 rounded-none" />
@@ -390,7 +405,13 @@ const EstimatePage = () => {
                   : []
             }
             onSelect={handleAnswerSubmit}
-            onNext={() => {}}
+            onNext={() => {
+              if (currentQuestionIndex < questions.length - 1) {
+                setCurrentQuestionIndex(prev => prev + 1);
+              } else {
+                generateEstimate();
+              }
+            }}
             isLastQuestion={currentQuestionIndex === questions.length - 1}
             currentStage={currentQuestionIndex + 1}
             totalStages={totalStages}
@@ -404,10 +425,9 @@ const EstimatePage = () => {
               categories={categories}
               onSelectCategory={(categoryId) => {
                 setSelectedCategory(categoryId);
-                setStage('questions');
                 setCurrentQuestionIndex(0);
                 setAnswers({});
-                generateAIQuestions();
+                loadCategoryQuestions();
               }}
               completedCategories={completedCategories}
             />
