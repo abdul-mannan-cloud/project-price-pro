@@ -19,7 +19,7 @@ interface Question {
   isMultiChoice?: boolean;
 }
 
-const EstimatePage = () => {
+export const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate'>('photo');
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -38,49 +38,44 @@ const EstimatePage = () => {
     queryKey: ["template-questions", projectDescription],
     enabled: projectDescription.length > 30,
     queryFn: async () => {
-      const keywords = projectDescription.toLowerCase().split(' ');
-      const { data, error } = await supabase
-        .from('question_templates')
-        .select('*')
-        .filter('task', 'in', `(${keywords.join(',')})`)
-        .order('category');
-      
+      const { data, error } = await supabase.functions.invoke('generate-questions', {
+        body: { 
+          projectDescription, 
+          imageUrl: uploadedImageUrl,
+          previousAnswers: answers,
+          existingQuestions: questions
+        }
+      });
+
       if (error) throw error;
       
-      // Convert the template data to match the Question interface
-      return data?.map(template => ({
-        question: template.question,
-        options: Array.isArray(template.options) 
-          ? template.options.map((opt: Json, idx: number) => ({
-              id: idx.toString(),
-              label: String(opt) // Ensure the label is converted to string
-            }))
-          : [],
-        isMultiChoice: template.question_type === 'multi_choice'
-      })) || [];
+      if (data.needsMoreDetail) {
+        toast({
+          title: "More Details Needed",
+          description: "Please provide more specific details about your project to help us generate accurate questions.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      return data.questions || [];
     }
-  });
-
-  const { data: contractor } = useQuery({
-    queryKey: ["contractor", contractorId],
-    enabled: !!contractorId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contractors")
-        .select("*, contractor_settings(*)")
-        .eq("id", contractorId)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
   });
 
   useEffect(() => {
-    if (templateQuestions?.length && stage === 'description') {
-      setQuestions(templateQuestions);
+    if (templateQuestions) {
+      setQuestions(prevQuestions => {
+        const newQuestions = [...prevQuestions];
+        // Only append new questions that don't exist yet
+        templateQuestions.forEach(newQ => {
+          if (!prevQuestions.some(existingQ => existingQ.question === newQ.question)) {
+            newQuestions.push(newQ);
+          }
+        });
+        return newQuestions;
+      });
     }
-  }, [templateQuestions, stage]);
+  }, [templateQuestions]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -136,6 +131,15 @@ const EstimatePage = () => {
   };
 
   const generateAIQuestions = async () => {
+    if (projectDescription.trim().length < 30) {
+      toast({
+        title: "More Details Needed",
+        description: "Please provide at least 30 characters describing your project.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-questions', {
@@ -149,10 +153,29 @@ const EstimatePage = () => {
 
       if (error) throw error;
 
-      if (data?.questions) {
-        setQuestions(prevQuestions => [...prevQuestions, ...data.questions]);
+      if (data.needsMoreDetail) {
+        toast({
+          title: "More Details Needed",
+          description: "Please provide more specific details about your project to help us generate accurate questions.",
+          variant: "destructive",
+        });
+        setStage('description');
+        return;
       }
-      setStage('questions');
+
+      if (data.questions && data.questions.length > 0) {
+        setQuestions(prevQuestions => {
+          const newQuestions = [...prevQuestions];
+          // Only append new questions that don't exist yet
+          data.questions.forEach(newQ => {
+            if (!prevQuestions.some(existingQ => existingQ.question === newQ.question)) {
+              newQuestions.push(newQ);
+            }
+          });
+          return newQuestions;
+        });
+        setStage('questions');
+      }
     } catch (error) {
       console.error('Error generating questions:', error);
       toast({
