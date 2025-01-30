@@ -6,16 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Enhanced keyword mapping with more synonyms and categories
+// Enhanced keyword mapping with more specific categories and synonyms
 const keywordMap = {
-  kitchen: ['kitchen', 'cooking', 'cabinets', 'countertops', 'appliances', 'sink'],
-  cabinets: ['cabinet', 'cabinets', 'storage', 'drawers', 'shelves'],
-  painting: ['paint', 'painting', 'walls', 'ceiling', 'color', 'finish'],
-  flooring: ['floor', 'flooring', 'tile', 'hardwood', 'carpet', 'laminate'],
+  kitchen: ['kitchen', 'cooking', 'cabinets', 'countertops', 'appliances', 'sink', 'remodel'],
+  cabinets: ['cabinet', 'cabinets', 'storage', 'drawers', 'shelves', 'base cabinet', 'upper cabinet'],
+  painting: ['paint', 'painting', 'walls', 'ceiling', 'color', 'finish', 'baseboard'],
+  flooring: ['floor', 'flooring', 'tile', '12x12', 'hardwood', 'carpet', 'laminate'],
   electrical: ['electrical', 'wiring', 'outlets', 'lights', 'lighting', 'recessed'],
   plumbing: ['plumbing', 'pipes', 'water', 'faucet', 'drain', 'sink'],
   drywall: ['drywall', 'sheetrock', 'wall', 'ceiling', 'texture', 'repair'],
-  backsplash: ['backsplash', 'tile', 'mosaic', 'splash', 'wall tile'],
+  backsplash: ['backsplash', 'tile', 'mosaic', 'splash', '12"', 'wall tile'],
   countertop: ['countertop', 'counter', 'quartz', 'granite', 'surface'],
   demolition: ['demo', 'demolition', 'remove', 'gut', 'strip'],
   trim: ['trim', 'baseboard', 'molding', 'casing', 'finish']
@@ -25,6 +25,7 @@ function findKeywords(text: string): string[] {
   const words = text.toLowerCase().split(/[\s,]+/);
   const keywords = new Set<string>();
   
+  // First pass: direct word matching
   words.forEach(word => {
     for (const [category, synonyms] of Object.entries(keywordMap)) {
       if (synonyms.some(synonym => word.includes(synonym))) {
@@ -32,6 +33,13 @@ function findKeywords(text: string): string[] {
       }
     }
   });
+  
+  // Second pass: phrase matching
+  for (const [category, synonyms] of Object.entries(keywordMap)) {
+    if (synonyms.some(synonym => text.toLowerCase().includes(synonym))) {
+      keywords.add(category);
+    }
+  }
   
   return Array.from(keywords);
 }
@@ -85,8 +93,8 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Fetch template questions
-    const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options?select=*&limit=1`, {
+    // Fetch template questions from Options table
+    const optionsResponse = await fetch(`${supabaseUrl}/rest/v1/Options?select=*`, {
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
         'apikey': supabaseKey,
@@ -109,48 +117,38 @@ serve(async (req) => {
       for (const column of ['Question 1', 'Question 2', 'Question 3', 'Question 4']) {
         const columnData = options[column];
         if (columnData?.data && Array.isArray(columnData.data)) {
-          const parsedQuestions = parseColumn(columnData);
+          const parsedQuestions = columnData.data;
           console.log(`Processing ${column} with ${parsedQuestions.length} questions`);
           
-          // Filter questions based on keywords and avoid duplicates
-          const matchedQuestions = parsedQuestions
-            .filter(q => {
-              if (!q.task || usedTasks.has(q.task)) return false;
-              const matches = isMatch(q.task, keywords);
-              if (matches) {
-                usedTasks.add(q.task);
-                console.log(`✅ Matched task "${q.task}" in ${column}`);
-              }
-              return matches;
-            })
-            .map((questionObj, idx) => ({
-              stage: questionCount + idx + 1,
-              question: questionObj.question,
-              options: questionObj.selections.map((label: string, optIdx: number) => ({
-                id: `${column}-${idx}-${optIdx}`,
-                label: String(label)
-              })),
-              isMultiChoice: questionObj.multi_choice || false
-            }));
-          
-          allQuestions.push(...matchedQuestions);
-          questionCount += matchedQuestions.length;
-          
-          if (questionCount >= 30) break;
+          // Filter and add questions based on keywords
+          parsedQuestions.forEach((q: any, idx: number) => {
+            if (!q.task || usedTasks.has(q.task)) return;
+            
+            const matches = isMatch(q.task, keywords);
+            if (matches) {
+              usedTasks.add(q.task);
+              console.log(`✅ Matched task "${q.task}" in ${column}`);
+              
+              allQuestions.push({
+                stage: questionCount + 1,
+                question: q.question,
+                options: q.selections.map((label: string, optIdx: number) => ({
+                  id: `${column}-${idx}-${optIdx}`,
+                  label: String(label)
+                })),
+                isMultiChoice: q.multi_choice || false
+              });
+              questionCount++;
+            }
+          });
         }
       }
     }
 
-    // If we have matched questions from the database, don't use default questions
-    if (allQuestions.length === 0) {
-      console.log('No matching questions found, generating AI questions');
-      // Generate AI questions here if needed
-    }
-
     // Sort questions by stage
     allQuestions.sort((a, b) => a.stage - b.stage);
-
-    console.log(`Returning ${allQuestions.length} questions`);
+    
+    console.log(`Returning ${allQuestions.length} questions:`, allQuestions);
 
     return new Response(JSON.stringify({ 
       questions: allQuestions,
