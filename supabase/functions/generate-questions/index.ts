@@ -26,7 +26,7 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get template questions based on keywords - now only requiring one match
+    // Get template questions based on keywords
     const keywords = projectDescription.toLowerCase().split(/\s+/);
     const { data: templateQuestions, error: templateError } = await supabase
       .from('question_templates')
@@ -44,41 +44,10 @@ serve(async (req) => {
 
     if (optionsError) throw optionsError;
 
-    // Modified: Only require one match from either templates or predefined questions
-    const hasTemplateMatch = templateQuestions && templateQuestions.length > 0;
-    const hasPredefinedQuestions = optionsData && (
-      optionsData.Question1 || 
-      optionsData.Question2 || 
-      optionsData.Question3 || 
-      optionsData.Question4
-    );
-
-    // If no matches at all, request more details
-    if (!hasTemplateMatch && !hasPredefinedQuestions) {
-      return new Response(JSON.stringify({ questions: [], needsMoreDetail: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Combine template questions with predefined questions
+    // Always include predefined questions from Options table
     let allQuestions = [];
 
-    // Add template questions first
-    if (templateQuestions?.length > 0) {
-      const mappedTemplateQuestions = templateQuestions.map(template => ({
-        question: template.question,
-        options: Array.isArray(template.options) 
-          ? template.options.map((opt: any, idx: number) => ({
-              id: idx.toString(),
-              label: String(opt)
-            }))
-          : [],
-        isMultiChoice: template.question_type === 'multi_choice'
-      }));
-      allQuestions.push(...mappedTemplateQuestions);
-    }
-
-    // Add predefined questions from Options table
+    // Add predefined questions from Options table first
     const predefinedQuestions = [
       optionsData?.Question1,
       optionsData?.Question2,
@@ -101,7 +70,22 @@ serve(async (req) => {
       }
     });
 
-    // Generate additional AI questions if needed
+    // Add template questions if any exist
+    if (templateQuestions?.length > 0) {
+      const mappedTemplateQuestions = templateQuestions.map(template => ({
+        question: template.question,
+        options: Array.isArray(template.options) 
+          ? template.options.map((opt: any, idx: number) => ({
+              id: idx.toString(),
+              label: String(opt)
+            }))
+          : [],
+        isMultiChoice: template.question_type === 'multi_choice'
+      }));
+      allQuestions.push(...mappedTemplateQuestions);
+    }
+
+    // Generate additional AI questions
     const systemPrompt = `You are an AI assistant helping contractors gather project requirements from customers.
     Based on the project description and image (if provided), generate additional questions that don't overlap with the existing ones.
     
@@ -191,6 +175,7 @@ serve(async (req) => {
       allQuestions.push(...aiQuestions);
     })());
 
+    // Always return questions, even if only the predefined ones
     return new Response(JSON.stringify({ 
       questions: allQuestions,
       needsMoreDetail: false 
@@ -203,7 +188,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       questions: [],
       error: error.message,
-      needsMoreDetail: true
+      needsMoreDetail: false // Changed to false to prevent blocking
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
