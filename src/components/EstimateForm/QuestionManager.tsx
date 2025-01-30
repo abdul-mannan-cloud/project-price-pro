@@ -57,12 +57,14 @@ export const QuestionManager = ({
     const currentIndex = currentSequence.indexOf(currentQuestion);
     let newSequence = [...currentSequence.slice(0, currentIndex + 1)];
     
+    // Process sub-questions for each selected option
     selectedOptions.forEach(option => {
       if (currentQuestion.sub_questions && currentQuestion.sub_questions[option]) {
         const subQuestions = currentQuestion.sub_questions[option];
         console.log('Found sub-questions for option:', option, subQuestions);
         
-        const formattedSubQuestions = subQuestions.map((sq: any, index: number) => ({
+        // Format sub-questions to match Question type
+        const formattedSubQuestions = Array.isArray(subQuestions) ? subQuestions.map((sq: any, index: number) => ({
           id: sq.id || `sq-${currentQuestion.id}-${option}-${index}`,
           question: sq.question,
           options: Array.isArray(sq.selections) 
@@ -76,17 +78,19 @@ export const QuestionManager = ({
           multi_choice: sq.multi_choice || false,
           is_branching: sq.is_branching || false,
           sub_questions: sq.sub_questions || {}
-        }));
+        })) : [];
 
         console.log('Formatted sub-questions:', formattedSubQuestions);
         newSequence = [...newSequence, ...formattedSubQuestions];
       }
     });
 
+    // Add remaining questions from the original sequence
     const remainingQuestions = currentSequence.slice(currentIndex + 1);
-    console.log('New question sequence:', [...newSequence, ...remainingQuestions]);
+    const finalSequence = [...newSequence, ...remainingQuestions];
+    console.log('New question sequence:', finalSequence);
     
-    return [...newSequence, ...remainingQuestions];
+    return finalSequence;
   };
 
   const handleAnswer = (questionId: string, selectedOptions: string[]) => {
