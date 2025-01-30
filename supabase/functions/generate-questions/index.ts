@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { projectDescription, imageUrl } = await req.json();
+    const { projectDescription } = await req.json();
     console.log('Processing request with description:', projectDescription);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -24,7 +24,29 @@ serve(async (req) => {
       throw new Error('Missing required configuration');
     }
 
-    // Fetch questions from Options table with specific UUID
+    // First, analyze the project description with Llama to identify key components
+    const analysisResponse = await fetch('https://api.llama-api.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${llamaApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: [{
+          role: 'system',
+          content: 'You are a construction project analyzer. Extract key components and materials from the project description.'
+        }, {
+          role: 'user',
+          content: `Analyze this project description and list the main components that need questions: ${projectDescription}`
+        }],
+        temperature: 0.2,
+      }),
+    });
+
+    const analysisData = await analysisResponse.json();
+    console.log('Llama analysis:', analysisData);
+
+    // Fetch question templates from the Options table
     const optionsResponse = await fetch(
       `${supabaseUrl}/rest/v1/Options?Key%20Options=eq.42e64c9c-53b2-49bd-ad77-995ecb3106c6`,
       {
@@ -46,12 +68,23 @@ serve(async (req) => {
       throw new Error('No Options data found');
     }
 
-    // Process questions from the Options table
+    // Process and filter questions based on project components
     const firstRow = optionsData[0];
     const allQuestions = [];
     const processedQuestions = new Set();
+    const maxQuestions = 14; // Limit to 14 questions as requested
 
-    // Process each JSONB column (Question 1 through 4)
+    // Keywords to match against for this specific type of project
+    const keywordGroups = {
+      kitchen: ['kitchen', 'cabinets', 'countertops', 'appliances', 'sink'],
+      flooring: ['tile', 'floor', '12x12'],
+      electrical: ['outlets', 'recessed', 'lights', 'lighting'],
+      finishes: ['paint', 'backsplash', 'mosaic', 'baseboard', 'drywall'],
+      dimensions: ['ceiling height', 'square feet', 'measurements'],
+      budget: ['budget', 'cost', 'grade', 'mid grade'],
+    };
+
+    // Process each question column (Question 1 through 4)
     for (let i = 1; i <= 4; i++) {
       const columnKey = `Question ${i}`;
       const jsonData = firstRow[columnKey];
@@ -62,10 +95,24 @@ serve(async (req) => {
         const questionData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
         const questions = Array.isArray(questionData) ? questionData : [questionData];
         
-        questions.forEach((q) => {
+        for (const q of questions) {
           if (!q.task || !q.question || processedQuestions.has(q.question)) {
-            return;
+            continue;
           }
+
+          // Check if the question is relevant to our identified components
+          let isRelevant = false;
+          for (const [category, keywords] of Object.entries(keywordGroups)) {
+            if (keywords.some(keyword => 
+              q.question.toLowerCase().includes(keyword) || 
+              q.task.toLowerCase().includes(keyword)
+            )) {
+              isRelevant = true;
+              break;
+            }
+          }
+
+          if (!isRelevant) continue;
 
           processedQuestions.add(q.question);
           
@@ -90,14 +137,38 @@ serve(async (req) => {
               isFinal: true
             });
           }
-        });
+
+          // Break if we've reached our question limit
+          if (allQuestions.length >= maxQuestions) {
+            break;
+          }
+        }
+
+        if (allQuestions.length >= maxQuestions) {
+          break;
+        }
       } catch (error) {
         console.error(`Error processing ${columnKey}:`, error);
       }
     }
 
-    // Limit to 30 questions
-    const finalQuestions = allQuestions.slice(0, 30);
+    // Sort questions by relevance to the project
+    const sortedQuestions = allQuestions.sort((a, b) => {
+      const aRelevance = Object.values(keywordGroups).reduce((sum, keywords) => 
+        sum + keywords.filter(k => 
+          a.question.toLowerCase().includes(k.toLowerCase())
+        ).length, 0
+      );
+      const bRelevance = Object.values(keywordGroups).reduce((sum, keywords) => 
+        sum + keywords.filter(k => 
+          b.question.toLowerCase().includes(k.toLowerCase())
+        ).length, 0
+      );
+      return bRelevance - aRelevance;
+    });
+
+    // Take only the top 14 most relevant questions
+    const finalQuestions = sortedQuestions.slice(0, maxQuestions);
     console.log(`Generated ${finalQuestions.length} questions`);
 
     return new Response(JSON.stringify({
