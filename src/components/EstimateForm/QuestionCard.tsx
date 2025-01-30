@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Question, QuestionOption } from "@/types/estimate";
+import { Question } from "@/types/estimate";
 import { Card } from "@/components/ui/card";
 
 interface QuestionCardProps {
