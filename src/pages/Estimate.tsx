@@ -166,6 +166,7 @@ const EstimatePage = () => {
 
       if (error) throw error;
       setEstimate(data);
+      // Changed: Always go to contact form after estimate generation
       setStage('contact');
     } catch (error) {
       console.error('Error generating estimate:', error);
@@ -174,6 +175,8 @@ const EstimatePage = () => {
         description: "Failed to generate estimate. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -230,7 +233,7 @@ const EstimatePage = () => {
     if (stage === 'questions') {
       const totalQuestions = questions.length;
       return totalQuestions > 0 
-        ? 40 + ((currentQuestionIndex + 1) / totalQuestions) * 40
+        ? 40 + ((currentQuestionIndex + 1) / totalQuestions) * 30
         : 40;
     }
     if (stage === 'contact') return 90;
