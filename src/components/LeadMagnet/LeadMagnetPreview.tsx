@@ -12,6 +12,12 @@ interface BrandingColors {
   secondary: string;
 }
 
+interface Question {
+  question: string;
+  options: Array<{ id: string; label: string }>;
+  isMultiChoice?: boolean;
+}
+
 const isBrandingColors = (value: unknown): value is BrandingColors => {
   if (typeof value !== 'object' || value === null) return false;
   const obj = value as Record<string, unknown>;
@@ -25,7 +31,7 @@ export const LeadMagnetPreview = () => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
-  const [questions, setQuestions] = useState<Array<{ question: string; options: Array<{ id: string; label: string }> }>>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
 
   const { data: contractor } = useQuery({
     queryKey: ["contractor"],
@@ -146,7 +152,7 @@ export const LeadMagnetPreview = () => {
           onSelect={handleOptionSelect}
           onNext={handleNext}
           isLastQuestion={currentStep === questions.length}
-          isMultiChoice={questions[currentStep - 1].isMultiChoice}
+          isMultiChoice={questions[currentStep - 1].isMultiChoice || false}
         />
       )}
     </div>
