@@ -56,40 +56,45 @@ export const QuestionManager = ({
     
     const currentIndex = currentSequence.indexOf(currentQuestion);
     let newSequence = [...currentSequence.slice(0, currentIndex + 1)];
-    
+    let subQuestionsToAdd: Question[] = [];
+
     // Process sub-questions for each selected option
     selectedOptions.forEach(option => {
       if (currentQuestion.sub_questions && currentQuestion.sub_questions[option]) {
         const subQuestions = currentQuestion.sub_questions[option];
         console.log('Found sub-questions for option:', option, subQuestions);
         
-        // Format sub-questions to match Question type
-        const formattedSubQuestions = Array.isArray(subQuestions) ? subQuestions.map((sq: any, index: number) => ({
-          id: sq.id || `sq-${currentQuestion.id}-${option}-${index}`,
-          question: sq.question,
-          options: Array.isArray(sq.selections) 
-            ? sq.selections.map((opt: any, optIndex: number) => ({
-                id: typeof opt === 'string' 
-                  ? `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`
-                  : opt.value || `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`,
-                label: typeof opt === 'string' ? opt : opt.label
-              }))
-            : [],
-          multi_choice: sq.multi_choice || false,
-          is_branching: sq.is_branching || false,
-          sub_questions: sq.sub_questions || {}
-        })) : [];
+        if (Array.isArray(subQuestions)) {
+          const formattedSubQuestions = subQuestions.map((sq: any, index: number) => ({
+            id: sq.id || `sq-${currentQuestion.id}-${option}-${index}`,
+            question: sq.question,
+            options: Array.isArray(sq.selections) 
+              ? sq.selections.map((opt: any, optIndex: number) => ({
+                  id: typeof opt === 'string' 
+                    ? `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`
+                    : opt.value || `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`,
+                  label: typeof opt === 'string' ? opt : opt.label
+                }))
+              : [],
+            multi_choice: sq.multi_choice || false,
+            is_branching: sq.is_branching || false,
+            sub_questions: sq.sub_questions || {}
+          }));
 
-        console.log('Formatted sub-questions:', formattedSubQuestions);
-        newSequence = [...newSequence, ...formattedSubQuestions];
+          console.log('Formatted sub-questions for option:', option, formattedSubQuestions);
+          subQuestionsToAdd = [...subQuestionsToAdd, ...formattedSubQuestions];
+        }
       }
     });
+
+    // Add all sub-questions after the current question
+    newSequence = [...newSequence, ...subQuestionsToAdd];
 
     // Add remaining questions from the original sequence
     const remainingQuestions = currentSequence.slice(currentIndex + 1);
     const finalSequence = [...newSequence, ...remainingQuestions];
-    console.log('New question sequence:', finalSequence);
     
+    console.log('Final question sequence:', finalSequence);
     return finalSequence;
   };
 
@@ -145,7 +150,6 @@ export const QuestionManager = ({
 
     setIsProcessing(true);
     try {
-      // Process answers with Llama 3.2 before showing additional services
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           answers,
@@ -155,7 +159,6 @@ export const QuestionManager = ({
 
       if (error) throw error;
       
-      // After successful processing, show additional services
       setShowAdditionalServices(true);
     } catch (error) {
       console.error('Error processing answers:', error);
