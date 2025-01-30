@@ -174,8 +174,6 @@ const EstimatePage = () => {
         description: "Failed to generate estimate. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -349,8 +347,6 @@ const EstimatePage = () => {
             onSelect={handleAnswerSubmit}
             onNext={() => {}}
             isLastQuestion={currentQuestionIndex === questions.length - 1}
-            currentQuestionIndex={currentQuestionIndex}
-            totalQuestions={questions.length}
             isMultiChoice={questions[currentQuestionIndex].isMultiChoice}
             selectedOptions={
               Array.isArray(answers[currentQuestionIndex])
