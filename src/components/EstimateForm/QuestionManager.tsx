@@ -29,6 +29,7 @@ export const QuestionManager = ({
   const [showAdditionalServices, setShowAdditionalServices] = useState(false);
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pendingSubQuestions, setPendingSubQuestions] = useState<Question[]>([]);
 
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
@@ -37,6 +38,7 @@ export const QuestionManager = ({
       setQuestionSequence([initialQuestion]);
       setCurrentQuestionIndex(0);
       setAnswers({});
+      setPendingSubQuestions([]);
       setShowAdditionalServices(false);
     } else {
       toast({
@@ -49,17 +51,13 @@ export const QuestionManager = ({
 
   const processSubQuestions = (
     currentQuestion: Question,
-    selectedOptions: string[],
-    currentSequence: Question[]
+    selectedOptions: string[]
   ): Question[] => {
     console.log('Processing sub-questions for:', { currentQuestion, selectedOptions });
     
-    const currentIndex = currentSequence.indexOf(currentQuestion);
-    let newSequence = [...currentSequence.slice(0, currentIndex + 1)];
     let subQuestionsToAdd: Question[] = [];
 
     selectedOptions.forEach(optionId => {
-      // Find the matching option label
       const selectedOption = currentQuestion.options.find(opt => opt.id === optionId);
       if (!selectedOption) return;
 
@@ -100,15 +98,8 @@ export const QuestionManager = ({
       }
     });
 
-    // Add all sub-questions after the current question
-    newSequence = [...newSequence, ...subQuestionsToAdd];
-
-    // Add remaining questions from the original sequence
-    const remainingQuestions = currentSequence.slice(currentIndex + 1);
-    const finalSequence = [...newSequence, ...remainingQuestions];
-    
-    console.log('Final question sequence:', finalSequence);
-    return finalSequence;
+    console.log('All sub-questions to add:', subQuestionsToAdd);
+    return subQuestionsToAdd;
   };
 
   const handleAnswer = (questionId: string, selectedOptions: string[]) => {
@@ -119,24 +110,20 @@ export const QuestionManager = ({
     const currentQuestion = questionSequence[currentQuestionIndex];
     
     if (currentQuestion.is_branching) {
-      const newSequence = processSubQuestions(
-        currentQuestion,
-        selectedOptions,
-        questionSequence
-      );
-      
-      setQuestionSequence(newSequence);
-    }
-
-    // For non-branching questions, automatically advance
-    if (!currentQuestion.multi_choice && !currentQuestion.is_branching) {
-      setTimeout(() => {
-        if (currentQuestionIndex < questionSequence.length - 1) {
-          setCurrentQuestionIndex(prev => prev + 1);
-        } else {
-          handleComplete();
-        }
-      }, 300);
+      const subQuestions = processSubQuestions(currentQuestion, selectedOptions);
+      if (subQuestions.length > 0) {
+        setPendingSubQuestions(subQuestions);
+        // Move to the first sub-question
+        const newSequence = [...questionSequence, ...subQuestions];
+        setQuestionSequence(newSequence);
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+      } else {
+        // No sub-questions, move to next main question
+        handleNext();
+      }
+    } else if (!currentQuestion.multi_choice) {
+      // For non-branching single-choice questions, automatically advance
+      setTimeout(() => handleNext(), 300);
     }
   };
 
