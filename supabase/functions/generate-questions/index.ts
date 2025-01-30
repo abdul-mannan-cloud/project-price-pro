@@ -13,10 +13,9 @@ serve(async (req) => {
   }
 
   try {
-    const { projectDescription, imageUrl, previousAnswers, existingQuestions } = await req.json();
-    console.log('Processing request with:', { projectDescription, imageUrl, previousAnswers, existingQuestions });
+    const { projectDescription } = await req.json();
+    console.log('Processing request with description:', projectDescription);
 
-    // First, get template questions from the Options table
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -37,106 +36,94 @@ serve(async (req) => {
     }
 
     const optionsData = await optionsResponse.json();
-    console.log('Fetched template questions:', optionsData);
+    console.log('Fetched options data:', optionsData);
 
-    // Extract and process template questions
-    const templateQuestions = [];
+    // Process all questions from the Options table
+    const matchedQuestions = [];
     if (optionsData.length > 0) {
       const options = optionsData[0];
-      ['Question 1', 'Question 2', 'Question 3', 'Question 4'].forEach(key => {
-        if (options[key] && typeof options[key] === 'object') {
-          const questionData = options[key];
-          if (questionData.task && 
-              projectDescription.toLowerCase().includes(questionData.task.toLowerCase())) {
-            templateQuestions.push({
+      const questionColumns = ['Question 1', 'Question 2', 'Question 3', 'Question 4'];
+      
+      for (const column of questionColumns) {
+        const questionData = options[column];
+        if (questionData && typeof questionData === 'object') {
+          // Check if the task is relevant to the project description
+          const isRelevant = isTaskRelevant(projectDescription.toLowerCase(), questionData.task?.toLowerCase());
+          
+          if (isRelevant) {
+            console.log(`Matched question from ${column}:`, questionData);
+            matchedQuestions.push({
               question: questionData.question,
-              options: questionData.options.map((opt: string, idx: number) => ({
+              options: questionData.selections?.map((label: string, idx: number) => ({
                 id: idx.toString(),
-                label: opt
-              }))
+                label
+              })) || [],
+              isMultiChoice: questionData.multi_choice || false
             });
           }
         }
-      });
+      }
     }
-
-    console.log('Matched template questions:', templateQuestions);
 
     // Generate additional AI questions if needed
-    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
-    if (!llamaApiKey) {
-      console.log('No LLAMA_API_KEY found, skipping AI question generation');
-      return new Response(JSON.stringify({ questions: templateQuestions }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const systemPrompt = `You are an AI assistant helping contractors gather project requirements from customers.
-    Based on the project description and any existing template questions, generate additional relevant questions.
-    Do not duplicate any existing template questions.
-    
-    Each question MUST:
-    - Be specific and actionable
-    - Have exactly 4 relevant options
-    - Help contractors better understand project needs
-    
-    Your response MUST be a valid JSON array of questions with this structure:
-    [
-      {
-        "question": "string",
-        "options": [
-          { "id": "string", "label": "string" }
-        ]
-      }
-    ]`;
-
-    const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${llamaApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama3.2-11b',
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: `Generate additional questions for this project:
-            Description: ${projectDescription}
-            Existing Template Questions: ${JSON.stringify(templateQuestions)}
-            
-            Generate 2-3 additional relevant questions that don't overlap with the template questions.`
-          }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.7,
-        max_tokens: 2000
-      }),
-    });
-
-    if (!llamaResponse.ok) {
-      console.error('Llama API error:', await llamaResponse.text());
-      // Return template questions even if AI generation fails
-      return new Response(JSON.stringify({ questions: templateQuestions }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const aiResponse = await llamaResponse.json();
-    console.log('AI response:', aiResponse);
-
     let aiQuestions = [];
-    try {
-      const content = aiResponse.choices[0].message.content;
-      const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
-      aiQuestions = parsedContent.questions || [];
-    } catch (error) {
-      console.error('Failed to parse AI response:', error);
+    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
+    
+    if (llamaApiKey && matchedQuestions.length < 4) {
+      console.log('Generating additional AI questions');
+      
+      const existingQuestions = matchedQuestions.map(q => q.question);
+      const llamaResponse = await fetch('https://api.llama-api.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${llamaApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama3.2-11b',
+          messages: [
+            {
+              role: "system",
+              content: `Generate additional questions for a construction/renovation project. 
+              Avoid duplicating these existing questions: ${existingQuestions.join(', ')}.
+              Each question should:
+              - Be specific and actionable
+              - Have 3-4 relevant options
+              - Help understand project requirements better
+              Format as JSON array: [{"question": "...", "options": ["opt1", "opt2", "opt3"], "isMultiChoice": boolean}]`
+            },
+            {
+              role: "user",
+              content: `Generate ${4 - matchedQuestions.length} additional questions for this project: ${projectDescription}`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000
+        }),
+      });
+
+      if (llamaResponse.ok) {
+        const aiResult = await llamaResponse.json();
+        try {
+          const content = aiResult.choices[0].message.content;
+          const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
+          aiQuestions = parsedContent.map((q: any) => ({
+            question: q.question,
+            options: q.options.map((label: string, idx: number) => ({
+              id: idx.toString(),
+              label
+            })),
+            isMultiChoice: q.isMultiChoice || false
+          }));
+          console.log('Generated AI questions:', aiQuestions);
+        } catch (error) {
+          console.error('Failed to parse AI response:', error);
+        }
+      }
     }
 
-    // Combine template and AI-generated questions
-    const allQuestions = [...templateQuestions, ...aiQuestions];
+    // Combine matched and AI-generated questions
+    const allQuestions = [...matchedQuestions, ...aiQuestions];
     console.log('Final questions:', allQuestions);
 
     return new Response(JSON.stringify({ questions: allQuestions }), {
@@ -154,3 +141,23 @@ serve(async (req) => {
     });
   }
 });
+
+// Helper function to determine if a task is relevant to the project description
+function isTaskRelevant(description: string, task?: string): boolean {
+  if (!task) return false;
+  
+  // Direct keyword match
+  if (description.includes(task)) return true;
+  
+  // Common synonyms and related terms
+  const taskMappings: Record<string, string[]> = {
+    'kitchen': ['cooking', 'countertop', 'cabinet', 'appliance'],
+    'bathroom': ['bath', 'shower', 'toilet', 'vanity'],
+    'painting': ['paint', 'color', 'wall', 'finish'],
+    'flooring': ['floor', 'tile', 'hardwood', 'carpet'],
+    // Add more mappings as needed
+  };
+  
+  const relatedTerms = taskMappings[task] || [];
+  return relatedTerms.some(term => description.includes(term));
+}

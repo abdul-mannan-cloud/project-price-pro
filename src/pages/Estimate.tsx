@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, SkipForward, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -11,7 +11,6 @@ import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
-import { Json } from "@/integrations/supabase/types";
 
 interface Question {
   question: string;
@@ -34,29 +33,6 @@ const EstimatePage = () => {
   const { contractorId } = useParams();
 
   // Query for template questions based on project description
-  const { data: templateQuestions, isLoading: isLoadingTemplates } = useQuery({
-    queryKey: ["template-questions", projectDescription],
-    enabled: projectDescription.length > 30,
-    queryFn: async () => {
-      const keywords = projectDescription.toLowerCase().split(' ');
-      const { data, error } = await supabase
-        .from('question_templates')
-        .select('*')
-        .filter('task', 'in', `(${keywords.join(',')})`)
-        .order('category');
-      
-      if (error) throw error;
-      return data?.map(template => ({
-        question: template.question,
-        options: Array.isArray(template.options) ? template.options.map((opt: Json, idx: number) => ({
-          id: idx.toString(),
-          label: String(opt) // Convert Json type to string
-        })) : [],
-        isMultiChoice: template.question_type === 'multi_choice'
-      })) || [];
-    }
-  });
-
   const { data: contractor } = useQuery({
     queryKey: ["contractor", contractorId],
     enabled: !!contractorId,
@@ -130,10 +106,8 @@ const EstimatePage = () => {
     try {
       const { data, error } = await supabase.functions.invoke('generate-questions', {
         body: { 
-          projectDescription, 
-          imageUrl: uploadedImageUrl,
-          previousAnswers: answers,
-          existingQuestions: questions
+          projectDescription,
+          imageUrl: uploadedImageUrl
         }
       });
 
@@ -371,7 +345,7 @@ const EstimatePage = () => {
             <Button 
               className="w-full mt-6"
               onClick={generateAIQuestions}
-              disabled={projectDescription.trim().length < 30 || isLoadingTemplates}
+              disabled={projectDescription.trim().length < 30}
             >
               Continue
             </Button>
