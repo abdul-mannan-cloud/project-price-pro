@@ -121,7 +121,8 @@ export const QuestionSequenceManager = ({
       label: typeof selection === 'string' ? selection : selection.label,
       value: typeof selection === 'string' ? selection : selection.value
     })),
-    is_branching: questionSequence[currentIndex].currentQuestion.is_branching || false
+    is_branching: questionSequence[currentIndex].currentQuestion.is_branching || false,
+    sub_questions: questionSequence[currentIndex].currentQuestion.sub_questions || {}
   };
 
   return (

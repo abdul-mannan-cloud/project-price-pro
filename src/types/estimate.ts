@@ -11,7 +11,7 @@ export interface Question {
   selections: (string | QuestionOption)[];
   multi_choice: boolean;
   is_branching: boolean;
-  sub_questions?: Record<string, Question[]>;
+  sub_questions: Record<string, Question[]>;  // Changed from optional to required
 }
 
 export interface BranchingLogic {

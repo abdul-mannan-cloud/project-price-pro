@@ -5,7 +5,7 @@ export interface QuestionOption {
 }
 
 export interface SubQuestion {
-  id?: string;
+  id: string;  // Changed from optional to required
   question: string;
   selections: (string | QuestionOption)[];
   options: QuestionOption[];
@@ -15,7 +15,7 @@ export interface SubQuestion {
 }
 
 export interface CategoryQuestion {
-  id?: string;
+  id: string;  // Changed from optional to required
   question: string;
   selections: (string | QuestionOption)[];
   options: QuestionOption[];
