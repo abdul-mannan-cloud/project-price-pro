@@ -14,6 +14,7 @@ interface QuestionCardProps {
   isLastQuestion: boolean;
   currentStage: number;
   totalStages: number;
+  onNext?: () => void;  // Added this optional prop
 }
 
 export const QuestionCard = ({
@@ -23,6 +24,7 @@ export const QuestionCard = ({
   isLastQuestion,
   currentStage,
   totalStages,
+  onNext,
 }: QuestionCardProps) => {
   const [pressedOption, setPressedOption] = useState<string | null>(null);
   const [showNextButton, setShowNextButton] = useState(false);
@@ -46,6 +48,9 @@ export const QuestionCard = ({
   const handleSingleOptionSelect = (value: string, label: string) => {
     setPressedOption(value);
     onSelect(question.id || '', [value], label);
+    if (!showNextButton && onNext) {
+      onNext();
+    }
   };
 
   const handleMultiOptionSelect = (optionId: string, label: string) => {
@@ -98,17 +103,11 @@ export const QuestionCard = ({
               </div>
             </div>
           ))}
-          {showNextButton && (
+          {showNextButton && onNext && (
             <div className="col-span-full mt-6">
               <Button 
                 className="w-full"
-                onClick={() => {
-                  const selectedLabels = options
-                    .filter(opt => selectedOptions.includes(opt.id || ''))
-                    .map(opt => opt.label)
-                    .join(', ');
-                  onSelect(question.id || '', selectedOptions, selectedLabels);
-                }}
+                onClick={onNext}
                 size="lg"
               >
                 {isLastQuestion ? "Generate Estimate" : "Next Question"}
@@ -167,16 +166,11 @@ export const QuestionCard = ({
             </div>
           </div>
         ))}
-        {showNextButton && (
+        {showNextButton && onNext && (
           <div className="col-span-full mt-6">
             <Button 
               className="w-full"
-              onClick={() => {
-                const selectedOption = options.find(opt => opt.id === selectedOptions[0]);
-                if (selectedOption) {
-                  onSelect(question.id || '', selectedOptions, selectedOption.label);
-                }
-              }}
+              onClick={onNext}
               size="lg"
             >
               {isLastQuestion ? "Generate Estimate" : "Next Question"}
