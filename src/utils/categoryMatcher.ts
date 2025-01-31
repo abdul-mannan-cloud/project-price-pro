@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 type CategoryMatch = {
   categoryId: string;
   confidence: number;
