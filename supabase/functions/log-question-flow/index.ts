@@ -3,62 +3,85 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { 
+      status: 204, 
+      headers: corsHeaders 
+    })
   }
 
   try {
+    if (req.method !== 'POST') {
+      throw new Error('Method not allowed')
+    }
+
+    const body = await req.json()
     const { 
       event,
-      currentQuestion,
+      questionId,
+      questionOrder,
+      question,
+      next_question,
+      next_if_no,
+      is_branching,
+      multi_choice,
+      category,
       selectedOptions,
       selectedLabel,
-      nextQuestion,
-      timestamp = new Date().toISOString()
-    } = await req.json()
+      nextQuestionIndex,
+      nextQuestionOrder
+    } = body
 
     console.log('Question Flow Event:', {
-      timestamp,
+      timestamp: new Date().toISOString(),
       event,
-      currentQuestion: {
-        order: currentQuestion?.order,
-        question: currentQuestion?.question,
-        next_question: currentQuestion?.next_question,
-        next_if_no: currentQuestion?.next_if_no,
-        is_branching: currentQuestion?.is_branching,
-        multi_choice: currentQuestion?.multi_choice
+      question: {
+        id: questionId,
+        order: questionOrder,
+        text: question,
+        next_question,
+        next_if_no,
+        is_branching,
+        multi_choice
       },
+      category,
       selectedOptions,
       selectedLabel,
-      nextQuestion: nextQuestion ? {
-        order: nextQuestion?.order,
-        question: nextQuestion?.question?.substring(0, 30) + '...',
-      } : null
+      navigation: {
+        nextQuestionIndex,
+        nextQuestionOrder
+      }
     })
 
     return new Response(
       JSON.stringify({ success: true }),
       { 
+        status: 200,
         headers: { 
           ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+          'Content-Type': 'application/json'
+        }
       }
     )
   } catch (error) {
     console.error('Error logging question flow:', error)
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }),
       { 
         status: 500,
         headers: { 
           ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+          'Content-Type': 'application/json'
+        }
       }
     )
   }
