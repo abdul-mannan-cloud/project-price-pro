@@ -12,34 +12,36 @@ export const findNextQuestionIndex = (
     nextIfNo: currentQuestion.next_if_no
   });
 
-  // For branching questions (Yes/No)
-  if (currentQuestion.selections?.length === 2 && 
-      currentQuestion.selections.includes('Yes') && 
-      currentQuestion.selections.includes('No')) {
-    
-    // For "Yes" answers, strictly follow next_question
-    if (selectedAnswer === 'Yes') {
+  // Check if this is a Yes/No branching question
+  const isYesNoQuestion = Array.isArray(currentQuestion.selections) && 
+                         currentQuestion.selections.length === 2 && 
+                         currentQuestion.selections[0] === 'Yes' && 
+                         currentQuestion.selections[1] === 'No';
+
+  if (isYesNoQuestion) {
+    // Handle Yes/No branching
+    if (selectedAnswer === 'Yes' && currentQuestion.next_question) {
       const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
       console.log('Yes branch, going to order:', currentQuestion.next_question, 'index:', nextIndex);
       return nextIndex;
     }
     
-    // For "No" answers, strictly follow next_if_no
-    if (selectedAnswer === 'No') {
+    if (selectedAnswer === 'No' && currentQuestion.next_if_no) {
       const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
       console.log('No branch, going to order:', currentQuestion.next_if_no, 'index:', nextIndex);
       return nextIndex;
     }
   }
   
-  // For non-branching questions, follow next_question if specified
+  // For non-Yes/No questions or if no specific branching is defined,
+  // follow next_question if specified
   if (currentQuestion.next_question) {
     const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
     console.log('Following next_question to order:', currentQuestion.next_question, 'index:', nextIndex);
     return nextIndex;
   }
   
-  // If no specific navigation is defined, try to find the next sequential question
+  // If no navigation is defined, try to find the next sequential question
   const nextOrder = (currentQuestion.order || 0) + 1;
   const nextIndex = questions.findIndex(q => q.order === nextOrder);
   console.log('Following sequential order:', nextOrder, 'index:', nextIndex);
@@ -54,11 +56,12 @@ export const initializeQuestions = (rawQuestions: any[]): Question[] => {
     ...q,
     id: `q-${q.order}`,
     options: q.selections?.map((selection: string, optIndex: number) => ({
-      id: `${q.order}-${optIndex}`,  // Use question order instead of array index
+      id: `${q.order}-${optIndex}`,  // Use question order for consistent IDs
       label: selection
     })) || [],
-    is_branching: q.selections?.length === 2 && 
-                  q.selections.includes('Yes') && 
-                  q.selections.includes('No')
+    is_branching: Array.isArray(q.selections) && 
+                  q.selections.length === 2 && 
+                  q.selections[0] === 'Yes' && 
+                  q.selections[1] === 'No'
   }));
 };
