@@ -145,6 +145,72 @@ export type Database = {
           }
         ]
       }
+      Options: {
+        Row: {
+          "Key Options": string
+          "Kitchen Remodel": Json | null
+          "Flooring Installation": Json | null
+          "Fence Installation": Json | null
+          "Painting": Json | null
+          "Major Renovation": Json | null
+          "Landscaping": Json | null
+          "Electrician": Json | null
+          "Plumber": Json | null
+          "Door & Window": Json | null
+          "Concrete": Json | null
+          "Appliances": Json | null
+          "Repairs": Json | null
+          "Carpenter": Json | null
+          "Deck & porch": Json | null
+          "Moving": Json | null
+          "Drywall": Json | null
+          "Demolition": Json | null
+          "Mold remediation": Json | null
+        }
+        Insert: {
+          "Key Options": string
+          "Kitchen Remodel"?: Json | null
+          "Flooring Installation"?: Json | null
+          "Fence Installation"?: Json | null
+          "Painting"?: Json | null
+          "Major Renovation"?: Json | null
+          "Landscaping"?: Json | null
+          "Electrician"?: Json | null
+          "Plumber"?: Json | null
+          "Door & Window"?: Json | null
+          "Concrete"?: Json | null
+          "Appliances"?: Json | null
+          "Repairs"?: Json | null
+          "Carpenter"?: Json | null
+          "Deck & porch"?: Json | null
+          "Moving"?: Json | null
+          "Drywall"?: Json | null
+          "Demolition"?: Json | null
+          "Mold remediation"?: Json | null
+        }
+        Update: {
+          "Key Options"?: string
+          "Kitchen Remodel"?: Json | null
+          "Flooring Installation"?: Json | null
+          "Fence Installation"?: Json | null
+          "Painting"?: Json | null
+          "Major Renovation"?: Json | null
+          "Landscaping"?: Json | null
+          "Electrician"?: Json | null
+          "Plumber"?: Json | null
+          "Door & Window"?: Json | null
+          "Concrete"?: Json | null
+          "Appliances"?: Json | null
+          "Repairs"?: Json | null
+          "Carpenter"?: Json | null
+          "Deck & porch"?: Json | null
+          "Moving"?: Json | null
+          "Drywall"?: Json | null
+          "Demolition"?: Json | null
+          "Mold remediation"?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
