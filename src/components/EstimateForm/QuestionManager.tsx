@@ -45,7 +45,7 @@ export const QuestionManager = ({
           id: `${q.order}-${index}`,
           label: selection
         })),
-        is_branching: q.selections?.includes('Yes') && q.selections?.includes('No') && q.next_if_no !== undefined
+        is_branching: q.selections?.includes('Yes') && q.selections?.includes('No')
       }));
 
       setQuestionSequence(questions);
@@ -87,11 +87,11 @@ export const QuestionManager = ({
 
       // Handle branching logic for Yes/No questions
       if (currentQuestion.is_branching && selectedAnswer === "No" && currentQuestion.next_if_no) {
-        // Find the index of the question with order = next_if_no
+        // Find the question with the matching next_if_no order
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
         if (nextIndex !== -1) {
           setCurrentQuestionIndex(nextIndex);
-          return; // Exit early since we've handled the branching
+          return;
         }
       }
 
