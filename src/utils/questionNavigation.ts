@@ -6,13 +6,13 @@ export const findNextQuestionIndex = (
   selectedLabel: string
 ): number => {
   console.log('Navigation attempt:', {
-    currentOrder: currentQuestion.order,
-    selectedLabel,
-    nextQuestion: currentQuestion.next_question,
-    nextIfNo: currentQuestion.next_if_no,
-    isYesNo: currentQuestion.selections?.length === 2 && 
-             currentQuestion.selections[0] === 'Yes' && 
-             currentQuestion.selections[1] === 'No'
+    currentQuestion: {
+      order: currentQuestion.order,
+      question: currentQuestion.question,
+      next_question: currentQuestion.next_question,
+      next_if_no: currentQuestion.next_if_no
+    },
+    selectedLabel
   });
 
   // For Yes/No questions
@@ -22,27 +22,28 @@ export const findNextQuestionIndex = (
     
     if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
       const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-      console.log(`Yes selected on order ${currentQuestion.order}, going to next_question: ${currentQuestion.next_question}, index: ${nextIndex}`);
+      console.log('Yes selected, navigating to order:', currentQuestion.next_question, 'index:', nextIndex);
       return nextIndex;
     } 
-    else if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
+    
+    if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
       const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
-      console.log(`No selected on order ${currentQuestion.order}, going to next_if_no: ${currentQuestion.next_if_no}, index: ${nextIndex}`);
+      console.log('No selected, navigating to order:', currentQuestion.next_if_no, 'index:', nextIndex);
       return nextIndex;
     }
   }
 
-  // For non-Yes/No questions with next_question defined
+  // For non-Yes/No questions with explicit next_question
   if (typeof currentQuestion.next_question === 'number') {
     const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-    console.log(`Navigation from order ${currentQuestion.order} to next_question: ${currentQuestion.next_question}, index: ${nextIndex}`);
+    console.log('Following next_question:', currentQuestion.next_question, 'index:', nextIndex);
     return nextIndex;
   }
 
   // Default sequential navigation
   const nextOrder = currentQuestion.order + 1;
   const nextIndex = questions.findIndex(q => q.order === nextOrder);
-  console.log(`Sequential navigation from order ${currentQuestion.order} to order ${nextOrder}, index: ${nextIndex}`);
+  console.log('Sequential navigation to order:', nextOrder, 'index:', nextIndex);
   return nextIndex;
 };
 
@@ -61,6 +62,15 @@ export const initializeQuestions = (rawQuestions: Question[]): Question[] => {
                     q.selections[1] === 'No'
     }));
 
-  console.log('Initialized questions:', questions);
+  console.log('Initialized questions:', 
+    questions.map(q => ({
+      order: q.order,
+      question: q.question,
+      next_question: q.next_question,
+      next_if_no: q.next_if_no,
+      is_branching: q.is_branching
+    }))
+  );
+  
   return questions;
 };

@@ -106,6 +106,7 @@ export const QuestionManager = ({
       selectedLabel,
       currentQuestion: {
         order: currentQuestion.order,
+        question: currentQuestion.question,
         next_question: currentQuestion.next_question,
         next_if_no: currentQuestion.next_if_no,
         isYesNoQuestion
@@ -121,7 +122,7 @@ export const QuestionManager = ({
       const nextIndex = findNextQuestionIndex(
         questionSequence, 
         currentQuestion, 
-        selectedLabel === 'Yes' ? 'Yes' : 'No'
+        selectedOptions[0] === currentQuestion.selections[0] ? 'Yes' : 'No'
       );
       
       await logQuestionFlow('answer_processed', {
