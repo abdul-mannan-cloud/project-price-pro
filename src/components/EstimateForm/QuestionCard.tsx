@@ -35,12 +35,16 @@ export const QuestionCard = ({
                          question.selections[1] === 'No';
 
   useEffect(() => {
+    // Only show next button for multi-choice questions
     if (question.multi_choice) {
       setShowNextButton(selectedOptions.length > 0);
+    } else if (!isYesNoQuestion) {
+      // Show next button for non-yes/no single choice questions after selection
+      setShowNextButton(selectedOptions.length === 1);
     } else {
       setShowNextButton(false);
     }
-  }, [selectedOptions, question.multi_choice]);
+  }, [selectedOptions, question.multi_choice, isYesNoQuestion]);
 
   const getSelectedLabels = () => {
     const options = question.options || [];
@@ -96,17 +100,10 @@ export const QuestionCard = ({
     await logQuestionFlow('option_selected', {
       selectedValue: value,
       selectedLabel: label,
-      nextIfSelected: label === 'No' ? question.next_if_no : question.next_question,
-      currentQuestion: {
-        order: question.order,
-        question: question.question,
-        next_question: question.next_question,
-        next_if_no: question.next_if_no,
-        is_branching: isYesNoQuestion,
-        multi_choice: question.multi_choice
-      }
+      nextIfSelected: label === 'No' ? question.next_if_no : question.next_question
     });
 
+    // For yes/no questions, automatically proceed to next question
     if (isYesNoQuestion) {
       setTimeout(() => onNext(), 300);
     }
@@ -201,13 +198,6 @@ export const QuestionCard = ({
         onValueChange={async (value) => {
           const option = options.find(opt => opt.id === value);
           if (option) {
-            console.log('Radio selection:', {
-              value,
-              label: option.label,
-              questionOrder: question.order,
-              nextQuestion: question.next_question,
-              nextIfNo: question.next_if_no
-            });
             await handleSingleOptionSelect(value, option.label);
           }
         }}
@@ -226,13 +216,6 @@ export const QuestionCard = ({
             onClick={async () => {
               const opt = options.find(o => o.id === option.id);
               if (opt) {
-                console.log('Option clicked:', {
-                  optionId: option.id,
-                  label: opt.label,
-                  questionOrder: question.order,
-                  nextQuestion: question.next_question,
-                  nextIfNo: question.next_if_no
-                });
                 await handleSingleOptionSelect(option.id || '', opt.label);
               }
             }}
@@ -257,7 +240,7 @@ export const QuestionCard = ({
             </div>
           </div>
         ))}
-        {(question.is_branching && selectedOptions[0]) && (
+        {showNextButton && (
           <div className="col-span-full mt-6">
             <Button 
               className="w-full"

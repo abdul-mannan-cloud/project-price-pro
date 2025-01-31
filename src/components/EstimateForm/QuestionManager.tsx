@@ -60,16 +60,16 @@ export const QuestionManager = ({
     if (isYesNoQuestion(currentQuestion)) {
       if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
         const nextIndex = findQuestionIndexByOrder(currentQuestion.next_if_no);
-        console.log(`No selected, going to order ${currentQuestion.next_if_no}, index: ${nextIndex}`);
+        console.log(`No selected, going to next_if_no: ${currentQuestion.next_if_no}, index: ${nextIndex}`);
         return nextIndex;
       } else if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
         const nextIndex = findQuestionIndexByOrder(currentQuestion.next_question);
-        console.log(`Yes selected, going to order ${currentQuestion.next_question}, index: ${nextIndex}`);
+        console.log(`Yes selected, going to next_question: ${currentQuestion.next_question}, index: ${nextIndex}`);
         return nextIndex;
       }
     } else if (typeof currentQuestion.next_question === 'number') {
       const nextIndex = findQuestionIndexByOrder(currentQuestion.next_question);
-      console.log(`Non-branching question, going to order ${currentQuestion.next_question}, index: ${nextIndex}`);
+      console.log(`Non-branching question, going to next_question: ${currentQuestion.next_question}, index: ${nextIndex}`);
       return nextIndex;
     }
 
@@ -121,7 +121,6 @@ export const QuestionManager = ({
 
   useEffect(() => {
     if (categoryData?.questions?.length > 0) {
-      // Sort questions by order to ensure proper sequence
       const sortedQuestions = [...categoryData.questions].sort((a, b) => (a.order || 0) - (b.order || 0));
       console.log('Initializing questions for category:', {
         category: currentCategory,
