@@ -89,141 +89,7 @@ export type Database = {
         }
         Relationships: []
       }
-      estimate_details: {
-        Row: {
-          created_at: string | null
-          estimate_id: string | null
-          group_name: string
-          id: string
-          line_items: Json
-          total_amount: number
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          estimate_id?: string | null
-          group_name: string
-          id?: string
-          line_items: Json
-          total_amount: number
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          estimate_id?: string | null
-          group_name?: string
-          id?: string
-          line_items?: Json
-          total_amount?: number
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "estimate_details_estimate_id_fkey"
-            columns: ["estimate_id"]
-            isOneToOne: false
-            referencedRelation: "estimates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      estimate_questions: {
-        Row: {
-          created_at: string | null
-          estimate_id: string | null
-          id: string
-          is_follow_up: boolean | null
-          options: Json
-          parent_question_id: string | null
-          question: string
-          question_order: number
-          question_type: Database["public"]["Enums"]["question_type"] | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          estimate_id?: string | null
-          id?: string
-          is_follow_up?: boolean | null
-          options: Json
-          parent_question_id?: string | null
-          question: string
-          question_order?: number
-          question_type?: Database["public"]["Enums"]["question_type"] | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          estimate_id?: string | null
-          id?: string
-          is_follow_up?: boolean | null
-          options?: Json
-          parent_question_id?: string | null
-          question?: string
-          question_order?: number
-          question_type?: Database["public"]["Enums"]["question_type"] | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "estimate_questions_estimate_id_fkey"
-            columns: ["estimate_id"]
-            isOneToOne: false
-            referencedRelation: "estimates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estimate_questions_parent_question_id_fkey"
-            columns: ["parent_question_id"]
-            isOneToOne: false
-            referencedRelation: "estimate_questions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      estimate_responses: {
-        Row: {
-          created_at: string | null
-          estimate_id: string | null
-          id: string
-          question_id: string | null
-          response: Json
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          estimate_id?: string | null
-          id?: string
-          question_id?: string | null
-          response: Json
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          estimate_id?: string | null
-          id?: string
-          question_id?: string | null
-          response?: Json
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "estimate_responses_estimate_id_fkey"
-            columns: ["estimate_id"]
-            isOneToOne: false
-            referencedRelation: "estimates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estimate_responses_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: false
-            referencedRelation: "estimate_questions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      estimates: {
+      leads: {
         Row: {
           contractor_id: string | null
           created_at: string | null
@@ -276,64 +142,9 @@ export type Database = {
           },
         ]
       }
-      leads: {
-        Row: {
-          answers: Json
-          category: string
-          contractor_id: string | null
-          created_at: string | null
-          estimate_data: Json | null
-          id: string
-          project_address: string | null
-          status: string | null
-          updated_at: string | null
-          user_email: string
-          user_name: string
-          user_phone: string
-        }
-        Insert: {
-          answers?: Json
-          category: string
-          contractor_id?: string | null
-          created_at?: string | null
-          estimate_data?: Json | null
-          id?: string
-          project_address?: string | null
-          status?: string | null
-          updated_at?: string | null
-          user_email: string
-          user_name: string
-          user_phone: string
-        }
-        Update: {
-          answers?: Json
-          category?: string
-          contractor_id?: string | null
-          created_at?: string | null
-          estimate_data?: Json | null
-          id?: string
-          project_address?: string | null
-          status?: string | null
-          updated_at?: string | null
-          user_email?: string
-          user_name?: string
-          user_phone?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "leads_contractor_id_fkey"
-            columns: ["contractor_id"]
-            isOneToOne: false
-            referencedRelation: "contractors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       Options: {
         Row: {
           Appliances: Json | null
-          "Basement Remodeling": Json | null
-          "Bathroom Remodel": Json | null
           Carpenter: Json | null
           Concrete: Json | null
           "Deck & porch": Json | null
@@ -355,8 +166,6 @@ export type Database = {
         }
         Insert: {
           Appliances?: Json | null
-          "Basement Remodeling"?: Json | null
-          "Bathroom Remodel"?: Json | null
           Carpenter?: Json | null
           Concrete?: Json | null
           "Deck & porch"?: Json | null
@@ -378,8 +187,6 @@ export type Database = {
         }
         Update: {
           Appliances?: Json | null
-          "Basement Remodeling"?: Json | null
-          "Bathroom Remodel"?: Json | null
           Carpenter?: Json | null
           Concrete?: Json | null
           "Deck & porch"?: Json | null
@@ -398,39 +205,6 @@ export type Database = {
           Painting?: Json | null
           Plumber?: Json | null
           Repairs?: Json | null
-        }
-        Relationships: []
-      }
-      question_templates: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          id: string
-          options: Json
-          question: string
-          question_type: Database["public"]["Enums"]["question_template_type"]
-          task: string
-          updated_at: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          id?: string
-          options?: Json
-          question: string
-          question_type?: Database["public"]["Enums"]["question_template_type"]
-          task: string
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          id?: string
-          options?: Json
-          question?: string
-          question_type?: Database["public"]["Enums"]["question_template_type"]
-          task?: string
-          updated_at?: string | null
         }
         Relationships: []
       }

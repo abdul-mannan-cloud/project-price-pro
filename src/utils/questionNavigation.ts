@@ -11,7 +11,6 @@ export const findNextQuestionIndex = (
     selectedLabel,
     nextQuestion: currentQuestion.next_question,
     nextIfNo: currentQuestion.next_if_no,
-    selections: currentQuestion.selections,
     isYesNo: currentQuestion.selections?.length === 2 && 
              currentQuestion.selections[0] === 'Yes' && 
              currentQuestion.selections[1] === 'No'
@@ -27,7 +26,7 @@ export const findNextQuestionIndex = (
     return -1;
   }
 
-  // For Yes/No questions with branching logic
+  // For Yes/No questions
   if (currentQuestion.selections?.length === 2 && 
       currentQuestion.selections[0] === 'Yes' && 
       currentQuestion.selections[1] === 'No') {
@@ -44,7 +43,7 @@ export const findNextQuestionIndex = (
     }
   }
 
-  // For all other questions with next_question defined
+  // For all other questions, follow next_question if defined
   if (typeof currentQuestion.next_question === 'number') {
     const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
     if (nextIndex === -1) {
@@ -57,6 +56,12 @@ export const findNextQuestionIndex = (
     }
     console.log(`Navigation from order ${currentQuestion.order} to next_question: ${currentQuestion.next_question}`);
     return nextIndex;
+  }
+
+  // If next_question is null, we've reached the end
+  if (currentQuestion.next_question === null) {
+    console.log('Reached end of questions');
+    return -1;
   }
 
   // If no specific navigation is defined, try to go to the next sequential order
