@@ -32,7 +32,6 @@ const EstimatePage = () => {
   const { toast } = useToast();
   const { contractorId } = useParams();
 
-  // Query for contractor data with proper error handling
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
@@ -57,10 +56,9 @@ const EstimatePage = () => {
 
       return data;
     },
-    enabled: !!contractorId, // Only run query if contractorId exists
+    enabled: !!contractorId,
   });
 
-  // Show error state if contractor fetch fails
   useEffect(() => {
     if (isContractorError) {
       toast({
@@ -71,10 +69,11 @@ const EstimatePage = () => {
     }
   }, [isContractorError, toast]);
 
-  // Query for options data - only when category is selected
   const { data: optionsData, isLoading: isLoadingOptions } = useQuery({
     queryKey: ["options", selectedCategory],
     queryFn: async () => {
+      if (!selectedCategory) return null;
+      
       const { data, error } = await supabase
         .from('Options')
         .select('*')
@@ -83,8 +82,7 @@ const EstimatePage = () => {
 
       if (error) throw error;
       
-      // Handle the column name with proper typing
-      const categoryData = data[selectedCategory?.replace(/ /g, ' ')];
+      const categoryData = data[selectedCategory];
       
       if (!categoryData) {
         throw new Error(`No questions found for category: ${selectedCategory}`);
@@ -178,7 +176,7 @@ const EstimatePage = () => {
     try {
       const { data, error } = await supabase
         .from('Options')
-        .select(`"${selectedCategory}"`)
+        .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
 
@@ -209,7 +207,9 @@ const EstimatePage = () => {
         multi_choice: q.multi_choice || false,
         next_question: q.next_question,
         next_if_no: q.next_if_no,
-        is_branching: q.is_branching || false,
+        is_branching: q.selections?.length === 2 && 
+                     q.selections[0] === 'Yes' && 
+                     q.selections[1] === 'No',
         sub_questions: q.sub_questions || {}
       }));
 
@@ -262,7 +262,6 @@ const EstimatePage = () => {
       [currentQuestionIndex]: Array.isArray(value) ? value : [value]
     }));
 
-    // Only proceed automatically for non-branching single-choice questions
     if (!currentQuestion.is_branching && !currentQuestion.multi_choice) {
       if (currentQuestionIndex < questions.length - 1) {
         setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
@@ -275,7 +274,7 @@ const EstimatePage = () => {
 
   const handleCategoryComplete = (categoryId: string) => {
     setCompletedCategories(prev => [...prev, categoryId]);
-    setStage('category'); // Show category selection again
+    setStage('category');
   };
 
   const generateEstimate = async () => {
