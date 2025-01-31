@@ -52,6 +52,7 @@ export const QuestionManager = ({
     if (!currentQuestion) return -1;
     
     console.log('Navigation check:', { 
+      currentQuestionId: currentQuestion.id,
       currentOrder: currentQuestion.order,
       selectedLabel,
       next_if_no: currentQuestion.next_if_no,
@@ -66,10 +67,17 @@ export const QuestionManager = ({
         currentQuestion.selections[0] === 'Yes' && 
         currentQuestion.selections[1] === 'No') {
       
+      console.log('Processing Yes/No question:', {
+        selectedLabel,
+        next_if_no: currentQuestion.next_if_no,
+        next_question: currentQuestion.next_question
+      });
+
       if (selectedLabel === 'No') {
         if (typeof currentQuestion.next_if_no === 'number') {
           console.log(`No selected - going to order ${currentQuestion.next_if_no}`);
           const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
+          console.log('Found next index for No:', nextIndex);
           if (nextIndex === -1) {
             console.error(`Could not find question with order ${currentQuestion.next_if_no}`);
           }
@@ -79,6 +87,7 @@ export const QuestionManager = ({
         if (typeof currentQuestion.next_question === 'number') {
           console.log(`Yes selected - going to order ${currentQuestion.next_question}`);
           const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+          console.log('Found next index for Yes:', nextIndex);
           if (nextIndex === -1) {
             console.error(`Could not find question with order ${currentQuestion.next_question}`);
           }
@@ -91,6 +100,7 @@ export const QuestionManager = ({
     if (typeof currentQuestion.next_question === 'number') {
       console.log(`Following next_question to order ${currentQuestion.next_question}`);
       const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+      console.log('Found next index:', nextIndex);
       if (nextIndex === -1) {
         console.error(`Could not find question with order ${currentQuestion.next_question}`);
       }
@@ -109,7 +119,9 @@ export const QuestionManager = ({
       questionId, 
       selectedOptions, 
       selectedLabel,
-      currentQuestion 
+      currentQuestion,
+      currentQuestionIndex,
+      currentQuestionOrder: currentQuestion?.order
     });
 
     setCurrentLabel(selectedLabel);
@@ -133,7 +145,12 @@ export const QuestionManager = ({
       if (error) throw error;
 
       const nextIndex = findNextQuestionIndex(currentQuestion, selectedLabel);
-      console.log('Next question index:', nextIndex);
+      console.log('Next question determination:', {
+        currentOrder: currentQuestion.order,
+        selectedLabel,
+        nextIndex,
+        nextQuestionOrder: questionSequence[nextIndex]?.order
+      });
 
       if (nextIndex !== -1) {
         setCurrentQuestionIndex(nextIndex);
@@ -227,15 +244,26 @@ export const QuestionManager = ({
 
   return (
     <QuestionCard
-      question={currentQuestion}
-      selectedOptions={answers[currentQuestion.id] || []}
+      question={questionSequence[currentQuestionIndex]}
+      selectedOptions={answers[questionSequence[currentQuestionIndex]?.id || ''] || []}
       onSelect={(questionId, selectedOptions, selectedLabel) => {
-        console.log('Selection made:', { questionId, selectedOptions, selectedLabel });
+        console.log('Selection made:', { 
+          questionId, 
+          selectedOptions, 
+          selectedLabel,
+          currentQuestionIndex,
+          currentQuestionOrder: questionSequence[currentQuestionIndex]?.order
+        });
         handleAnswer(questionId, selectedOptions, selectedLabel);
       }}
       onNext={() => {
         const nextIndex = findNextQuestionIndex(currentQuestion, currentLabel);
-        console.log('Manual next:', { currentQuestion, selectedLabel: currentLabel, nextIndex });
+        console.log('Manual next navigation:', { 
+          currentQuestion, 
+          selectedLabel: currentLabel, 
+          nextIndex,
+          nextQuestionOrder: questionSequence[nextIndex]?.order
+        });
 
         if (nextIndex !== -1) {
           setCurrentQuestionIndex(nextIndex);
