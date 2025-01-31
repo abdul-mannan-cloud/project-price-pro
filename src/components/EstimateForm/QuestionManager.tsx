@@ -34,12 +34,7 @@ export const QuestionManager = ({
   useEffect(() => {
     if (categoryData?.questions?.length > 0) {
       const sortedQuestions = [...categoryData.questions].sort((a, b) => (a.order || 0) - (b.order || 0));
-      console.log('Initialized questions:', sortedQuestions.map(q => ({
-        order: q.order,
-        question: q.question,
-        next_question: q.next_question,
-        next_if_no: q.next_if_no
-      })));
+      console.log('Initialized questions:', sortedQuestions);
       setQuestionSequence(sortedQuestions);
       setCurrentQuestionIndex(0);
       setAnswers({});
@@ -60,8 +55,8 @@ export const QuestionManager = ({
       currentQuestionId: currentQuestion.id,
       currentOrder: currentQuestion.order,
       selectedLabel,
-      next_if_no: currentQuestion.next_if_no,
-      next_question: currentQuestion.next_question
+      next_question: currentQuestion.next_question,
+      next_if_no: currentQuestion.next_if_no
     });
 
     // For Yes/No questions with branching logic
@@ -69,26 +64,15 @@ export const QuestionManager = ({
         currentQuestion.selections[0] === 'Yes' && 
         currentQuestion.selections[1] === 'No') {
       
-      console.log('Processing Yes/No question:', {
-        selectedLabel,
-        next_if_no: currentQuestion.next_if_no,
-        next_question: currentQuestion.next_question
-      });
-
       if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
         console.log(`No selected - going to order ${currentQuestion.next_if_no}`);
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
         console.log('Found next index for No:', nextIndex);
         return nextIndex;
-      } else if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
-        console.log(`Yes selected - going to order ${currentQuestion.next_question}`);
-        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-        console.log('Found next index for Yes:', nextIndex);
-        return nextIndex;
       }
     }
 
-    // For non-Yes/No questions with next_question defined
+    // For any question with next_question defined (including Yes/No questions)
     if (typeof currentQuestion.next_question === 'number') {
       console.log(`Following next_question to order ${currentQuestion.next_question}`);
       const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
