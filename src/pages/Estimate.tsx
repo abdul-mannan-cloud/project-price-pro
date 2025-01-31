@@ -148,22 +148,26 @@ const EstimatePage = () => {
     }
   };
 
-  const formatQuestions = (rawQuestions: any): Question[] => {
-    if (!Array.isArray(rawQuestions?.questions)) {
+  const formatQuestions = (rawQuestions: any[]): Question[] => {
+    if (!Array.isArray(rawQuestions)) {
       console.error('Invalid questions format:', rawQuestions);
       return [];
     }
 
-    return rawQuestions.questions.map((q: any, index: number) => ({
+    return rawQuestions.map((q: any, index: number) => ({
       id: `${index}`,
+      order: q.order || index + 1,
       question: q.question,
-      options: Array.isArray(q.options) ? q.options.map((opt: any, optIndex: number) => ({
+      selections: q.selections,
+      options: Array.isArray(q.selections) ? q.selections.map((opt: any, optIndex: number) => ({
         id: `${index}-${optIndex}`,
         label: typeof opt === 'string' ? opt : opt.label
       })) : [],
       multi_choice: q.multi_choice || false,
+      next_question: q.next_question,
+      next_if_no: q.next_if_no,
       is_branching: q.is_branching || false,
-      sub_questions: {}
+      sub_questions: q.sub_questions || {}
     }));
   };
 
@@ -194,6 +198,7 @@ const EstimatePage = () => {
       const formattedQuestions = categoryData.questions.map((q: any, index: number) => {
         const question: Question = {
           id: q.id || `q-${index}`,
+          order: q.order || index + 1,
           question: q.question,
           options: Array.isArray(q.selections) 
             ? q.selections.map((opt: any, optIndex: number) => ({

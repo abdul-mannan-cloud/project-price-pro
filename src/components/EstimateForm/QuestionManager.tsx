@@ -189,11 +189,7 @@ export const QuestionManager = ({
       onSelect={handleAnswer}
       onNext={() => {
         const selectedLabel = answers[currentQuestion.id]?.[0] || '';
-        const nextIndex = findNextQuestionIndex(
-          questionSequence,
-          currentQuestion,
-          selectedLabel
-        );
+        const nextIndex = findNextQuestionIndex(currentQuestion, selectedLabel);
 
         if (nextIndex !== -1) {
           setCurrentQuestionIndex(nextIndex);
@@ -202,7 +198,7 @@ export const QuestionManager = ({
         }
       }}
       isLastQuestion={!currentQuestion.next_question && 
-        findNextQuestionIndex(questionSequence, currentQuestion, answers[currentQuestion.id]?.[0] || '') === -1}
+        findNextQuestionIndex(currentQuestion, answers[currentQuestion.id]?.[0] || '') === -1}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />
