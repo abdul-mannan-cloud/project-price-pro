@@ -80,7 +80,8 @@ export const QuestionCard = ({
     
     await logQuestionFlow('option_selected', {
       selectedValue: value,
-      selectedLabel: label
+      selectedLabel: label,
+      nextIfSelected: label === 'No' ? question.next_if_no : question.next_question
     });
 
     // Auto-advance for yes/no questions

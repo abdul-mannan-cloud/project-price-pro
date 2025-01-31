@@ -41,7 +41,9 @@ export const QuestionManager = ({
           question: currentQuestion?.question,
           next_question: currentQuestion?.next_question,
           next_if_no: currentQuestion?.next_if_no,
-          is_branching: currentQuestion?.is_branching,
+          is_branching: currentQuestion?.selections?.length === 2 && 
+                       currentQuestion?.selections[0] === 'Yes' && 
+                       currentQuestion?.selections[1] === 'No',
           multi_choice: currentQuestion?.multi_choice,
           ...details,
           currentCategory
@@ -71,27 +73,27 @@ export const QuestionManager = ({
   const findNextQuestionIndex = (currentQuestion: Question, selectedLabel: string): number => {
     if (!currentQuestion) return -1;
     
+    const isYesNoQuestion = currentQuestion.selections?.length === 2 && 
+                           currentQuestion.selections[0] === 'Yes' && 
+                           currentQuestion.selections[1] === 'No';
+    
     console.log('Finding next question:', {
       currentOrder: currentQuestion.order,
       selectedLabel,
       nextQuestion: currentQuestion.next_question,
       nextIfNo: currentQuestion.next_if_no,
-      isYesNo: currentQuestion.selections?.length === 2 && 
-               currentQuestion.selections[0] === 'Yes' && 
-               currentQuestion.selections[1] === 'No'
+      isYesNo: isYesNoQuestion
     });
 
     // For Yes/No questions with branching logic
-    if (currentQuestion.selections?.length === 2 && 
-        currentQuestion.selections[0] === 'Yes' && 
-        currentQuestion.selections[1] === 'No') {
-      
+    if (isYesNoQuestion) {
       if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
         logQuestionFlow('branching_no', {
           selectedLabel,
           nextQuestionOrder: currentQuestion.next_if_no,
-          nextQuestionIndex: nextIndex
+          nextQuestionIndex: nextIndex,
+          navigationReason: 'next_if_no'
         });
         return nextIndex;
       }
@@ -101,7 +103,8 @@ export const QuestionManager = ({
         logQuestionFlow('branching_yes', {
           selectedLabel,
           nextQuestionOrder: currentQuestion.next_question,
-          nextQuestionIndex: nextIndex
+          nextQuestionIndex: nextIndex,
+          navigationReason: 'next_question'
         });
         return nextIndex;
       }
@@ -112,7 +115,8 @@ export const QuestionManager = ({
       const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
       logQuestionFlow('following_next_question', {
         nextQuestionOrder: currentQuestion.next_question,
-        nextQuestionIndex: nextIndex
+        nextQuestionIndex: nextIndex,
+        navigationReason: 'next_question'
       });
       return nextIndex;
     }
@@ -121,7 +125,8 @@ export const QuestionManager = ({
     if (currentQuestion.next_question === null) {
       logQuestionFlow('reached_end', {
         currentOrder: currentQuestion.order,
-        selectedLabel
+        selectedLabel,
+        navigationReason: 'end_of_sequence'
       });
       return -1;
     }
@@ -130,9 +135,10 @@ export const QuestionManager = ({
     const nextOrder = (currentQuestion.order || 0) + 1;
     const nextIndex = questionSequence.findIndex(q => q.order === nextOrder);
     logQuestionFlow('sequential_navigation', {
-        currentOrder: currentQuestion.order,
-        nextOrder,
-        nextQuestionIndex: nextIndex
+      currentOrder: currentQuestion.order,
+      nextOrder,
+      nextQuestionIndex: nextIndex,
+      navigationReason: 'sequential'
     });
     return nextIndex;
   };
@@ -259,13 +265,18 @@ export const QuestionManager = ({
         handleAnswer(questionId, selectedOptions, selectedLabel);
       }}
       onNext={async () => {
-        const nextIndex = findNextQuestionIndex(currentQuestion, answers[currentQuestion.id || '']?.[0] || '');
+        const nextIndex = findNextQuestionIndex(
+          currentQuestion, 
+          answers[currentQuestion.id || '']?.[0] || ''
+        );
+        
         await logQuestionFlow('manual_next', {
           currentOrder: currentQuestion.order,
           selectedOptions: answers[currentQuestion.id || ''] || [],
           selectedLabel: answers[currentQuestion.id || '']?.[0] || '',
           nextQuestionIndex: nextIndex,
-          nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null
+          nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null,
+          navigationReason: 'manual_next'
         });
 
         if (nextIndex !== -1) {
