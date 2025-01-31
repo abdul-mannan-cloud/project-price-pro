@@ -36,19 +36,39 @@ export const QuestionCard = ({
   }, [selectedOptions, question.multi_choice, question.is_branching]);
 
   const handleSingleOptionSelect = (value: string, label: string) => {
-    console.log('Selected single option:', { value, label });
+    console.log('Selection details:', {
+      questionId: question.id,
+      questionOrder: question.order,
+      selectedValue: value,
+      selectedLabel: label,
+      nextQuestion: question.next_question,
+      nextIfNo: question.next_if_no,
+      isBranching: question.is_branching
+    });
+
     setPressedOption(value);
     onSelect(question.id || '', [value], label);
     
     if (!question.is_branching) {
+      console.log('Non-branching question - auto advancing');
       setTimeout(() => {
         setPressedOption(null);
         onNext();
       }, 300);
+    } else {
+      console.log('Branching question - waiting for manual next');
     }
   };
 
   const handleMultiOptionSelect = (optionId: string, label: string) => {
+    console.log('Multi-selection details:', {
+      questionId: question.id,
+      questionOrder: question.order,
+      optionId,
+      label,
+      currentSelections: selectedOptions
+    });
+
     const newSelection = selectedOptions.includes(optionId)
       ? selectedOptions.filter(id => id !== optionId)
       : [...selectedOptions, optionId];
@@ -57,7 +77,23 @@ export const QuestionCard = ({
       newSelection.includes(opt.id || '')
     ).map(opt => opt.label).join(', ');
     
+    console.log('Updated selection:', {
+      newSelection,
+      selectedLabels
+    });
+
     onSelect(question.id || '', newSelection, selectedLabels);
+  };
+
+  const handleNextClick = () => {
+    console.log('Next button clicked:', {
+      currentOrder: question.order,
+      selectedOptions,
+      nextQuestion: question.next_question,
+      nextIfNo: question.next_if_no,
+      isLastQuestion
+    });
+    onNext();
   };
 
   const renderOptions = () => {
@@ -102,7 +138,7 @@ export const QuestionCard = ({
             <div className="col-span-full mt-6">
               <Button 
                 className="w-full"
-                onClick={onNext}
+                onClick={handleNextClick}
                 size="lg"
               >
                 {isLastQuestion ? "Generate Estimate" : "Next Question"}
@@ -119,6 +155,13 @@ export const QuestionCard = ({
         onValueChange={(value) => {
           const option = options.find(opt => opt.id === value);
           if (option) {
+            console.log('Radio selection:', {
+              value,
+              label: option.label,
+              questionOrder: question.order,
+              nextQuestion: question.next_question,
+              nextIfNo: question.next_if_no
+            });
             handleSingleOptionSelect(value, option.label);
           }
         }}
@@ -137,6 +180,13 @@ export const QuestionCard = ({
             onClick={() => {
               const opt = options.find(o => o.id === option.id);
               if (opt) {
+                console.log('Option clicked:', {
+                  optionId: option.id,
+                  label: opt.label,
+                  questionOrder: question.order,
+                  nextQuestion: question.next_question,
+                  nextIfNo: question.next_if_no
+                });
                 handleSingleOptionSelect(option.id || '', opt.label);
               }
             }}
@@ -165,7 +215,7 @@ export const QuestionCard = ({
           <div className="col-span-full mt-6">
             <Button 
               className="w-full"
-              onClick={onNext}
+              onClick={handleNextClick}
               size="lg"
             >
               {isLastQuestion ? "Generate Estimate" : "Next Question"}
