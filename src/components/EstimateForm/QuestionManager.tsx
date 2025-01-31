@@ -34,32 +34,17 @@ export const QuestionManager = ({
     try {
       const currentQuestion = questionSequence[currentQuestionIndex];
       
-      // Log the full question data for debugging
-      console.log('Current Question Data:', currentQuestion);
-      console.log('Question Flow Event:', {
-        event,
-        currentQuestion: {
-          id: currentQuestion?.id,
-          order: currentQuestion?.order,
-          question: currentQuestion?.question,
-          next_question: currentQuestion?.next_question,
-          next_if_no: currentQuestion?.next_if_no,
-          selections: currentQuestion?.selections,
-          is_branching: currentQuestion?.selections?.length === 2 && 
-                       currentQuestion?.selections[0] === 'Yes' && 
-                       currentQuestion?.selections[1] === 'No',
-          multi_choice: currentQuestion?.multi_choice
-        },
-        selectedOptions: details.selectedOptions,
-        selectedLabel: details.selectedLabel,
-        category: currentCategory,
-        answers,
-        questionSequence: questionSequence.map(q => ({
-          order: q.order,
-          question: q.question,
-          next_question: q.next_question,
-          next_if_no: q.next_if_no
-        }))
+      console.log('Current Question Data:', {
+        id: currentQuestion?.id,
+        order: currentQuestion?.order,
+        question: currentQuestion?.question,
+        next_question: currentQuestion?.next_question,
+        next_if_no: currentQuestion?.next_if_no,
+        selections: currentQuestion?.selections,
+        is_branching: currentQuestion?.selections?.length === 2 && 
+                     currentQuestion?.selections[0] === 'Yes' && 
+                     currentQuestion?.selections[1] === 'No',
+        multi_choice: currentQuestion?.multi_choice
       });
 
       // Format answers for logging
@@ -74,7 +59,6 @@ export const QuestionManager = ({
         return acc;
       }, {} as Record<string, string[]>);
 
-      // Log to Supabase function with complete question data
       await supabase.functions.invoke('log-question-flow', {
         body: {
           event,
@@ -91,27 +75,9 @@ export const QuestionManager = ({
           answers: formattedAnswers,
           selectedOptions: details.selectedOptions,
           selectedLabel: details.selectedLabel,
-          currentQuestionData: currentQuestion // Include full question data
+          currentQuestionData: currentQuestion
         }
       });
-
-      // Save progress to leads table
-      if (Object.keys(answers).length > 0) {
-        const { error: leadError } = await supabase
-          .from('leads')
-          .upsert({
-            category: currentCategory,
-            answers: formattedAnswers,
-            project_title: `${currentCategory} Project`,
-            status: 'in_progress'
-          }, {
-            onConflict: 'category'
-          });
-
-        if (leadError) {
-          console.error('Error saving answers to leads:', leadError);
-        }
-      }
     } catch (error) {
       console.error('Error logging question flow:', error);
     }

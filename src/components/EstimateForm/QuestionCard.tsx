@@ -35,11 +35,10 @@ export const QuestionCard = ({
                          question.selections[1] === 'No';
 
   useEffect(() => {
-    // Only show next button for true multi-choice questions
     if (question.multi_choice) {
       setShowNextButton(selectedOptions.length > 0);
     } else {
-      setShowNextButton(false); // Hide for yes/no and single choice questions
+      setShowNextButton(false);
     }
   }, [selectedOptions, question.multi_choice]);
 
@@ -54,6 +53,22 @@ export const QuestionCard = ({
   const logQuestionFlow = async (event: string, details: any) => {
     try {
       const selectedLabels = getSelectedLabels();
+      console.log('Logging question data:', {
+        event,
+        question: {
+          id: question.id,
+          order: question.order,
+          question: question.question,
+          next_question: question.next_question,
+          next_if_no: question.next_if_no,
+          selections: question.selections,
+          is_branching: isYesNoQuestion,
+          multi_choice: question.multi_choice
+        },
+        selectedOptions,
+        selectedLabels
+      });
+
       await supabase.functions.invoke('log-question-flow', {
         body: {
           event,
@@ -81,10 +96,17 @@ export const QuestionCard = ({
     await logQuestionFlow('option_selected', {
       selectedValue: value,
       selectedLabel: label,
-      nextIfSelected: label === 'No' ? question.next_if_no : question.next_question
+      nextIfSelected: label === 'No' ? question.next_if_no : question.next_question,
+      currentQuestion: {
+        order: question.order,
+        question: question.question,
+        next_question: question.next_question,
+        next_if_no: question.next_if_no,
+        is_branching: isYesNoQuestion,
+        multi_choice: question.multi_choice
+      }
     });
 
-    // Auto-advance for yes/no questions
     if (isYesNoQuestion) {
       setTimeout(() => onNext(), 300);
     }
