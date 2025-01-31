@@ -170,50 +170,65 @@ const EstimatePage = () => {
   };
 
   const loadCategoryQuestions = async () => {
-    if (!selectedCategory) return;
+    if (!selectedCategory) {
+      console.error('No category selected');
+      return;
+    }
     
     setIsProcessing(true);
     try {
+      console.log('Loading questions for category:', selectedCategory);
+      
       const { data, error } = await supabase
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching options:', error);
+        throw error;
+      }
 
       if (!data || !data[selectedCategory]) {
+        console.error('No data found for category:', selectedCategory);
         throw new Error(`No questions found for category: ${selectedCategory}`);
       }
 
       const categoryData = data[selectedCategory];
-      console.log('Category data:', categoryData);
+      console.log('Raw category data:', categoryData);
 
       if (!Array.isArray(categoryData.questions)) {
+        console.error('Invalid questions format:', categoryData);
         throw new Error('Invalid questions format');
       }
 
-      const formattedQuestions = categoryData.questions.map((q: any, index: number) => ({
-        id: q.id || `q-${index}`,
-        order: q.order || index + 1,
-        question: q.question,
-        selections: q.selections,
-        options: Array.isArray(q.selections) 
-          ? q.selections.map((opt: any, optIndex: number) => ({
-              id: `${index}-${optIndex}`,
-              label: typeof opt === 'string' ? opt : opt.label
-            }))
-          : [],
-        multi_choice: q.multi_choice || false,
-        next_question: q.next_question,
-        next_if_no: q.next_if_no,
-        is_branching: q.selections?.length === 2 && 
-                     q.selections[0] === 'Yes' && 
-                     q.selections[1] === 'No',
-        sub_questions: q.sub_questions || {}
-      }));
+      const formattedQuestions = categoryData.questions.map((q: any, index: number) => {
+        const formattedQuestion = {
+          id: q.id || `q-${index}`,
+          order: q.order || index + 1,
+          question: q.question,
+          selections: q.selections,
+          options: Array.isArray(q.selections) 
+            ? q.selections.map((opt: any, optIndex: number) => ({
+                id: `${index}-${optIndex}`,
+                label: typeof opt === 'string' ? opt : opt.label
+              }))
+            : [],
+          multi_choice: q.multi_choice || false,
+          next_question: q.next_question,
+          next_if_no: q.next_if_no,
+          is_branching: q.selections?.length === 2 && 
+                       q.selections[0] === 'Yes' && 
+                       q.selections[1] === 'No',
+          sub_questions: q.sub_questions || {}
+        };
+        
+        console.log(`Formatted question ${index}:`, formattedQuestion);
+        return formattedQuestion;
+      });
 
-      console.log('Formatted questions:', formattedQuestions);
+      console.log('Final formatted questions:', formattedQuestions);
       
       if (formattedQuestions.length === 0) {
         toast({
@@ -242,8 +257,10 @@ const EstimatePage = () => {
   };
 
   const handleDescriptionSubmit = async () => {
+    console.log('Processing description:', projectDescription);
     try {
       const match = await findBestMatchingCategory(projectDescription);
+      console.log('Category match result:', match);
       
       if (match) {
         console.log('Found matching category:', match);
