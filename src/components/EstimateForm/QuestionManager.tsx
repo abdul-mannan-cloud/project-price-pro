@@ -119,10 +119,12 @@ export const QuestionManager = ({
 
     // For Yes/No questions, navigate immediately
     if (isYesNoQuestion) {
+      // Determine if Yes was selected by checking if the first selection was chosen
+      const isYesSelected = selectedOptions[0] === currentQuestion.selections[0];
       const nextIndex = findNextQuestionIndex(
         questionSequence, 
         currentQuestion, 
-        selectedOptions[0] === currentQuestion.selections[0] ? 'Yes' : 'No'
+        isYesSelected ? 'Yes' : 'No'
       );
       
       await logQuestionFlow('answer_processed', {
@@ -130,7 +132,8 @@ export const QuestionManager = ({
         selectedLabel,
         nextQuestionIndex: nextIndex,
         nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null,
-        isYesNoQuestion: true
+        isYesNoQuestion: true,
+        navigationPath: isYesSelected ? 'next_question' : 'next_if_no'
       });
 
       if (nextIndex !== -1) {

@@ -5,50 +5,72 @@ export const findNextQuestionIndex = (
   currentQuestion: Question,
   selectedLabel: string
 ): number => {
+  // Log the current navigation attempt
   console.log('Navigation attempt:', {
     currentQuestion: {
       order: currentQuestion.order,
       question: currentQuestion.question,
       next_question: currentQuestion.next_question,
-      next_if_no: currentQuestion.next_if_no
+      next_if_no: currentQuestion.next_if_no,
+      isYesNo: currentQuestion.selections?.length === 2 && 
+               currentQuestion.selections[0] === 'Yes' && 
+               currentQuestion.selections[1] === 'No'
     },
     selectedLabel
   });
 
-  // For Yes/No questions
-  if (currentQuestion.selections?.length === 2 && 
-      currentQuestion.selections[0] === 'Yes' && 
-      currentQuestion.selections[1] === 'No') {
-    
-    if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
-      const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-      console.log('Yes selected, navigating to order:', currentQuestion.next_question, 'index:', nextIndex);
-      return nextIndex;
-    } 
-    
-    if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
-      const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
-      console.log('No selected, navigating to order:', currentQuestion.next_if_no, 'index:', nextIndex);
-      return nextIndex;
+  // Check if this is a Yes/No question
+  const isYesNoQuestion = currentQuestion.selections?.length === 2 && 
+                         currentQuestion.selections[0] === 'Yes' && 
+                         currentQuestion.selections[1] === 'No';
+
+  if (isYesNoQuestion) {
+    // Handle Yes selection
+    if (selectedLabel === 'Yes') {
+      if (typeof currentQuestion.next_question === 'number') {
+        const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
+        console.log('Yes selected, navigating to:', {
+          nextQuestionOrder: currentQuestion.next_question,
+          foundIndex: nextIndex
+        });
+        return nextIndex;
+      }
+    }
+    // Handle No selection
+    else if (selectedLabel === 'No') {
+      if (typeof currentQuestion.next_if_no === 'number') {
+        const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
+        console.log('No selected, navigating to:', {
+          nextQuestionOrder: currentQuestion.next_if_no,
+          foundIndex: nextIndex
+        });
+        return nextIndex;
+      }
     }
   }
-
-  // For non-Yes/No questions with explicit next_question
-  if (typeof currentQuestion.next_question === 'number') {
+  // Handle non-Yes/No questions with explicit next_question
+  else if (typeof currentQuestion.next_question === 'number') {
     const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-    console.log('Following next_question:', currentQuestion.next_question, 'index:', nextIndex);
+    console.log('Following explicit next_question:', {
+      nextQuestionOrder: currentQuestion.next_question,
+      foundIndex: nextIndex
+    });
     return nextIndex;
   }
 
-  // Default sequential navigation
+  // Default to sequential navigation if no specific navigation is defined
   const nextOrder = currentQuestion.order + 1;
   const nextIndex = questions.findIndex(q => q.order === nextOrder);
-  console.log('Sequential navigation to order:', nextOrder, 'index:', nextIndex);
+  console.log('Sequential navigation:', {
+    fromOrder: currentQuestion.order,
+    toOrder: nextOrder,
+    foundIndex: nextIndex
+  });
   return nextIndex;
 };
 
 export const initializeQuestions = (rawQuestions: Question[]): Question[] => {
-  // Sort questions by order
+  // Sort questions by order and initialize
   const questions = [...rawQuestions]
     .sort((a, b) => (a.order || 0) - (b.order || 0))
     .map((q) => ({
@@ -62,15 +84,14 @@ export const initializeQuestions = (rawQuestions: Question[]): Question[] => {
                     q.selections[1] === 'No'
     }));
 
-  console.log('Initialized questions:', 
-    questions.map(q => ({
-      order: q.order,
-      question: q.question,
-      next_question: q.next_question,
-      next_if_no: q.next_if_no,
-      is_branching: q.is_branching
-    }))
-  );
+  // Log initialized questions for debugging
+  console.log('Initialized questions:', questions.map(q => ({
+    order: q.order,
+    question: q.question,
+    next_question: q.next_question,
+    next_if_no: q.next_if_no,
+    is_branching: q.is_branching
+  })));
   
   return questions;
 };
