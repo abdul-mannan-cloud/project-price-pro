@@ -31,7 +31,6 @@ export const QuestionManager = ({
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    console.log('Initializing question sequence with category data:', categoryData);
     if (categoryData?.questions?.length > 0) {
       const sortedQuestions = [...categoryData.questions].sort((a, b) => 
         (a.order || 0) - (b.order || 0)
@@ -44,9 +43,12 @@ export const QuestionManager = ({
           id: `${q.order}-${index}`,
           label: selection
         })),
-        is_branching: q.selections?.includes('Yes') && q.selections?.includes('No')
+        is_branching: q.selections?.length === 2 && 
+                     q.selections.includes('Yes') && 
+                     q.selections.includes('No')
       }));
 
+      console.log('Initialized questions:', questions);
       setQuestionSequence(questions);
       setCurrentQuestionIndex(0);
       setAnswers({});
@@ -65,8 +67,14 @@ export const QuestionManager = ({
     const selectedAnswer = selectedOptions[0];
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
     
-    console.log('Current question:', currentQuestion);
-    console.log('Selected answer:', selectedAnswer);
+    console.log('Processing answer for question:', {
+      order: currentQuestion.order,
+      question: currentQuestion.question,
+      selectedAnswer,
+      is_branching: currentQuestion.is_branching,
+      next_question: currentQuestion.next_question,
+      next_if_no: currentQuestion.next_if_no
+    });
     
     setAnswers(updatedAnswers);
 
@@ -86,20 +94,32 @@ export const QuestionManager = ({
       if (error) throw error;
 
       // Strict order-based navigation
-      if (currentQuestion.is_branching && selectedAnswer === "No" && currentQuestion.next_if_no) {
-        // Find question with matching order number for "No" path
-        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
-        console.log('Branching NO - Going to order:', currentQuestion.next_if_no, 'Index:', nextIndex);
-        
-        if (nextIndex !== -1) {
-          setCurrentQuestionIndex(nextIndex);
-        } else {
-          handleComplete();
+      if (currentQuestion.is_branching) {
+        if (selectedAnswer === "No" && currentQuestion.next_if_no) {
+          // Find exact question with next_if_no order
+          const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
+          console.log('NO path - Going to order:', currentQuestion.next_if_no);
+          
+          if (nextIndex !== -1) {
+            setCurrentQuestionIndex(nextIndex);
+          } else {
+            handleComplete();
+          }
+        } else if (selectedAnswer === "Yes" && currentQuestion.next_question) {
+          // Find exact question with next_question order
+          const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+          console.log('YES path - Going to order:', currentQuestion.next_question);
+          
+          if (nextIndex !== -1) {
+            setCurrentQuestionIndex(nextIndex);
+          } else {
+            handleComplete();
+          }
         }
       } else if (currentQuestion.next_question) {
-        // Find question with matching order number for normal/Yes path
+        // Non-branching questions always follow next_question
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-        console.log('Normal/YES - Going to order:', currentQuestion.next_question, 'Index:', nextIndex);
+        console.log('Normal path - Going to order:', currentQuestion.next_question);
         
         if (nextIndex !== -1) {
           setCurrentQuestionIndex(nextIndex);
