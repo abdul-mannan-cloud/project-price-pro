@@ -48,16 +48,34 @@ export const QuestionManager = ({
 
   const findNextQuestionByText = (text: string): Question | undefined => {
     console.log('Finding question with text:', text);
-    return categoryData.questions.find(q => q.question === text);
+    const nextQuestion = categoryData.questions.find(q => q.question === text);
+    console.log('Found next question:', nextQuestion);
+    return nextQuestion;
+  };
+
+  const findQuestionIndexByText = (text: string): number => {
+    return categoryData.questions.findIndex(q => q.question === text);
   };
 
   const getNextQuestion = (currentQuestion: Question, answer: string): Question | undefined => {
     console.log('Getting next question for:', currentQuestion.question, 'with answer:', answer);
     
-    // If it's a branching question and answer is "No", use next_if_no
+    // If it's a branching question and answer is "No", find the question specified in next_if_no
     if (currentQuestion.is_branching && answer === "No" && currentQuestion.next_if_no) {
       console.log('Following next_if_no branch:', currentQuestion.next_if_no);
-      return findNextQuestionByText(currentQuestion.next_if_no);
+      const nextBranchQuestion = findNextQuestionByText(currentQuestion.next_if_no);
+      if (nextBranchQuestion) {
+        // Update the sequence to skip questions in between
+        const nextIndex = findQuestionIndexByText(currentQuestion.next_if_no);
+        if (nextIndex !== -1) {
+          setQuestionSequence(prev => {
+            const newSequence = [...prev.slice(0, currentQuestionIndex + 1), nextBranchQuestion];
+            console.log('New question sequence:', newSequence);
+            return newSequence;
+          });
+        }
+        return nextBranchQuestion;
+      }
     }
 
     // For "Yes" or non-branching questions, get the next sequential question
@@ -107,11 +125,11 @@ export const QuestionManager = ({
     
     if (nextQuestion) {
       console.log('Setting next question:', nextQuestion);
-      setQuestionSequence(prev => [...prev, nextQuestion]);
-      
-      // Auto-advance for single-choice questions
       if (!currentQuestion.multi_choice) {
-        setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
+        // For single-choice questions, auto-advance after a short delay
+        setTimeout(() => {
+          setCurrentQuestionIndex(prev => prev + 1);
+        }, 300);
       }
     } else {
       console.log('No more questions, proceeding to completion');
