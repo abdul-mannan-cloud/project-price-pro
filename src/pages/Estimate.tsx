@@ -241,15 +241,27 @@ const EstimatePage = () => {
     }
   };
 
-  const handleDescriptionSubmit = () => {
-    const match = findBestMatchingCategory(projectDescription);
-    
-    if (match) {
-      setSelectedCategory(match.categoryId);
-      setCurrentQuestionIndex(0);
-      setAnswers({});
-      loadCategoryQuestions();
-    } else {
+  const handleDescriptionSubmit = async () => {
+    try {
+      const match = await findBestMatchingCategory(projectDescription);
+      
+      if (match) {
+        console.log('Found matching category:', match);
+        setSelectedCategory(match.categoryId);
+        setCurrentQuestionIndex(0);
+        setAnswers({});
+        await loadCategoryQuestions();
+      } else {
+        console.log('No matching category found, showing category selection');
+        setStage('category');
+      }
+    } catch (error) {
+      console.error('Error matching category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process your description. Please try again or select a category manually.",
+        variant: "destructive",
+      });
       setStage('category');
     }
   };

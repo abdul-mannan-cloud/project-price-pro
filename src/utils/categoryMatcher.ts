@@ -3,25 +3,32 @@ type CategoryMatch = {
   confidence: number;
 };
 
-const categoryKeywords: Record<string, string[]> = {
-  "Painting": [
-    "paint", "painting", "walls", "ceilings", "trim", "interior paint",
-    "exterior paint", "cabinet paint", "coats", "primer", "color", "brush",
-    "roller", "spray paint", "repaint"
-  ],
-  "Kitchen Remodel": [
-    "kitchen remodel", "cabinets", "countertops", "appliances", "sink", "faucet",
-    "backsplash", "pantry", "cooking", "refrigerator", "stove", "oven",
-    "kitchen renovation", "kitchen update"
-  ],
-  "Bathroom Remodel": [
-    "bathroom remodel", "shower", "tub", "toilet", "vanity", "tile", "plumbing",
-    "faucet", "mirror", "bath", "bathroom renovation", "bathroom update"
-  ],
-  "Basement Remodeling": [
-    "basement", "foundation", "underground", "cellar", "lower level",
-    "waterproofing", "finishing", "basement renovation"
-  ]
+const getKeywordsFromOptions = async () => {
+  const { data: optionsData } = await supabase
+    .from('Options')
+    .select('*')
+    .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+    .single();
+
+  if (!optionsData) return {};
+
+  const keywords: Record<string, string[]> = {};
+  
+  // Process each category column
+  Object.entries(optionsData).forEach(([key, value]) => {
+    if (key !== 'Key Options' && value && typeof value === 'object') {
+      try {
+        const categoryData = value as { keywords?: string[] };
+        if (categoryData.keywords) {
+          keywords[key] = categoryData.keywords;
+        }
+      } catch (error) {
+        console.error(`Error processing keywords for category ${key}:`, error);
+      }
+    }
+  });
+
+  return keywords;
 };
 
 // Helper function to calculate word position weight
@@ -39,13 +46,15 @@ const isSubstringOfMatch = (word: string, matches: string[]): boolean => {
   );
 };
 
-export const findBestMatchingCategory = (description: string): CategoryMatch | null => {
+export const findBestMatchingCategory = async (description: string): Promise<CategoryMatch | null> => {
   if (!description) return null;
   
   const lowercaseDescription = description.toLowerCase();
   let bestMatch: CategoryMatch | null = null;
   let highestConfidence = 0;
   let matchedKeywords: string[] = [];
+
+  const categoryKeywords = await getKeywordsFromOptions();
 
   Object.entries(categoryKeywords).forEach(([categoryId, keywords]) => {
     let matchCount = 0;
