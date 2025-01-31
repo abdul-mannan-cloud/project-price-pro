@@ -32,9 +32,9 @@ export const QuestionManager = ({
 
   useEffect(() => {
     if (categoryData?.questions?.length > 0) {
-      const sortedQuestions = [...categoryData.questions].sort((a, b) => 
-        (a.order || 0) - (b.order || 0)
-      );
+      // Ensure all questions have a valid order number
+      const validQuestions = categoryData.questions.filter(q => typeof q.order === 'number');
+      const sortedQuestions = [...validQuestions].sort((a, b) => a.order! - b.order!);
 
       const questions = sortedQuestions.map(q => ({
         ...q,
@@ -42,7 +42,7 @@ export const QuestionManager = ({
         options: q.selections?.map((selection, index) => ({
           id: `${q.order}-${index}`,
           label: selection
-        })),
+        })) || [],
         is_branching: q.selections?.length === 2 && 
                      q.selections.includes('Yes') && 
                      q.selections.includes('No')
@@ -62,18 +62,21 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
+  const findNextQuestionIndex = (currentOrder: number): number => {
+    return questionSequence.findIndex(q => q.order === currentOrder);
+  };
+
   const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
     const currentQuestion = questionSequence[currentQuestionIndex];
     const selectedAnswer = selectedOptions[0];
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
     
-    console.log('Processing answer for question:', {
-      order: currentQuestion.order,
+    console.log('Processing answer:', {
+      currentOrder: currentQuestion.order,
       question: currentQuestion.question,
-      selectedAnswer,
-      is_branching: currentQuestion.is_branching,
-      next_question: currentQuestion.next_question,
-      next_if_no: currentQuestion.next_if_no
+      answer: selectedAnswer,
+      nextIfYes: currentQuestion.next_question,
+      nextIfNo: currentQuestion.next_if_no
     });
     
     setAnswers(updatedAnswers);
@@ -93,41 +96,30 @@ export const QuestionManager = ({
 
       if (error) throw error;
 
-      // Strict order-based navigation
+      let nextIndex = -1;
+
+      // Strict branching logic based on Yes/No answers
       if (currentQuestion.is_branching) {
-        if (selectedAnswer === "No" && currentQuestion.next_if_no) {
-          // Find exact question with next_if_no order
-          const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
-          console.log('NO path - Going to order:', currentQuestion.next_if_no);
-          
-          if (nextIndex !== -1) {
-            setCurrentQuestionIndex(nextIndex);
-          } else {
-            handleComplete();
-          }
-        } else if (selectedAnswer === "Yes" && currentQuestion.next_question) {
-          // Find exact question with next_question order
-          const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+        if (selectedAnswer === 'Yes' && currentQuestion.next_question) {
+          nextIndex = findNextQuestionIndex(currentQuestion.next_question);
           console.log('YES path - Going to order:', currentQuestion.next_question);
-          
-          if (nextIndex !== -1) {
-            setCurrentQuestionIndex(nextIndex);
-          } else {
-            handleComplete();
-          }
+        } else if (selectedAnswer === 'No' && currentQuestion.next_if_no) {
+          nextIndex = findNextQuestionIndex(currentQuestion.next_if_no);
+          console.log('NO path - Going to order:', currentQuestion.next_if_no);
         }
       } else if (currentQuestion.next_question) {
         // Non-branching questions always follow next_question
-        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+        nextIndex = findNextQuestionIndex(currentQuestion.next_question);
         console.log('Normal path - Going to order:', currentQuestion.next_question);
-        
-        if (nextIndex !== -1) {
-          setCurrentQuestionIndex(nextIndex);
-        } else {
-          handleComplete();
-        }
+      }
+
+      // Only proceed if we found a valid next question
+      if (nextIndex !== -1) {
+        setCurrentQuestionIndex(nextIndex);
       } else {
-        handleComplete();
+        // If no valid next question is found, we've reached the end
+        console.log('No more questions found, completing sequence');
+        await handleComplete();
       }
 
     } catch (error) {
@@ -204,13 +196,6 @@ export const QuestionManager = ({
     );
   }
 
-  const currentQuestion = questionSequence[currentQuestionIndex];
-  
-  if (!currentQuestion) {
-    console.log('No current question available');
-    return null;
-  }
-
   return (
     <QuestionCard
       question={currentQuestion}
@@ -218,7 +203,7 @@ export const QuestionManager = ({
       onSelect={handleAnswer}
       onNext={() => {
         if (currentQuestion.next_question) {
-          const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+          const nextIndex = findNextQuestionIndex(currentQuestion.next_question);
           if (nextIndex !== -1) {
             setCurrentQuestionIndex(nextIndex);
           } else {
