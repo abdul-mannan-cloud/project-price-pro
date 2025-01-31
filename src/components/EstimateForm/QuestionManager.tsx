@@ -33,14 +33,29 @@ export const QuestionManager = ({
   const logQuestionFlow = async (event: string, details: any) => {
     try {
       const currentQuestion = questionSequence[currentQuestionIndex];
-      console.log('Logging question flow:', {
+      
+      // Debug logging
+      console.log('Question Flow Event:', {
         event,
         currentQuestion,
         details,
         currentCategory,
-        answers
+        answers,
+        questionSequence
       });
-      
+
+      // Format answers for logging
+      const formattedAnswers = Object.entries(answers).reduce((acc, [qId, values]) => {
+        const question = questionSequence.find(q => q.id === qId);
+        if (question) {
+          acc[question.question] = values.map(v => {
+            const option = question.options?.find(opt => opt.id === v);
+            return option?.label || v;
+          });
+        }
+        return acc;
+      }, {} as Record<string, string[]>);
+
       await supabase.functions.invoke('log-question-flow', {
         body: {
           event,
@@ -54,25 +69,29 @@ export const QuestionManager = ({
                        currentQuestion?.selections[1] === 'No',
           multi_choice: currentQuestion?.multi_choice,
           category: currentCategory,
-          answers,
+          answers: formattedAnswers,
+          selectedOptions: details.selectedOptions,
+          selectedLabel: details.selectedLabel,
           ...details
         }
       });
 
       // Save answers to leads table after each question
-      const { error: leadError } = await supabase
-        .from('leads')
-        .upsert({
-          category: currentCategory,
-          answers,
-          project_title: `${currentCategory} Project`,
-          status: 'in_progress'
-        }, {
-          onConflict: 'category'
-        });
+      if (Object.keys(answers).length > 0) {
+        const { error: leadError } = await supabase
+          .from('leads')
+          .upsert({
+            category: currentCategory,
+            answers: formattedAnswers,
+            project_title: `${currentCategory} Project`,
+            status: 'in_progress'
+          }, {
+            onConflict: 'category'
+          });
 
-      if (leadError) {
-        console.error('Error saving answers to leads:', leadError);
+        if (leadError) {
+          console.error('Error saving answers to leads:', leadError);
+        }
       }
 
     } catch (error) {
@@ -85,7 +104,12 @@ export const QuestionManager = ({
       const sortedQuestions = [...categoryData.questions].sort((a, b) => (a.order || 0) - (b.order || 0));
       console.log('Initializing questions for category:', {
         category: currentCategory,
-        questions: sortedQuestions
+        questions: sortedQuestions.map(q => ({
+          order: q.order,
+          question: q.question,
+          next_question: q.next_question,
+          next_if_no: q.next_if_no
+        }))
       });
       
       setQuestionSequence(sortedQuestions);
@@ -118,12 +142,11 @@ export const QuestionManager = ({
       category: currentCategory
     });
 
-    // Handle Yes/No questions first
+    // For Yes/No questions, strictly follow the navigation rules
     if (isYesNoQuestion) {
       if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
-        // For "No" selections, strictly follow next_if_no
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
-        console.log('No selected - strictly navigating to next_if_no:', {
+        console.log('No selected - navigating to:', {
           currentOrder: currentQuestion.order,
           nextIfNo: currentQuestion.next_if_no,
           foundIndex: nextIndex
@@ -132,9 +155,8 @@ export const QuestionManager = ({
       }
       
       if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
-        // For "Yes" selections, follow next_question
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-        console.log('Yes selected - navigating to next_question:', {
+        console.log('Yes selected - navigating to:', {
           currentOrder: currentQuestion.order,
           nextQuestion: currentQuestion.next_question,
           foundIndex: nextIndex
@@ -143,10 +165,10 @@ export const QuestionManager = ({
       }
     }
 
-    // For non-Yes/No questions, strictly follow next_question if defined
+    // For non-Yes/No questions with explicit next_question
     if (typeof currentQuestion.next_question === 'number') {
       const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-      console.log('Following next_question for non-Yes/No:', {
+      console.log('Following explicit next_question:', {
         currentOrder: currentQuestion.order,
         nextQuestion: currentQuestion.next_question,
         foundIndex: nextIndex
@@ -160,7 +182,7 @@ export const QuestionManager = ({
       return -1;
     }
 
-    // Only use sequential navigation as a last resort
+    // Sequential navigation as fallback
     const nextOrder = currentQuestion.order + 1;
     const nextIndex = questionSequence.findIndex(q => q.order === nextOrder);
     console.log('Using sequential navigation:', {
@@ -173,46 +195,22 @@ export const QuestionManager = ({
 
   const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
     const currentQuestion = questionSequence[currentQuestionIndex];
-    await logQuestionFlow('answer_received', {
-      question: currentQuestion,
-      selectedOptions,
-      selectedLabel
-    });
     
+    console.log('Handling answer:', {
+      questionId,
+      selectedOptions,
+      selectedLabel,
+      currentQuestion
+    });
+
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
     setAnswers(updatedAnswers);
 
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .insert({
-          project_title: `${currentCategory} Project`,
-          category: currentCategory,
-          answers: updatedAnswers,
-          contractor_id: null,
-          user_name: '',
-          user_email: '',
-          user_phone: '',
-          status: 'new'
-        });
-
-      if (error) throw error;
-
-      // Never auto-advance, always wait for manual next click
-      await logQuestionFlow('selection_complete', {
-        question: currentQuestion,
-        selectedOptions,
-        selectedLabel
-      });
-
-    } catch (error) {
-      console.error('Error saving answer:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save your response. Please try again.",
-        variant: "destructive",
-      });
-    }
+    await logQuestionFlow('answer_received', {
+      selectedOptions,
+      selectedLabel,
+      currentAnswers: updatedAnswers
+    });
   };
 
   const handleComplete = async () => {
@@ -289,9 +287,7 @@ export const QuestionManager = ({
     <QuestionCard
       question={currentQuestion}
       selectedOptions={answers[currentQuestion.id || ''] || []}
-      onSelect={(questionId, selectedOptions, selectedLabel) => {
-        handleAnswer(questionId, selectedOptions, selectedLabel);
-      }}
+      onSelect={handleAnswer}
       onNext={async () => {
         const nextIndex = findNextQuestionIndex(
           currentQuestion, 
@@ -303,8 +299,7 @@ export const QuestionManager = ({
           selectedOptions: answers[currentQuestion.id || ''] || [],
           selectedLabel: answers[currentQuestion.id || '']?.[0] || '',
           nextQuestionIndex: nextIndex,
-          nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null,
-          navigationReason: 'manual_next'
+          nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null
         });
 
         if (nextIndex !== -1) {
