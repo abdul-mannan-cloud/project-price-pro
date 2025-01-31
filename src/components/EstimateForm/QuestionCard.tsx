@@ -53,7 +53,6 @@ export const QuestionCard = ({
       ? selectedOptions.filter(id => id !== optionId)
       : [...selectedOptions, optionId];
     
-    // Get all selected labels
     const selectedLabels = question.options?.filter(opt => 
       newSelection.includes(opt.id || '')
     ).map(opt => opt.label).join(', ');
@@ -201,6 +200,11 @@ export const QuestionCard = ({
           <h2 className="text-xl font-bold text-gray-900">
             {question.question}
           </h2>
+          {question.order && (
+            <span className="text-sm text-gray-500">
+              (Order: {question.order})
+            </span>
+          )}
         </div>
         
         <div className="p-6">

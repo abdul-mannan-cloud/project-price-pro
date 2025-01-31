@@ -54,7 +54,6 @@ export const QuestionManager = ({
     setAnswers(updatedAnswers);
 
     try {
-      // Save answer to database
       const { error } = await supabase
         .from('leads')
         .insert({
@@ -69,7 +68,6 @@ export const QuestionManager = ({
 
       if (error) throw error;
 
-      // Find next question based on selected label
       const nextIndex = findNextQuestionIndex(questionSequence, currentQuestion, selectedLabel);
       console.log('Next question index:', nextIndex);
 
