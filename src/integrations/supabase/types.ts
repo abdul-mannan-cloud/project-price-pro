@@ -164,7 +164,7 @@ export type Database = {
           "Fence Installation": Json | null
           "Flooring Installation": Json | null
           "Key Options": string
-          "Kitchen Remodel": Json | null
+          "Kitchen Remodel 2": Json | null
           Landscaping: Json | null
           "Major Renovation": Json | null
           "Mold remediation": Json | null
@@ -185,7 +185,7 @@ export type Database = {
           "Fence Installation"?: Json | null
           "Flooring Installation"?: Json | null
           "Key Options"?: string
-          "Kitchen Remodel"?: Json | null
+          "Kitchen Remodel 2"?: Json | null
           Landscaping?: Json | null
           "Major Renovation"?: Json | null
           "Mold remediation"?: Json | null
@@ -206,7 +206,7 @@ export type Database = {
           "Fence Installation"?: Json | null
           "Flooring Installation"?: Json | null
           "Key Options"?: string
-          "Kitchen Remodel"?: Json | null
+          "Kitchen Remodel 2"?: Json | null
           Landscaping?: Json | null
           "Major Renovation"?: Json | null
           "Mold remediation"?: Json | null
