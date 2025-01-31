@@ -46,28 +46,22 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
+  const findNextQuestionByText = (questionText: string): number => {
+    return categoryData.questions.findIndex(q => q.question === questionText);
+  };
+
   const getNextQuestions = (currentIndex: number, answer: string): Question[] => {
     if (!categoryData.questions) return [];
 
     const currentQuestion = categoryData.questions[currentIndex];
     
     // If this is a branching question and the answer is "No",
-    // skip questions until the next branching question
-    if (currentQuestion.is_branching && answer === "No") {
-      let nextIndex = currentIndex + 1;
-      
-      // Skip all related questions until we find the next branching question
-      while (nextIndex < categoryData.questions.length) {
-        const nextQuestion = categoryData.questions[nextIndex];
-        // If we find a branching question, return it
-        if (nextQuestion.is_branching) {
-          return [nextQuestion];
-        }
-        // If we're still in the related questions section, keep skipping
-        nextIndex++;
+    // jump to the specified next question
+    if (currentQuestion.is_branching && answer === "No" && currentQuestion.next_if_no) {
+      const nextIndex = findNextQuestionByText(currentQuestion.next_if_no);
+      if (nextIndex !== -1) {
+        return [categoryData.questions[nextIndex]];
       }
-      
-      // If no more branching questions found, we're done
       return [];
     }
 
@@ -86,7 +80,7 @@ export const QuestionManager = ({
     setAnswers(prev => ({ ...prev, [questionId]: selectedOptions }));
 
     const currentQuestion = questionSequence[currentQuestionIndex];
-    const selectedAnswer = selectedOptions[0]; // Get the first selected option
+    const selectedAnswer = selectedOptions[0];
 
     // Get the next questions based on the answer
     const nextQuestions = getNextQuestions(currentQuestionIndex, selectedAnswer);

@@ -11,6 +11,7 @@ export interface Question {
   selections?: (QuestionOption | string)[];
   multi_choice: boolean;
   is_branching?: boolean;
+  next_if_no?: string;
   depends_on?: string;
   sub_questions?: {
     [key: string]: Question[];
