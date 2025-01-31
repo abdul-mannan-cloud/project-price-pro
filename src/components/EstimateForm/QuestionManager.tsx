@@ -36,7 +36,9 @@ export const QuestionManager = ({
       console.log('Logging question flow:', {
         event,
         currentQuestion,
-        details
+        details,
+        currentCategory,
+        answers
       });
       
       await supabase.functions.invoke('log-question-flow', {
@@ -51,10 +53,28 @@ export const QuestionManager = ({
                        currentQuestion?.selections[0] === 'Yes' && 
                        currentQuestion?.selections[1] === 'No',
           multi_choice: currentQuestion?.multi_choice,
-          ...details,
-          currentCategory
+          category: currentCategory,
+          answers,
+          ...details
         }
       });
+
+      // Save answers to leads table after each question
+      const { error: leadError } = await supabase
+        .from('leads')
+        .upsert({
+          category: currentCategory,
+          answers,
+          project_title: `${currentCategory} Project`,
+          status: 'in_progress'
+        }, {
+          onConflict: 'category'
+        });
+
+      if (leadError) {
+        console.error('Error saving answers to leads:', leadError);
+      }
+
     } catch (error) {
       console.error('Error logging question flow:', error);
     }
@@ -63,7 +83,11 @@ export const QuestionManager = ({
   useEffect(() => {
     if (categoryData?.questions?.length > 0) {
       const sortedQuestions = [...categoryData.questions].sort((a, b) => (a.order || 0) - (b.order || 0));
-      console.log('Sorted questions:', sortedQuestions);
+      console.log('Initializing questions for category:', {
+        category: currentCategory,
+        questions: sortedQuestions
+      });
+      
       setQuestionSequence(sortedQuestions);
       setCurrentQuestionIndex(0);
       setAnswers({});
@@ -71,11 +95,12 @@ export const QuestionManager = ({
       
       const firstQuestion = sortedQuestions[0];
       logQuestionFlow('sequence_initialized', {
+        category: currentCategory,
         nextQuestionOrder: firstQuestion?.order,
         nextQuestionText: firstQuestion?.question
       });
     }
-  }, [categoryData]);
+  }, [categoryData, currentCategory]);
 
   const findNextQuestionIndex = (currentQuestion: Question, selectedLabel: string): number => {
     if (!currentQuestion) return -1;
@@ -89,7 +114,8 @@ export const QuestionManager = ({
       selectedLabel,
       nextQuestion: currentQuestion.next_question,
       nextIfNo: currentQuestion.next_if_no,
-      isYesNo: isYesNoQuestion
+      isYesNo: isYesNoQuestion,
+      category: currentCategory
     });
 
     // Handle Yes/No questions first
