@@ -33,7 +33,6 @@ export const QuestionManager = ({
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
     if (categoryData?.questions?.length > 0) {
-      // Start with just the first question
       setQuestionSequence([categoryData.questions[0]]);
       setCurrentQuestionIndex(0);
       setAnswers({});
@@ -53,25 +52,26 @@ export const QuestionManager = ({
     const currentQuestion = categoryData.questions[currentIndex];
     
     // If this is a branching question and the answer is "No",
-    // skip the related questions until we find the next branching question
+    // skip questions until the next branching question
     if (currentQuestion.is_branching && answer === "No") {
       let nextIndex = currentIndex + 1;
       
-      // Skip questions until we find the next branching question or reach the end
+      // Skip all related questions until we find the next branching question
       while (nextIndex < categoryData.questions.length) {
         const nextQuestion = categoryData.questions[nextIndex];
+        // If we find a branching question, return it
         if (nextQuestion.is_branching) {
           return [nextQuestion];
         }
+        // If we're still in the related questions section, keep skipping
         nextIndex++;
       }
       
-      // If no more branching questions found, return empty array
+      // If no more branching questions found, we're done
       return [];
     }
 
-    // If this is a branching question and the answer is "Yes",
-    // or if it's not a branching question, return the next question
+    // For "Yes" answers or non-branching questions, return the next question
     const nextIndex = currentIndex + 1;
     if (nextIndex < categoryData.questions.length) {
       return [categoryData.questions[nextIndex]];
