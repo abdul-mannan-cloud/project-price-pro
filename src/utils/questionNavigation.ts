@@ -25,37 +25,38 @@ export const findNextQuestionIndex = (
                          currentQuestion.selections[1] === 'No';
 
   if (isYesNoQuestion) {
-    // Handle Yes selection
-    if (selectedLabel === 'Yes') {
-      if (typeof currentQuestion.next_question === 'number') {
-        const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-        console.log('Yes selected, navigating to:', {
-          nextQuestionOrder: currentQuestion.next_question,
-          foundIndex: nextIndex
-        });
-        return nextIndex;
-      }
+    console.log('Processing Yes/No question navigation');
+    
+    // Handle Yes selection - go to next_question if defined
+    if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
+      const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
+      console.log('Yes selected, navigating to:', {
+        nextQuestionOrder: currentQuestion.next_question,
+        foundIndex: nextIndex
+      });
+      return nextIndex;
     }
-    // Handle No selection
-    else if (selectedLabel === 'No') {
-      if (typeof currentQuestion.next_if_no === 'number') {
-        const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
-        console.log('No selected, navigating to:', {
-          nextQuestionOrder: currentQuestion.next_if_no,
-          foundIndex: nextIndex
-        });
-        return nextIndex;
-      }
+    
+    // Handle No selection - go to next_if_no if defined
+    if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
+      const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
+      console.log('No selected, navigating to:', {
+        nextQuestionOrder: currentQuestion.next_if_no,
+        foundIndex: nextIndex
+      });
+      return nextIndex;
     }
-  }
-  // Handle non-Yes/No questions with explicit next_question
-  else if (typeof currentQuestion.next_question === 'number') {
-    const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-    console.log('Following explicit next_question:', {
-      nextQuestionOrder: currentQuestion.next_question,
-      foundIndex: nextIndex
-    });
-    return nextIndex;
+  } else {
+    console.log('Processing non-Yes/No question navigation');
+    // For non-Yes/No questions with explicit next_question
+    if (typeof currentQuestion.next_question === 'number') {
+      const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
+      console.log('Following explicit next_question:', {
+        nextQuestionOrder: currentQuestion.next_question,
+        foundIndex: nextIndex
+      });
+      return nextIndex;
+    }
   }
 
   // Default to sequential navigation if no specific navigation is defined
