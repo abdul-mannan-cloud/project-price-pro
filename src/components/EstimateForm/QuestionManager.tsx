@@ -196,13 +196,15 @@ export const QuestionManager = ({
     );
   }
 
+  const currentQuestion = questionSequence[currentQuestionIndex];
+
   return (
     <QuestionCard
       question={currentQuestion}
-      selectedOptions={answers[currentQuestion.id || ''] || []}
+      selectedOptions={answers[currentQuestion?.id || ''] || []}
       onSelect={handleAnswer}
       onNext={() => {
-        if (currentQuestion.next_question) {
+        if (currentQuestion?.next_question) {
           const nextIndex = findNextQuestionIndex(currentQuestion.next_question);
           if (nextIndex !== -1) {
             setCurrentQuestionIndex(nextIndex);
@@ -213,7 +215,7 @@ export const QuestionManager = ({
           handleComplete();
         }
       }}
-      isLastQuestion={!currentQuestion.next_question}
+      isLastQuestion={!currentQuestion?.next_question}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />
