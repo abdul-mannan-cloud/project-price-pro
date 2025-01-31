@@ -85,17 +85,18 @@ export const QuestionManager = ({
 
       if (error) throw error;
 
-      // Handle branching logic
+      // Handle branching logic for Yes/No questions
       if (currentQuestion.is_branching && selectedAnswer === "No" && currentQuestion.next_if_no) {
         // Find the index of the question with order = next_if_no
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
         if (nextIndex !== -1) {
           setCurrentQuestionIndex(nextIndex);
-        } else {
-          handleComplete();
+          return; // Exit early since we've handled the branching
         }
-      } else if (currentQuestion.next_question) {
-        // Find the index of the next question by order
+      }
+
+      // Handle normal question progression
+      if (currentQuestion.next_question) {
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
         if (nextIndex !== -1) {
           setCurrentQuestionIndex(nextIndex);
