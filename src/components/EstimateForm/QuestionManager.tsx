@@ -130,16 +130,20 @@ export const QuestionManager = ({
     const nextOrder = (currentQuestion.order || 0) + 1;
     const nextIndex = questionSequence.findIndex(q => q.order === nextOrder);
     logQuestionFlow('sequential_navigation', {
-      currentOrder: currentQuestion.order,
-      nextOrder,
-      nextQuestionIndex: nextIndex
+        currentOrder: currentQuestion.order,
+        nextOrder,
+        nextQuestionIndex: nextIndex
     });
     return nextIndex;
   };
 
   const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
-    const question = questionSequence[currentQuestionIndex];
-    await logQuestionFlow('answer_received', question, selectedOptions, selectedLabel);
+    const currentQuestion = questionSequence[currentQuestionIndex];
+    await logQuestionFlow('answer_received', {
+      question: currentQuestion,
+      selectedOptions,
+      selectedLabel
+    });
     
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
     setAnswers(updatedAnswers);
@@ -161,7 +165,11 @@ export const QuestionManager = ({
       if (error) throw error;
 
       // Never auto-advance, always wait for manual next click
-      await logQuestionFlow('selection_complete', question, selectedOptions, selectedLabel);
+      await logQuestionFlow('selection_complete', {
+        question: currentQuestion,
+        selectedOptions,
+        selectedLabel
+      });
 
     } catch (error) {
       console.error('Error saving answer:', error);
