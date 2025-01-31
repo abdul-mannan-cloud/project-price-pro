@@ -79,6 +79,7 @@ export const QuestionManager = ({
       if (error) throw error;
 
       const nextIndex = findNextQuestionIndex(questionSequence, currentQuestion, selectedAnswer);
+      console.log('Next question index:', nextIndex);
 
       if (nextIndex !== -1) {
         setCurrentQuestionIndex(nextIndex);
