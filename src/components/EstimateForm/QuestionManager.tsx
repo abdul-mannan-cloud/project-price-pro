@@ -78,6 +78,7 @@ export const QuestionManager = ({
 
       if (error) throw error;
 
+      // Find next question index
       const nextIndex = findNextQuestionIndex(questionSequence, currentQuestion, selectedAnswer);
       console.log('Next question index:', nextIndex);
 
