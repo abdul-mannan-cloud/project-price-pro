@@ -5,6 +5,7 @@ import { LoadingScreen } from "./LoadingScreen";
 import { Question, CategoryQuestions, Category } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { findNextQuestionIndex, initializeQuestions } from "@/utils/questionNavigation";
 
 interface QuestionManagerProps {
   categoryData: CategoryQuestions;
@@ -32,21 +33,7 @@ export const QuestionManager = ({
 
   useEffect(() => {
     if (categoryData?.questions?.length > 0) {
-      const validQuestions = categoryData.questions.filter(q => typeof q.order === 'number');
-      const sortedQuestions = [...validQuestions].sort((a, b) => (a.order || 0) - (b.order || 0));
-
-      const questions = sortedQuestions.map(q => ({
-        ...q,
-        id: `q-${q.order}`,
-        options: q.selections?.map((selection, index) => ({
-          id: `${q.order}-${index}`,
-          label: selection
-        })) || [],
-        is_branching: q.selections?.length === 2 && 
-                     q.selections.includes('Yes') && 
-                     q.selections.includes('No')
-      }));
-
+      const questions = initializeQuestions(categoryData.questions);
       console.log('Initialized questions:', questions);
       setQuestionSequence(questions);
       setCurrentQuestionIndex(0);
@@ -60,11 +47,6 @@ export const QuestionManager = ({
       });
     }
   }, [categoryData]);
-
-  const findNextQuestionIndex = (order: number): number => {
-    console.log('Finding next question with order:', order);
-    return questionSequence.findIndex(q => q.order === order);
-  };
 
   const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
     const currentQuestion = questionSequence[currentQuestionIndex];
@@ -96,33 +78,11 @@ export const QuestionManager = ({
 
       if (error) throw error;
 
-      let nextIndex = -1;
+      const nextIndex = findNextQuestionIndex(questionSequence, currentQuestion, selectedAnswer);
 
-      // Strict branching logic for Yes/No questions
-      if (currentQuestion.is_branching) {
-        if (selectedAnswer === 'Yes' && currentQuestion.next_question) {
-          nextIndex = findNextQuestionIndex(currentQuestion.next_question);
-          console.log('YES path - Going to order:', currentQuestion.next_question);
-        } else if (selectedAnswer === 'No' && currentQuestion.next_if_no) {
-          nextIndex = findNextQuestionIndex(currentQuestion.next_if_no);
-          console.log('NO path - Going to order:', currentQuestion.next_if_no);
-        }
-      } else if (currentQuestion.next_question) {
-        // Non-branching questions follow next_question
-        nextIndex = findNextQuestionIndex(currentQuestion.next_question);
-        console.log('Normal path - Going to order:', currentQuestion.next_question);
-      } else {
-        // If no next_question is specified, try to find the next sequential order
-        const nextOrder = (currentQuestion.order || 0) + 1;
-        nextIndex = findNextQuestionIndex(nextOrder);
-        console.log('Sequential path - Looking for order:', nextOrder);
-      }
-
-      // Only proceed if we found a valid next question
       if (nextIndex !== -1) {
         setCurrentQuestionIndex(nextIndex);
       } else {
-        // If no valid next question is found, we've reached the end
         console.log('No more questions found, completing sequence');
         await handleComplete();
       }
@@ -213,21 +173,11 @@ export const QuestionManager = ({
       selectedOptions={answers[currentQuestion.id] || []}
       onSelect={handleAnswer}
       onNext={() => {
-        let nextIndex = -1;
-        
-        if (currentQuestion.is_branching) {
-          const selectedAnswer = answers[currentQuestion.id]?.[0];
-          if (selectedAnswer === 'Yes' && currentQuestion.next_question) {
-            nextIndex = findNextQuestionIndex(currentQuestion.next_question);
-          } else if (selectedAnswer === 'No' && currentQuestion.next_if_no) {
-            nextIndex = findNextQuestionIndex(currentQuestion.next_if_no);
-          }
-        } else if (currentQuestion.next_question) {
-          nextIndex = findNextQuestionIndex(currentQuestion.next_question);
-        } else {
-          const nextOrder = (currentQuestion.order || 0) + 1;
-          nextIndex = findNextQuestionIndex(nextOrder);
-        }
+        const nextIndex = findNextQuestionIndex(
+          questionSequence,
+          currentQuestion,
+          answers[currentQuestion.id]?.[0]
+        );
 
         if (nextIndex !== -1) {
           setCurrentQuestionIndex(nextIndex);
@@ -236,7 +186,7 @@ export const QuestionManager = ({
         }
       }}
       isLastQuestion={!currentQuestion.next_question && 
-        findNextQuestionIndex((currentQuestion.order || 0) + 1) === -1}
+        findNextQuestionIndex(questionSequence, currentQuestion, answers[currentQuestion.id]?.[0]) === -1}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />
