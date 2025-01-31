@@ -57,6 +57,7 @@ export const QuestionManager = ({
       const { error } = await supabase
         .from('leads')
         .insert({
+          project_title: `${currentCategory} Project`,
           category: currentCategory,
           answers: updatedAnswers,
           contractor_id: null,
@@ -112,7 +113,10 @@ export const QuestionManager = ({
       
       const { error: updateError } = await supabase
         .from('leads')
-        .update({ estimate_data: data })
+        .update({ 
+          estimate_data: data,
+          estimated_cost: data.totalCost
+        })
         .eq('category', currentCategory)
         .is('user_email', null);
 

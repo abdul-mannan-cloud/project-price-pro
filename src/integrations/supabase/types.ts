@@ -44,7 +44,7 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "contractors"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       contractors: {
@@ -56,9 +56,7 @@ export type Database = {
           contact_phone: string | null
           created_at: string | null
           id: string
-          subscription_status:
-            | Database["public"]["Enums"]["subscription_status"]
-            | null
+          subscription_status: Database["public"]["Enums"]["subscription_status"] | null
           updated_at: string | null
         }
         Insert: {
@@ -69,9 +67,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string | null
           id: string
-          subscription_status?:
-            | Database["public"]["Enums"]["subscription_status"]
-            | null
+          subscription_status?: Database["public"]["Enums"]["subscription_status"] | null
           updated_at?: string | null
         }
         Update: {
@@ -82,131 +78,72 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string | null
           id?: string
-          subscription_status?:
-            | Database["public"]["Enums"]["subscription_status"]
-            | null
+          subscription_status?: Database["public"]["Enums"]["subscription_status"] | null
           updated_at?: string | null
         }
         Relationships: []
       }
       leads: {
         Row: {
-          contractor_id: string | null
-          created_at: string | null
-          customer_email: string
-          customer_name: string | null
-          customer_phone: string | null
           id: string
-          project_address: string | null
-          project_description: string | null
+          contractor_id: string | null
+          category: string | null
+          answers: Json | null
+          estimate_data: Json | null
           project_title: string
+          project_description: string | null
+          project_address: string | null
+          user_name: string | null
+          user_email: string | null
+          user_phone: string | null
+          estimated_cost: number | null
           status: string | null
-          total_cost: number | null
+          created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          contractor_id?: string | null
-          created_at?: string | null
-          customer_email: string
-          customer_name?: string | null
-          customer_phone?: string | null
           id?: string
-          project_address?: string | null
-          project_description?: string | null
+          contractor_id?: string | null
+          category?: string | null
+          answers?: Json | null
+          estimate_data?: Json | null
           project_title: string
+          project_description?: string | null
+          project_address?: string | null
+          user_name?: string | null
+          user_email?: string | null
+          user_phone?: string | null
+          estimated_cost?: number | null
           status?: string | null
-          total_cost?: number | null
+          created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          contractor_id?: string | null
-          created_at?: string | null
-          customer_email?: string
-          customer_name?: string | null
-          customer_phone?: string | null
           id?: string
-          project_address?: string | null
-          project_description?: string | null
+          contractor_id?: string | null
+          category?: string | null
+          answers?: Json | null
+          estimate_data?: Json | null
           project_title?: string
+          project_description?: string | null
+          project_address?: string | null
+          user_name?: string | null
+          user_email?: string | null
+          user_phone?: string | null
+          estimated_cost?: number | null
           status?: string | null
-          total_cost?: number | null
+          created_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "estimates_contractor_id_fkey"
+            foreignKeyName: "leads_contractor_id_fkey"
             columns: ["contractor_id"]
             isOneToOne: false
             referencedRelation: "contractors"
             referencedColumns: ["id"]
-          },
+          }
         ]
-      }
-      Options: {
-        Row: {
-          Appliances: Json | null
-          Carpenter: Json | null
-          Concrete: Json | null
-          "Deck & porch": Json | null
-          Demolition: Json | null
-          "Door & Window": Json | null
-          Drywall: Json | null
-          Electrician: Json | null
-          "Fence Installation": Json | null
-          "Flooring Installation": Json | null
-          "Key Options": string
-          "Kitchen Remodel": Json | null
-          Landscaping: Json | null
-          "Major Renovation": Json | null
-          "Mold remediation": Json | null
-          Moving: Json | null
-          Painting: Json | null
-          Plumber: Json | null
-          Repairs: Json | null
-        }
-        Insert: {
-          Appliances?: Json | null
-          Carpenter?: Json | null
-          Concrete?: Json | null
-          "Deck & porch"?: Json | null
-          Demolition?: Json | null
-          "Door & Window"?: Json | null
-          Drywall?: Json | null
-          Electrician?: Json | null
-          "Fence Installation"?: Json | null
-          "Flooring Installation"?: Json | null
-          "Key Options"?: string
-          "Kitchen Remodel"?: Json | null
-          Landscaping?: Json | null
-          "Major Renovation"?: Json | null
-          "Mold remediation"?: Json | null
-          Moving?: Json | null
-          Painting?: Json | null
-          Plumber?: Json | null
-          Repairs?: Json | null
-        }
-        Update: {
-          Appliances?: Json | null
-          Carpenter?: Json | null
-          Concrete?: Json | null
-          "Deck & porch"?: Json | null
-          Demolition?: Json | null
-          "Door & Window"?: Json | null
-          Drywall?: Json | null
-          Electrician?: Json | null
-          "Fence Installation"?: Json | null
-          "Flooring Installation"?: Json | null
-          "Key Options"?: string
-          "Kitchen Remodel"?: Json | null
-          Landscaping?: Json | null
-          "Major Renovation"?: Json | null
-          "Mold remediation"?: Json | null
-          Moving?: Json | null
-          Painting?: Json | null
-          Plumber?: Json | null
-          Repairs?: Json | null
-        }
-        Relationships: []
       }
     }
     Views: {
@@ -216,8 +153,6 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      question_template_type: "single_choice" | "multi_choice"
-      question_type: "multiple_choice" | "multi_select" | "yes_no"
       subscription_status: "active" | "inactive" | "trial"
     }
     CompositeTypes: {

@@ -327,18 +327,20 @@ const EstimatePage = () => {
         throw new Error("No contractor ID provided");
       }
 
-      // Create a new lead instead of an estimate
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert({
           contractor_id: contractorId,
+          project_title: `${selectedCategory || ''} Project`,
           user_name: contactData.fullName,
           user_email: contactData.email,
           user_phone: contactData.phone,
           project_address: contactData.address,
           category: selectedCategory || '',
           answers: answers,
-          estimate_data: estimate
+          estimate_data: estimate,
+          estimated_cost: estimate?.totalCost || 0,
+          status: 'new'
         })
         .select()
         .single();
