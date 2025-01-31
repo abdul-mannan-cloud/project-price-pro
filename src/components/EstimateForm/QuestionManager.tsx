@@ -61,13 +61,10 @@ export const QuestionManager = ({
       currentOrder: currentQuestion.order,
       selectedLabel,
       next_if_no: currentQuestion.next_if_no,
-      next_question: currentQuestion.next_question,
-      isYesNo: currentQuestion.selections?.length === 2 && 
-               currentQuestion.selections[0] === 'Yes' && 
-               currentQuestion.selections[1] === 'No'
+      next_question: currentQuestion.next_question
     });
 
-    // For Yes/No questions
+    // For Yes/No questions with branching logic
     if (currentQuestion.selections?.length === 2 && 
         currentQuestion.selections[0] === 'Yes' && 
         currentQuestion.selections[1] === 'No') {
@@ -91,7 +88,7 @@ export const QuestionManager = ({
       }
     }
 
-    // For non-Yes/No questions
+    // For non-Yes/No questions with next_question defined
     if (typeof currentQuestion.next_question === 'number') {
       console.log(`Following next_question to order ${currentQuestion.next_question}`);
       const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
@@ -99,10 +96,11 @@ export const QuestionManager = ({
       return nextIndex;
     }
 
-    // If no specific navigation is defined, try to go to the next sequential question
-    const nextSequentialIndex = currentQuestionIndex + 1;
-    console.log('Next sequential index:', nextSequentialIndex);
-    return nextSequentialIndex < questionSequence.length ? nextSequentialIndex : -1;
+    // If no specific navigation is defined, go to the next sequential question
+    const nextOrder = currentQuestion.order + 1;
+    const nextIndex = questionSequence.findIndex(q => q.order === nextOrder);
+    console.log('Next sequential order:', nextOrder, 'Found index:', nextIndex);
+    return nextIndex;
   };
 
   const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
