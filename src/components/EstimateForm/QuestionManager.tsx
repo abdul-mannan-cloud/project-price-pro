@@ -29,6 +29,7 @@ export const QuestionManager = ({
   const [showAdditionalServices, setShowAdditionalServices] = useState(false);
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentLabel, setCurrentLabel] = useState<string>('');
 
   useEffect(() => {
     if (categoryData?.questions?.length > 0) {
@@ -65,7 +66,6 @@ export const QuestionManager = ({
         currentQuestion.selections[0] === 'Yes' && 
         currentQuestion.selections[1] === 'No') {
       
-      // Explicitly check for "No" selection first
       if (selectedLabel === 'No') {
         if (typeof currentQuestion.next_if_no === 'number') {
           console.log(`No selected - going to order ${currentQuestion.next_if_no}`);
@@ -75,9 +75,7 @@ export const QuestionManager = ({
           }
           return nextIndex;
         }
-      } 
-      // Then handle "Yes" selection
-      else if (selectedLabel === 'Yes') {
+      } else if (selectedLabel === 'Yes') {
         if (typeof currentQuestion.next_question === 'number') {
           console.log(`Yes selected - going to order ${currentQuestion.next_question}`);
           const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
@@ -89,7 +87,7 @@ export const QuestionManager = ({
       }
     }
 
-    // For non-Yes/No questions, use next_question
+    // For non-Yes/No questions
     if (typeof currentQuestion.next_question === 'number') {
       console.log(`Following next_question to order ${currentQuestion.next_question}`);
       const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
@@ -114,6 +112,7 @@ export const QuestionManager = ({
       currentQuestion 
     });
 
+    setCurrentLabel(selectedLabel);
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
     setAnswers(updatedAnswers);
 
@@ -235,9 +234,8 @@ export const QuestionManager = ({
         handleAnswer(questionId, selectedOptions, selectedLabel);
       }}
       onNext={() => {
-        const selectedLabel = answers[currentQuestion.id]?.[0] || '';
-        const nextIndex = findNextQuestionIndex(currentQuestion, selectedLabel);
-        console.log('Manual next:', { currentQuestion, selectedLabel, nextIndex });
+        const nextIndex = findNextQuestionIndex(currentQuestion, currentLabel);
+        console.log('Manual next:', { currentQuestion, selectedLabel: currentLabel, nextIndex });
 
         if (nextIndex !== -1) {
           setCurrentQuestionIndex(nextIndex);
@@ -246,7 +244,7 @@ export const QuestionManager = ({
         }
       }}
       isLastQuestion={!currentQuestion.next_question && 
-        findNextQuestionIndex(currentQuestion, answers[currentQuestion.id]?.[0] || '') === -1}
+        findNextQuestionIndex(currentQuestion, currentLabel) === -1}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />
