@@ -265,6 +265,42 @@ const EstimatePage = () => {
       if (match) {
         console.log('Found matching category:', match);
         setSelectedCategory(match.categoryId);
+        
+        // Fetch and log the full question data
+        const { data: optionsData, error: optionsError } = await supabase
+          .from('Options')
+          .select('*')
+          .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+          .single();
+
+        if (optionsError) {
+          console.error('Error fetching options:', optionsError);
+          throw optionsError;
+        }
+
+        const categoryData = optionsData[match.categoryId];
+        if (!categoryData || !Array.isArray(categoryData.questions)) {
+          console.error('Invalid questions format:', categoryData);
+          throw new Error('Invalid questions format');
+        }
+
+        // Log the full question data for debugging
+        console.log('Loaded questions for category:', {
+          category: match.categoryId,
+          questions: categoryData.questions.map(q => ({
+            id: q.id,
+            order: q.order,
+            question: q.question,
+            selections: q.selections,
+            multi_choice: q.multi_choice,
+            next_question: q.next_question,
+            next_if_no: q.next_if_no,
+            is_branching: q.selections?.length === 2 && 
+                         q.selections[0] === 'Yes' && 
+                         q.selections[1] === 'No'
+          }))
+        });
+
         setCurrentQuestionIndex(0);
         setAnswers({});
         await loadCategoryQuestions();
