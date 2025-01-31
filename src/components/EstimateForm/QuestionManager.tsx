@@ -49,21 +49,29 @@ export const QuestionManager = ({
 
   const findNextQuestionIndex = (currentQuestion: Question, selectedLabel: string): number => {
     if (!currentQuestion) return -1;
-    console.log('Finding next question for:', { currentQuestion, selectedLabel });
+    console.log('Finding next question for:', { 
+      currentQuestion, 
+      selectedLabel,
+      isYesNo: currentQuestion.selections?.length === 2 && 
+               currentQuestion.selections[0] === 'Yes' && 
+               currentQuestion.selections[1] === 'No'
+    });
 
     // For Yes/No questions
     if (currentQuestion.selections?.length === 2 && 
         currentQuestion.selections[0] === 'Yes' && 
         currentQuestion.selections[1] === 'No') {
       
+      // Check for No first to prioritize next_if_no
       if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
-        console.log('No path:', currentQuestion.next_if_no);
+        console.log('Following No path to:', currentQuestion.next_if_no);
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
         console.log('Found next index for No:', nextIndex);
         return nextIndex;
       } 
+      // Then check for Yes path
       else if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
-        console.log('Yes path:', currentQuestion.next_question);
+        console.log('Following Yes path to:', currentQuestion.next_question);
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
         console.log('Found next index for Yes:', nextIndex);
         return nextIndex;
