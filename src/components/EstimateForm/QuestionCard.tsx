@@ -52,7 +52,13 @@ export const QuestionCard = ({
     const newSelection = selectedOptions.includes(optionId)
       ? selectedOptions.filter(id => id !== optionId)
       : [...selectedOptions, optionId];
-    onSelect(question.id || '', newSelection, label);
+    
+    // Get all selected labels
+    const selectedLabels = question.options?.filter(opt => 
+      newSelection.includes(opt.id || '')
+    ).map(opt => opt.label).join(', ');
+    
+    onSelect(question.id || '', newSelection, selectedLabels);
   };
 
   const renderOptions = () => {
@@ -129,7 +135,12 @@ export const QuestionCard = ({
                 : "border-gray-200",
               pressedOption === option.id && "scale-[0.98]"
             )}
-            onClick={() => handleSingleOptionSelect(option.id || '', option.label)}
+            onClick={() => {
+              const opt = options.find(o => o.id === option.id);
+              if (opt) {
+                handleSingleOptionSelect(option.id || '', opt.label);
+              }
+            }}
           >
             <div className="flex items-center space-x-4">
               <RadioGroupItem 

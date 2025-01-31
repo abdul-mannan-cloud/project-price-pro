@@ -4,18 +4,18 @@ import { toast } from "@/hooks/use-toast";
 export const findNextQuestionIndex = (
   questions: Question[],
   currentQuestion: Question,
-  selectedAnswer: string | undefined
+  selectedLabel: string | undefined
 ): number => {
   console.log('Navigation params:', {
     currentOrder: currentQuestion.order,
-    selectedAnswer,
+    selectedLabel,
     nextIfYes: currentQuestion.next_question,
     nextIfNo: currentQuestion.next_if_no,
     selections: currentQuestion.selections
   });
 
   // Validate that we have a selected answer
-  if (!selectedAnswer) {
+  if (!selectedLabel) {
     toast({
       title: "Navigation Error",
       description: "No answer selected for current question",
@@ -30,8 +30,8 @@ export const findNextQuestionIndex = (
       currentQuestion.selections[0] === 'Yes' && 
       currentQuestion.selections[1] === 'No') {
     
-    // For Yes answers, validate and go to next_question
-    if (selectedAnswer === 'Yes') {
+    // For Yes answers
+    if (selectedLabel === 'Yes') {
       if (currentQuestion.next_question === undefined) {
         toast({
           title: "Navigation Error",
@@ -53,8 +53,8 @@ export const findNextQuestionIndex = (
       return nextIndex;
     }
     
-    // For No answers, validate and go to next_if_no
-    if (selectedAnswer === 'No') {
+    // For No answers
+    if (selectedLabel === 'No') {
       if (currentQuestion.next_if_no === undefined) {
         toast({
           title: "Navigation Error",
