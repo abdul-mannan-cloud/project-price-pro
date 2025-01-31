@@ -30,6 +30,10 @@ export const QuestionManager = ({
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const findNextQuestionByOrder = (order: number): number => {
+    return questionSequence.findIndex(q => q.order === order);
+  };
+
   const logQuestionFlow = async (event: string, details: any) => {
     try {
       const currentQuestion = questionSequence[currentQuestionIndex];
@@ -47,7 +51,6 @@ export const QuestionManager = ({
         multi_choice: currentQuestion?.multi_choice
       });
 
-      // Format answers for logging
       const formattedAnswers = Object.entries(answers).reduce((acc, [qId, values]) => {
         const question = questionSequence.find(q => q.id === qId);
         if (question) {
@@ -104,63 +107,6 @@ export const QuestionManager = ({
     }
   }, [categoryData, currentCategory]);
 
-  const findNextQuestionIndex = (currentQuestion: Question, selectedLabel: string): number => {
-    if (!currentQuestion) return -1;
-
-    const isYesNoQuestion = currentQuestion.selections?.length === 2 && 
-                           currentQuestion.selections[0] === 'Yes' && 
-                           currentQuestion.selections[1] === 'No';
-    
-    console.log('Finding next question:', {
-      currentOrder: currentQuestion.order,
-      selectedLabel,
-      nextQuestion: currentQuestion.next_question,
-      nextIfNo: currentQuestion.next_if_no,
-      isYesNo: isYesNoQuestion
-    });
-
-    // For Yes/No questions
-    if (isYesNoQuestion) {
-      if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
-        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
-        console.log('No selected - navigating to order:', currentQuestion.next_if_no, 'index:', nextIndex);
-        return nextIndex;
-      }
-      
-      if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
-        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-        console.log('Yes selected - navigating to order:', currentQuestion.next_question, 'index:', nextIndex);
-        return nextIndex;
-      }
-    }
-
-    // For non-Yes/No questions with explicit next_question
-    if (typeof currentQuestion.next_question === 'number') {
-      const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-      console.log('Following explicit next_question:', {
-        currentOrder: currentQuestion.order,
-        nextQuestion: currentQuestion.next_question,
-        foundIndex: nextIndex
-      });
-      return nextIndex;
-    }
-
-    // If next_question is explicitly null, we've reached the end
-    if (currentQuestion.next_question === null) {
-      console.log('Reached end of questions');
-      return -1;
-    }
-
-    // Sequential navigation as fallback
-    const nextIndex = questionSequence.findIndex(q => q.order === (currentQuestion.order || 0) + 1);
-    console.log('Using sequential navigation:', {
-      currentOrder: currentQuestion.order,
-      nextOrder: (currentQuestion.order || 0) + 1,
-      foundIndex: nextIndex
-    });
-    return nextIndex;
-  };
-
   const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
     const currentQuestion = questionSequence[currentQuestionIndex];
     
@@ -180,8 +126,31 @@ export const QuestionManager = ({
       currentAnswers: updatedAnswers
     });
 
-    const nextIndex = findNextQuestionIndex(currentQuestion, selectedLabel);
-    if (nextIndex !== -1) {
+    // Handle branching logic based on Yes/No answers
+    const isYesNoQuestion = currentQuestion.selections?.length === 2 && 
+                           currentQuestion.selections[0] === 'Yes' && 
+                           currentQuestion.selections[1] === 'No';
+
+    let nextIndex = -1;
+    
+    if (isYesNoQuestion) {
+      if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
+        nextIndex = findNextQuestionByOrder(currentQuestion.next_if_no);
+        console.log('No selected - navigating to order:', currentQuestion.next_if_no);
+      } else if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
+        nextIndex = findNextQuestionByOrder(currentQuestion.next_question);
+        console.log('Yes selected - navigating to order:', currentQuestion.next_question);
+      }
+    } else if (typeof currentQuestion.next_question === 'number') {
+      nextIndex = findNextQuestionByOrder(currentQuestion.next_question);
+      console.log('Following next_question:', currentQuestion.next_question);
+    } else {
+      // Default to next sequential question
+      nextIndex = currentQuestionIndex + 1;
+      console.log('Following sequential order');
+    }
+
+    if (nextIndex !== -1 && nextIndex < questionSequence.length) {
       setCurrentQuestionIndex(nextIndex);
     } else {
       await handleComplete();
@@ -262,13 +231,27 @@ export const QuestionManager = ({
     <QuestionCard
       question={currentQuestion}
       selectedOptions={answers[currentQuestion.id || ''] || []}
-      onSelect={async (questionId, selectedOptions, selectedLabel) => {
-        await handleAnswer(questionId, selectedOptions, selectedLabel);
-      }}
+      onSelect={handleAnswer}
       onNext={async () => {
         const selectedLabel = answers[currentQuestion.id || '']?.[0] || '';
-        const nextIndex = findNextQuestionIndex(currentQuestion, selectedLabel);
+        const isYesNoQuestion = currentQuestion.selections?.length === 2 && 
+                               currentQuestion.selections[0] === 'Yes' && 
+                               currentQuestion.selections[1] === 'No';
         
+        let nextIndex = -1;
+        
+        if (isYesNoQuestion) {
+          if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
+            nextIndex = findNextQuestionByOrder(currentQuestion.next_if_no);
+          } else if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
+            nextIndex = findNextQuestionByOrder(currentQuestion.next_question);
+          }
+        } else if (typeof currentQuestion.next_question === 'number') {
+          nextIndex = findNextQuestionByOrder(currentQuestion.next_question);
+        } else {
+          nextIndex = currentQuestionIndex + 1;
+        }
+
         await logQuestionFlow('manual_next', {
           selectedOptions: answers[currentQuestion.id || ''] || [],
           selectedLabel,
@@ -276,7 +259,7 @@ export const QuestionManager = ({
           nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null
         });
 
-        if (nextIndex !== -1) {
+        if (nextIndex !== -1 && nextIndex < questionSequence.length) {
           setCurrentQuestionIndex(nextIndex);
         } else {
           await handleComplete();
