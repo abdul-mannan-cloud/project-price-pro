@@ -30,15 +30,15 @@ export const QuestionManager = ({
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Initialize questions
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
     if (categoryData?.questions?.length > 0) {
-      const initialQuestion = categoryData.questions[0];
-      // Force Yes/No questions to be single choice
-      if (initialQuestion.selections?.includes('Yes') && initialQuestion.selections?.includes('No')) {
-        initialQuestion.multi_choice = false;
-      }
-      setQuestionSequence([initialQuestion]);
+      const questions = categoryData.questions.map(q => ({
+        ...q,
+        multi_choice: q.selections?.includes('Yes') && q.selections?.includes('No') ? false : q.multi_choice
+      }));
+      setQuestionSequence(questions);
       setCurrentQuestionIndex(0);
       setAnswers({});
       setShowAdditionalServices(false);
@@ -51,53 +51,18 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
-  const findNextQuestionByText = (text: string): Question | undefined => {
-    console.log('Finding question with text:', text);
-    return categoryData.questions.find(q => q.question === text);
-  };
-
-  const getNextQuestion = (currentQuestion: Question, answer: string): Question | undefined => {
-    console.log('Getting next question for:', currentQuestion.question, 'with answer:', answer);
-    
-    // If it's a branching question and answer is "No", find the question specified in next_if_no
-    if (currentQuestion.is_branching && answer === "No" && currentQuestion.next_if_no) {
-      console.log('Following next_if_no branch:', currentQuestion.next_if_no);
-      const nextBranchQuestion = findNextQuestionByText(currentQuestion.next_if_no);
-      if (nextBranchQuestion) {
-        // Force Yes/No questions to be single choice
-        if (nextBranchQuestion.selections?.includes('Yes') && nextBranchQuestion.selections?.includes('No')) {
-          nextBranchQuestion.multi_choice = false;
-        }
-        return nextBranchQuestion;
-      }
-    }
-
-    // For "Yes" answers or non-branching questions, get the next sequential question
-    const currentIndex = categoryData.questions.findIndex(q => q.question === currentQuestion.question);
-    if (currentIndex !== -1 && currentIndex + 1 < categoryData.questions.length) {
-      const nextQuestion = categoryData.questions[currentIndex + 1];
-      // Force Yes/No questions to be single choice
-      if (nextQuestion.selections?.includes('Yes') && nextQuestion.selections?.includes('No')) {
-        nextQuestion.multi_choice = false;
-      }
-      return nextQuestion;
-    }
-
-    console.log('No next question found');
-    return undefined;
-  };
-
   const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
     console.log('Handling answer:', { questionId, selectedOptions });
     
+    // Update answers
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
     setAnswers(updatedAnswers);
 
     const currentQuestion = questionSequence[currentQuestionIndex];
     const selectedAnswer = selectedOptions[0];
 
-    // Save to leads table
     try {
+      // Save to leads table
       const { error } = await supabase
         .from('leads')
         .insert({
@@ -111,37 +76,37 @@ export const QuestionManager = ({
         });
 
       if (error) throw error;
+
+      // Handle branching logic
+      if (currentQuestion.is_branching && selectedAnswer === "No" && currentQuestion.next_if_no) {
+        const nextQuestionIndex = questionSequence.findIndex(q => q.question === currentQuestion.next_if_no);
+        if (nextQuestionIndex !== -1) {
+          setCurrentQuestionIndex(nextQuestionIndex);
+        } else {
+          handleComplete();
+        }
+      } else if (currentQuestionIndex < questionSequence.length - 1) {
+        // Move to next question after a short delay for single-choice questions
+        if (!currentQuestion.multi_choice) {
+          setTimeout(() => {
+            setCurrentQuestionIndex(prev => prev + 1);
+          }, 300);
+        }
+      } else {
+        handleComplete();
+      }
     } catch (error) {
-      console.error('Error saving to leads:', error);
+      console.error('Error saving answer:', error);
       toast({
         title: "Error",
         description: "Failed to save your response. Please try again.",
         variant: "destructive",
       });
     }
-
-    const nextQuestion = getNextQuestion(currentQuestion, selectedAnswer);
-    
-    if (nextQuestion) {
-      console.log('Setting next question:', nextQuestion);
-      setQuestionSequence(prev => [...prev, nextQuestion]);
-      
-      if (!currentQuestion.multi_choice) {
-        // For single-choice questions, auto-advance after a short delay
-        setTimeout(() => {
-          setCurrentQuestionIndex(prev => prev + 1);
-        }, 300);
-      }
-    } else {
-      console.log('No more questions, proceeding to completion');
-      handleComplete();
-    }
   };
 
   const handleNext = () => {
-    const isLastQuestion = currentQuestionIndex === questionSequence.length - 1;
-    
-    if (isLastQuestion) {
+    if (currentQuestionIndex === questionSequence.length - 1) {
       handleComplete();
     } else {
       setCurrentQuestionIndex(prev => prev + 1);
