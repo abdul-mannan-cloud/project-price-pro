@@ -34,17 +34,34 @@ export const QuestionManager = ({
     try {
       const currentQuestion = questionSequence[currentQuestionIndex];
       
-      // Debug logging
+      // Enhanced logging for debugging
       console.log('Question Flow Event:', {
         event,
-        currentQuestion,
-        details,
-        currentCategory,
+        currentQuestion: {
+          id: currentQuestion?.id,
+          order: currentQuestion?.order,
+          question: currentQuestion?.question,
+          next_question: currentQuestion?.next_question,
+          next_if_no: currentQuestion?.next_if_no,
+          selections: currentQuestion?.selections,
+          is_branching: currentQuestion?.selections?.length === 2 && 
+                       currentQuestion?.selections[0] === 'Yes' && 
+                       currentQuestion?.selections[1] === 'No',
+          multi_choice: currentQuestion?.multi_choice
+        },
+        selectedOptions: details.selectedOptions,
+        selectedLabel: details.selectedLabel,
+        category: currentCategory,
         answers,
-        questionSequence
+        questionSequence: questionSequence.map(q => ({
+          order: q.order,
+          question: q.question,
+          next_question: q.next_question,
+          next_if_no: q.next_if_no
+        }))
       });
 
-      // Format answers for logging
+      // Format answers for logging and storage
       const formattedAnswers = Object.entries(answers).reduce((acc, [qId, values]) => {
         const question = questionSequence.find(q => q.id === qId);
         if (question) {
@@ -56,6 +73,7 @@ export const QuestionManager = ({
         return acc;
       }, {} as Record<string, string[]>);
 
+      // Log to Supabase function
       await supabase.functions.invoke('log-question-flow', {
         body: {
           event,
@@ -71,8 +89,7 @@ export const QuestionManager = ({
           category: currentCategory,
           answers: formattedAnswers,
           selectedOptions: details.selectedOptions,
-          selectedLabel: details.selectedLabel,
-          ...details
+          selectedLabel: details.selectedLabel
         }
       });
 
@@ -117,18 +134,16 @@ export const QuestionManager = ({
       setAnswers({});
       setShowAdditionalServices(false);
       
-      const firstQuestion = sortedQuestions[0];
       logQuestionFlow('sequence_initialized', {
         category: currentCategory,
-        nextQuestionOrder: firstQuestion?.order,
-        nextQuestionText: firstQuestion?.question
+        questions: sortedQuestions
       });
     }
   }, [categoryData, currentCategory]);
 
   const findNextQuestionIndex = (currentQuestion: Question, selectedLabel: string): number => {
     if (!currentQuestion) return -1;
-    
+
     const isYesNoQuestion = currentQuestion.selections?.length === 2 && 
                            currentQuestion.selections[0] === 'Yes' && 
                            currentQuestion.selections[1] === 'No';
@@ -138,8 +153,7 @@ export const QuestionManager = ({
       selectedLabel,
       nextQuestion: currentQuestion.next_question,
       nextIfNo: currentQuestion.next_if_no,
-      isYesNo: isYesNoQuestion,
-      category: currentCategory
+      isYesNo: isYesNoQuestion
     });
 
     // For Yes/No questions, strictly follow the navigation rules
@@ -183,11 +197,10 @@ export const QuestionManager = ({
     }
 
     // Sequential navigation as fallback
-    const nextOrder = currentQuestion.order + 1;
-    const nextIndex = questionSequence.findIndex(q => q.order === nextOrder);
+    const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.order + 1);
     console.log('Using sequential navigation:', {
       currentOrder: currentQuestion.order,
-      nextOrder,
+      nextOrder: currentQuestion.order + 1,
       foundIndex: nextIndex
     });
     return nextIndex;
@@ -200,7 +213,12 @@ export const QuestionManager = ({
       questionId,
       selectedOptions,
       selectedLabel,
-      currentQuestion
+      currentQuestion: {
+        order: currentQuestion?.order,
+        question: currentQuestion?.question,
+        next_question: currentQuestion?.next_question,
+        next_if_no: currentQuestion?.next_if_no
+      }
     });
 
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
@@ -285,19 +303,18 @@ export const QuestionManager = ({
 
   return (
     <QuestionCard
-      question={currentQuestion}
-      selectedOptions={answers[currentQuestion.id || ''] || []}
+      question={questionSequence[currentQuestionIndex]}
+      selectedOptions={answers[questionSequence[currentQuestionIndex]?.id || ''] || []}
       onSelect={handleAnswer}
       onNext={async () => {
-        const nextIndex = findNextQuestionIndex(
-          currentQuestion, 
-          answers[currentQuestion.id || '']?.[0] || ''
-        );
+        const currentQuestion = questionSequence[currentQuestionIndex];
+        const selectedLabel = answers[currentQuestion.id || '']?.[0] || '';
+        const nextIndex = findNextQuestionIndex(currentQuestion, selectedLabel);
         
         await logQuestionFlow('manual_next', {
           currentOrder: currentQuestion.order,
           selectedOptions: answers[currentQuestion.id || ''] || [],
-          selectedLabel: answers[currentQuestion.id || '']?.[0] || '',
+          selectedLabel,
           nextQuestionIndex: nextIndex,
           nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null
         });
@@ -308,7 +325,7 @@ export const QuestionManager = ({
           await handleComplete();
         }
       }}
-      isLastQuestion={currentQuestion.next_question === null}
+      isLastQuestion={questionSequence[currentQuestionIndex]?.next_question === null}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />
