@@ -31,20 +31,35 @@ export const QuestionCard = ({
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
-    // Show next button for multi-choice questions or branching questions
     if (question.multi_choice || question.is_branching) {
       setShowNextButton(selectedOptions.length > 0);
     }
   }, [selectedOptions, question.multi_choice, question.is_branching]);
 
+  const getSelectedLabels = () => {
+    const options = question.options || [];
+    return selectedOptions
+      .map(optionId => options.find(opt => opt.id === optionId)?.label)
+      .filter(label => label) // Remove undefined values
+      .join(', ');
+  };
+
   const logQuestionFlow = async (event: string, details: any) => {
     try {
+      const selectedLabels = getSelectedLabels();
       await supabase.functions.invoke('log-question-flow', {
         body: {
           event,
           questionId: question.id,
           questionOrder: question.order,
-          details
+          question: question.question,
+          next_question: question.next_question,
+          next_if_no: question.next_if_no,
+          is_branching: question.is_branching,
+          multi_choice: question.multi_choice,
+          selectedOptions,
+          selectedLabels,
+          ...details
         }
       });
     } catch (error) {
@@ -53,24 +68,12 @@ export const QuestionCard = ({
   };
 
   const handleSingleOptionSelect = async (value: string, label: string) => {
-    const selectionDetails = {
-      selectedValue: value,
-      selectedLabel: label,
-      nextQuestion: question.next_question,
-      nextIfNo: question.next_if_no,
-      isBranching: question.is_branching
-    };
-
-    await logQuestionFlow('option_selected', selectionDetails);
-    
     setPressedOption(value);
     onSelect(question.id || '', [value], label);
     
-    // Don't auto-advance, wait for manual next click
-    await logQuestionFlow('selection_complete', {
-      currentOrder: question.order,
-      selectedLabel: label,
-      requiresManualNext: true
+    await logQuestionFlow('option_selected', {
+      selectedValue: value,
+      selectedLabel: label
     });
   };
 
@@ -83,20 +86,20 @@ export const QuestionCard = ({
       newSelection.includes(opt.id || '')
     ).map(opt => opt.label).join(', ');
     
+    onSelect(question.id || '', newSelection, selectedLabels);
+    
     await logQuestionFlow('multi_option_selected', {
       currentSelections: newSelection,
-      selectedLabels,
-      optionId,
-      label
+      selectedLabels
     });
-
-    onSelect(question.id || '', newSelection, selectedLabels);
   };
 
   const handleNextClick = async () => {
+    const selectedLabels = getSelectedLabels();
     await logQuestionFlow('next_button_clicked', {
       currentOrder: question.order,
       selectedOptions,
+      selectedLabels,
       nextQuestion: question.next_question,
       nextIfNo: question.next_if_no,
       isLastQuestion
