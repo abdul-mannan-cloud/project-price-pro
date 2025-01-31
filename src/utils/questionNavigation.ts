@@ -12,30 +12,31 @@ export const findNextQuestionIndex = (
     nextIfNo: currentQuestion.next_if_no
   });
 
-  // Check if this is a Yes/No branching question
-  const isYesNoQuestion = Array.isArray(currentQuestion.selections) && 
-                         currentQuestion.selections.length === 2 && 
-                         currentQuestion.selections[0] === 'Yes' && 
-                         currentQuestion.selections[1] === 'No';
-
-  if (isYesNoQuestion) {
-    // Handle Yes/No branching
-    if (selectedAnswer === 'Yes' && currentQuestion.next_question) {
+  // Handle Yes/No questions with branching logic
+  if (Array.isArray(currentQuestion.selections) && 
+      currentQuestion.selections.length === 2 && 
+      currentQuestion.selections[0] === 'Yes' && 
+      currentQuestion.selections[1] === 'No') {
+    
+    // For Yes answers, go to next_question
+    if (selectedAnswer === currentQuestion.selections[0]) { // "Yes"
       const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-      console.log('Yes branch, going to order:', currentQuestion.next_question, 'index:', nextIndex);
+      console.log('Yes selected, going to order:', currentQuestion.next_question, 'index:', nextIndex);
       return nextIndex;
     }
     
-    if (selectedAnswer === 'No' && currentQuestion.next_if_no) {
-      const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
-      console.log('No branch, going to order:', currentQuestion.next_if_no, 'index:', nextIndex);
-      return nextIndex;
+    // For No answers, go to next_if_no if specified
+    if (selectedAnswer === currentQuestion.selections[1]) { // "No"
+      if (currentQuestion.next_if_no !== undefined) {
+        const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
+        console.log('No selected, going to order:', currentQuestion.next_if_no, 'index:', nextIndex);
+        return nextIndex;
+      }
     }
   }
   
-  // For non-Yes/No questions or if no specific branching is defined,
-  // follow next_question if specified
-  if (currentQuestion.next_question) {
+  // For non-Yes/No questions or if no specific branching is defined
+  if (currentQuestion.next_question !== undefined) {
     const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
     console.log('Following next_question to order:', currentQuestion.next_question, 'index:', nextIndex);
     return nextIndex;
@@ -56,7 +57,7 @@ export const initializeQuestions = (rawQuestions: any[]): Question[] => {
     ...q,
     id: `q-${q.order}`,
     options: q.selections?.map((selection: string, optIndex: number) => ({
-      id: `${q.order}-${optIndex}`,  // Use question order for consistent IDs
+      id: `${q.order}-${optIndex}`,
       label: selection
     })) || [],
     is_branching: Array.isArray(q.selections) && 
