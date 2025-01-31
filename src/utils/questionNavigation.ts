@@ -27,19 +27,16 @@ export const findNextQuestionIndex = (
     return -1;
   }
 
-  // For Yes/No questions
+  // For Yes/No questions with branching logic
   if (currentQuestion.selections?.length === 2 && 
       currentQuestion.selections[0] === 'Yes' && 
       currentQuestion.selections[1] === 'No') {
     
-    // If Yes is selected, go to next sequential order
-    if (selectedLabel === 'Yes') {
-      const nextOrder = currentQuestion.order + 1;
-      const nextIndex = questions.findIndex(q => q.order === nextOrder);
-      console.log(`Yes selected on order ${currentQuestion.order}, going to order ${nextOrder}`);
+    if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
+      const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
+      console.log(`Yes selected on order ${currentQuestion.order}, going to next_question: ${currentQuestion.next_question}`);
       return nextIndex;
     } 
-    // If No is selected and next_if_no is specified
     else if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
       const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
       console.log(`No selected on order ${currentQuestion.order}, going to next_if_no: ${currentQuestion.next_if_no}`);
@@ -47,7 +44,22 @@ export const findNextQuestionIndex = (
     }
   }
 
-  // For all other questions, go to next sequential order
+  // For all other questions with next_question defined
+  if (typeof currentQuestion.next_question === 'number') {
+    const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
+    if (nextIndex === -1) {
+      toast({
+        title: "Navigation Error",
+        description: `Could not find next question with order ${currentQuestion.next_question}`,
+        variant: "destructive",
+      });
+      return -1;
+    }
+    console.log(`Navigation from order ${currentQuestion.order} to next_question: ${currentQuestion.next_question}`);
+    return nextIndex;
+  }
+
+  // If no specific navigation is defined, try to go to the next sequential order
   const nextOrder = currentQuestion.order + 1;
   const nextIndex = questions.findIndex(q => q.order === nextOrder);
   
