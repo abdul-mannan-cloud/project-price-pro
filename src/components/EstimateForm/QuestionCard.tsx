@@ -6,13 +6,11 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Question } from "@/types/estimate";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 
 interface QuestionCardProps {
   question: Question;
   selectedOptions: string[];
   onSelect: (questionId: string, value: string[], selectedLabel: string) => void;
-  onNext: () => void;
   isLastQuestion: boolean;
   currentStage: number;
   totalStages: number;
@@ -22,7 +20,6 @@ export const QuestionCard = ({
   question,
   selectedOptions,
   onSelect,
-  onNext,
   isLastQuestion,
   currentStage,
   totalStages,
@@ -46,70 +43,12 @@ export const QuestionCard = ({
     }
   }, [selectedOptions, question.multi_choice, isYesNoQuestion]);
 
-  const getSelectedLabels = () => {
-    const options = question.options || [];
-    return selectedOptions
-      .map(optionId => options.find(opt => opt.id === optionId)?.label)
-      .filter(label => label)
-      .join(', ');
-  };
-
-  const logQuestionFlow = async (event: string, details: any) => {
-    try {
-      const selectedLabels = getSelectedLabels();
-      console.log('Logging question data:', {
-        event,
-        question: {
-          id: question.id,
-          order: question.order,
-          question: question.question,
-          next_question: question.next_question,
-          next_if_no: question.next_if_no,
-          selections: question.selections,
-          is_branching: isYesNoQuestion,
-          multi_choice: question.multi_choice
-        },
-        selectedOptions,
-        selectedLabels
-      });
-
-      await supabase.functions.invoke('log-question-flow', {
-        body: {
-          event,
-          questionId: question.id,
-          questionOrder: question.order,
-          question: question.question,
-          next_question: question.next_question,
-          next_if_no: question.next_if_no,
-          is_branching: isYesNoQuestion,
-          multi_choice: question.multi_choice,
-          selectedOptions,
-          selectedLabels,
-          ...details
-        }
-      });
-    } catch (error) {
-      console.error('Error logging question flow:', error);
-    }
-  };
-
-  const handleSingleOptionSelect = async (value: string, label: string) => {
+  const handleSingleOptionSelect = (value: string, label: string) => {
     setPressedOption(value);
     onSelect(question.id || '', [value], label);
-    
-    await logQuestionFlow('option_selected', {
-      selectedValue: value,
-      selectedLabel: label,
-      nextIfSelected: label === 'No' ? question.next_if_no : question.next_question
-    });
-
-    // For yes/no questions, automatically proceed to next question
-    if (isYesNoQuestion) {
-      setTimeout(() => onNext(), 300);
-    }
   };
 
-  const handleMultiOptionSelect = async (optionId: string, label: string) => {
+  const handleMultiOptionSelect = (optionId: string, label: string) => {
     const newSelection = selectedOptions.includes(optionId)
       ? selectedOptions.filter(id => id !== optionId)
       : [...selectedOptions, optionId];
@@ -119,24 +58,6 @@ export const QuestionCard = ({
     ).map(opt => opt.label).join(', ');
     
     onSelect(question.id || '', newSelection, selectedLabels);
-    
-    await logQuestionFlow('multi_option_selected', {
-      currentSelections: newSelection,
-      selectedLabels
-    });
-  };
-
-  const handleNextClick = async () => {
-    const selectedLabels = getSelectedLabels();
-    await logQuestionFlow('next_button_clicked', {
-      currentOrder: question.order,
-      selectedOptions,
-      selectedLabels,
-      nextQuestion: question.next_question,
-      nextIfNo: question.next_if_no,
-      isLastQuestion
-    });
-    onNext();
   };
 
   const renderOptions = () => {
@@ -181,7 +102,13 @@ export const QuestionCard = ({
             <div className="col-span-full mt-6">
               <Button 
                 className="w-full"
-                onClick={handleNextClick}
+                onClick={() => {
+                  const selectedLabels = options
+                    .filter(opt => selectedOptions.includes(opt.id || ''))
+                    .map(opt => opt.label)
+                    .join(', ');
+                  onSelect(question.id || '', selectedOptions, selectedLabels);
+                }}
                 size="lg"
               >
                 {isLastQuestion ? "Generate Estimate" : "Next Question"}
@@ -195,10 +122,10 @@ export const QuestionCard = ({
     return (
       <RadioGroup
         value={selectedOptions[0]}
-        onValueChange={async (value) => {
+        onValueChange={(value) => {
           const option = options.find(opt => opt.id === value);
           if (option) {
-            await handleSingleOptionSelect(value, option.label);
+            handleSingleOptionSelect(value, option.label);
           }
         }}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
@@ -213,10 +140,10 @@ export const QuestionCard = ({
                 : "border-gray-200",
               pressedOption === option.id && "scale-[0.98]"
             )}
-            onClick={async () => {
+            onClick={() => {
               const opt = options.find(o => o.id === option.id);
               if (opt) {
-                await handleSingleOptionSelect(option.id || '', opt.label);
+                handleSingleOptionSelect(option.id || '', opt.label);
               }
             }}
           >
@@ -244,7 +171,12 @@ export const QuestionCard = ({
           <div className="col-span-full mt-6">
             <Button 
               className="w-full"
-              onClick={handleNextClick}
+              onClick={() => {
+                const selectedOption = options.find(opt => opt.id === selectedOptions[0]);
+                if (selectedOption) {
+                  onSelect(question.id || '', selectedOptions, selectedOption.label);
+                }
+              }}
               size="lg"
             >
               {isLastQuestion ? "Generate Estimate" : "Next Question"}
