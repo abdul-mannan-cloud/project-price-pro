@@ -74,17 +74,25 @@ const EstimatePage = () => {
   // Query for options data - only when category is selected
   const { data: optionsData, isLoading: isLoadingOptions } = useQuery({
     queryKey: ["options", selectedCategory],
-    enabled: !!selectedCategory,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("Options")
-        .select(`"${selectedCategory}"`)
-        .eq("Key Options", "42e64c9c-53b2-49bd-ad77-995ecb3106c6")
+        .from('Options')
+        .select('*')
+        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
 
       if (error) throw error;
-      return data[selectedCategory] as any[];
+      
+      // Handle the column name with proper typing
+      const categoryData = data[selectedCategory?.replace(/ /g, ' ')];
+      
+      if (!categoryData) {
+        throw new Error(`No questions found for category: ${selectedCategory}`);
+      }
+
+      return categoryData;
     },
+    enabled: !!selectedCategory
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {

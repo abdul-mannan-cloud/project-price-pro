@@ -5,7 +5,6 @@ import { LoadingScreen } from "./LoadingScreen";
 import { Question, CategoryQuestions, Category } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { findNextQuestionIndex, initializeQuestions } from "@/utils/questionNavigation";
 
 interface QuestionManagerProps {
   categoryData: CategoryQuestions;
@@ -33,9 +32,9 @@ export const QuestionManager = ({
 
   useEffect(() => {
     if (categoryData?.questions?.length > 0) {
-      const questions = initializeQuestions(categoryData.questions);
-      console.log('Initialized questions:', questions);
-      setQuestionSequence(questions);
+      const sortedQuestions = [...categoryData.questions].sort((a, b) => (a.order || 0) - (b.order || 0));
+      console.log('Initialized questions:', sortedQuestions);
+      setQuestionSequence(sortedQuestions);
       setCurrentQuestionIndex(0);
       setAnswers({});
       setShowAdditionalServices(false);
@@ -47,6 +46,27 @@ export const QuestionManager = ({
       });
     }
   }, [categoryData]);
+
+  const findNextQuestionIndex = (currentQuestion: Question, selectedLabel: string): number => {
+    if (!currentQuestion) return -1;
+
+    if (currentQuestion.selections?.length === 2 && 
+        currentQuestion.selections[0] === 'Yes' && 
+        currentQuestion.selections[1] === 'No') {
+      if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
+        return questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+      } 
+      else if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
+        return questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
+      }
+    }
+
+    if (typeof currentQuestion.next_question === 'number') {
+      return questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+    }
+
+    return -1;
+  };
 
   const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
     const currentQuestion = questionSequence[currentQuestionIndex];
@@ -69,7 +89,7 @@ export const QuestionManager = ({
 
       if (error) throw error;
 
-      const nextIndex = findNextQuestionIndex(questionSequence, currentQuestion, selectedLabel);
+      const nextIndex = findNextQuestionIndex(currentQuestion, selectedLabel);
       console.log('Next question index:', nextIndex);
 
       if (nextIndex !== -1) {

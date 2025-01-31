@@ -6,13 +6,13 @@ export interface QuestionOption {
 
 export interface Question {
   id?: string;
-  order?: number;
+  order: number;
   question: string;
   selections?: string[];
   options?: QuestionOption[];
   multi_choice: boolean;
-  next_question?: number;
-  next_if_no?: number;
+  next_question?: number | null;
+  next_if_no?: number | null;
   is_branching?: boolean;
   sub_questions?: Record<string, Question[]>;
 }
@@ -49,4 +49,12 @@ export interface EstimateData {
   groups: EstimateGroup[];
   totalCost: number;
   notes?: string[];
+}
+
+export interface OptionsData {
+  [key: string]: {
+    category: string;
+    keywords: string[];
+    questions: Question[];
+  } | null;
 }
