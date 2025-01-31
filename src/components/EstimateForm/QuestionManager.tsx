@@ -48,22 +48,13 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
-  const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
+  const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
     const currentQuestion = questionSequence[currentQuestionIndex];
-    const selectedAnswer = selectedOptions[0];
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
-    
-    console.log('Processing answer:', {
-      currentOrder: currentQuestion.order,
-      question: currentQuestion.question,
-      answer: selectedAnswer,
-      nextIfYes: currentQuestion.next_question,
-      nextIfNo: currentQuestion.next_if_no
-    });
-    
     setAnswers(updatedAnswers);
 
     try {
+      // Save answer to database
       const { error } = await supabase
         .from('leads')
         .insert({
@@ -78,8 +69,8 @@ export const QuestionManager = ({
 
       if (error) throw error;
 
-      // Find next question index
-      const nextIndex = findNextQuestionIndex(questionSequence, currentQuestion, selectedAnswer);
+      // Find next question based on selected label
+      const nextIndex = findNextQuestionIndex(questionSequence, currentQuestion, selectedLabel);
       console.log('Next question index:', nextIndex);
 
       if (nextIndex !== -1) {
@@ -175,10 +166,11 @@ export const QuestionManager = ({
       selectedOptions={answers[currentQuestion.id] || []}
       onSelect={handleAnswer}
       onNext={() => {
+        const selectedLabel = answers[currentQuestion.id]?.[0] || '';
         const nextIndex = findNextQuestionIndex(
           questionSequence,
           currentQuestion,
-          answers[currentQuestion.id]?.[0]
+          selectedLabel
         );
 
         if (nextIndex !== -1) {
@@ -188,7 +180,7 @@ export const QuestionManager = ({
         }
       }}
       isLastQuestion={!currentQuestion.next_question && 
-        findNextQuestionIndex(questionSequence, currentQuestion, answers[currentQuestion.id]?.[0]) === -1}
+        findNextQuestionIndex(questionSequence, currentQuestion, answers[currentQuestion.id]?.[0] || '') === -1}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />
