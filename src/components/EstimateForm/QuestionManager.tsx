@@ -29,7 +29,6 @@ export const QuestionManager = ({
   const [showAdditionalServices, setShowAdditionalServices] = useState(false);
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentLabel, setCurrentLabel] = useState<string>('');
 
   const logQuestionFlow = async (event: string, currentQuestion: Question, selectedOptions: string[] = [], selectedLabel: string = '', nextQuestion: Question | null = null) => {
     try {
@@ -39,7 +38,8 @@ export const QuestionManager = ({
           currentQuestion,
           selectedOptions,
           selectedLabel,
-          nextQuestion
+          nextQuestion,
+          currentCategory
         }
       });
     } catch (error) {
@@ -50,11 +50,11 @@ export const QuestionManager = ({
   useEffect(() => {
     if (categoryData?.questions?.length > 0) {
       const sortedQuestions = [...categoryData.questions].sort((a, b) => (a.order || 0) - (b.order || 0));
-      logQuestionFlow('sequence_initialized', null, [], '', sortedQuestions[0]);
       setQuestionSequence(sortedQuestions);
       setCurrentQuestionIndex(0);
       setAnswers({});
       setShowAdditionalServices(false);
+      logQuestionFlow('sequence_initialized', null, [], '', sortedQuestions[0]);
     } else {
       toast({
         title: "Error",
@@ -90,6 +90,11 @@ export const QuestionManager = ({
       return nextIndex;
     }
 
+    // If no specific navigation is defined and it's the last question
+    if (!currentQuestion.next_question && currentQuestion.order === questionSequence.length) {
+      return -1;
+    }
+
     // If no specific navigation is defined, go to the next sequential question
     const nextOrder = currentQuestion.order + 1;
     const nextIndex = questionSequence.findIndex(q => q.order === nextOrder);
@@ -100,18 +105,9 @@ export const QuestionManager = ({
 
   const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
     const currentQuestion = questionSequence[currentQuestionIndex];
-    console.log('Handling answer:', { 
-      questionId, 
-      selectedOptions, 
-      selectedLabel,
-      currentQuestion: {
-        order: currentQuestion.order,
-        next_question: currentQuestion.next_question,
-        next_if_no: currentQuestion.next_if_no
-      }
-    });
-
-    setCurrentLabel(selectedLabel);
+    
+    await logQuestionFlow('answer_received', currentQuestion, selectedOptions, selectedLabel);
+    
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
     setAnswers(updatedAnswers);
 
@@ -131,19 +127,17 @@ export const QuestionManager = ({
 
       if (error) throw error;
 
-      const nextIndex = findNextQuestionIndex(currentQuestion, selectedLabel);
-      console.log('Next question determination:', {
-        currentOrder: currentQuestion.order,
-        selectedLabel,
-        nextIndex,
-        nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex].order : null
-      });
+      // Only auto-advance for non-branching, single-choice questions
+      if (!currentQuestion.is_branching && !currentQuestion.multi_choice) {
+        const nextIndex = findNextQuestionIndex(currentQuestion, selectedLabel);
+        await logQuestionFlow('auto_navigation', currentQuestion, selectedOptions, selectedLabel,
+          nextIndex !== -1 ? questionSequence[nextIndex] : null);
 
-      if (nextIndex !== -1) {
-        setCurrentQuestionIndex(nextIndex);
-      } else {
-        console.log('No more questions found, completing sequence');
-        await handleComplete();
+        if (nextIndex !== -1) {
+          setCurrentQuestionIndex(nextIndex);
+        } else {
+          await handleComplete();
+        }
       }
 
     } catch (error) {
@@ -223,12 +217,6 @@ export const QuestionManager = ({
     );
   }
 
-  const currentQuestion = questionSequence[currentQuestionIndex];
-
-  if (!currentQuestion) {
-    return null;
-  }
-
   return (
     <QuestionCard
       question={currentQuestion}
@@ -237,19 +225,20 @@ export const QuestionManager = ({
         logQuestionFlow('selection_made', currentQuestion, selectedOptions, selectedLabel);
         handleAnswer(questionId, selectedOptions, selectedLabel);
       }}
-      onNext={() => {
-        const nextIndex = findNextQuestionIndex(currentQuestion, currentLabel);
-        logQuestionFlow('manual_next', currentQuestion, [], currentLabel, 
+      onNext={async () => {
+        const nextIndex = findNextQuestionIndex(currentQuestion, answers[currentQuestion?.id || '']?.[0] || '');
+        await logQuestionFlow('manual_next', currentQuestion, answers[currentQuestion?.id || ''] || [], 
+          answers[currentQuestion?.id || '']?.[0] || '',
           nextIndex !== -1 ? questionSequence[nextIndex] : null);
 
         if (nextIndex !== -1) {
           setCurrentQuestionIndex(nextIndex);
         } else {
-          handleComplete();
+          await handleComplete();
         }
       }}
       isLastQuestion={!currentQuestion.next_question && 
-        findNextQuestionIndex(currentQuestion, currentLabel) === -1}
+        findNextQuestionIndex(currentQuestion, answers[currentQuestion?.id || '']?.[0] || '') === -1}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />

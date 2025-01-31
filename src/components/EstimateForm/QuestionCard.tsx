@@ -31,6 +31,7 @@ export const QuestionCard = ({
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
+    // Show next button for multi-choice questions or branching questions
     if (question.multi_choice || question.is_branching) {
       setShowNextButton(selectedOptions.length > 0);
     }
@@ -65,27 +66,12 @@ export const QuestionCard = ({
     setPressedOption(value);
     onSelect(question.id || '', [value], label);
     
-    if (!question.is_branching) {
-      await logQuestionFlow('auto_advancing', {
-        currentOrder: question.order,
-        nextQuestion: question.next_question
-      });
-      
-      setTimeout(async () => {
-        setPressedOption(null);
-        await logQuestionFlow('navigation_executed', {
-          fromOrder: question.order,
-          toOrder: question.next_question
-        });
-        onNext();
-      }, 300);
-    } else {
-      await logQuestionFlow('awaiting_manual_next', {
-        currentOrder: question.order,
-        nextQuestion: question.next_question,
-        nextIfNo: question.next_if_no
-      });
-    }
+    // Don't auto-advance, wait for manual next click
+    await logQuestionFlow('selection_complete', {
+      currentOrder: question.order,
+      selectedLabel: label,
+      requiresManualNext: true
+    });
   };
 
   const handleMultiOptionSelect = async (optionId: string, label: string) => {
