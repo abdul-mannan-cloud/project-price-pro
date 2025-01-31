@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Question } from "@/types/estimate";
 import { Card } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuestionCardProps {
   question: Question;
@@ -35,40 +36,59 @@ export const QuestionCard = ({
     }
   }, [selectedOptions, question.multi_choice, question.is_branching]);
 
-  const handleSingleOptionSelect = (value: string, label: string) => {
-    console.log('Selection details:', {
-      questionId: question.id,
-      questionOrder: question.order,
+  const logQuestionFlow = async (event: string, details: any) => {
+    try {
+      await supabase.functions.invoke('log-question-flow', {
+        body: {
+          event,
+          questionId: question.id,
+          questionOrder: question.order,
+          details
+        }
+      });
+    } catch (error) {
+      console.error('Error logging question flow:', error);
+    }
+  };
+
+  const handleSingleOptionSelect = async (value: string, label: string) => {
+    const selectionDetails = {
       selectedValue: value,
       selectedLabel: label,
       nextQuestion: question.next_question,
       nextIfNo: question.next_if_no,
       isBranching: question.is_branching
-    });
+    };
 
+    await logQuestionFlow('option_selected', selectionDetails);
+    
     setPressedOption(value);
     onSelect(question.id || '', [value], label);
     
     if (!question.is_branching) {
-      console.log('Non-branching question - auto advancing');
-      setTimeout(() => {
+      await logQuestionFlow('auto_advancing', {
+        currentOrder: question.order,
+        nextQuestion: question.next_question
+      });
+      
+      setTimeout(async () => {
         setPressedOption(null);
+        await logQuestionFlow('navigation_executed', {
+          fromOrder: question.order,
+          toOrder: question.next_question
+        });
         onNext();
       }, 300);
     } else {
-      console.log('Branching question - waiting for manual next');
+      await logQuestionFlow('awaiting_manual_next', {
+        currentOrder: question.order,
+        nextQuestion: question.next_question,
+        nextIfNo: question.next_if_no
+      });
     }
   };
 
-  const handleMultiOptionSelect = (optionId: string, label: string) => {
-    console.log('Multi-selection details:', {
-      questionId: question.id,
-      questionOrder: question.order,
-      optionId,
-      label,
-      currentSelections: selectedOptions
-    });
-
+  const handleMultiOptionSelect = async (optionId: string, label: string) => {
     const newSelection = selectedOptions.includes(optionId)
       ? selectedOptions.filter(id => id !== optionId)
       : [...selectedOptions, optionId];
@@ -77,16 +97,18 @@ export const QuestionCard = ({
       newSelection.includes(opt.id || '')
     ).map(opt => opt.label).join(', ');
     
-    console.log('Updated selection:', {
-      newSelection,
-      selectedLabels
+    await logQuestionFlow('multi_option_selected', {
+      currentSelections: newSelection,
+      selectedLabels,
+      optionId,
+      label
     });
 
     onSelect(question.id || '', newSelection, selectedLabels);
   };
 
-  const handleNextClick = () => {
-    console.log('Next button clicked:', {
+  const handleNextClick = async () => {
+    await logQuestionFlow('next_button_clicked', {
       currentOrder: question.order,
       selectedOptions,
       nextQuestion: question.next_question,
@@ -152,7 +174,7 @@ export const QuestionCard = ({
     return (
       <RadioGroup
         value={selectedOptions[0]}
-        onValueChange={(value) => {
+        onValueChange={async (value) => {
           const option = options.find(opt => opt.id === value);
           if (option) {
             console.log('Radio selection:', {
@@ -162,7 +184,7 @@ export const QuestionCard = ({
               nextQuestion: question.next_question,
               nextIfNo: question.next_if_no
             });
-            handleSingleOptionSelect(value, option.label);
+            await handleSingleOptionSelect(value, option.label);
           }
         }}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
@@ -177,7 +199,7 @@ export const QuestionCard = ({
                 : "border-gray-200",
               pressedOption === option.id && "scale-[0.98]"
             )}
-            onClick={() => {
+            onClick={async () => {
               const opt = options.find(o => o.id === option.id);
               if (opt) {
                 console.log('Option clicked:', {
@@ -187,7 +209,7 @@ export const QuestionCard = ({
                   nextQuestion: question.next_question,
                   nextIfNo: question.next_if_no
                 });
-                handleSingleOptionSelect(option.id || '', opt.label);
+                await handleSingleOptionSelect(option.id || '', opt.label);
               }
             }}
           >
