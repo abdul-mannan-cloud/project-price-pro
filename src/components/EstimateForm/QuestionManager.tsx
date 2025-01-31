@@ -33,7 +33,12 @@ export const QuestionManager = ({
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
     if (categoryData?.questions?.length > 0) {
-      setQuestionSequence([categoryData.questions[0]]);
+      const initialQuestion = categoryData.questions[0];
+      // Force Yes/No questions to be single choice
+      if (initialQuestion.selections?.includes('Yes') && initialQuestion.selections?.includes('No')) {
+        initialQuestion.multi_choice = false;
+      }
+      setQuestionSequence([initialQuestion]);
       setCurrentQuestionIndex(0);
       setAnswers({});
       setShowAdditionalServices(false);
@@ -59,24 +64,21 @@ export const QuestionManager = ({
       console.log('Following next_if_no branch:', currentQuestion.next_if_no);
       const nextBranchQuestion = findNextQuestionByText(currentQuestion.next_if_no);
       if (nextBranchQuestion) {
-        // Update the sequence to skip to the branched question
-        const newSequence = [
-          ...questionSequence.slice(0, currentQuestionIndex + 1),
-          nextBranchQuestion
-        ];
-        console.log('New question sequence after branching:', newSequence);
-        setQuestionSequence(newSequence);
+        // Force Yes/No questions to be single choice
+        if (nextBranchQuestion.selections?.includes('Yes') && nextBranchQuestion.selections?.includes('No')) {
+          nextBranchQuestion.multi_choice = false;
+        }
         return nextBranchQuestion;
       }
     }
 
-    // For "Yes" or non-branching questions, get the next sequential question
+    // For "Yes" answers or non-branching questions, get the next sequential question
     const currentIndex = categoryData.questions.findIndex(q => q.question === currentQuestion.question);
     if (currentIndex !== -1 && currentIndex + 1 < categoryData.questions.length) {
       const nextQuestion = categoryData.questions[currentIndex + 1];
-      // Only add to sequence if following linear path
-      if (!currentQuestion.is_branching || answer === "Yes") {
-        setQuestionSequence(prev => [...prev, nextQuestion]);
+      // Force Yes/No questions to be single choice
+      if (nextQuestion.selections?.includes('Yes') && nextQuestion.selections?.includes('No')) {
+        nextQuestion.multi_choice = false;
       }
       return nextQuestion;
     }
@@ -88,7 +90,8 @@ export const QuestionManager = ({
   const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
     console.log('Handling answer:', { questionId, selectedOptions });
     
-    setAnswers(prev => ({ ...prev, [questionId]: selectedOptions }));
+    const updatedAnswers = { ...answers, [questionId]: selectedOptions };
+    setAnswers(updatedAnswers);
 
     const currentQuestion = questionSequence[currentQuestionIndex];
     const selectedAnswer = selectedOptions[0];
@@ -99,7 +102,7 @@ export const QuestionManager = ({
         .from('leads')
         .insert({
           category: currentCategory,
-          answers: { [questionId]: selectedOptions },
+          answers: updatedAnswers,
           contractor_id: null,
           user_name: '',
           user_email: '',
@@ -121,6 +124,8 @@ export const QuestionManager = ({
     
     if (nextQuestion) {
       console.log('Setting next question:', nextQuestion);
+      setQuestionSequence(prev => [...prev, nextQuestion]);
+      
       if (!currentQuestion.multi_choice) {
         // For single-choice questions, auto-advance after a short delay
         setTimeout(() => {
@@ -164,6 +169,15 @@ export const QuestionManager = ({
       });
 
       if (error) throw error;
+      
+      // Update the lead with the estimate data
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update({ estimate_data: data })
+        .eq('category', currentCategory)
+        .is('user_email', null);
+
+      if (updateError) throw updateError;
       
       setShowAdditionalServices(true);
     } catch (error) {
