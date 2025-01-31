@@ -47,31 +47,27 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
-  const formatOptions = (question: Question) => {
-    if (question.options) return question.options;
-    
-    return (question.selections || []).map((opt, index) => ({
-      id: `${question.id || ''}-${index}`,
-      label: opt,
-      value: opt
-    }));
-  };
-
   const getNextQuestions = (currentIndex: number, answer: string): Question[] => {
     if (!categoryData.questions) return [];
 
     const currentQuestion = categoryData.questions[currentIndex];
     
     // If this is a branching question and the answer is "No",
-    // skip the next set of related questions
+    // skip the related questions until we find the next branching question
     if (currentQuestion.is_branching && answer === "No") {
-      // Find the next branching question
-      for (let i = currentIndex + 1; i < categoryData.questions.length; i++) {
-        if (categoryData.questions[i].is_branching) {
-          return [categoryData.questions[i]];
+      let nextIndex = currentIndex + 1;
+      
+      // Skip questions until we find the next branching question or reach the end
+      while (nextIndex < categoryData.questions.length) {
+        const nextQuestion = categoryData.questions[nextIndex];
+        if (nextQuestion.is_branching) {
+          return [nextQuestion];
         }
+        nextIndex++;
       }
-      return []; // No more questions
+      
+      // If no more branching questions found, return empty array
+      return [];
     }
 
     // If this is a branching question and the answer is "Yes",
@@ -209,8 +205,8 @@ export const QuestionManager = ({
 
   return (
     <QuestionCard
-      question={currentQuestion}
-      selectedOptions={answers[currentQuestion.id] || []}
+      question={questionSequence[currentQuestionIndex]}
+      selectedOptions={answers[questionSequence[currentQuestionIndex]?.id || ''] || []}
       onSelect={handleAnswer}
       onNext={handleNext}
       isLastQuestion={currentQuestionIndex === questionSequence.length - 1}
