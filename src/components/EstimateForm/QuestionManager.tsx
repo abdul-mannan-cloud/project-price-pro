@@ -49,27 +49,44 @@ export const QuestionManager = ({
 
   const findNextQuestionIndex = (currentQuestion: Question, selectedLabel: string): number => {
     if (!currentQuestion) return -1;
+    console.log('Finding next question for:', { currentQuestion, selectedLabel });
 
+    // For Yes/No questions
     if (currentQuestion.selections?.length === 2 && 
         currentQuestion.selections[0] === 'Yes' && 
         currentQuestion.selections[1] === 'No') {
+      
       if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
+        console.log('Yes path:', currentQuestion.next_question);
         return questionSequence.findIndex(q => q.order === currentQuestion.next_question);
       } 
       else if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
+        console.log('No path:', currentQuestion.next_if_no);
         return questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
       }
     }
 
+    // For non-Yes/No questions, use next_question
     if (typeof currentQuestion.next_question === 'number') {
+      console.log('Following next_question:', currentQuestion.next_question);
       return questionSequence.findIndex(q => q.order === currentQuestion.next_question);
     }
 
-    return -1;
+    // If no specific navigation is defined, try to go to the next sequential question
+    const nextSequentialIndex = questionSequence.findIndex(q => q.order === (currentQuestion.order + 1));
+    console.log('Next sequential index:', nextSequentialIndex);
+    return nextSequentialIndex;
   };
 
   const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
     const currentQuestion = questionSequence[currentQuestionIndex];
+    console.log('Handling answer:', { 
+      questionId, 
+      selectedOptions, 
+      selectedLabel,
+      currentQuestion 
+    });
+
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
     setAnswers(updatedAnswers);
 
@@ -190,6 +207,7 @@ export const QuestionManager = ({
       onNext={() => {
         const selectedLabel = answers[currentQuestion.id]?.[0] || '';
         const nextIndex = findNextQuestionIndex(currentQuestion, selectedLabel);
+        console.log('Manual next:', { currentQuestion, selectedLabel, nextIndex });
 
         if (nextIndex !== -1) {
           setCurrentQuestionIndex(nextIndex);
