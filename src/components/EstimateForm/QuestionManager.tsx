@@ -34,7 +34,6 @@ export const QuestionManager = ({
     try {
       const currentQuestion = questionSequence[currentQuestionIndex];
       
-      // Enhanced logging for debugging
       console.log('Question Flow Event:', {
         event,
         currentQuestion: {
@@ -61,7 +60,6 @@ export const QuestionManager = ({
         }))
       });
 
-      // Format answers for logging and storage
       const formattedAnswers = Object.entries(answers).reduce((acc, [qId, values]) => {
         const question = questionSequence.find(q => q.id === qId);
         if (question) {
@@ -73,7 +71,6 @@ export const QuestionManager = ({
         return acc;
       }, {} as Record<string, string[]>);
 
-      // Log to Supabase function
       await supabase.functions.invoke('log-question-flow', {
         body: {
           event,
@@ -93,7 +90,6 @@ export const QuestionManager = ({
         }
       });
 
-      // Save answers to leads table after each question
       if (Object.keys(answers).length > 0) {
         const { error: leadError } = await supabase
           .from('leads')
@@ -156,25 +152,17 @@ export const QuestionManager = ({
       isYesNo: isYesNoQuestion
     });
 
-    // For Yes/No questions, strictly follow the navigation rules
+    // For Yes/No questions
     if (isYesNoQuestion) {
       if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
-        console.log('No selected - navigating to:', {
-          currentOrder: currentQuestion.order,
-          nextIfNo: currentQuestion.next_if_no,
-          foundIndex: nextIndex
-        });
+        console.log('No selected - navigating to order:', currentQuestion.next_if_no, 'index:', nextIndex);
         return nextIndex;
       }
       
       if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-        console.log('Yes selected - navigating to:', {
-          currentOrder: currentQuestion.order,
-          nextQuestion: currentQuestion.next_question,
-          foundIndex: nextIndex
-        });
+        console.log('Yes selected - navigating to order:', currentQuestion.next_question, 'index:', nextIndex);
         return nextIndex;
       }
     }
@@ -197,10 +185,10 @@ export const QuestionManager = ({
     }
 
     // Sequential navigation as fallback
-    const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.order + 1);
+    const nextIndex = questionSequence.findIndex(q => q.order === (currentQuestion.order || 0) + 1);
     console.log('Using sequential navigation:', {
       currentOrder: currentQuestion.order,
-      nextOrder: currentQuestion.order + 1,
+      nextOrder: (currentQuestion.order || 0) + 1,
       foundIndex: nextIndex
     });
     return nextIndex;
@@ -305,7 +293,23 @@ export const QuestionManager = ({
     <QuestionCard
       question={questionSequence[currentQuestionIndex]}
       selectedOptions={answers[questionSequence[currentQuestionIndex]?.id || ''] || []}
-      onSelect={handleAnswer}
+      onSelect={async (questionId, selectedOptions, selectedLabel) => {
+        await handleAnswer(questionId, selectedOptions, selectedLabel);
+        const nextIndex = findNextQuestionIndex(currentQuestion, selectedLabel);
+        
+        await logQuestionFlow('answer_selected', {
+          selectedOptions,
+          selectedLabel,
+          nextQuestionIndex: nextIndex,
+          nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null
+        });
+
+        if (nextIndex !== -1) {
+          setCurrentQuestionIndex(nextIndex);
+        } else {
+          await handleComplete();
+        }
+      }}
       onNext={async () => {
         const currentQuestion = questionSequence[currentQuestionIndex];
         const selectedLabel = answers[currentQuestion.id || '']?.[0] || '';
