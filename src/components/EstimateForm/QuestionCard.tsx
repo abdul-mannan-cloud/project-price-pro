@@ -30,17 +30,24 @@ export const QuestionCard = ({
   const [pressedOption, setPressedOption] = useState<string | null>(null);
   const [showNextButton, setShowNextButton] = useState(false);
 
+  const isYesNoQuestion = question.selections?.length === 2 && 
+                         question.selections[0] === 'Yes' && 
+                         question.selections[1] === 'No';
+
   useEffect(() => {
-    if (question.multi_choice || question.is_branching) {
+    // Only show next button for true multi-choice questions
+    if (question.multi_choice) {
       setShowNextButton(selectedOptions.length > 0);
+    } else {
+      setShowNextButton(false); // Hide for yes/no and single choice questions
     }
-  }, [selectedOptions, question.multi_choice, question.is_branching]);
+  }, [selectedOptions, question.multi_choice]);
 
   const getSelectedLabels = () => {
     const options = question.options || [];
     return selectedOptions
       .map(optionId => options.find(opt => opt.id === optionId)?.label)
-      .filter(label => label) // Remove undefined values
+      .filter(label => label)
       .join(', ');
   };
 
@@ -55,7 +62,7 @@ export const QuestionCard = ({
           question: question.question,
           next_question: question.next_question,
           next_if_no: question.next_if_no,
-          is_branching: question.is_branching,
+          is_branching: isYesNoQuestion,
           multi_choice: question.multi_choice,
           selectedOptions,
           selectedLabels,
@@ -75,6 +82,11 @@ export const QuestionCard = ({
       selectedValue: value,
       selectedLabel: label
     });
+
+    // Auto-advance for yes/no questions
+    if (isYesNoQuestion) {
+      setTimeout(() => onNext(), 300);
+    }
   };
 
   const handleMultiOptionSelect = async (optionId: string, label: string) => {
