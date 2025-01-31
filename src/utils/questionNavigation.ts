@@ -11,7 +11,10 @@ export const findNextQuestionIndex = (
     selectedLabel,
     nextQuestion: currentQuestion.next_question,
     nextIfNo: currentQuestion.next_if_no,
-    selections: currentQuestion.selections
+    selections: currentQuestion.selections,
+    isYesNo: currentQuestion.selections?.length === 2 && 
+             currentQuestion.selections[0] === 'Yes' && 
+             currentQuestion.selections[1] === 'No'
   });
 
   // Validate required fields
@@ -24,64 +27,45 @@ export const findNextQuestionIndex = (
     return -1;
   }
 
-  // Handle Yes/No branching questions
+  // For Yes/No questions
   if (currentQuestion.selections?.length === 2 && 
       currentQuestion.selections[0] === 'Yes' && 
       currentQuestion.selections[1] === 'No') {
     
-    // For Yes/No questions, check the selected label
+    // If Yes is selected, go to next sequential order
     if (selectedLabel === 'Yes') {
-      if (typeof currentQuestion.next_question !== 'number') {
-        toast({
-          title: "Navigation Error",
-          description: `Missing next_question for Yes answer on question ${currentQuestion.order}`,
-          variant: "destructive",
-        });
-        return -1;
-      }
-      const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-      console.log(`Yes selected, navigating to order: ${currentQuestion.next_question}`);
+      const nextOrder = currentQuestion.order + 1;
+      const nextIndex = questions.findIndex(q => q.order === nextOrder);
+      console.log(`Yes selected on order ${currentQuestion.order}, going to order ${nextOrder}`);
       return nextIndex;
-    } else if (selectedLabel === 'No') {
-      if (typeof currentQuestion.next_if_no !== 'number') {
-        toast({
-          title: "Navigation Error",
-          description: `Missing next_if_no for No answer on question ${currentQuestion.order}`,
-          variant: "destructive",
-        });
-        return -1;
-      }
+    } 
+    // If No is selected and next_if_no is specified
+    else if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
       const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
-      console.log(`No selected, navigating to order: ${currentQuestion.next_if_no}`);
+      console.log(`No selected on order ${currentQuestion.order}, going to next_if_no: ${currentQuestion.next_if_no}`);
       return nextIndex;
     }
   }
 
-  // For non-Yes/No questions, use next_question
-  if (typeof currentQuestion.next_question !== 'number') {
-    toast({
-      title: "Navigation Error",
-      description: `Missing next_question for question ${currentQuestion.order}`,
-      variant: "destructive",
-    });
-    return -1;
-  }
-
-  const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
+  // For all other questions, go to next sequential order
+  const nextOrder = currentQuestion.order + 1;
+  const nextIndex = questions.findIndex(q => q.order === nextOrder);
+  
   if (nextIndex === -1) {
     toast({
       title: "Navigation Error",
-      description: `Invalid next_question ${currentQuestion.next_question} for question ${currentQuestion.order}`,
+      description: `Could not find next question with order ${nextOrder}`,
       variant: "destructive",
     });
     return -1;
   }
 
-  console.log(`Sequential navigation to order: ${currentQuestion.next_question}`);
+  console.log(`Sequential navigation from order ${currentQuestion.order} to order ${nextOrder}`);
   return nextIndex;
 };
 
 export const initializeQuestions = (rawQuestions: any[]): Question[] => {
+  // Sort questions by order
   const questions = [...rawQuestions]
     .sort((a, b) => (a.order || 0) - (b.order || 0))
     .map((q) => ({
