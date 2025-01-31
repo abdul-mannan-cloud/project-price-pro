@@ -30,7 +30,6 @@ export const QuestionManager = ({
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Initialize questions
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
     if (categoryData?.questions?.length > 0) {
@@ -62,11 +61,13 @@ export const QuestionManager = ({
   }, [categoryData]);
 
   const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
-    console.log('Handling answer:', { questionId, selectedOptions });
-    
     const currentQuestion = questionSequence[currentQuestionIndex];
     const selectedAnswer = selectedOptions[0];
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
+    
+    console.log('Current question:', currentQuestion);
+    console.log('Selected answer:', selectedAnswer);
+    
     setAnswers(updatedAnswers);
 
     try {
@@ -84,24 +85,27 @@ export const QuestionManager = ({
 
       if (error) throw error;
 
-      // Find the next question based on branching logic or normal progression
-      let nextQuestionOrder;
-      
+      // Strict order-based navigation
       if (currentQuestion.is_branching && selectedAnswer === "No" && currentQuestion.next_if_no) {
-        nextQuestionOrder = currentQuestion.next_if_no;
+        // Find question with matching order number for "No" path
+        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
+        console.log('Branching NO - Going to order:', currentQuestion.next_if_no, 'Index:', nextIndex);
+        
+        if (nextIndex !== -1) {
+          setCurrentQuestionIndex(nextIndex);
+        } else {
+          handleComplete();
+        }
       } else if (currentQuestion.next_question) {
-        nextQuestionOrder = currentQuestion.next_question;
-      } else {
-        handleComplete();
-        return;
-      }
-
-      // Find the index of the question with the matching order
-      const nextIndex = questionSequence.findIndex(q => q.order === nextQuestionOrder);
-      console.log('Next question order:', nextQuestionOrder, 'Next index:', nextIndex);
-      
-      if (nextIndex !== -1) {
-        setCurrentQuestionIndex(nextIndex);
+        // Find question with matching order number for normal/Yes path
+        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+        console.log('Normal/YES - Going to order:', currentQuestion.next_question, 'Index:', nextIndex);
+        
+        if (nextIndex !== -1) {
+          setCurrentQuestionIndex(nextIndex);
+        } else {
+          handleComplete();
+        }
       } else {
         handleComplete();
       }
