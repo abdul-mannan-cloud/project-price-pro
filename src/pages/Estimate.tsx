@@ -367,7 +367,7 @@ const EstimatePage = () => {
 
   const categories: Category[] = [
     {
-      id: "Kitchen Remodel",
+      id: "Kitchen Remodel 2",  // Updated to match the database column name
       name: "Kitchen Remodeling",
       description: "Update or renovate your kitchen"
     },
