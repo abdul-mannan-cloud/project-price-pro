@@ -30,12 +30,12 @@ export const QuestionManager = ({
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const logQuestionFlow = async (event: string, currentQuestion: Question, selectedOptions: string[] = [], selectedLabel: string = '', nextQuestion: Question | null = null) => {
+  const logQuestionFlow = async (event: string, question: Question | null, selectedOptions: string[] = [], selectedLabel: string = '', nextQuestion: Question | null = null) => {
     try {
       await supabase.functions.invoke('log-question-flow', {
         body: {
           event,
-          currentQuestion,
+          question,
           selectedOptions,
           selectedLabel,
           nextQuestion,
@@ -55,19 +55,21 @@ export const QuestionManager = ({
       setAnswers({});
       setShowAdditionalServices(false);
       logQuestionFlow('sequence_initialized', null, [], '', sortedQuestions[0]);
-    } else {
-      toast({
-        title: "Error",
-        description: "No questions available for this category.",
-        variant: "destructive",
-      });
     }
   }, [categoryData]);
 
   const findNextQuestionIndex = (question: Question, selectedLabel: string): number => {
     if (!question) return -1;
     
-    logQuestionFlow('finding_next_question', question, [], selectedLabel);
+    console.log('Finding next question:', {
+      currentOrder: question.order,
+      selectedLabel,
+      nextQuestion: question.next_question,
+      nextIfNo: question.next_if_no,
+      isYesNo: question.selections?.length === 2 && 
+               question.selections[0] === 'Yes' && 
+               question.selections[1] === 'No'
+    });
 
     // For Yes/No questions with branching logic
     if (question.selections?.length === 2 && 
@@ -77,6 +79,13 @@ export const QuestionManager = ({
       if (selectedLabel === 'No' && typeof question.next_if_no === 'number') {
         const nextIndex = questionSequence.findIndex(q => q.order === question.next_if_no);
         logQuestionFlow('branching_no', question, [], selectedLabel, 
+          nextIndex !== -1 ? questionSequence[nextIndex] : null);
+        return nextIndex;
+      }
+      
+      if (selectedLabel === 'Yes' && typeof question.next_question === 'number') {
+        const nextIndex = questionSequence.findIndex(q => q.order === question.next_question);
+        logQuestionFlow('branching_yes', question, [], selectedLabel, 
           nextIndex !== -1 ? questionSequence[nextIndex] : null);
         return nextIndex;
       }
@@ -91,12 +100,13 @@ export const QuestionManager = ({
     }
 
     // If no specific navigation is defined and it's the last question
-    if (!question.next_question && question.order === questionSequence.length) {
+    if (question.next_question === null) {
+      logQuestionFlow('reached_end', question, [], selectedLabel, null);
       return -1;
     }
 
     // If no specific navigation is defined, go to the next sequential question
-    const nextOrder = question.order + 1;
+    const nextOrder = (question.order || 0) + 1;
     const nextIndex = questionSequence.findIndex(q => q.order === nextOrder);
     logQuestionFlow('sequential_navigation', question, [], selectedLabel, 
       nextIndex !== -1 ? questionSequence[nextIndex] : null);
@@ -105,7 +115,6 @@ export const QuestionManager = ({
 
   const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
     const question = questionSequence[currentQuestionIndex];
-    
     await logQuestionFlow('answer_received', question, selectedOptions, selectedLabel);
     
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
@@ -127,18 +136,8 @@ export const QuestionManager = ({
 
       if (error) throw error;
 
-      // Only auto-advance for non-branching, single-choice questions
-      if (!question.is_branching && !question.multi_choice) {
-        const nextIndex = findNextQuestionIndex(question, selectedLabel);
-        await logQuestionFlow('auto_navigation', question, selectedOptions, selectedLabel,
-          nextIndex !== -1 ? questionSequence[nextIndex] : null);
-
-        if (nextIndex !== -1) {
-          setCurrentQuestionIndex(nextIndex);
-        } else {
-          await handleComplete();
-        }
-      }
+      // Never auto-advance, always wait for manual next click
+      await logQuestionFlow('selection_complete', question, selectedOptions, selectedLabel);
 
     } catch (error) {
       console.error('Error saving answer:', error);
@@ -224,7 +223,6 @@ export const QuestionManager = ({
       question={currentQuestion}
       selectedOptions={answers[currentQuestion?.id || ''] || []}
       onSelect={(questionId, selectedOptions, selectedLabel) => {
-        logQuestionFlow('selection_made', currentQuestion, selectedOptions, selectedLabel);
         handleAnswer(questionId, selectedOptions, selectedLabel);
       }}
       onNext={async () => {
