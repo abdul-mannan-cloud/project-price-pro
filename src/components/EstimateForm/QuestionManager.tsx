@@ -49,9 +49,12 @@ export const QuestionManager = ({
 
   const findNextQuestionIndex = (currentQuestion: Question, selectedLabel: string): number => {
     if (!currentQuestion) return -1;
-    console.log('Finding next question for:', { 
-      currentQuestion, 
+    
+    console.log('Navigation check:', { 
+      currentOrder: currentQuestion.order,
       selectedLabel,
+      next_if_no: currentQuestion.next_if_no,
+      next_question: currentQuestion.next_question,
       isYesNo: currentQuestion.selections?.length === 2 && 
                currentQuestion.selections[0] === 'Yes' && 
                currentQuestion.selections[1] === 'No'
@@ -62,27 +65,37 @@ export const QuestionManager = ({
         currentQuestion.selections[0] === 'Yes' && 
         currentQuestion.selections[1] === 'No') {
       
-      // Check for No first to prioritize next_if_no
-      if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
-        console.log('Following No path to:', currentQuestion.next_if_no);
-        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
-        console.log('Found next index for No:', nextIndex);
-        return nextIndex;
+      // Explicitly check for "No" selection first
+      if (selectedLabel === 'No') {
+        if (typeof currentQuestion.next_if_no === 'number') {
+          console.log(`No selected - going to order ${currentQuestion.next_if_no}`);
+          const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
+          if (nextIndex === -1) {
+            console.error(`Could not find question with order ${currentQuestion.next_if_no}`);
+          }
+          return nextIndex;
+        }
       } 
-      // Then check for Yes path
-      else if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
-        console.log('Following Yes path to:', currentQuestion.next_question);
-        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-        console.log('Found next index for Yes:', nextIndex);
-        return nextIndex;
+      // Then handle "Yes" selection
+      else if (selectedLabel === 'Yes') {
+        if (typeof currentQuestion.next_question === 'number') {
+          console.log(`Yes selected - going to order ${currentQuestion.next_question}`);
+          const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+          if (nextIndex === -1) {
+            console.error(`Could not find question with order ${currentQuestion.next_question}`);
+          }
+          return nextIndex;
+        }
       }
     }
 
     // For non-Yes/No questions, use next_question
     if (typeof currentQuestion.next_question === 'number') {
-      console.log('Following next_question:', currentQuestion.next_question);
+      console.log(`Following next_question to order ${currentQuestion.next_question}`);
       const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-      console.log('Found next index for regular question:', nextIndex);
+      if (nextIndex === -1) {
+        console.error(`Could not find question with order ${currentQuestion.next_question}`);
+      }
       return nextIndex;
     }
 
@@ -218,7 +231,7 @@ export const QuestionManager = ({
       question={currentQuestion}
       selectedOptions={answers[currentQuestion.id] || []}
       onSelect={(questionId, selectedOptions, selectedLabel) => {
-        console.log('QuestionCard selection:', { questionId, selectedOptions, selectedLabel });
+        console.log('Selection made:', { questionId, selectedOptions, selectedLabel });
         handleAnswer(questionId, selectedOptions, selectedLabel);
       }}
       onNext={() => {
