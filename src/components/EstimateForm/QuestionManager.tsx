@@ -30,6 +30,11 @@ export const QuestionManager = ({
   const [showAdditionalServices, setShowAdditionalServices] = useState(false);
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pendingAnswer, setPendingAnswer] = useState<{
+    questionId: string;
+    selectedOptions: string[];
+    selectedLabel: string;
+  } | null>(null);
 
   const logQuestionFlow = async (event: string, details: any) => {
     try {
@@ -91,6 +96,9 @@ export const QuestionManager = ({
 
   const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
     const currentQuestion = questionSequence[currentQuestionIndex];
+    const isYesNoQuestion = currentQuestion.selections?.length === 2 && 
+                           currentQuestion.selections[0] === 'Yes' && 
+                           currentQuestion.selections[1] === 'No';
     
     console.log('Processing answer:', {
       questionId,
@@ -99,22 +107,53 @@ export const QuestionManager = ({
       currentQuestion: {
         order: currentQuestion.order,
         next_question: currentQuestion.next_question,
-        next_if_no: currentQuestion.next_if_no
+        next_if_no: currentQuestion.next_if_no,
+        isYesNoQuestion
       }
     });
 
+    // Update answers immediately
     const updatedAnswers = { ...answers, [questionId]: selectedOptions };
     setAnswers(updatedAnswers);
 
-    // Get next question index based on answer
-    const nextIndex = findNextQuestionIndex(questionSequence, currentQuestion, selectedLabel);
+    // For Yes/No questions, navigate immediately
+    if (isYesNoQuestion) {
+      const nextIndex = findNextQuestionIndex(questionSequence, currentQuestion, selectedLabel);
+      
+      await logQuestionFlow('answer_processed', {
+        selectedOptions,
+        selectedLabel,
+        nextQuestionIndex: nextIndex,
+        nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null,
+        isYesNoQuestion: true
+      });
+
+      if (nextIndex !== -1) {
+        setCurrentQuestionIndex(nextIndex);
+      } else {
+        await handleComplete();
+      }
+    } else {
+      // For other questions, store the pending answer
+      setPendingAnswer({ questionId, selectedOptions, selectedLabel });
+    }
+  };
+
+  const handleNext = async () => {
+    if (!pendingAnswer) return;
+
+    const currentQuestion = questionSequence[currentQuestionIndex];
+    const nextIndex = findNextQuestionIndex(questionSequence, currentQuestion, pendingAnswer.selectedLabel);
 
     await logQuestionFlow('answer_processed', {
-      selectedOptions,
-      selectedLabel,
+      selectedOptions: pendingAnswer.selectedOptions,
+      selectedLabel: pendingAnswer.selectedLabel,
       nextQuestionIndex: nextIndex,
-      nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null
+      nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null,
+      isYesNoQuestion: false
     });
+
+    setPendingAnswer(null);
 
     if (nextIndex !== -1) {
       setCurrentQuestionIndex(nextIndex);
@@ -198,6 +237,7 @@ export const QuestionManager = ({
       question={currentQuestion}
       selectedOptions={answers[currentQuestion.id || ''] || []}
       onSelect={handleAnswer}
+      onNext={handleNext}
       isLastQuestion={currentQuestionIndex === questionSequence.length - 1}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}

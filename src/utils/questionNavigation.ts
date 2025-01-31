@@ -22,27 +22,27 @@ export const findNextQuestionIndex = (
     
     if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
       const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-      console.log(`Yes selected on order ${currentQuestion.order}, going to next_question: ${currentQuestion.next_question}`);
+      console.log(`Yes selected on order ${currentQuestion.order}, going to next_question: ${currentQuestion.next_question}, index: ${nextIndex}`);
       return nextIndex;
     } 
     else if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
       const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
-      console.log(`No selected on order ${currentQuestion.order}, going to next_if_no: ${currentQuestion.next_if_no}`);
+      console.log(`No selected on order ${currentQuestion.order}, going to next_if_no: ${currentQuestion.next_if_no}, index: ${nextIndex}`);
       return nextIndex;
     }
   }
 
-  // For all other questions, follow next_question if defined
+  // For non-Yes/No questions with next_question defined
   if (typeof currentQuestion.next_question === 'number') {
     const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-    console.log(`Navigation from order ${currentQuestion.order} to next_question: ${currentQuestion.next_question}`);
+    console.log(`Navigation from order ${currentQuestion.order} to next_question: ${currentQuestion.next_question}, index: ${nextIndex}`);
     return nextIndex;
   }
 
-  // If no specific navigation is defined, try to go to the next sequential order
+  // Default sequential navigation
   const nextOrder = currentQuestion.order + 1;
   const nextIndex = questions.findIndex(q => q.order === nextOrder);
-  console.log(`Sequential navigation from order ${currentQuestion.order} to order ${nextOrder}`);
+  console.log(`Sequential navigation from order ${currentQuestion.order} to order ${nextOrder}, index: ${nextIndex}`);
   return nextIndex;
 };
 
