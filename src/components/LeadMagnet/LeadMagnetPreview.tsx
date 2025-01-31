@@ -57,7 +57,6 @@ export const LeadMagnetPreview = () => {
       if (error) throw error;
       if (!data?.questions) throw new Error('No questions generated');
 
-      // Ensure questions conform to the Question interface
       const formattedQuestions: Question[] = data.questions.map((q: any) => ({
         id: q.id || crypto.randomUUID(),
         question: q.question,
@@ -82,11 +81,12 @@ export const LeadMagnetPreview = () => {
     }
   };
 
-  const handleOptionSelect = (value: string) => {
+  const handleOptionSelect = async (value: string) => {
     setSelectedOptions(prev => ({
       ...prev,
       [currentStep - 1]: value
     }));
+    return Promise.resolve(); // Return a resolved promise to match the expected type
   };
 
   const handleNext = () => {
