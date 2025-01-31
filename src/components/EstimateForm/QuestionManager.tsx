@@ -46,29 +46,29 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
-  const findNextQuestionByText = (questionText: string): Question | undefined => {
-    return categoryData.questions.find(q => q.question === questionText);
+  const findNextQuestionByText = (text: string): Question | undefined => {
+    console.log('Finding question with text:', text);
+    return categoryData.questions.find(q => q.question === text);
   };
 
-  const getNextQuestions = (currentQuestion: Question, answer: string): Question[] => {
-    if (!categoryData.questions) return [];
-
-    // Handle branching logic for "No" answers
+  const getNextQuestion = (currentQuestion: Question, answer: string): Question | undefined => {
+    console.log('Getting next question for:', currentQuestion.question, 'with answer:', answer);
+    
+    // If it's a branching question and answer is "No", use next_if_no
     if (currentQuestion.is_branching && answer === "No" && currentQuestion.next_if_no) {
-      const nextQuestion = findNextQuestionByText(currentQuestion.next_if_no);
-      if (nextQuestion) {
-        return [nextQuestion];
-      }
-      return [];
+      console.log('Following next_if_no branch:', currentQuestion.next_if_no);
+      return findNextQuestionByText(currentQuestion.next_if_no);
     }
 
-    // For "Yes" answers or non-branching questions, return the next sequential question
+    // For "Yes" or non-branching questions, get the next sequential question
     const currentIndex = categoryData.questions.findIndex(q => q.question === currentQuestion.question);
     if (currentIndex !== -1 && currentIndex + 1 < categoryData.questions.length) {
-      return [categoryData.questions[currentIndex + 1]];
+      console.log('Following linear path to next question');
+      return categoryData.questions[currentIndex + 1];
     }
 
-    return [];
+    console.log('No next question found');
+    return undefined;
   };
 
   const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
@@ -78,18 +78,6 @@ export const QuestionManager = ({
 
     const currentQuestion = questionSequence[currentQuestionIndex];
     const selectedAnswer = selectedOptions[0];
-
-    // Get the next questions based on the answer
-    const nextQuestions = getNextQuestions(currentQuestion, selectedAnswer);
-    console.log('Next questions:', nextQuestions);
-
-    if (nextQuestions.length > 0) {
-      setQuestionSequence(prev => [...prev, ...nextQuestions]);
-    } else {
-      // No more questions, proceed to completion
-      handleComplete();
-      return;
-    }
 
     // Save to leads table
     try {
@@ -115,9 +103,19 @@ export const QuestionManager = ({
       });
     }
 
-    // Automatically advance for single-choice questions
-    if (!currentQuestion.multi_choice) {
-      handleNext();
+    const nextQuestion = getNextQuestion(currentQuestion, selectedAnswer);
+    
+    if (nextQuestion) {
+      console.log('Setting next question:', nextQuestion);
+      setQuestionSequence(prev => [...prev, nextQuestion]);
+      
+      // Auto-advance for single-choice questions
+      if (!currentQuestion.multi_choice) {
+        setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
+      }
+    } else {
+      console.log('No more questions, proceeding to completion');
+      handleComplete();
     }
   };
 
@@ -196,8 +194,8 @@ export const QuestionManager = ({
 
   return (
     <QuestionCard
-      question={questionSequence[currentQuestionIndex]}
-      selectedOptions={answers[questionSequence[currentQuestionIndex]?.id || ''] || []}
+      question={currentQuestion}
+      selectedOptions={answers[currentQuestion?.id || ''] || []}
       onSelect={handleAnswer}
       onNext={handleNext}
       isLastQuestion={currentQuestionIndex === questionSequence.length - 1}
