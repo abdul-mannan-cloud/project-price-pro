@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 interface QuestionCardProps {
   question: Question;
   selectedOptions: string[];
-  onSelect: (questionId: string, value: string[]) => void;
+  onSelect: (questionId: string, value: string[], selectedLabel: string) => void;
   onNext: () => void;
   isLastQuestion: boolean;
   currentStage: number;
@@ -35,10 +35,10 @@ export const QuestionCard = ({
     }
   }, [selectedOptions, question.multi_choice, question.is_branching]);
 
-  const handleSingleOptionSelect = (value: string) => {
-    console.log('Selected single option:', value);
+  const handleSingleOptionSelect = (value: string, label: string) => {
+    console.log('Selected single option:', { value, label });
     setPressedOption(value);
-    onSelect(question.id || '', [value]);
+    onSelect(question.id || '', [value], label);
     
     if (!question.is_branching) {
       setTimeout(() => {
@@ -48,11 +48,11 @@ export const QuestionCard = ({
     }
   };
 
-  const handleMultiOptionSelect = (optionId: string) => {
+  const handleMultiOptionSelect = (optionId: string, label: string) => {
     const newSelection = selectedOptions.includes(optionId)
       ? selectedOptions.filter(id => id !== optionId)
       : [...selectedOptions, optionId];
-    onSelect(question.id || '', newSelection);
+    onSelect(question.id || '', newSelection, label);
   };
 
   const renderOptions = () => {
@@ -70,13 +70,13 @@ export const QuestionCard = ({
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-gray-200"
               )}
-              onClick={() => handleMultiOptionSelect(option.id || '')}
+              onClick={() => handleMultiOptionSelect(option.id || '', option.label)}
             >
               <div className="flex items-center space-x-4">
                 <Checkbox
                   id={option.id}
                   checked={selectedOptions.includes(option.id || '')}
-                  onCheckedChange={() => handleMultiOptionSelect(option.id || '')}
+                  onCheckedChange={() => handleMultiOptionSelect(option.id || '', option.label)}
                   className="h-6 w-6 rounded-lg"
                 />
                 <Label
@@ -111,7 +111,12 @@ export const QuestionCard = ({
     return (
       <RadioGroup
         value={selectedOptions[0]}
-        onValueChange={handleSingleOptionSelect}
+        onValueChange={(value) => {
+          const option = options.find(opt => opt.id === value);
+          if (option) {
+            handleSingleOptionSelect(value, option.label);
+          }
+        }}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
         {options.map((option) => (
@@ -124,7 +129,7 @@ export const QuestionCard = ({
                 : "border-gray-200",
               pressedOption === option.id && "scale-[0.98]"
             )}
-            onClick={() => handleSingleOptionSelect(option.id || '')}
+            onClick={() => handleSingleOptionSelect(option.id || '', option.label)}
           >
             <div className="flex items-center space-x-4">
               <RadioGroupItem 

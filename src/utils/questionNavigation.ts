@@ -1,4 +1,5 @@
 import { Question } from "@/types/estimate";
+import { toast } from "@/hooks/use-toast";
 
 export const findNextQuestionIndex = (
   questions: Question[],
@@ -9,8 +10,19 @@ export const findNextQuestionIndex = (
     currentOrder: currentQuestion.order,
     selectedAnswer,
     nextIfYes: currentQuestion.next_question,
-    nextIfNo: currentQuestion.next_if_no
+    nextIfNo: currentQuestion.next_if_no,
+    selections: currentQuestion.selections
   });
+
+  // Validate that we have a selected answer
+  if (!selectedAnswer) {
+    toast({
+      title: "Navigation Error",
+      description: "No answer selected for current question",
+      variant: "destructive",
+    });
+    return -1;
+  }
 
   // Handle Yes/No questions with branching logic
   if (Array.isArray(currentQuestion.selections) && 
@@ -18,34 +30,74 @@ export const findNextQuestionIndex = (
       currentQuestion.selections[0] === 'Yes' && 
       currentQuestion.selections[1] === 'No') {
     
-    // For Yes answers, go to next_question
-    if (selectedAnswer === currentQuestion.selections[0]) { // "Yes"
+    // For Yes answers, validate and go to next_question
+    if (selectedAnswer === 'Yes') {
+      if (currentQuestion.next_question === undefined) {
+        toast({
+          title: "Navigation Error",
+          description: `Missing next_question for Yes answer on question ${currentQuestion.order}`,
+          variant: "destructive",
+        });
+        return -1;
+      }
       const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
+      if (nextIndex === -1) {
+        toast({
+          title: "Navigation Error",
+          description: `Invalid next_question ${currentQuestion.next_question} for question ${currentQuestion.order}`,
+          variant: "destructive",
+        });
+        return -1;
+      }
       console.log('Yes selected, going to order:', currentQuestion.next_question, 'index:', nextIndex);
       return nextIndex;
     }
     
-    // For No answers, go to next_if_no if specified
-    if (selectedAnswer === currentQuestion.selections[1]) { // "No"
-      if (currentQuestion.next_if_no !== undefined) {
-        const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
-        console.log('No selected, going to order:', currentQuestion.next_if_no, 'index:', nextIndex);
-        return nextIndex;
+    // For No answers, validate and go to next_if_no
+    if (selectedAnswer === 'No') {
+      if (currentQuestion.next_if_no === undefined) {
+        toast({
+          title: "Navigation Error",
+          description: `Missing next_if_no for No answer on question ${currentQuestion.order}`,
+          variant: "destructive",
+        });
+        return -1;
       }
+      const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
+      if (nextIndex === -1) {
+        toast({
+          title: "Navigation Error",
+          description: `Invalid next_if_no ${currentQuestion.next_if_no} for question ${currentQuestion.order}`,
+          variant: "destructive",
+        });
+        return -1;
+      }
+      console.log('No selected, going to order:', currentQuestion.next_if_no, 'index:', nextIndex);
+      return nextIndex;
     }
   }
   
-  // For non-Yes/No questions or if no specific branching is defined
-  if (currentQuestion.next_question !== undefined) {
-    const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-    console.log('Following next_question to order:', currentQuestion.next_question, 'index:', nextIndex);
-    return nextIndex;
+  // For non-Yes/No questions, validate and follow next_question
+  if (currentQuestion.next_question === undefined) {
+    toast({
+      title: "Navigation Error",
+      description: `Missing next_question for question ${currentQuestion.order}`,
+      variant: "destructive",
+    });
+    return -1;
   }
-  
-  // If no navigation is defined, try to find the next sequential question
-  const nextOrder = (currentQuestion.order || 0) + 1;
-  const nextIndex = questions.findIndex(q => q.order === nextOrder);
-  console.log('Following sequential order:', nextOrder, 'index:', nextIndex);
+
+  const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
+  if (nextIndex === -1) {
+    toast({
+      title: "Navigation Error",
+      description: `Invalid next_question ${currentQuestion.next_question} for question ${currentQuestion.order}`,
+      variant: "destructive",
+    });
+    return -1;
+  }
+
+  console.log('Following next_question to order:', currentQuestion.next_question, 'index:', nextIndex);
   return nextIndex;
 };
 
