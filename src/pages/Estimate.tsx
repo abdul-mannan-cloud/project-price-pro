@@ -195,43 +195,23 @@ const EstimatePage = () => {
         throw new Error('Invalid questions format');
       }
 
-      const formattedQuestions = categoryData.questions.map((q: any, index: number) => {
-        const question: Question = {
-          id: q.id || `q-${index}`,
-          order: q.order || index + 1,
-          question: q.question,
-          options: Array.isArray(q.selections) 
-            ? q.selections.map((opt: any, optIndex: number) => ({
-                id: typeof opt === 'string' 
-                  ? `${index}-${optIndex}` 
-                  : opt.value || `${index}-${optIndex}`,
-                label: typeof opt === 'string' ? opt : opt.label
-              }))
-            : [],
-          multi_choice: q.multi_choice || false,
-          is_branching: q.is_branching || false,
-          sub_questions: q.sub_questions ? Object.fromEntries(
-            Object.entries(q.sub_questions).map(([key, questions]) => [
-              key,
-              (questions as any[]).map((sq: any, sqIndex: number) => ({
-                id: `sq-${index}-${key}-${sqIndex}`,
-                question: sq.question,
-                options: Array.isArray(sq.selections)
-                  ? sq.selections.map((opt: any, optIndex: number) => ({
-                      id: `sq-${index}-${key}-${sqIndex}-${optIndex}`,
-                      label: typeof opt === 'string' ? opt : opt.label
-                    }))
-                  : [],
-                multi_choice: sq.multi_choice || false,
-                is_branching: false,
-                sub_questions: {}
-              }))
-            ])
-          ) : {}
-        };
-
-        return question;
-      });
+      const formattedQuestions = categoryData.questions.map((q: any, index: number) => ({
+        id: q.id || `q-${index}`,
+        order: q.order || index + 1,
+        question: q.question,
+        selections: q.selections,
+        options: Array.isArray(q.selections) 
+          ? q.selections.map((opt: any, optIndex: number) => ({
+              id: `${index}-${optIndex}`,
+              label: typeof opt === 'string' ? opt : opt.label
+            }))
+          : [],
+        multi_choice: q.multi_choice || false,
+        next_question: q.next_question,
+        next_if_no: q.next_if_no,
+        is_branching: q.is_branching || false,
+        sub_questions: q.sub_questions || {}
+      }));
 
       console.log('Formatted questions:', formattedQuestions);
       
