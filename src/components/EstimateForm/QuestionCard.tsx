@@ -66,24 +66,24 @@ export const QuestionCard = ({
               key={option.id}
               className={cn(
                 "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
-                selectedOptions.includes(option.id || option.value || '')
+                selectedOptions.includes(option.id || '')
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-gray-200"
               )}
-              onClick={() => handleMultiOptionSelect(option.id || option.value || '')}
+              onClick={() => handleMultiOptionSelect(option.id || '')}
             >
               <div className="flex items-center space-x-4">
                 <Checkbox
-                  id={option.id || option.value}
-                  checked={selectedOptions.includes(option.id || option.value || '')}
-                  onCheckedChange={() => handleMultiOptionSelect(option.id || option.value || '')}
+                  id={option.id}
+                  checked={selectedOptions.includes(option.id || '')}
+                  onCheckedChange={() => handleMultiOptionSelect(option.id || '')}
                   className="h-6 w-6 rounded-lg"
                 />
                 <Label
-                  htmlFor={option.id || option.value}
+                  htmlFor={option.id}
                   className={cn(
                     "text-base cursor-pointer flex-1",
-                    selectedOptions.includes(option.id || option.value || '') 
+                    selectedOptions.includes(option.id || '') 
                       ? "text-gray-900 font-medium" 
                       : "text-gray-600"
                   )}
@@ -116,27 +116,27 @@ export const QuestionCard = ({
       >
         {options.map((option) => (
           <div 
-            key={option.id || option.value}
+            key={option.id}
             className={cn(
               "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
-              selectedOptions[0] === (option.id || option.value) 
+              selectedOptions[0] === option.id 
                 ? "border-primary bg-primary/5 shadow-sm" 
                 : "border-gray-200",
-              pressedOption === (option.id || option.value) && "scale-[0.98]"
+              pressedOption === option.id && "scale-[0.98]"
             )}
-            onClick={() => handleSingleOptionSelect(option.id || option.value || '')}
+            onClick={() => handleSingleOptionSelect(option.id || '')}
           >
             <div className="flex items-center space-x-4">
               <RadioGroupItem 
-                value={option.id || option.value || ''} 
-                id={option.id || option.value} 
+                value={option.id || ''} 
+                id={option.id} 
                 className="h-6 w-6"
               />
               <Label
-                htmlFor={option.id || option.value}
+                htmlFor={option.id}
                 className={cn(
                   "text-base cursor-pointer flex-1",
-                  selectedOptions[0] === (option.id || option.value) 
+                  selectedOptions[0] === option.id 
                     ? "text-gray-900 font-medium" 
                     : "text-gray-600"
                 )}

@@ -34,10 +34,20 @@ export const QuestionManager = ({
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
     if (categoryData?.questions?.length > 0) {
-      const questions = categoryData.questions.map(q => ({
+      const sortedQuestions = [...categoryData.questions].sort((a, b) => 
+        (a.order || 0) - (b.order || 0)
+      );
+
+      const questions = sortedQuestions.map(q => ({
         ...q,
-        multi_choice: q.selections?.includes('Yes') && q.selections?.includes('No') ? false : q.multi_choice
+        id: `q-${q.order}`,
+        options: q.selections?.map((selection, index) => ({
+          id: `${q.order}-${index}`,
+          label: selection
+        })),
+        is_branching: q.selections?.includes('Yes') && q.selections?.includes('No') && q.next_if_no !== undefined
       }));
+
       setQuestionSequence(questions);
       setCurrentQuestionIndex(0);
       setAnswers({});
@@ -54,12 +64,10 @@ export const QuestionManager = ({
   const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
     console.log('Handling answer:', { questionId, selectedOptions });
     
-    // Update answers
-    const updatedAnswers = { ...answers, [questionId]: selectedOptions };
-    setAnswers(updatedAnswers);
-
     const currentQuestion = questionSequence[currentQuestionIndex];
     const selectedAnswer = selectedOptions[0];
+    const updatedAnswers = { ...answers, [questionId]: selectedOptions };
+    setAnswers(updatedAnswers);
 
     try {
       // Save to leads table
@@ -79,18 +87,20 @@ export const QuestionManager = ({
 
       // Handle branching logic
       if (currentQuestion.is_branching && selectedAnswer === "No" && currentQuestion.next_if_no) {
-        const nextQuestionIndex = questionSequence.findIndex(q => q.question === currentQuestion.next_if_no);
-        if (nextQuestionIndex !== -1) {
-          setCurrentQuestionIndex(nextQuestionIndex);
+        // Find the index of the question with order = next_if_no
+        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
+        if (nextIndex !== -1) {
+          setCurrentQuestionIndex(nextIndex);
         } else {
           handleComplete();
         }
-      } else if (currentQuestionIndex < questionSequence.length - 1) {
-        // Move to next question after a short delay for single-choice questions
-        if (!currentQuestion.multi_choice) {
-          setTimeout(() => {
-            setCurrentQuestionIndex(prev => prev + 1);
-          }, 300);
+      } else if (currentQuestion.next_question) {
+        // Find the index of the next question by order
+        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+        if (nextIndex !== -1) {
+          setCurrentQuestionIndex(nextIndex);
+        } else {
+          handleComplete();
         }
       } else {
         handleComplete();
@@ -102,14 +112,6 @@ export const QuestionManager = ({
         description: "Failed to save your response. Please try again.",
         variant: "destructive",
       });
-    }
-  };
-
-  const handleNext = () => {
-    if (currentQuestionIndex === questionSequence.length - 1) {
-      handleComplete();
-    } else {
-      setCurrentQuestionIndex(prev => prev + 1);
     }
   };
 
@@ -188,10 +190,21 @@ export const QuestionManager = ({
   return (
     <QuestionCard
       question={currentQuestion}
-      selectedOptions={answers[currentQuestion?.id || ''] || []}
+      selectedOptions={answers[currentQuestion.id || ''] || []}
       onSelect={handleAnswer}
-      onNext={handleNext}
-      isLastQuestion={currentQuestionIndex === questionSequence.length - 1}
+      onNext={() => {
+        if (currentQuestion.next_question) {
+          const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+          if (nextIndex !== -1) {
+            setCurrentQuestionIndex(nextIndex);
+          } else {
+            handleComplete();
+          }
+        } else {
+          handleComplete();
+        }
+      }}
+      isLastQuestion={!currentQuestion.next_question}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />
