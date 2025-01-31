@@ -70,7 +70,6 @@ export const QuestionManager = ({
     setAnswers(updatedAnswers);
 
     try {
-      // Save to leads table
       const { error } = await supabase
         .from('leads')
         .insert({
@@ -85,27 +84,28 @@ export const QuestionManager = ({
 
       if (error) throw error;
 
-      // Handle branching logic for Yes/No questions
+      // Find the next question based on branching logic or normal progression
+      let nextQuestionOrder;
+      
       if (currentQuestion.is_branching && selectedAnswer === "No" && currentQuestion.next_if_no) {
-        // Find the question with the matching next_if_no order
-        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
-        if (nextIndex !== -1) {
-          setCurrentQuestionIndex(nextIndex);
-          return;
-        }
+        nextQuestionOrder = currentQuestion.next_if_no;
+      } else if (currentQuestion.next_question) {
+        nextQuestionOrder = currentQuestion.next_question;
+      } else {
+        handleComplete();
+        return;
       }
 
-      // Handle normal question progression
-      if (currentQuestion.next_question) {
-        const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-        if (nextIndex !== -1) {
-          setCurrentQuestionIndex(nextIndex);
-        } else {
-          handleComplete();
-        }
+      // Find the index of the question with the matching order
+      const nextIndex = questionSequence.findIndex(q => q.order === nextQuestionOrder);
+      console.log('Next question order:', nextQuestionOrder, 'Next index:', nextIndex);
+      
+      if (nextIndex !== -1) {
+        setCurrentQuestionIndex(nextIndex);
       } else {
         handleComplete();
       }
+
     } catch (error) {
       console.error('Error saving answer:', error);
       toast({
@@ -138,7 +138,6 @@ export const QuestionManager = ({
 
       if (error) throw error;
       
-      // Update the lead with the estimate data
       const { error: updateError } = await supabase
         .from('leads')
         .update({ estimate_data: data })
