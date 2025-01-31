@@ -32,9 +32,8 @@ export const QuestionManager = ({
 
   useEffect(() => {
     if (categoryData?.questions?.length > 0) {
-      // Ensure all questions have a valid order number
       const validQuestions = categoryData.questions.filter(q => typeof q.order === 'number');
-      const sortedQuestions = [...validQuestions].sort((a, b) => a.order! - b.order!);
+      const sortedQuestions = [...validQuestions].sort((a, b) => (a.order || 0) - (b.order || 0));
 
       const questions = sortedQuestions.map(q => ({
         ...q,
@@ -62,8 +61,9 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
-  const findNextQuestionIndex = (currentOrder: number): number => {
-    return questionSequence.findIndex(q => q.order === currentOrder);
+  const findNextQuestionIndex = (order: number): number => {
+    console.log('Finding next question with order:', order);
+    return questionSequence.findIndex(q => q.order === order);
   };
 
   const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
@@ -98,7 +98,7 @@ export const QuestionManager = ({
 
       let nextIndex = -1;
 
-      // Strict branching logic based on Yes/No answers
+      // Strict branching logic for Yes/No questions
       if (currentQuestion.is_branching) {
         if (selectedAnswer === 'Yes' && currentQuestion.next_question) {
           nextIndex = findNextQuestionIndex(currentQuestion.next_question);
@@ -108,9 +108,14 @@ export const QuestionManager = ({
           console.log('NO path - Going to order:', currentQuestion.next_if_no);
         }
       } else if (currentQuestion.next_question) {
-        // Non-branching questions always follow next_question
+        // Non-branching questions follow next_question
         nextIndex = findNextQuestionIndex(currentQuestion.next_question);
         console.log('Normal path - Going to order:', currentQuestion.next_question);
+      } else {
+        // If no next_question is specified, try to find the next sequential order
+        const nextOrder = (currentQuestion.order || 0) + 1;
+        nextIndex = findNextQuestionIndex(nextOrder);
+        console.log('Sequential path - Looking for order:', nextOrder);
       }
 
       // Only proceed if we found a valid next question
@@ -198,24 +203,40 @@ export const QuestionManager = ({
 
   const currentQuestion = questionSequence[currentQuestionIndex];
 
+  if (!currentQuestion) {
+    return null;
+  }
+
   return (
     <QuestionCard
       question={currentQuestion}
-      selectedOptions={answers[currentQuestion?.id || ''] || []}
+      selectedOptions={answers[currentQuestion.id] || []}
       onSelect={handleAnswer}
       onNext={() => {
-        if (currentQuestion?.next_question) {
-          const nextIndex = findNextQuestionIndex(currentQuestion.next_question);
-          if (nextIndex !== -1) {
-            setCurrentQuestionIndex(nextIndex);
-          } else {
-            handleComplete();
+        let nextIndex = -1;
+        
+        if (currentQuestion.is_branching) {
+          const selectedAnswer = answers[currentQuestion.id]?.[0];
+          if (selectedAnswer === 'Yes' && currentQuestion.next_question) {
+            nextIndex = findNextQuestionIndex(currentQuestion.next_question);
+          } else if (selectedAnswer === 'No' && currentQuestion.next_if_no) {
+            nextIndex = findNextQuestionIndex(currentQuestion.next_if_no);
           }
+        } else if (currentQuestion.next_question) {
+          nextIndex = findNextQuestionIndex(currentQuestion.next_question);
+        } else {
+          const nextOrder = (currentQuestion.order || 0) + 1;
+          nextIndex = findNextQuestionIndex(nextOrder);
+        }
+
+        if (nextIndex !== -1) {
+          setCurrentQuestionIndex(nextIndex);
         } else {
           handleComplete();
         }
       }}
-      isLastQuestion={!currentQuestion?.next_question}
+      isLastQuestion={!currentQuestion.next_question && 
+        findNextQuestionIndex((currentQuestion.order || 0) + 1) === -1}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />
