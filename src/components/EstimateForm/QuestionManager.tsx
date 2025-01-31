@@ -118,7 +118,11 @@ export const QuestionManager = ({
 
     // For Yes/No questions, navigate immediately
     if (isYesNoQuestion) {
-      const nextIndex = findNextQuestionIndex(questionSequence, currentQuestion, selectedLabel);
+      const nextIndex = findNextQuestionIndex(
+        questionSequence, 
+        currentQuestion, 
+        selectedLabel === 'Yes' ? 'Yes' : 'No'
+      );
       
       await logQuestionFlow('answer_processed', {
         selectedOptions,
