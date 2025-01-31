@@ -29,18 +29,15 @@ export const QuestionManager = ({
   const [showAdditionalServices, setShowAdditionalServices] = useState(false);
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedValues, setSelectedValues] = useState<string[]>([]);
 
   useEffect(() => {
     console.log('Initializing question sequence with category data:', categoryData);
     if (categoryData?.questions?.length > 0) {
       // Start with just the first question
-      const firstQuestion = categoryData.questions[0];
-      setQuestionSequence([firstQuestion]);
+      setQuestionSequence([categoryData.questions[0]]);
       setCurrentQuestionIndex(0);
       setAnswers({});
       setShowAdditionalServices(false);
-      setSelectedValues([]);
     } else {
       toast({
         title: "Error",
@@ -53,38 +50,38 @@ export const QuestionManager = ({
   const formatOptions = (question: Question) => {
     if (question.options) return question.options;
     
-    return (question.selections || []).map((opt, index) => {
-      if (typeof opt === 'string') {
-        return {
-          id: `${question.id || ''}-${index}`,
-          label: opt,
-          value: opt
-        };
-      }
-      return {
-        id: opt.value || `${question.id || ''}-${index}`,
-        label: opt.label,
-        value: opt.value || opt.label
-      };
-    });
+    return (question.selections || []).map((opt, index) => ({
+      id: `${question.id || ''}-${index}`,
+      label: opt,
+      value: opt
+    }));
   };
 
-  const findDependentQuestions = (selectedOptionValues: string[]): Question[] => {
+  const getNextQuestions = (currentIndex: number, answer: string): Question[] => {
     if (!categoryData.questions) return [];
 
-    console.log('Finding dependent questions for values:', selectedOptionValues);
+    const currentQuestion = categoryData.questions[currentIndex];
+    
+    // If this is a branching question and the answer is "No",
+    // skip the next set of related questions
+    if (currentQuestion.is_branching && answer === "No") {
+      // Find the next branching question
+      for (let i = currentIndex + 1; i < categoryData.questions.length; i++) {
+        if (categoryData.questions[i].is_branching) {
+          return [categoryData.questions[i]];
+        }
+      }
+      return []; // No more questions
+    }
 
-    // Get all questions after the first one that depend on any of the selected values
-    const dependentQuestions = categoryData.questions
-      .slice(1) // Skip the first question
-      .filter(q => {
-        const matches = q.depends_on && selectedOptionValues.includes(q.depends_on);
-        console.log(`Question "${q.question}" depends_on: ${q.depends_on}, matches: ${matches}`);
-        return matches;
-      });
+    // If this is a branching question and the answer is "Yes",
+    // or if it's not a branching question, return the next question
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < categoryData.questions.length) {
+      return [categoryData.questions[nextIndex]];
+    }
 
-    console.log('Found dependent questions:', dependentQuestions);
-    return dependentQuestions;
+    return [];
   };
 
   const handleAnswer = async (questionId: string, selectedOptions: string[]) => {
@@ -93,55 +90,42 @@ export const QuestionManager = ({
     setAnswers(prev => ({ ...prev, [questionId]: selectedOptions }));
 
     const currentQuestion = questionSequence[currentQuestionIndex];
-    
-    if (currentQuestionIndex === 0) {
-      // For the first question, get the selected values
-      const firstQuestionOptions = formatOptions(currentQuestion);
-      const selectedOptionValues = selectedOptions.map(selectedId => {
-        const option = firstQuestionOptions.find(opt => opt.id === selectedId);
-        return option?.value || '';
-      }).filter(Boolean);
+    const selectedAnswer = selectedOptions[0]; // Get the first selected option
 
-      console.log('Selected option values:', selectedOptionValues);
-      setSelectedValues(selectedOptionValues);
-      
-      // Update question sequence with only the dependent questions
-      const dependentQuestions = findDependentQuestions(selectedOptionValues);
-      console.log('Found dependent questions:', dependentQuestions);
-      
-      if (dependentQuestions.length > 0) {
-        const updatedSequence = [currentQuestion, ...dependentQuestions];
-        console.log('Setting new question sequence:', updatedSequence);
-        setQuestionSequence(updatedSequence);
-      } else {
-        // If no dependent questions, move to completion
-        handleComplete();
-        return;
-      }
+    // Get the next questions based on the answer
+    const nextQuestions = getNextQuestions(currentQuestionIndex, selectedAnswer);
+    console.log('Next questions:', nextQuestions);
 
-      // Save to leads table
-      try {
-        const { error } = await supabase
-          .from('leads')
-          .insert({
-            category: currentCategory,
-            answers: { [questionId]: selectedOptions },
-            contractor_id: null,
-            user_name: '',
-            user_email: '',
-            user_phone: '',
-            status: 'new'
-          });
+    if (nextQuestions.length > 0) {
+      setQuestionSequence(prev => [...prev, ...nextQuestions]);
+    } else {
+      // No more questions, proceed to completion
+      handleComplete();
+      return;
+    }
 
-        if (error) throw error;
-      } catch (error) {
-        console.error('Error saving to leads:', error);
-        toast({
-          title: "Error",
-          description: "Failed to save your response. Please try again.",
-          variant: "destructive",
+    // Save to leads table
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .insert({
+          category: currentCategory,
+          answers: { [questionId]: selectedOptions },
+          contractor_id: null,
+          user_name: '',
+          user_email: '',
+          user_phone: '',
+          status: 'new'
         });
-      }
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error saving to leads:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save your response. Please try again.",
+        variant: "destructive",
+      });
     }
 
     // Automatically advance for single-choice questions
