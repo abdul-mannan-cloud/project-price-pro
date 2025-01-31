@@ -33,6 +33,12 @@ export const QuestionManager = ({
   const logQuestionFlow = async (event: string, details: any) => {
     try {
       const currentQuestion = questionSequence[currentQuestionIndex];
+      console.log('Logging question flow:', {
+        event,
+        currentQuestion,
+        details
+      });
+      
       await supabase.functions.invoke('log-question-flow', {
         body: {
           event,
@@ -57,6 +63,7 @@ export const QuestionManager = ({
   useEffect(() => {
     if (categoryData?.questions?.length > 0) {
       const sortedQuestions = [...categoryData.questions].sort((a, b) => (a.order || 0) - (b.order || 0));
+      console.log('Sorted questions:', sortedQuestions);
       setQuestionSequence(sortedQuestions);
       setCurrentQuestionIndex(0);
       setAnswers({});
@@ -85,62 +92,45 @@ export const QuestionManager = ({
       isYesNo: isYesNoQuestion
     });
 
-    // For Yes/No questions with branching logic
+    // Priority handling for Yes/No questions
     if (isYesNoQuestion) {
+      // Handle "No" selection first - this should take priority
       if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
-        logQuestionFlow('branching_no', {
-          selectedLabel,
-          nextQuestionOrder: currentQuestion.next_if_no,
-          nextQuestionIndex: nextIndex,
-          navigationReason: 'next_if_no'
+        console.log('No selected - navigating to:', {
+          currentOrder: currentQuestion.order,
+          nextIfNo: currentQuestion.next_if_no,
+          foundIndex: nextIndex
         });
         return nextIndex;
       }
       
+      // Then handle "Yes" selection
       if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-        logQuestionFlow('branching_yes', {
-          selectedLabel,
-          nextQuestionOrder: currentQuestion.next_question,
-          nextQuestionIndex: nextIndex,
-          navigationReason: 'next_question'
+        console.log('Yes selected - navigating to:', {
+          currentOrder: currentQuestion.order,
+          nextQuestion: currentQuestion.next_question,
+          foundIndex: nextIndex
         });
         return nextIndex;
       }
     }
 
-    // For any question with next_question defined
+    // For non-Yes/No questions or if no specific navigation is defined
     if (typeof currentQuestion.next_question === 'number') {
       const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-      logQuestionFlow('following_next_question', {
-        nextQuestionOrder: currentQuestion.next_question,
-        nextQuestionIndex: nextIndex,
-        navigationReason: 'next_question'
-      });
       return nextIndex;
     }
 
-    // If no specific navigation is defined and it's the last question
+    // If we reach here and next_question is null, we've reached the end
     if (currentQuestion.next_question === null) {
-      logQuestionFlow('reached_end', {
-        currentOrder: currentQuestion.order,
-        selectedLabel,
-        navigationReason: 'end_of_sequence'
-      });
       return -1;
     }
 
-    // If no specific navigation is defined, go to the next sequential question
+    // Default sequential navigation
     const nextOrder = (currentQuestion.order || 0) + 1;
-    const nextIndex = questionSequence.findIndex(q => q.order === nextOrder);
-    logQuestionFlow('sequential_navigation', {
-      currentOrder: currentQuestion.order,
-      nextOrder,
-      nextQuestionIndex: nextIndex,
-      navigationReason: 'sequential'
-    });
-    return nextIndex;
+    return questionSequence.findIndex(q => q.order === nextOrder);
   };
 
   const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
