@@ -14,13 +14,13 @@ export interface Question {
   next_question?: number;
   next_if_no?: number;
   is_branching?: boolean;
+  sub_questions?: Record<string, Question[]>;
 }
 
 export interface CategoryQuestions {
   category: string;
   keywords?: string[];
   questions: Question[];
-  branching_logic?: BranchingLogic;
 }
 
 export interface Category {
