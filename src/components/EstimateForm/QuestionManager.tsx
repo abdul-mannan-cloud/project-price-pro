@@ -92,12 +92,12 @@ export const QuestionManager = ({
       isYesNo: isYesNoQuestion
     });
 
-    // Priority handling for Yes/No questions
+    // Handle Yes/No questions first
     if (isYesNoQuestion) {
-      // Handle "No" selection first - this should take priority
       if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
+        // For "No" selections, strictly follow next_if_no
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_if_no);
-        console.log('No selected - navigating to:', {
+        console.log('No selected - strictly navigating to next_if_no:', {
           currentOrder: currentQuestion.order,
           nextIfNo: currentQuestion.next_if_no,
           foundIndex: nextIndex
@@ -105,10 +105,10 @@ export const QuestionManager = ({
         return nextIndex;
       }
       
-      // Then handle "Yes" selection
       if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
+        // For "Yes" selections, follow next_question
         const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-        console.log('Yes selected - navigating to:', {
+        console.log('Yes selected - navigating to next_question:', {
           currentOrder: currentQuestion.order,
           nextQuestion: currentQuestion.next_question,
           foundIndex: nextIndex
@@ -117,20 +117,32 @@ export const QuestionManager = ({
       }
     }
 
-    // For non-Yes/No questions or if no specific navigation is defined
+    // For non-Yes/No questions, strictly follow next_question if defined
     if (typeof currentQuestion.next_question === 'number') {
       const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
+      console.log('Following next_question for non-Yes/No:', {
+        currentOrder: currentQuestion.order,
+        nextQuestion: currentQuestion.next_question,
+        foundIndex: nextIndex
+      });
       return nextIndex;
     }
 
-    // If we reach here and next_question is null, we've reached the end
+    // If next_question is explicitly null, we've reached the end
     if (currentQuestion.next_question === null) {
+      console.log('Reached end of questions');
       return -1;
     }
 
-    // Default sequential navigation
-    const nextOrder = (currentQuestion.order || 0) + 1;
-    return questionSequence.findIndex(q => q.order === nextOrder);
+    // Only use sequential navigation as a last resort
+    const nextOrder = currentQuestion.order + 1;
+    const nextIndex = questionSequence.findIndex(q => q.order === nextOrder);
+    console.log('Using sequential navigation:', {
+      currentOrder: currentQuestion.order,
+      nextOrder,
+      foundIndex: nextIndex
+    });
+    return nextIndex;
   };
 
   const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
