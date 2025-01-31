@@ -72,12 +72,15 @@ export const QuestionManager = ({
   const findDependentQuestions = (selectedOptionValues: string[]): Question[] => {
     if (!categoryData.questions) return [];
 
+    console.log('Finding dependent questions for values:', selectedOptionValues);
+
     // Get all questions after the first one that depend on any of the selected values
     const dependentQuestions = categoryData.questions
       .slice(1) // Skip the first question
       .filter(q => {
-        // Only include questions where depends_on matches one of our selected values
-        return q.depends_on && selectedOptionValues.includes(q.depends_on);
+        const matches = q.depends_on && selectedOptionValues.includes(q.depends_on);
+        console.log(`Question "${q.question}" depends_on: ${q.depends_on}, matches: ${matches}`);
+        return matches;
       });
 
     console.log('Found dependent questions:', dependentQuestions);
@@ -94,9 +97,10 @@ export const QuestionManager = ({
     if (currentQuestionIndex === 0) {
       // For the first question, get the selected values
       const firstQuestionOptions = formatOptions(currentQuestion);
-      const selectedOptionValues = firstQuestionOptions
-        .filter(opt => selectedOptions.includes(opt.id))
-        .map(opt => opt.value || '');
+      const selectedOptionValues = selectedOptions.map(selectedId => {
+        const option = firstQuestionOptions.find(opt => opt.id === selectedId);
+        return option?.value || '';
+      }).filter(Boolean);
 
       console.log('Selected option values:', selectedOptionValues);
       setSelectedValues(selectedOptionValues);
