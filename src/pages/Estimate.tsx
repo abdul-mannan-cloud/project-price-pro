@@ -32,21 +32,44 @@ const EstimatePage = () => {
   const { toast } = useToast();
   const { contractorId } = useParams();
 
-  // Query for contractor data
-  const { data: contractor } = useQuery({
+  // Query for contractor data with proper error handling
+  const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
-    enabled: !!contractorId,
     queryFn: async () => {
+      if (!contractorId) {
+        throw new Error("No contractor ID provided");
+      }
+
       const { data, error } = await supabase
         .from("contractors")
         .select("*, contractor_settings(*)")
         .eq("id", contractorId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching contractor:", error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error("Contractor not found");
+      }
+
       return data;
     },
+    enabled: !!contractorId, // Only run query if contractorId exists
   });
+
+  // Show error state if contractor fetch fails
+  useEffect(() => {
+    if (isContractorError) {
+      toast({
+        title: "Error",
+        description: "Unable to load contractor information. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  }, [isContractorError, toast]);
 
   // Query for options data - only when category is selected
   const { data: optionsData, isLoading: isLoadingOptions } = useQuery({
