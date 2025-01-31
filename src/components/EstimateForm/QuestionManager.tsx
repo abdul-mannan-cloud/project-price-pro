@@ -34,7 +34,12 @@ export const QuestionManager = ({
   useEffect(() => {
     if (categoryData?.questions?.length > 0) {
       const sortedQuestions = [...categoryData.questions].sort((a, b) => (a.order || 0) - (b.order || 0));
-      console.log('Initialized questions:', sortedQuestions);
+      console.log('Question sequence initialized:', sortedQuestions.map(q => ({
+        order: q.order,
+        question: q.question.substring(0, 30) + '...',
+        next_question: q.next_question,
+        next_if_no: q.next_if_no
+      })));
       setQuestionSequence(sortedQuestions);
       setCurrentQuestionIndex(0);
       setAnswers({});
@@ -51,12 +56,15 @@ export const QuestionManager = ({
   const findNextQuestionIndex = (currentQuestion: Question, selectedLabel: string): number => {
     if (!currentQuestion) return -1;
     
-    console.log('Navigation check:', { 
+    console.log('Navigation attempt:', { 
       currentQuestionId: currentQuestion.id,
       currentOrder: currentQuestion.order,
       selectedLabel,
       next_question: currentQuestion.next_question,
-      next_if_no: currentQuestion.next_if_no
+      next_if_no: currentQuestion.next_if_no,
+      isYesNo: currentQuestion.selections?.length === 2 && 
+               currentQuestion.selections[0] === 'Yes' && 
+               currentQuestion.selections[1] === 'No'
     });
 
     // For Yes/No questions with branching logic
@@ -72,18 +80,27 @@ export const QuestionManager = ({
       }
     }
 
-    // For any question with next_question defined (including Yes/No questions)
+    // For any question with next_question defined
     if (typeof currentQuestion.next_question === 'number') {
-      console.log(`Following next_question to order ${currentQuestion.next_question}`);
       const nextIndex = questionSequence.findIndex(q => q.order === currentQuestion.next_question);
-      console.log('Found next index:', nextIndex);
+      console.log('Following next_question:', {
+        currentOrder: currentQuestion.order,
+        nextQuestionOrder: currentQuestion.next_question,
+        foundIndex: nextIndex,
+        availableOrders: questionSequence.map(q => q.order)
+      });
       return nextIndex;
     }
 
     // If no specific navigation is defined, go to the next sequential question
     const nextOrder = currentQuestion.order + 1;
     const nextIndex = questionSequence.findIndex(q => q.order === nextOrder);
-    console.log('Next sequential order:', nextOrder, 'Found index:', nextIndex);
+    console.log('Sequential navigation:', {
+      currentOrder: currentQuestion.order,
+      nextOrder,
+      foundIndex: nextIndex,
+      availableOrders: questionSequence.map(q => q.order)
+    });
     return nextIndex;
   };
 
@@ -93,9 +110,11 @@ export const QuestionManager = ({
       questionId, 
       selectedOptions, 
       selectedLabel,
-      currentQuestion,
-      currentQuestionIndex,
-      currentQuestionOrder: currentQuestion?.order
+      currentQuestion: {
+        order: currentQuestion.order,
+        next_question: currentQuestion.next_question,
+        next_if_no: currentQuestion.next_if_no
+      }
     });
 
     setCurrentLabel(selectedLabel);
@@ -123,7 +142,7 @@ export const QuestionManager = ({
         currentOrder: currentQuestion.order,
         selectedLabel,
         nextIndex,
-        nextQuestionOrder: questionSequence[nextIndex]?.order
+        nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex].order : null
       });
 
       if (nextIndex !== -1) {
@@ -233,10 +252,14 @@ export const QuestionManager = ({
       onNext={() => {
         const nextIndex = findNextQuestionIndex(currentQuestion, currentLabel);
         console.log('Manual next navigation:', { 
-          currentQuestion, 
+          currentQuestion: {
+            order: currentQuestion.order,
+            next_question: currentQuestion.next_question,
+            next_if_no: currentQuestion.next_if_no
+          }, 
           selectedLabel: currentLabel, 
           nextIndex,
-          nextQuestionOrder: questionSequence[nextIndex]?.order
+          nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex].order : null
         });
 
         if (nextIndex !== -1) {
