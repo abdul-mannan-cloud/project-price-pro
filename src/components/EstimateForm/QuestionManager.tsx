@@ -37,9 +37,7 @@ export const QuestionManager = ({
 
   // Get index of question by its order number
   const findQuestionIndexByOrder = (order: number): number => {
-    const index = questionSequence.findIndex(q => q.order === order);
-    console.log(`Finding question with order ${order}, found at index: ${index}`);
-    return index;
+    return questionSequence.findIndex(q => q.order === order);
   };
 
   // Determine if a question is a yes/no question
@@ -62,16 +60,16 @@ export const QuestionManager = ({
     if (isYesNoQuestion(currentQuestion)) {
       if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
         const nextIndex = findQuestionIndexByOrder(currentQuestion.next_if_no);
-        console.log(`No selected, going to next_if_no order ${currentQuestion.next_if_no}, index: ${nextIndex}`);
+        console.log(`No selected, going to next_if_no: ${currentQuestion.next_if_no}, index: ${nextIndex}`);
         return nextIndex;
       } else if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
         const nextIndex = findQuestionIndexByOrder(currentQuestion.next_question);
-        console.log(`Yes selected, going to next_question order ${currentQuestion.next_question}, index: ${nextIndex}`);
+        console.log(`Yes selected, going to next_question: ${currentQuestion.next_question}, index: ${nextIndex}`);
         return nextIndex;
       }
     } else if (typeof currentQuestion.next_question === 'number') {
       const nextIndex = findQuestionIndexByOrder(currentQuestion.next_question);
-      console.log(`Non-branching question, going to next_question order ${currentQuestion.next_question}, index: ${nextIndex}`);
+      console.log(`Non-branching question, going to next_question: ${currentQuestion.next_question}, index: ${nextIndex}`);
       return nextIndex;
     }
 
@@ -130,8 +128,7 @@ export const QuestionManager = ({
           order: q.order,
           question: q.question,
           next_question: q.next_question,
-          next_if_no: q.next_if_no,
-          isYesNo: isYesNoQuestion(q)
+          next_if_no: q.next_if_no
         }))
       });
       
@@ -152,8 +149,7 @@ export const QuestionManager = ({
       currentQuestion: {
         order: currentQuestion.order,
         next_question: currentQuestion.next_question,
-        next_if_no: currentQuestion.next_if_no,
-        isYesNo: isYesNoQuestion(currentQuestion)
+        next_if_no: currentQuestion.next_if_no
       }
     });
 
