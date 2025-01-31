@@ -46,29 +46,26 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
-  const findNextQuestionByText = (questionText: string): number => {
-    return categoryData.questions.findIndex(q => q.question === questionText);
+  const findNextQuestionByText = (questionText: string): Question | undefined => {
+    return categoryData.questions.find(q => q.question === questionText);
   };
 
-  const getNextQuestions = (currentIndex: number, answer: string): Question[] => {
+  const getNextQuestions = (currentQuestion: Question, answer: string): Question[] => {
     if (!categoryData.questions) return [];
 
-    const currentQuestion = categoryData.questions[currentIndex];
-    
-    // If this is a branching question and the answer is "No",
-    // jump to the specified next question
+    // Handle branching logic for "No" answers
     if (currentQuestion.is_branching && answer === "No" && currentQuestion.next_if_no) {
-      const nextIndex = findNextQuestionByText(currentQuestion.next_if_no);
-      if (nextIndex !== -1) {
-        return [categoryData.questions[nextIndex]];
+      const nextQuestion = findNextQuestionByText(currentQuestion.next_if_no);
+      if (nextQuestion) {
+        return [nextQuestion];
       }
       return [];
     }
 
-    // For "Yes" answers or non-branching questions, return the next question
-    const nextIndex = currentIndex + 1;
-    if (nextIndex < categoryData.questions.length) {
-      return [categoryData.questions[nextIndex]];
+    // For "Yes" answers or non-branching questions, return the next sequential question
+    const currentIndex = categoryData.questions.findIndex(q => q.question === currentQuestion.question);
+    if (currentIndex !== -1 && currentIndex + 1 < categoryData.questions.length) {
+      return [categoryData.questions[currentIndex + 1]];
     }
 
     return [];
@@ -83,7 +80,7 @@ export const QuestionManager = ({
     const selectedAnswer = selectedOptions[0];
 
     // Get the next questions based on the answer
-    const nextQuestions = getNextQuestions(currentQuestionIndex, selectedAnswer);
+    const nextQuestions = getNextQuestions(currentQuestion, selectedAnswer);
     console.log('Next questions:', nextQuestions);
 
     if (nextQuestions.length > 0) {
