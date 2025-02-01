@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
 import { LoadingScreen } from "./LoadingScreen";
-import { Question, CategoryQuestions } from "@/types/estimate";
+import { Question, CategoryQuestions, Category } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 
 interface QuestionManagerProps {
