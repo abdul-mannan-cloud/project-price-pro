@@ -9,6 +9,7 @@ export interface Question {
   id: string;
   order: number;
   question: string;
+  description?: string;
   type: 'yes_no' | 'single_choice' | 'multiple_choice';
   options: QuestionOption[];
   next?: string;
