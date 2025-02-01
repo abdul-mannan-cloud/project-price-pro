@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Question } from "@/types/estimate";
 import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Check } from "lucide-react";
 
 interface QuestionCardProps {
@@ -48,6 +49,8 @@ export const QuestionCard = ({
     }
   };
 
+  const progress = (currentStage / totalStages) * 100;
+
   const shouldShowImage = (option: any) => {
     if (!option.image_url) return false;
     if (option.image_url.includes('example')) return false;
@@ -55,15 +58,19 @@ export const QuestionCard = ({
     return true;
   };
 
-  // Ensure question.options exists and is an array before mapping
-  const options = Array.isArray(question?.options) ? question.options : [];
-
   return (
     <Card className="w-full max-w-4xl mx-auto p-6">
-      <h2 className="text-2xl font-semibold mb-6">{question?.question}</h2>
+      <div className="mb-6">
+        <Progress value={progress} className="h-2" />
+        <div className="text-sm text-gray-500 mt-2 text-right">
+          Question {currentStage} of {totalStages}
+        </div>
+      </div>
+
+      <h2 className="text-2xl font-semibold mb-6">{question.question}</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-20">
-        {options.map((option) => {
+        {question.options.map((option) => {
           const isSelected = selectedOptions.includes(option.value);
           const showImage = shouldShowImage(option);
           
