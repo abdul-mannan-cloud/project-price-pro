@@ -91,7 +91,7 @@ export const QuestionCard = ({
                 <img
                   src={option.image_url}
                   alt={option.label}
-                  className="rounded-lg w-full h-32 object-cover"
+                  className="rounded-lg w-full h-32 object-cover mt-4"
                 />
               )}
             </div>
@@ -143,7 +143,7 @@ export const QuestionCard = ({
               <img
                 src={option.image_url}
                 alt={option.label}
-                className="rounded-lg w-full h-32 object-cover"
+                className="rounded-lg w-full h-32 object-cover mt-4"
               />
             )}
           </div>
