@@ -669,7 +669,7 @@ const EstimatePage = () => {
 
         {selectedCategory && categoryData && (
           <QuestionManager
-            questionSets={categoryData.questions}
+            questionSets={[categoryData]} // Wrap categoryData in an array since it's already in CategoryQuestions format
             onComplete={handleQuestionComplete}
           />
         )}
