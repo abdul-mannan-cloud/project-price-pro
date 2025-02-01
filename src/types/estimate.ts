@@ -3,8 +3,8 @@ export interface Option {
   value: string;
   next?: string;
   image_url?: string;
-  branch_next?: string; // For branch-specific navigation
-  skip_to_branch?: string; // For skipping to another branch
+  branch_next?: string;
+  skip_to_branch?: string;
 }
 
 export interface Question {
@@ -14,22 +14,21 @@ export interface Question {
   order: number;
   options: Option[];
   next?: string;
-  branch_id: string; // Identifier for which branch this question belongs to
-  keywords?: string[]; // Keywords associated with this question
-  is_branch_start?: boolean; // Indicates if this is the first question in a branch
-  skip_branch_on_no?: boolean; // For yes/no questions that can skip entire branches
-  priority?: number; // For ordering questions within and across branches
+  branch_id: string;
+  keywords?: string[];
+  is_branch_start?: boolean;
+  skip_branch_on_no?: boolean;
+  priority?: number;
 }
 
 export interface CategoryQuestions {
   category: string;
   keywords: string[];
   questions: Question[];
-  branch_id?: string; // Unique identifier for this question set
-  priority?: number; // For ordering multiple branches
-  dependencies?: string[]; // Other categories this might depend on
+  branch_id?: string;
+  priority?: number;
+  dependencies?: string[];
   merge_rules?: {
-    // Rules for merging with other branches
     mergeable_with?: string[];
     merge_priority?: number;
   };
@@ -58,14 +57,6 @@ export interface QuestionBranch {
   priority: number;
 }
 
-export interface QuestionFlow {
-  branches: QuestionBranch[];
-  currentBranchIndex: number;
-  answers: Record<string, Record<string, string[]>>;
-  branchOrder: string[]; // Ordered list of branch IDs
-  mergedBranches: Record<string, string[]>; // Track which branches were merged
-}
-
 export interface TaskBranch {
   value: string;
   next: string;
@@ -80,7 +71,6 @@ export interface QuestionFlow {
   taskBranches?: TaskBranch[];
 }
 
-// New interfaces for branch management
 export interface BranchMergeRule {
   source_branch: string;
   target_branch: string;
