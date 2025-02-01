@@ -6,9 +6,13 @@ interface LoadingScreenProps {
 
 export const LoadingScreen = ({ message }: LoadingScreenProps) => {
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center animate-fadeIn">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in-0">
       <div className="text-center space-y-4 p-6 rounded-lg bg-white shadow-lg">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+        <div className="flex justify-center space-x-2">
+          <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
+          <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+        </div>
         <p className="text-lg font-medium text-foreground">{message}</p>
       </div>
     </div>
