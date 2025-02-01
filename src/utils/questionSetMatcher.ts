@@ -5,7 +5,7 @@ export const findMatchingQuestionSets = (
   allQuestionSets: CategoryQuestions[]
 ): CategoryQuestions[] => {
   if (!description || !allQuestionSets?.length) {
-    console.log('Invalid input for matching question sets');
+    console.log('Invalid input for matching question sets:', { description, setsCount: allQuestionSets?.length });
     return [];
   }
 
@@ -15,11 +15,29 @@ export const findMatchingQuestionSets = (
   console.log('Matching description:', lowercaseDescription);
   console.log('Available question sets:', allQuestionSets.map(qs => qs.category));
 
-  // Kitchen remodel specific keywords
-  const kitchenKeywords = [
-    'kitchen', 'cabinets', 'countertops', 'backsplash', 'appliances',
-    'sink', 'tile', 'remodel', 'renovation', 'demo', 'demolition'
-  ];
+  // Kitchen remodel specific keywords with weights
+  const kitchenKeywords = {
+    'kitchen': 5,
+    'remodel': 4,
+    'cabinets': 3,
+    'countertops': 3,
+    'backsplash': 2,
+    'appliances': 2,
+    'sink': 2,
+    'tile': 1,
+    'renovation': 4,
+    'demo': 2,
+    'demolition': 2,
+    'quartz': 3,
+    'granite': 3,
+    'marble': 3,
+    'drywall': 1,
+    'painting': 1,
+    'lights': 1,
+    'lighting': 1,
+    'floor': 1,
+    'flooring': 1
+  };
 
   // Find all matching question sets based on keywords
   allQuestionSets.forEach(questionSet => {
@@ -28,18 +46,22 @@ export const findMatchingQuestionSets = (
 
     // Check custom keywords first
     if (Array.isArray(questionSet.keywords)) {
-      const matchingKeywords = questionSet.keywords.filter(keyword =>
-        keyword && lowercaseDescription.includes(keyword.toLowerCase())
-      );
-      matchPriority += matchingKeywords.length * 2; // Give more weight to custom keywords
+      questionSet.keywords.forEach(keyword => {
+        if (keyword && lowercaseDescription.includes(keyword.toLowerCase())) {
+          matchPriority += 3; // Base priority for custom keywords
+          console.log(`Matched custom keyword: ${keyword}`);
+        }
+      });
     }
 
-    // For kitchen sets, check additional common keywords
+    // For kitchen sets, check additional common keywords with weights
     if (isKitchenSet) {
-      const matchingKitchenKeywords = kitchenKeywords.filter(keyword =>
-        lowercaseDescription.includes(keyword)
-      );
-      matchPriority += matchingKitchenKeywords.length;
+      Object.entries(kitchenKeywords).forEach(([keyword, weight]) => {
+        if (lowercaseDescription.includes(keyword)) {
+          matchPriority += weight;
+          console.log(`Matched kitchen keyword: ${keyword} with weight ${weight}`);
+        }
+      });
     }
 
     if (matchPriority > 0) {
@@ -52,12 +74,15 @@ export const findMatchingQuestionSets = (
   });
 
   // Sort by priority and remove duplicates
-  return matches
+  const sortedMatches = matches
     .sort((a, b) => b.priority - a.priority)
     .map(match => match.questionSet)
     .filter((set, index, self) => 
       index === self.findIndex(s => s.category === set.category)
     );
+
+  console.log('Final matched sets:', sortedMatches.map(set => set.category));
+  return sortedMatches;
 };
 
 export const consolidateQuestionSets = (
@@ -68,9 +93,10 @@ export const consolidateQuestionSets = (
     return [];
   }
 
+  console.log('Consolidating question sets:', questionSets.map(set => set.category));
   const taskTypes = new Set<string>();
   
-  return questionSets.filter(set => {
+  const consolidated = questionSets.filter(set => {
     if (!set.category) {
       console.warn('Question set missing category');
       return false;
@@ -80,12 +106,16 @@ export const consolidateQuestionSets = (
     const taskType = set.category.split(' ')[0].toLowerCase();
     
     if (taskTypes.has(taskType)) {
+      console.log(`Skipping duplicate task type: ${taskType}`);
       return false;
     }
     
     taskTypes.add(taskType);
     return true;
   });
+
+  console.log('Consolidated sets:', consolidated.map(set => set.category));
+  return consolidated;
 };
 
 export const getBestMatchingCategory = (

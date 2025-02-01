@@ -353,37 +353,92 @@ const EstimatePage = () => {
   const handleDescriptionSubmit = async () => {
     setIsProcessing(true);
     try {
+      console.log('Processing description:', projectDescription);
+      
       // Fetch all question sets with their categories
       const { data: questionSetsData, error } = await supabase
-        .from('question_sets')
-        .select('*, categories(name)');
+        .from('Options')
+        .select('*')
+        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching options:', error);
+        throw error;
+      }
+
+      console.log('Fetched question sets data:', questionSetsData);
 
       // Transform the data to match CategoryQuestions type
-      const transformedQuestionSets: CategoryQuestions[] = questionSetsData.map(qs => {
-        const parsedData = typeof qs.data === 'string' ? JSON.parse(qs.data) : qs.data;
-        return {
-          category: qs.categories?.name || qs.category || '',
-          keywords: Array.isArray(parsedData?.keywords) ? parsedData.keywords : [],
-          questions: Array.isArray(parsedData?.questions) ? parsedData.questions : []
-        };
-      });
+      const transformedQuestionSets: CategoryQuestions[] = Object.entries(questionSetsData)
+        .filter(([key]) => key !== 'Key Options')
+        .map(([category, data]) => {
+          const questionData = data as any;
+          return {
+            category,
+            keywords: Array.isArray(questionData.keywords) ? questionData.keywords : [],
+            questions: Array.isArray(questionData.questions) 
+              ? questionData.questions.map((q: any, index: number) => ({
+                  id: q.id || `q-${index}`,
+                  order: q.order || index,
+                  question: q.question,
+                  type: q.type || 'single_choice',
+                  options: Array.isArray(q.options) 
+                    ? q.options.map((opt: any) => ({
+                        label: opt.label,
+                        value: opt.value,
+                        image_url: opt.image_url || "",
+                        next: opt.next
+                      }))
+                    : [],
+                  branch_id: q.branch_id || 'default-branch',
+                  keywords: Array.isArray(q.keywords) ? q.keywords : [],
+                  is_branch_start: q.is_branch_start || false,
+                  skip_branch_on_no: q.skip_branch_on_no || false,
+                  priority: q.priority || index,
+                  next: q.next
+                }))
+              : []
+          };
+        });
+
+      console.log('Transformed question sets:', transformedQuestionSets);
 
       // Find matching question sets based on description
       const matches = findMatchingQuestionSets(projectDescription, transformedQuestionSets);
+      console.log('Matched sets:', matches);
       
       // Consolidate to prevent question overload
       const consolidatedSets = consolidateQuestionSets(matches);
+      console.log('Consolidated sets:', consolidatedSets);
 
       if (consolidatedSets.length === 0) {
+        console.log('No matching categories found');
+        toast({
+          title: "No matching categories found",
+          description: "Please select a category manually.",
+          variant: "destructive",
+        });
         setStage('category');
         return;
       }
 
       // Set the matched question sets and move to questions stage
       setMatchedQuestionSets(consolidatedSets);
-      setStage('questions');
+      
+      // If we have a Kitchen Remodel match, set it as the selected category
+      const kitchenSet = consolidatedSets.find(set => 
+        set.category.toLowerCase().includes('kitchen')
+      );
+      
+      if (kitchenSet) {
+        console.log('Setting kitchen category:', kitchenSet.category);
+        setSelectedCategory(kitchenSet.category);
+        setStage('questions');
+      } else {
+        setStage('category');
+      }
+
     } catch (error) {
       console.error('Error matching question sets:', error);
       toast({
