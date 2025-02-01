@@ -14,7 +14,7 @@ interface QuestionCardProps {
   onNext?: () => void;
   currentStage: number;
   totalStages: number;
-  isLastQuestion?: boolean; // Added this prop to the interface
+  isLastQuestion?: boolean;
 }
 
 export const QuestionCard = ({
@@ -24,7 +24,7 @@ export const QuestionCard = ({
   onNext,
   currentStage,
   totalStages,
-  isLastQuestion = false, // Added with default value
+  isLastQuestion = false,
 }: QuestionCardProps) => {
   const [showNextButton, setShowNextButton] = useState(false);
 
