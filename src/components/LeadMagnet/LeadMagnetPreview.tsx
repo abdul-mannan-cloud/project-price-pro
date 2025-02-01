@@ -156,9 +156,14 @@ export const LeadMagnetPreview = () => {
         <QuestionCard
           question={questions[currentStep - 1]}
           selectedOptions={selectedOptions[currentStep - 1] ? [selectedOptions[currentStep - 1]] : []}
-          onSelect={(questionId, value) => handleOptionSelect(value[0])}
-          onNext={handleNext}
-          isLastQuestion={currentStep === questions.length}
+          onSelect={(questionId, value) => {
+            handleOptionSelect(value[0]);
+            // Auto-advance after selection for non-multiple choice questions
+            const currentQuestion = questions[currentStep - 1];
+            if (currentQuestion.type !== 'multiple_choice') {
+              setTimeout(() => handleNext(), 300);
+            }
+          }}
           currentStage={currentStep}
           totalStages={questions.length}
         />

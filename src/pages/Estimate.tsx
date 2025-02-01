@@ -728,15 +728,14 @@ const EstimatePage = () => {
                   ? [answers[currentQuestionIndex] as string] 
                   : []
             }
-            onSelect={handleAnswerSubmit}
-            onNext={() => {
-              if (currentQuestionIndex < questions.length - 1) {
-                setCurrentQuestionIndex(prev => prev + 1);
-              } else {
-                generateEstimate();
+            onSelect={async (questionId, value) => {
+              await handleAnswerSubmit(questionId, value);
+              // Auto-advance for non-multiple choice questions
+              const currentQuestion = questions[currentQuestionIndex];
+              if (currentQuestion.type !== 'multiple_choice' && currentQuestionIndex < questions.length - 1) {
+                setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
               }
             }}
-            isLastQuestion={currentQuestionIndex === questions.length - 1}
             currentStage={currentQuestionIndex + 1}
             totalStages={totalStages}
           />
