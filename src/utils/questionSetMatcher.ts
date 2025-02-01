@@ -5,17 +5,33 @@ interface MatchedQuestionSet {
   questionSet: CategoryQuestions;
 }
 
+/**
+ * Finds matching question sets based on keywords in the description
+ * @param description - User's project description
+ * @param allQuestionSets - Available question sets to match against
+ * @returns Array of matching question sets sorted by relevance
+ */
 export const findMatchingQuestionSets = (
   description: string,
   allQuestionSets: CategoryQuestions[]
 ): CategoryQuestions[] => {
+  if (!description || !allQuestionSets?.length) {
+    console.log('Invalid input for matching question sets');
+    return [];
+  }
+
   const matches: MatchedQuestionSet[] = [];
-  const lowercaseDescription = description.toLowerCase();
+  const lowercaseDescription = description.toLowerCase().trim();
 
   // Find all matching question sets based on keywords
   allQuestionSets.forEach(questionSet => {
+    if (!Array.isArray(questionSet.keywords)) {
+      console.warn(`Invalid keywords for question set: ${questionSet.category}`);
+      return;
+    }
+
     const matchingKeywords = questionSet.keywords.filter(keyword =>
-      lowercaseDescription.includes(keyword.toLowerCase())
+      keyword && lowercaseDescription.includes(keyword.toLowerCase())
     );
 
     if (matchingKeywords.length > 0) {
@@ -35,13 +51,27 @@ export const findMatchingQuestionSets = (
     );
 };
 
-// Detect overlapping task types to prevent question overload
+/**
+ * Consolidates question sets to prevent overlapping task types
+ * @param questionSets - Array of question sets to consolidate
+ * @returns Filtered array of question sets with unique task types
+ */
 export const consolidateQuestionSets = (
   questionSets: CategoryQuestions[]
 ): CategoryQuestions[] => {
+  if (!Array.isArray(questionSets)) {
+    console.warn('Invalid input for consolidating question sets');
+    return [];
+  }
+
   const taskTypes = new Set<string>();
   
   return questionSets.filter(set => {
+    if (!set.category) {
+      console.warn('Question set missing category');
+      return false;
+    }
+
     // Extract task type from category or first question
     const taskType = set.category.split(' ')[0].toLowerCase();
     
@@ -54,7 +84,12 @@ export const consolidateQuestionSets = (
   });
 };
 
-// Helper function to get the best matching category
+/**
+ * Gets the best matching category based on description
+ * @param description - User's project description
+ * @param allQuestionSets - Available question sets to match against
+ * @returns Best matching question set or null if no match found
+ */
 export const getBestMatchingCategory = (
   description: string,
   allQuestionSets: CategoryQuestions[]
