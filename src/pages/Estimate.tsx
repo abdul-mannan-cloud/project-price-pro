@@ -12,8 +12,9 @@ import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
-import { Question, Category } from "@/types/estimate";
+import { Question, Category, CategoryQuestions } from "@/types/estimate";
 import { findBestMatchingCategory } from "@/utils/categoryMatcher";
+import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
@@ -28,9 +29,12 @@ const EstimatePage = () => {
   const [totalStages, setTotalStages] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryData, setCategoryData] = useState<CategoryQuestions | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch contractor data using react-query.
   const { data: contractor, isError: isContractorError } = useQuery({
@@ -84,6 +88,60 @@ const EstimatePage = () => {
     },
     enabled: !!selectedCategory
   });
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
+    if (selectedCategory) {
+      loadQuestionSet(selectedCategory);
+    }
+  }, [selectedCategory]);
+
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load categories",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadQuestionSet = async (categoryId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('question_sets')
+        .select('*')
+        .eq('category', categoryId)
+        .single();
+
+      if (error) throw error;
+      
+      // Parse the JSONB data
+      const questionSet = data.data as CategoryQuestions;
+      setCategoryData(questionSet);
+    } catch (error) {
+      console.error('Error loading question set:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load questions",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Handle file upload and image processing.
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -419,23 +477,22 @@ const EstimatePage = () => {
     return 0;
   };
 
-  const categories: Category[] = [
-    {
-      id: "Kitchen Remodel 2",
-      name: "Kitchen Remodeling",
-      description: "Update or renovate your kitchen"
-    },
-    {
-      id: "Bathroom Remodel",
-      name: "Bathroom Remodeling",
-      description: "Renovate your bathroom"
-    },
-    {
-      id: "Basement Remodeling",
-      name: "Basement Finishing",
-      description: "Finish or remodel your basement"
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    loadQuestionSet(categoryId);
+  };
+
+  const handleQuestionComplete = (answers: Record<string, string[]>) => {
+    if (selectedCategory) {
+      setCompletedCategories(prev => [...prev, selectedCategory]);
     }
-  ];
+    setSelectedCategory(null);
+    setCategoryData(null);
+  };
+
+  const handleAdditionalCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+  };
 
   if (isProcessing) {
     return (
@@ -570,12 +627,7 @@ const EstimatePage = () => {
             <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
             <CategoryGrid 
               categories={categories}
-              onSelectCategory={(categoryId) => {
-                setSelectedCategory(categoryId);
-                setCurrentQuestionIndex(0);
-                setAnswers({});
-                loadCategoryQuestions();
-              }}
+              onSelect={handleCategorySelect}
               completedCategories={completedCategories}
             />
           </div>
@@ -600,6 +652,17 @@ const EstimatePage = () => {
             groups={estimate.groups} 
             totalCost={estimate.totalCost}
             contractor={contractor || undefined}
+          />
+        )}
+
+        {selectedCategory && categoryData && (
+          <QuestionManager
+            categoryData={categoryData}
+            onComplete={handleQuestionComplete}
+            categories={categories}
+            currentCategory={selectedCategory}
+            onSelectAdditionalCategory={handleAdditionalCategorySelect}
+            completedCategories={completedCategories}
           />
         )}
       </div>
