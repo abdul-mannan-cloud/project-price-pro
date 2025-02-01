@@ -1,11 +1,5 @@
 import { CategoryQuestions, Question } from "@/types/estimate";
 
-/**
- * Finds matching question sets based on keywords in the description
- * @param description - User's project description
- * @param allQuestionSets - Available question sets to match against
- * @returns Array of matching question sets sorted by relevance
- */
 export const findMatchingQuestionSets = (
   description: string,
   allQuestionSets: CategoryQuestions[]
@@ -18,26 +12,46 @@ export const findMatchingQuestionSets = (
   const matches: { priority: number; questionSet: CategoryQuestions }[] = [];
   const lowercaseDescription = description.toLowerCase().trim();
 
+  console.log('Matching description:', lowercaseDescription);
+  console.log('Available question sets:', allQuestionSets.map(qs => qs.category));
+
+  // Kitchen remodel specific keywords
+  const kitchenKeywords = [
+    'kitchen', 'cabinets', 'countertops', 'backsplash', 'appliances',
+    'sink', 'tile', 'remodel', 'renovation', 'demo', 'demolition'
+  ];
+
   // Find all matching question sets based on keywords
   allQuestionSets.forEach(questionSet => {
-    if (!Array.isArray(questionSet.keywords)) {
-      console.warn(`Invalid keywords for question set: ${questionSet.category}`);
-      return;
+    let matchPriority = 0;
+    const isKitchenSet = questionSet.category.toLowerCase().includes('kitchen');
+
+    // Check custom keywords first
+    if (Array.isArray(questionSet.keywords)) {
+      const matchingKeywords = questionSet.keywords.filter(keyword =>
+        keyword && lowercaseDescription.includes(keyword.toLowerCase())
+      );
+      matchPriority += matchingKeywords.length * 2; // Give more weight to custom keywords
     }
 
-    const matchingKeywords = questionSet.keywords.filter(keyword =>
-      keyword && lowercaseDescription.includes(keyword.toLowerCase())
-    );
+    // For kitchen sets, check additional common keywords
+    if (isKitchenSet) {
+      const matchingKitchenKeywords = kitchenKeywords.filter(keyword =>
+        lowercaseDescription.includes(keyword)
+      );
+      matchPriority += matchingKitchenKeywords.length;
+    }
 
-    if (matchingKeywords.length > 0) {
+    if (matchPriority > 0) {
+      console.log(`Matched ${questionSet.category} with priority ${matchPriority}`);
       matches.push({
-        priority: matchingKeywords.length,
+        priority: matchPriority,
         questionSet
       });
     }
   });
 
-  // Sort by priority (number of matching keywords) and remove duplicates
+  // Sort by priority and remove duplicates
   return matches
     .sort((a, b) => b.priority - a.priority)
     .map(match => match.questionSet)
@@ -46,11 +60,6 @@ export const findMatchingQuestionSets = (
     );
 };
 
-/**
- * Consolidates question sets to prevent overlapping task types
- * @param questionSets - Array of question sets to consolidate
- * @returns Filtered array of question sets with unique task types
- */
 export const consolidateQuestionSets = (
   questionSets: CategoryQuestions[]
 ): CategoryQuestions[] => {
@@ -67,7 +76,7 @@ export const consolidateQuestionSets = (
       return false;
     }
 
-    // Extract task type from category or first question
+    // Extract task type from category
     const taskType = set.category.split(' ')[0].toLowerCase();
     
     if (taskTypes.has(taskType)) {
@@ -79,12 +88,6 @@ export const consolidateQuestionSets = (
   });
 };
 
-/**
- * Gets the best matching category based on description
- * @param description - User's project description
- * @param allQuestionSets - Available question sets to match against
- * @returns Best matching question set or null if no match found
- */
 export const getBestMatchingCategory = (
   description: string,
   allQuestionSets: CategoryQuestions[]
@@ -93,11 +96,6 @@ export const getBestMatchingCategory = (
   return matches.length > 0 ? matches[0] : null;
 };
 
-/**
- * Gets the initial question from a question set
- * @param questionSet - The question set to get the initial question from
- * @returns The first question in the set or null if not found
- */
 export const getInitialQuestion = (questionSet: CategoryQuestions): Question | null => {
   if (!questionSet?.questions?.length) {
     return null;
@@ -105,13 +103,6 @@ export const getInitialQuestion = (questionSet: CategoryQuestions): Question | n
   return questionSet.questions.find(q => q.order === 1) || questionSet.questions[0];
 };
 
-/**
- * Gets the next question based on the current question and answer
- * @param currentQuestion - The current question being answered
- * @param answer - The user's answer (single value or array for multiple choice)
- * @param questionSet - The current question set
- * @returns The next question or null if at the end
- */
 export const getNextQuestion = (
   currentQuestion: Question,
   answer: string | string[],
@@ -121,7 +112,6 @@ export const getNextQuestion = (
     return null;
   }
 
-  // For multiple choice questions
   if (Array.isArray(answer)) {
     const nextQuestionIds = currentQuestion.options
       .filter(opt => answer.includes(opt.value))
@@ -136,7 +126,6 @@ export const getNextQuestion = (
       return questionSet.questions.find(q => q.id === nextQuestionIds[0]) || null;
     }
   } else {
-    // For single choice/yes-no questions
     const selectedOption = currentQuestion.options.find(opt => opt.value === answer);
     if (selectedOption?.next && 
         selectedOption.next !== 'END' && 
@@ -145,7 +134,6 @@ export const getNextQuestion = (
     }
   }
 
-  // If no specific next question is defined, try to get the next question by order
   const currentIndex = questionSet.questions.findIndex(q => q.id === currentQuestion.id);
   return currentIndex < questionSet.questions.length - 1 
     ? questionSet.questions[currentIndex + 1] 
