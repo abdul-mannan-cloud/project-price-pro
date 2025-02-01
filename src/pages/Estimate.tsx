@@ -32,11 +32,11 @@ const EstimatePage = () => {
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryQuestions | null>(null);
-  const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
+  const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
 
   // Fetch contractor data using react-query.
   const { data: contractor, isError: isContractorError } = useQuery({
@@ -103,24 +103,13 @@ const EstimatePage = () => {
 
   const loadCategories = async () => {
     try {
-      const { data: optionsData, error: optionsError } = await supabase
-        .from('Options')
+      const { data, error } = await supabase
+        .from('categories')
         .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .single();
-
-      if (optionsError) throw optionsError;
-
-      // Transform Options data into Category format
-      const transformedCategories: Category[] = Object.keys(optionsData)
-        .filter(key => key !== 'Key Options')
-        .map(key => ({
-          id: key,
-          name: key.replace(/_/g, ' '),
-          description: `Get an estimate for your ${key.toLowerCase()} project`
-        }));
-
-      setCategories(transformedCategories);
+        .order('name');
+      
+      if (error) throw error;
+      setCategories(data || []);
     } catch (error) {
       console.error('Error loading categories:', error);
       toast({
@@ -135,24 +124,16 @@ const EstimatePage = () => {
 
   const loadQuestionSet = async (categoryId: string) => {
     try {
-      const { data: optionsData, error: optionsError } = await supabase
-        .from('Options')
+      const { data, error } = await supabase
+        .from('question_sets')
         .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .eq('category', categoryId)
         .single();
 
-      if (optionsError) throw optionsError;
-
-      const categoryData = optionsData[categoryId];
-      if (!categoryData) throw new Error('Category data not found');
-
-      // Transform the data into CategoryQuestions format
-      const questionSet: CategoryQuestions = {
-        category: categoryId,
-        keywords: categoryData.keywords || [],
-        questions: categoryData.questions || []
-      };
-
+      if (error) throw error;
+      
+      // Parse the JSONB data
+      const questionSet = data.data as CategoryQuestions;
       setCategoryData(questionSet);
     } catch (error) {
       console.error('Error loading question set:', error);
@@ -329,20 +310,20 @@ const EstimatePage = () => {
   const handleDescriptionSubmit = async () => {
     setIsProcessing(true);
     try {
-      // Fetch all question sets
+      // Fetch all question sets with their categories
       const { data: questionSetsData, error } = await supabase
         .from('question_sets')
         .select('*, categories(name)');
 
       if (error) throw error;
 
-      // Transform the data to match CategoryQuestions type with proper type checking
+      // Transform the data to match CategoryQuestions type
       const transformedQuestionSets: CategoryQuestions[] = questionSetsData.map(qs => {
-        const data = typeof qs.data === 'string' ? JSON.parse(qs.data) : qs.data;
+        const parsedData = typeof qs.data === 'string' ? JSON.parse(qs.data) : qs.data;
         return {
-          category: qs.categories?.name || qs.category,
-          keywords: Array.isArray(data?.keywords) ? data.keywords : [],
-          questions: Array.isArray(data?.questions) ? data.questions : []
+          category: qs.categories?.name || qs.category || '',
+          keywords: Array.isArray(parsedData?.keywords) ? parsedData.keywords : [],
+          questions: Array.isArray(parsedData?.questions) ? parsedData.questions : []
         };
       });
 
@@ -489,10 +470,9 @@ const EstimatePage = () => {
 
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
-    loadQuestionSet(categoryId);
   };
 
-  const handleQuestionComplete = (answers: Record<string, Record<string, string[]>>) => {
+  const handleQuestionComplete = (answers: Record<string, string[]>) => {
     if (selectedCategory) {
       setCompletedCategories(prev => [...prev, selectedCategory]);
     }
@@ -582,7 +562,7 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'description' && !selectedCategory && (
+        {stage === 'description' && (
           <div className="card p-8 animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
             <div className="space-y-2">
@@ -637,8 +617,7 @@ const EstimatePage = () => {
             <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
             <CategoryGrid 
               categories={categories}
-              selectedCategory={selectedCategory || undefined}
-              onSelectCategory={handleCategorySelect}
+              onSelect={handleCategorySelect}
               completedCategories={completedCategories}
             />
           </div>
@@ -668,8 +647,12 @@ const EstimatePage = () => {
 
         {selectedCategory && categoryData && (
           <QuestionManager
-            questionSets={[categoryData]}
+            categoryData={categoryData}
             onComplete={handleQuestionComplete}
+            categories={categories}
+            currentCategory={selectedCategory}
+            onSelectAdditionalCategory={handleAdditionalCategorySelect}
+            completedCategories={completedCategories}
           />
         )}
       </div>
