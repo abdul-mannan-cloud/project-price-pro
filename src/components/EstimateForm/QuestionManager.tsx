@@ -40,7 +40,6 @@ export const QuestionManager = ({
         }
 
         console.log('Raw category data:', categoryData);
-        // Sort questions by order property and ensure proper typing
         const sortedQuestions = [...categoryData.questions]
           .sort((a, b) => a.order - b.order)
           .map(q => ({
@@ -81,17 +80,21 @@ export const QuestionManager = ({
     // First check if the selected option has a next question specified
     const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValue);
     if (selectedOption?.next) {
+      console.log(`Found next question ${selectedOption.next} from selected option`);
       return selectedOption.next === 'END' ? null : selectedOption.next;
     }
 
     // If the current question has a next property, use that
     if (currentQuestion.next) {
+      console.log(`Found next question ${currentQuestion.next} from question`);
       return currentQuestion.next === 'END' ? null : currentQuestion.next;
     }
 
     // If no specific navigation is defined, move to the next question in order
     const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
-    return currentIndex < questionSequence.length - 1 ? questionSequence[currentIndex + 1].id : null;
+    const nextId = currentIndex < questionSequence.length - 1 ? questionSequence[currentIndex + 1].id : null;
+    console.log(`Falling back to next question in sequence: ${nextId}`);
+    return nextId;
   };
 
   const handleAnswer = async (questionId: string, selectedValues: string[]) => {
