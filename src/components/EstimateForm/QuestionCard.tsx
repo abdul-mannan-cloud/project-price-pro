@@ -55,12 +55,15 @@ export const QuestionCard = ({
     return true;
   };
 
+  // Ensure question.options exists and is an array before mapping
+  const options = Array.isArray(question?.options) ? question.options : [];
+
   return (
     <Card className="w-full max-w-4xl mx-auto p-6">
-      <h2 className="text-2xl font-semibold mb-6">{question.question}</h2>
+      <h2 className="text-2xl font-semibold mb-6">{question?.question}</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-20">
-        {question.options.map((option) => {
+        {options.map((option) => {
           const isSelected = selectedOptions.includes(option.value);
           const showImage = shouldShowImage(option);
           
