@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
+import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
@@ -16,7 +16,16 @@ import { Question, Category } from "@/types/estimate";
 import { findBestMatchingCategory } from "@/utils/categoryMatcher";
 
 const EstimatePage = () => {
-  const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
+  // Stage can be one of the following:
+  // 'photo' → Upload or take a photo.
+  // 'description' → Enter project description.
+  // 'questions' → Answer questions from the JSON.
+  // 'contact' → Provide contact details (after estimate is generated).
+  // 'estimate' → Display final estimate.
+  // 'category' → Choose a category manually.
+  const [stage, setStage] = useState<
+    "photo" | "description" | "questions" | "contact" | "estimate" | "category"
+  >("photo");
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
@@ -32,7 +41,9 @@ const EstimatePage = () => {
   const { toast } = useToast();
   const { contractorId } = useParams();
 
-  // Query for contractor data
+  // -------------------------------
+  // Stage 1: Fetch Contractor Data
+  // -------------------------------
   const { data: contractor } = useQuery({
     queryKey: ["contractor", contractorId],
     enabled: !!contractorId,
@@ -42,28 +53,14 @@ const EstimatePage = () => {
         .select("*, contractor_settings(*)")
         .eq("id", contractorId)
         .maybeSingle();
-
       if (error) throw error;
       return data;
     },
   });
 
-  // Query for options data - only when category is selected
-  const { data: optionsData, isLoading: isLoadingOptions } = useQuery({
-    queryKey: ["options", selectedCategory],
-    enabled: !!selectedCategory,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("Options")
-        .select(`"${selectedCategory}"`)
-        .eq("Key Options", "42e64c9c-53b2-49bd-ad77-995ecb3106c6")
-        .single();
-
-      if (error) throw error;
-      return data[selectedCategory] as any[];
-    },
-  });
-
+  // -------------------------------
+  // Stage 2: File Upload & Description
+  // -------------------------------
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -71,7 +68,7 @@ const EstimatePage = () => {
     try {
       setIsUploading(true);
 
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith("image/")) {
         toast({
           title: "Invalid file type",
           description: "Please upload an image file",
@@ -89,24 +86,23 @@ const EstimatePage = () => {
         return;
       }
 
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('project_images')
+        .from("project_images")
         .upload(fileName, file);
-
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('project_images')
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("project_images").getPublicUrl(fileName);
 
       setUploadedImageUrl(publicUrl);
-      setStage('description');
+      setStage("description");
       toast({ title: "Success", description: "Image uploaded successfully" });
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
       toast({
         title: "Upload failed",
         description: "There was an error uploading your image. Please try again.",
@@ -117,136 +113,122 @@ const EstimatePage = () => {
     }
   };
 
-  const formatQuestions = (rawQuestions: any): Question[] => {
-    if (!Array.isArray(rawQuestions?.questions)) {
-      console.error('Invalid questions format:', rawQuestions);
+  // -------------------------------
+  // Stage 3: Load and Format Questions
+  // -------------------------------
+  // Format the raw JSON questions into Question objects.
+  const formatQuestions = (rawData: any): Question[] => {
+    if (!Array.isArray(rawData?.questions)) {
+      console.error("Invalid questions format:", rawData);
       return [];
     }
-
-    return rawQuestions.questions.map((q: any, index: number) => ({
-      id: `${index}`,
+    return rawData.questions.map((q: any, index: number) => ({
+      id: q.id, // Use JSON's id
       question: q.question,
-      options: Array.isArray(q.options) ? q.options.map((opt: any, optIndex: number) => ({
-        id: `${index}-${optIndex}`,
-        label: typeof opt === 'string' ? opt : opt.label
-      })) : [],
-      multi_choice: q.multi_choice || false,
-      is_branching: q.is_branching || false,
-      sub_questions: {}
+      options: Array.isArray(q.options)
+        ? q.options.map((opt: any) => ({
+            id: opt.value, // Use the value as id (or opt.value if provided)
+            label: opt.label,
+            value: opt.value,
+            next: opt.next,
+            image_url: opt.image_url,
+          }))
+        : [],
+      multi_choice: q.type === "multiple_choice",
+      is_branching: q.type === "yes_no" ? false : false, // Set branching as needed
+      next: q.next || null,
+      sub_questions: {} // Not used in the current JSON
     }));
   };
 
+  // Load questions from Supabase Options JSON using the selected category.
   const loadCategoryQuestions = async () => {
     if (!selectedCategory) return;
-    
     setIsProcessing(true);
     try {
       const { data, error } = await supabase
-        .from('Options')
+        .from("Options")
         .select(`"${selectedCategory}"`)
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .eq("Key Options", "42e64c9c-53b2-49bd-ad77-995ecb3106c6")
         .single();
-
       if (error) throw error;
-
       if (!data || !data[selectedCategory]) {
         throw new Error(`No questions found for category: ${selectedCategory}`);
       }
-
       const categoryData = data[selectedCategory];
-      console.log('Category data:', categoryData);
-
+      console.log("Category data:", categoryData);
       if (!Array.isArray(categoryData.questions)) {
-        throw new Error('Invalid questions format');
+        throw new Error("Invalid questions format");
       }
-
       const formattedQuestions = categoryData.questions.map((q: any, index: number) => {
-        const question: Question = {
-          id: q.id || `q-${index}`,
+        return {
+          id: q.id,
           question: q.question,
-          options: Array.isArray(q.selections) 
-            ? q.selections.map((opt: any, optIndex: number) => ({
-                id: typeof opt === 'string' 
-                  ? `${index}-${optIndex}` 
-                  : opt.value || `${index}-${optIndex}`,
-                label: typeof opt === 'string' ? opt : opt.label
+          options: Array.isArray(q.selections)
+            ? q.selections.map((opt: any) => ({
+                id: opt.value, // Use the option's value as the id
+                label: opt.label,
+                value: opt.value,
+                next: opt.next,
+                image_url: opt.image_url,
               }))
             : [],
           multi_choice: q.multi_choice || false,
           is_branching: q.is_branching || false,
-          sub_questions: q.sub_questions ? Object.fromEntries(
-            Object.entries(q.sub_questions).map(([key, questions]) => [
-              key,
-              (questions as any[]).map((sq: any, sqIndex: number) => ({
-                id: `sq-${index}-${key}-${sqIndex}`,
-                question: sq.question,
-                options: Array.isArray(sq.selections)
-                  ? sq.selections.map((opt: any, optIndex: number) => ({
-                      id: `sq-${index}-${key}-${sqIndex}-${optIndex}`,
-                      label: typeof opt === 'string' ? opt : opt.label
-                    }))
-                  : [],
-                multi_choice: sq.multi_choice || false,
-                is_branching: false,
-                sub_questions: {}
-              }))
-            ])
-          ) : {}
+          next: q.next || null,
+          sub_questions: q.sub_questions || {}
         };
-
-        return question;
       });
-
-      console.log('Formatted questions:', formattedQuestions);
-      
+      console.log("Formatted questions:", formattedQuestions);
       if (formattedQuestions.length === 0) {
         toast({
           title: "No questions available",
           description: "Unable to load questions for this category.",
           variant: "destructive",
         });
-        setStage('category');
+        setStage("category");
         return;
       }
-
       setQuestions(formattedQuestions);
       setTotalStages(formattedQuestions.length);
-      setStage('questions');
+      setStage("questions");
     } catch (error) {
-      console.error('Error loading questions:', error);
+      console.error("Error loading questions:", error);
       toast({
         title: "Error",
         description: "Failed to load questions. Please try again.",
         variant: "destructive",
       });
-      setStage('category');
+      setStage("category");
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // When the description is submitted, attempt to match the category.
   const handleDescriptionSubmit = () => {
     const match = findBestMatchingCategory(projectDescription);
-    
     if (match) {
       setSelectedCategory(match.categoryId);
       setCurrentQuestionIndex(0);
       setAnswers({});
       loadCategoryQuestions();
     } else {
-      setStage('category');
+      setStage("category");
     }
   };
 
+  // -------------------------------
+  // Stage 4: Handle Answer Submission & Navigation
+  // -------------------------------
   const handleAnswerSubmit = async (questionId: string, value: string | string[]) => {
     const currentQuestion = questions[currentQuestionIndex];
-    
-    setAnswers(prev => ({ 
-      ...prev, 
-      [currentQuestionIndex]: Array.isArray(value) ? value : [value]
+    // Store answer keyed by question id.
+    setAnswers(prev => ({
+      ...prev,
+      [currentQuestion.id]: Array.isArray(value) ? value : [value],
     }));
-
-    // Only proceed automatically for non-branching single-choice questions
+    // Auto-advance for non-branching, single-choice questions.
     if (!currentQuestion.is_branching && !currentQuestion.multi_choice) {
       if (currentQuestionIndex < questions.length - 1) {
         setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
@@ -255,39 +237,36 @@ const EstimatePage = () => {
         await generateEstimate();
       }
     }
+    // For multi-choice, the QuestionCard will render a "Next" button.
   };
 
-  const handleCategoryComplete = (categoryId: string) => {
-    setCompletedCategories(prev => [...prev, categoryId]);
-    setStage('category'); // Show category selection again
-  };
-
+  // -------------------------------
+  // Stage 5: Generate the Estimate
+  // -------------------------------
   const generateEstimate = async () => {
     try {
-      const formattedAnswers = Object.entries(answers).map(([index, value]) => {
-        const question = questions[parseInt(index)];
+      const formattedAnswers = Object.entries(answers).map(([key, value]) => {
+        const question = questions.find(q => q.id === key);
         return {
-          question: question.question,
-          answer: Array.isArray(value) 
-            ? value.map(v => question.options.find(opt => opt.id === v)?.label || v)
-            : question.options.find(opt => opt.id === value)?.label || value
+          question: question?.question,
+          answer: Array.isArray(value)
+            ? value.map(v => question?.options.find(opt => opt.id === v)?.label || v)
+            : question?.options.find(opt => opt.id === value)?.label || value
         };
       });
-
-      const { data, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          projectDescription, 
-          imageUrl: uploadedImageUrl, 
+      const { data, error } = await supabase.functions.invoke("generate-estimate", {
+        body: {
+          projectDescription,
+          imageUrl: uploadedImageUrl,
           answers: formattedAnswers,
           contractorId
         }
       });
-
       if (error) throw error;
       setEstimate(data);
-      setStage('contact');
+      setStage("contact");
     } catch (error) {
-      console.error('Error generating estimate:', error);
+      console.error("Error generating estimate:", error);
       toast({
         title: "Error",
         description: "Failed to generate estimate. Please try again.",
@@ -298,37 +277,31 @@ const EstimatePage = () => {
     }
   };
 
+  // -------------------------------
+  // Stage 6: Handle Contact Submission
+  // -------------------------------
   const handleContactSubmit = async (contactData: any) => {
     try {
-      if (!contractorId) {
-        throw new Error("No contractor ID provided");
-      }
-
-      // Create a new lead instead of an estimate
+      if (!contractorId) throw new Error("No contractor ID provided");
       const { data: lead, error: leadError } = await supabase
-        .from('leads')
+        .from("leads")
         .insert({
           contractor_id: contractorId,
           user_name: contactData.fullName,
           user_email: contactData.email,
           user_phone: contactData.phone,
           project_address: contactData.address,
-          category: selectedCategory || '',
+          category: selectedCategory || "",
           answers: answers,
           estimate_data: estimate
         })
         .select()
         .single();
-
       if (leadError) throw leadError;
-
-      setStage('estimate');
-      toast({
-        title: "Success",
-        description: "Your estimate has been saved!",
-      });
+      setStage("estimate");
+      toast({ title: "Success", description: "Your estimate has been saved!" });
     } catch (error) {
-      console.error('Error saving lead:', error);
+      console.error("Error saving lead:", error);
       toast({
         title: "Error",
         description: "Failed to save your information. Please try again.",
@@ -337,17 +310,21 @@ const EstimatePage = () => {
     }
   };
 
+  // -------------------------------
+  // Progress Calculation
+  // -------------------------------
   const getProgressValue = () => {
-    if (stage === 'photo') return 20;
-    if (stage === 'description') return 40;
-    if (stage === 'questions') {
+    if (stage === "photo") return 20;
+    if (stage === "description") return 40;
+    if (stage === "questions") {
       return 40 + ((currentQuestionIndex + 1) / questions.length) * 30;
     }
-    if (stage === 'contact') return 90;
-    if (stage === 'estimate') return 100;
+    if (stage === "contact") return 90;
+    if (stage === "estimate") return 100;
     return 0;
   };
 
+  // Dummy categories array (update with your actual categories)
   const categories: Category[] = [
     {
       id: "Kitchen Remodel",
@@ -366,34 +343,39 @@ const EstimatePage = () => {
     }
   ];
 
+  // -------------------------------
+  // Render Logic
+  // -------------------------------
   if (isProcessing) {
-    return <LoadingScreen message={
-      stage === 'questions' && currentQuestionIndex === questions.length - 1
-        ? "Generating your estimate..."
-        : "Processing your request..."
-    } />;
+    return (
+      <LoadingScreen
+        message={
+          stage === "questions" && currentQuestionIndex === questions.length - 1
+            ? "Generating your estimate..."
+            : "Processing your request..."
+        }
+      />
+    );
   }
 
-  if (isLoadingOptions && stage === 'questions') {
+  if (isLoadingOptions && stage === "questions") {
     return <LoadingScreen message="Loading questions..." />;
   }
 
   return (
     <div className="min-h-screen bg-white">
       <Progress value={getProgressValue()} className="h-8 rounded-none" />
-      
-      {contractor && (
-        <button 
-          onClick={() => navigate("/dashboard")}
-          className="absolute top-4 left-4 text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
-        >
-          <ArrowLeft size={20} />
-          Back to Dashboard
-        </button>
-      )}
+
+      <button
+        onClick={() => navigate("/dashboard")}
+        className="absolute top-4 left-4 text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
+      >
+        <ArrowLeft size={20} />
+        Back to Dashboard
+      </button>
 
       <div className="max-w-4xl mx-auto px-4 py-12">
-        {stage === 'photo' && (
+        {stage === "photo" && (
           <div className="card p-8 animate-fadeIn">
             <div className="flex items-start justify-between mb-6">
               <div>
@@ -416,9 +398,9 @@ const EstimatePage = () => {
                   capture="environment"
                   disabled={isUploading}
                 />
-                <Button 
-                  className="w-full" 
-                  size="lg" 
+                <Button
+                  className="w-full"
+                  size="lg"
                   disabled={isUploading}
                   asChild
                 >
@@ -428,11 +410,11 @@ const EstimatePage = () => {
                   </div>
                 </Button>
               </label>
-              <Button 
-                variant="ghost" 
-                className="w-full" 
-                size="lg" 
-                onClick={() => setStage('description')}
+              <Button
+                variant="ghost"
+                className="w-full"
+                size="lg"
+                onClick={() => setStage("description")}
               >
                 <SkipForward className="mr-2" />
                 Skip Photo
@@ -441,7 +423,7 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'description' && (
+        {stage === "description" && (
           <div className="card p-8 animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
             <div className="space-y-2">
@@ -457,7 +439,7 @@ const EstimatePage = () => {
                 </p>
               )}
             </div>
-            <Button 
+            <Button
               className="w-full mt-6"
               onClick={handleDescriptionSubmit}
               disabled={projectDescription.trim().length < 30}
@@ -467,15 +449,15 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'questions' && questions.length > 0 && currentQuestionIndex < questions.length && (
+        {stage === "questions" && questions.length > 0 && currentQuestionIndex < questions.length && (
           <QuestionCard
             question={questions[currentQuestionIndex]}
             selectedOptions={
-              Array.isArray(answers[currentQuestionIndex])
-                ? answers[currentQuestionIndex] as string[]
-                : answers[currentQuestionIndex] 
-                  ? [answers[currentQuestionIndex] as string] 
-                  : []
+              Array.isArray(answers[questions[currentQuestionIndex].id])
+                ? (answers[questions[currentQuestionIndex].id] as string[])
+                : answers[questions[currentQuestionIndex].id]
+                ? [answers[questions[currentQuestionIndex].id] as string]
+                : []
             }
             onSelect={handleAnswerSubmit}
             onNext={() => {
@@ -487,14 +469,14 @@ const EstimatePage = () => {
             }}
             isLastQuestion={currentQuestionIndex === questions.length - 1}
             currentStage={currentQuestionIndex + 1}
-            totalStages={totalStages}
+            totalStages={questions.length}
           />
         )}
 
-        {stage === 'category' && (
+        {stage === "category" && (
           <div className="animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
-            <CategoryGrid 
+            <CategoryGrid
               categories={categories}
               onSelectCategory={(categoryId) => {
                 setSelectedCategory(categoryId);
@@ -507,11 +489,11 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'contact' && estimate && (
+        {stage === "contact" && estimate && (
           <div className="animate-fadeIn">
-            <EstimateDisplay 
-              groups={estimate.groups} 
-              totalCost={estimate.totalCost} 
+            <EstimateDisplay
+              groups={estimate.groups}
+              totalCost={estimate.totalCost}
               isBlurred={true}
               contractor={contractor || undefined}
             />
@@ -521,9 +503,9 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'estimate' && estimate && (
-          <EstimateDisplay 
-            groups={estimate.groups} 
+        {stage === "estimate" && estimate && (
+          <EstimateDisplay
+            groups={estimate.groups}
             totalCost={estimate.totalCost}
             contractor={contractor || undefined}
           />
