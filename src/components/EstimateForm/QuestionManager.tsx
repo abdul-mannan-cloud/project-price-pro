@@ -38,10 +38,6 @@ export const QuestionManager = ({
     findMatchingCategory();
   }, [projectDescription]);
 
-  useEffect(() => {
-    loadCategoryKeywords();
-  }, [categories]);
-
   const findMatchingCategory = async () => {
     try {
       setIsLoadingQuestions(true);
@@ -150,6 +146,8 @@ export const QuestionManager = ({
           };
 
           setQuestionFlow(flow);
+          // Call onSelectAdditionalCategory to set the current category
+          onSelectAdditionalCategory(bestMatch.category);
         } else {
           console.error('No questions found for category:', matchedCategory?.name);
           throw new Error('No questions found for matched category');
@@ -172,42 +170,6 @@ export const QuestionManager = ({
       });
     } finally {
       setIsLoadingQuestions(false);
-    }
-  };
-
-  const loadCategoryKeywords = async () => {
-    try {
-      const { data: optionsData, error } = await supabase
-        .from('Options')
-        .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .single();
-
-      if (error) {
-        console.error('Error loading options:', error);
-        return;
-      }
-
-      // Extract keywords for each category
-      const keywords: Record<string, string[]> = {};
-      Object.entries(optionsData).forEach(([category, data]) => {
-        if (category !== 'Key Options' && data && typeof data === 'object') {
-          const categoryData = data as { keywords?: string[] };
-          if (categoryData.keywords) {
-            // Map the category name to the category ID
-            const matchingCategory = categories.find(
-              c => c.name.toLowerCase() === category.toLowerCase()
-            );
-            if (matchingCategory) {
-              keywords[matchingCategory.id] = categoryData.keywords;
-            }
-          }
-        }
-      });
-
-      setCategoryKeywords(keywords);
-    } catch (error) {
-      console.error('Error loading category keywords:', error);
     }
   };
 
