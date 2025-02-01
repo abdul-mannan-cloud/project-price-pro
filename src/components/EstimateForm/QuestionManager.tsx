@@ -26,7 +26,7 @@ export const QuestionManager = ({
 }: QuestionManagerProps) => {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [questionFlow, setQuestionFlow] = useState<QuestionFlow | null>(null);
-  const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
+  const [categoryKeywords, setCategoryKeywords] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     console.log('Loading questions with description:', projectDescription);
@@ -84,29 +84,19 @@ export const QuestionManager = ({
           };
         });
 
-      console.log('Transformed question sets:', allQuestionSets);
+      // Store keywords for each category
+      const keywords: Record<string, string[]> = {};
+      allQuestionSets.forEach(set => {
+        keywords[set.category] = set.keywords;
+      });
+      setCategoryKeywords(keywords);
 
       // Find matching question sets based on project description
       const matches = findMatchingQuestionSets(projectDescription, allQuestionSets);
       console.log('Matched question sets:', matches);
       
-      // Consolidate to prevent question overload
-      const consolidatedSets = consolidateQuestionSets(matches);
-      console.log('Consolidated sets:', consolidatedSets);
-      setMatchedQuestionSets(consolidatedSets);
-
-      if (consolidatedSets.length === 0) {
-        console.log('No matching categories found');
-        toast({
-          title: "No matching categories found",
-          description: "Please select a category manually.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Initialize question flow with consolidated sets
-      const flow = initializeQuestionFlow(consolidatedSets);
+      // Initialize question flow with matched sets
+      const flow = initializeQuestionFlow(matches);
       console.log('Initialized question flow:', flow);
       setQuestionFlow(flow);
 
@@ -144,6 +134,34 @@ export const QuestionManager = ({
     }
   };
 
+  const findNextCategory = () => {
+    const description = projectDescription.toLowerCase();
+    const availableCategories = categories.filter(
+      cat => !completedCategories.includes(cat.id)
+    );
+
+    let bestMatch = null;
+    let highestScore = 0;
+
+    for (const category of availableCategories) {
+      const keywords = categoryKeywords[category.name] || [];
+      let score = 0;
+
+      keywords.forEach(keyword => {
+        if (description.includes(keyword.toLowerCase())) {
+          score++;
+        }
+      });
+
+      if (score > highestScore) {
+        highestScore = score;
+        bestMatch = category.id;
+      }
+    }
+
+    return bestMatch;
+  };
+
   if (isLoadingQuestions) {
     return <LoadingScreen message="Loading questions..." />;
   }
@@ -170,12 +188,12 @@ export const QuestionManager = ({
     return null;
   }
 
-  const currentAnswers = questionFlow.answers[currentBranch.category] || {};
+  const currentAnswers = questionFlow.answers[currentBranch.category]?.[currentQuestion.id] || [];
 
   return (
     <QuestionCard
       question={currentQuestion}
-      selectedOptions={currentAnswers[currentQuestion.id] || []}
+      selectedOptions={currentAnswers}
       onSelect={(questionId, values) => handleAnswer(questionId, values)}
       currentStage={questionFlow.currentBranchIndex + 1}
       totalStages={questionFlow.branches.length}
