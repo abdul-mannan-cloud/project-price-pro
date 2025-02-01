@@ -1,5 +1,28 @@
 import { CategoryQuestions } from "@/types/estimate";
 
+// Helper function to normalize text for comparison
+const normalizeText = (text: string): string => {
+  return text.toLowerCase().trim().replace(/[^\w\s]/g, '');
+};
+
+// Helper function to check if two task types are similar
+const areSimilarTaskTypes = (type1: string, type2: string): boolean => {
+  const similarPairs = [
+    ['flooring', 'carpet'],
+    ['window', 'door'],
+    ['kitchen', 'appliance'],
+    // Add more similar pairs as needed
+  ];
+
+  const normalizedType1 = normalizeText(type1);
+  const normalizedType2 = normalizeText(type2);
+
+  return similarPairs.some(([a, b]) => 
+    (normalizedType1.includes(a) && normalizedType2.includes(b)) ||
+    (normalizedType1.includes(b) && normalizedType2.includes(a))
+  );
+};
+
 export const findMatchingQuestionSets = (
   description: string,
   allQuestionSets: CategoryQuestions[]
@@ -10,7 +33,7 @@ export const findMatchingQuestionSets = (
   }
 
   const matches: { priority: number; questionSet: CategoryQuestions }[] = [];
-  const lowercaseDescription = description.toLowerCase().trim();
+  const lowercaseDescription = normalizeText(description);
   const processedTaskTypes = new Set<string>();
 
   console.log('Matching description:', lowercaseDescription);
@@ -21,18 +44,23 @@ export const findMatchingQuestionSets = (
     let matchPriority = 0;
     const taskType = questionSet.category.split(' ')[0].toLowerCase();
 
-    // Skip if we already have a question set for this task type
-    if (processedTaskTypes.has(taskType)) {
-      console.log(`Skipping duplicate task type: ${taskType}`);
+    // Skip if we already have a similar task type
+    if (Array.from(processedTaskTypes).some(type => areSimilarTaskTypes(type, taskType))) {
+      console.log(`Skipping similar task type: ${taskType}`);
       return;
     }
 
     // Check keywords
     if (Array.isArray(questionSet.keywords)) {
       questionSet.keywords.forEach(keyword => {
-        if (keyword && lowercaseDescription.includes(keyword.toLowerCase())) {
-          matchPriority += 3; // Base priority for keyword match
-          console.log(`Matched keyword: ${keyword}`);
+        if (keyword && lowercaseDescription.includes(normalizeText(keyword))) {
+          // Increase priority based on keyword position and specificity
+          const keywordPosition = lowercaseDescription.indexOf(normalizeText(keyword));
+          const positionBonus = Math.max(0, 1 - (keywordPosition / lowercaseDescription.length));
+          const specificityBonus = keyword.length / 20; // Longer keywords get higher priority
+          
+          matchPriority += 3 + positionBonus + specificityBonus;
+          console.log(`Matched keyword: ${keyword} with priority bonus:`, positionBonus + specificityBonus);
         }
       });
     }
@@ -68,7 +96,7 @@ export const consolidateQuestionSets = (
   }
 
   console.log('Consolidating question sets:', questionSets.map(set => set.category));
-  const taskTypes = new Set<string>();
+  const processedTaskTypes = new Set<string>();
   
   const consolidated = questionSets.filter(set => {
     if (!set.category) {
@@ -79,12 +107,13 @@ export const consolidateQuestionSets = (
     // Extract task type from category
     const taskType = set.category.split(' ')[0].toLowerCase();
     
-    if (taskTypes.has(taskType)) {
-      console.log(`Skipping duplicate task type: ${taskType}`);
+    // Check if we already have a similar task type
+    if (Array.from(processedTaskTypes).some(type => areSimilarTaskTypes(type, taskType))) {
+      console.log(`Skipping similar task type: ${taskType}`);
       return false;
     }
     
-    taskTypes.add(taskType);
+    processedTaskTypes.add(taskType);
     return true;
   });
 

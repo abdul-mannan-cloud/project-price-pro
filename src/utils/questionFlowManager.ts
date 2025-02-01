@@ -4,8 +4,16 @@ export const initializeQuestionFlow = (matchedSets: CategoryQuestions[]): Questi
   console.log('Initializing question flow with sets:', matchedSets);
   
   const branches: QuestionBranch[] = matchedSets.map((set, index) => {
+    // Sort questions by order
+    const sortedQuestions = [...set.questions].sort((a, b) => {
+      // Handle decimal orders (e.g., 1.1, 1.2)
+      const orderA = typeof a.order === 'number' ? a.order : parseFloat(a.order.toString());
+      const orderB = typeof b.order === 'number' ? b.order : parseFloat(b.order.toString());
+      return orderA - orderB;
+    });
+
     // Find the first question (should be yes/no type)
-    const startingQuestion = set.questions.find(q => q.order === 1) || set.questions[0];
+    const startingQuestion = sortedQuestions.find(q => q.type === 'yes_no') || sortedQuestions[0];
     
     if (!startingQuestion) {
       console.warn(`No starting question found for category ${set.category}`);
@@ -13,7 +21,7 @@ export const initializeQuestionFlow = (matchedSets: CategoryQuestions[]): Questi
 
     return {
       category: set.category,
-      questions: set.questions.sort((a, b) => a.order - b.order), // Sort by order
+      questions: sortedQuestions,
       currentQuestionId: startingQuestion?.id || null,
       isComplete: false,
       branch_id: set.branch_id || `branch-${index}`,
@@ -74,10 +82,16 @@ export const findNextQuestion = (
     }
   }
 
-  // If no specific next question is defined, move to the next question in order
-  const currentIndex = questions.findIndex(q => q.id === currentQuestion.id);
-  if (currentIndex < questions.length - 1) {
-    const nextQuestion = questions[currentIndex + 1];
+  // If no specific next question is defined, find the next question by order
+  const sortedQuestions = [...questions].sort((a, b) => {
+    const orderA = typeof a.order === 'number' ? a.order : parseFloat(a.order.toString());
+    const orderB = typeof b.order === 'number' ? b.order : parseFloat(b.order.toString());
+    return orderA - orderB;
+  });
+
+  const currentIndex = sortedQuestions.findIndex(q => q.id === currentQuestion.id);
+  if (currentIndex < sortedQuestions.length - 1) {
+    const nextQuestion = sortedQuestions[currentIndex + 1];
     console.log('Moving to next question in sequence:', nextQuestion.id);
     return nextQuestion.id;
   }
