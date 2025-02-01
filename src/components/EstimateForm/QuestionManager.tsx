@@ -44,21 +44,14 @@ export const QuestionManager = ({
           question: currentQuestion.question,
           type: currentQuestion.type
         } : null,
+        category: currentCategory,
         ...details
       };
       
       console.log('Question Flow Event:', logData);
 
       await supabase.functions.invoke('log-question-flow', {
-        body: {
-          event,
-          questionId: currentQuestion?.id,
-          questionOrder: currentQuestion?.order,
-          question: currentQuestion?.question,
-          type: currentQuestion?.type,
-          category: currentCategory,
-          ...details
-        }
+        body: logData
       });
     } catch (error) {
       console.error('Error logging question flow:', error);
@@ -75,6 +68,12 @@ export const QuestionManager = ({
       setCurrentQuestionId(formattedQuestions[0].id);
       setAnswers({});
       setShowAdditionalServices(false);
+
+      // Log initial question load
+      logQuestionFlow('questions_loaded', {
+        questionCount: formattedQuestions.length,
+        firstQuestionId: formattedQuestions[0].id
+      });
     }
   }, [categoryData]);
 
@@ -82,32 +81,30 @@ export const QuestionManager = ({
     console.log('Raw questions before formatting:', rawQuestions);
     
     return rawQuestions.map((q: any) => {
-      // Create options array based on question type
       let options = [];
       
       if (q.type === 'yes_no') {
         options = [
-          { label: 'Yes', value: 'yes' },
-          { label: 'No', value: 'no' }
+          { label: 'Yes', value: 'yes', next: q.options?.find((opt: any) => opt.value === 'yes')?.next },
+          { label: 'No', value: 'no', next: q.options?.find((opt: any) => opt.value === 'no')?.next }
         ];
-      } else if (Array.isArray(q.selections)) {
-        options = q.selections.map((selection: any, index: number) => ({
-          label: typeof selection === 'string' ? selection : selection.label,
-          value: typeof selection === 'string' ? selection.toLowerCase() : selection.value,
-          image_url: q.image_urls?.[index]
+      } else if (Array.isArray(q.options)) {
+        options = q.options.map((opt: any) => ({
+          label: opt.label,
+          value: opt.value,
+          next: opt.next,
+          image_url: opt.image_url
         }));
       }
 
       const formattedQuestion: Question = {
-        id: q.id || `q-${q.order}`,
-        order: q.order || 0,
+        id: q.id,
+        order: q.order,
         question: q.question,
         description: q.description,
-        type: q.type || (options.length === 2 && 
-               options[0].label === 'Yes' && 
-               options[1].label === 'No' ? 'yes_no' : 'single_choice'),
+        type: q.type,
         options: options,
-        next: q.next_question
+        next: q.next
       };
 
       console.log('Formatted question:', formattedQuestion);
@@ -129,16 +126,11 @@ export const QuestionManager = ({
       }
     });
 
-    // Update answers
     setAnswers(prev => ({ ...prev, [questionId]: selectedValues }));
 
-    // For yes/no and single_choice questions, navigate immediately
     if (currentQuestion.type !== 'multiple_choice') {
-      const nextQuestionId = findNextQuestionId(
-        questionSequence,
-        currentQuestion,
-        selectedValues[0]
-      );
+      const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValues[0]);
+      const nextQuestionId = selectedOption?.next || currentQuestion.next;
 
       await logQuestionFlow('answer_processed', {
         selectedValues,
