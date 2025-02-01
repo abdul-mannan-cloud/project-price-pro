@@ -1,7 +1,4 @@
 import { useState, useEffect } from "react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Question } from "@/types/estimate";
@@ -46,6 +43,9 @@ export const QuestionCard = ({
       onSelect(question.id, newSelection);
     } else {
       onSelect(question.id, [value]);
+      if (onNext && question.type !== 'multiple_choice') {
+        setTimeout(onNext, 300); // Add slight delay for visual feedback
+      }
     }
   };
 
@@ -57,6 +57,12 @@ export const QuestionCard = ({
     if (!isNaN(option.value)) return false;
     return true;
   };
+
+  // Ensure we have valid question data
+  if (!question || !Array.isArray(question.options)) {
+    console.warn('Invalid question data:', question);
+    return null;
+  }
 
   return (
     <Card className="w-full max-w-4xl mx-auto p-6">
