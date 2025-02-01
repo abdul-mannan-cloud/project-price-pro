@@ -1,8 +1,8 @@
+import { useState, useEffect } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Question } from "@/types/estimate";
 import { Card } from "@/components/ui/card";
@@ -11,28 +11,25 @@ interface QuestionCardProps {
   question: Question;
   selectedOptions: string[];
   onSelect: (questionId: string, values: string[]) => void;
-  isLastQuestion: boolean;
+  onNext?: () => void;
   currentStage: number;
   totalStages: number;
-  onNext?: () => void;
 }
 
 export const QuestionCard = ({
   question,
   selectedOptions,
   onSelect,
-  isLastQuestion,
+  onNext,
   currentStage,
   totalStages,
-  onNext,
 }: QuestionCardProps) => {
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
-    // Update showNextButton based on question type and selected options
     if (question.type === 'multiple_choice') {
       setShowNextButton(selectedOptions.length > 0);
-    } else if (question.type === 'single_choice' || question.type === 'yes_no') {
+    } else {
       setShowNextButton(selectedOptions.length === 1);
     }
   }, [selectedOptions, question.type]);
@@ -52,10 +49,6 @@ export const QuestionCard = ({
   };
 
   const renderOptions = () => {
-    if (!question.options || question.options.length === 0) {
-      return <p className="text-gray-500">No options available for this question</p>;
-    }
-
     if (question.type === 'multiple_choice') {
       return (
         <div className="space-y-4">
@@ -75,17 +68,8 @@ export const QuestionCard = ({
                   id={option.value}
                   checked={selectedOptions.includes(option.value)}
                   onCheckedChange={() => handleOptionSelect(option.value)}
-                  className="h-5 w-5"
                 />
-                <Label
-                  htmlFor={option.value}
-                  className={cn(
-                    "text-base cursor-pointer flex-grow",
-                    selectedOptions.includes(option.value)
-                      ? "text-gray-900 font-medium"
-                      : "text-gray-600"
-                  )}
-                >
+                <Label htmlFor={option.value} className="cursor-pointer">
                   {option.label}
                 </Label>
               </div>
@@ -120,20 +104,8 @@ export const QuestionCard = ({
             onClick={() => handleOptionSelect(option.value)}
           >
             <div className="flex items-center space-x-3">
-              <RadioGroupItem
-                value={option.value}
-                id={option.value}
-                className="h-5 w-5"
-              />
-              <Label
-                htmlFor={option.value}
-                className={cn(
-                  "text-base cursor-pointer flex-grow",
-                  selectedOptions[0] === option.value
-                    ? "text-gray-900 font-medium"
-                    : "text-gray-600"
-                )}
-              >
+              <RadioGroupItem value={option.value} id={option.value} />
+              <Label htmlFor={option.value} className="cursor-pointer">
                 {option.label}
               </Label>
             </div>
@@ -151,7 +123,7 @@ export const QuestionCard = ({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 animate-fadeIn">
+    <div className="w-full max-w-2xl mx-auto px-4">
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-gray-600">
@@ -183,12 +155,8 @@ export const QuestionCard = ({
           {renderOptions()}
           {showNextButton && onNext && (
             <div className="mt-6">
-              <Button
-                className="w-full"
-                onClick={onNext}
-                size="lg"
-              >
-                {isLastQuestion ? "Complete" : "Continue"}
+              <Button className="w-full" onClick={onNext} size="lg">
+                Continue
               </Button>
             </div>
           )}
