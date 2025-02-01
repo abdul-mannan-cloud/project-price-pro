@@ -4,6 +4,7 @@ import { AdditionalServicesGrid } from "./AdditionalServicesGrid";
 import { LoadingScreen } from "./LoadingScreen";
 import { Question, CategoryQuestions, Category } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuestionManagerProps {
   categoryData: CategoryQuestions;
@@ -14,13 +15,13 @@ interface QuestionManagerProps {
   completedCategories: string[];
 }
 
-export const QuestionManager = ({ 
-  categoryData, 
+export const QuestionManager = ({
+  categoryData,
   onComplete,
   categories,
   currentCategory,
   onSelectAdditionalCategory,
-  completedCategories
+  completedCategories,
 }: QuestionManagerProps) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
@@ -29,11 +30,29 @@ export const QuestionManager = ({
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // On mount, format and load questions from the provided JSON data.
   useEffect(() => {
-    console.log("Initializing question sequence with category data:", categoryData);
-    if (categoryData?.questions?.length > 0) {
-      const initialQuestion = categoryData.questions[0];
-      setQuestionSequence([initialQuestion]);
+    if (categoryData && Array.isArray(categoryData.questions) && categoryData.questions.length > 0) {
+      const formattedQuestions: Question[] = categoryData.questions.map((q: any) => {
+        return {
+          id: q.id, // Use the JSON-provided id
+          question: q.question,
+          options: Array.isArray(q.options)
+            ? q.options.map((opt: any, index: number) => ({
+                id: `${q.id}-${index}`,
+                label: opt.label,
+                value: opt.value,
+                next: opt.next,         // Option-level next pointer
+                image_url: opt.image_url,
+              }))
+            : [],
+          multi_choice: q.type === "multiple_choice",
+          is_branching: q.type === "yes_no" ? false : false, // (Set as needed)
+          next: q.next || null, // Question-level next pointer, if any
+          sub_questions: {} // (Not used in the current JSON)
+        };
+      });
+      setQuestionSequence(formattedQuestions);
       setCurrentQuestionIndex(0);
       setAnswers({});
       setShowAdditionalServices(false);
@@ -46,87 +65,56 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
-  const processSubQuestions = (
-    currentQuestion: Question,
-    selectedOptions: string[],
-    currentSequence: Question[]
-  ): Question[] => {
-    console.log("Processing sub-questions for:", { currentQuestion, selectedOptions });
-    
-    const currentIndex = currentSequence.indexOf(currentQuestion);
-    let newSequence = [...currentSequence.slice(0, currentIndex + 1)];
-
-    selectedOptions.forEach(option => {
-      if (currentQuestion.sub_questions && currentQuestion.sub_questions[option]) {
-        const subQuestions = currentQuestion.sub_questions[option];
-        console.log("Found sub-questions for option:", option, subQuestions);
-
-        const formattedSubQuestions = subQuestions.map((sq: any, index: number) => ({
-          id: sq.id || `sq-${currentQuestion.id}-${option}-${index}`,
-          question: sq.question,
-          options: sq.selections.map((opt: any, optIndex: number) => ({
-            id: typeof opt === "string" 
-              ? `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`
-              : opt.value || `${sq.id || `sq-${currentQuestion.id}-${option}-${index}`}-${optIndex}`,
-            label: typeof opt === "string" ? opt : opt.label
-          })),
-          multi_choice: sq.multi_choice || false,
-          is_branching: sq.is_branching || false,
-          sub_questions: sq.sub_questions || {}
-        }));
-
-        console.log("Formatted sub-questions:", formattedSubQuestions);
-        newSequence = [...newSequence, ...formattedSubQuestions];
-      }
-    });
-
-    const remainingQuestions = currentSequence.slice(currentIndex + 1);
-    console.log("New question sequence:", [...newSequence, ...remainingQuestions]);
-    
-    return [...newSequence, ...remainingQuestions];
+  // Determine the next question ID using the JSON-defined "next" pointers.
+  const findNextQuestionId = (currentQuestion: Question, selectedValue: string): string | null => {
+    const selectedOption = currentQuestion.options.find(
+      (opt) => opt.value === selectedValue
+    );
+    if (selectedOption?.next) {
+      return selectedOption.next;
+    }
+    if (currentQuestion.next) {
+      return currentQuestion.next;
+    }
+    const currentIndex = questionSequence.findIndex((q) => q.id === currentQuestion.id);
+    if (currentIndex < questionSequence.length - 1) {
+      return questionSequence[currentIndex + 1].id;
+    }
+    return null;
   };
 
+  // Handle an answer selection.
   const handleAnswer = (questionId: string, selectedOptions: string[]) => {
-    console.log("Handling answer:", { questionId, selectedOptions });
-    
-    setAnswers(prev => ({ ...prev, [questionId]: selectedOptions }));
-
+    setAnswers((prev) => ({ ...prev, [questionId]: selectedOptions }));
     const currentQuestion = questionSequence[currentQuestionIndex];
-
-    if (currentQuestion.is_branching) {
-      const newSequence = processSubQuestions(
-        currentQuestion,
-        selectedOptions,
-        questionSequence
-      );
-      
-      setQuestionSequence(newSequence);
-    }
-
-    // Auto-advance for non-multi-choice, non-branching questions
-    if (!currentQuestion.multi_choice && !currentQuestion.is_branching) {
-      setTimeout(() => {
-        if (currentQuestionIndex < questionSequence.length - 1) {
-          setCurrentQuestionIndex(prev => prev + 1);
+    // For single-choice (non multi-choice) questions, auto-advance.
+    if (!currentQuestion.multi_choice) {
+      const nextId = findNextQuestionId(currentQuestion, selectedOptions[0]);
+      if (!nextId || nextId === "END") {
+        handleComplete();
+      } else {
+        const nextIndex = questionSequence.findIndex((q) => q.id === nextId);
+        if (nextIndex !== -1) {
+          setCurrentQuestionIndex(nextIndex);
         } else {
-          handleComplete();
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
         }
-      }, 300);
+      }
     }
+    // For multi-choice questions, the Continue button in QuestionCard will call onNext.
   };
 
+  // Manual "Next" action for multi-choice questions.
   const handleNext = () => {
-    const isLastQuestion = currentQuestionIndex === questionSequence.length - 1;
-    
-    if (isLastQuestion) {
-      handleComplete();
+    if (currentQuestionIndex < questionSequence.length - 1) {
+      setCurrentQuestionIndex((prev) => prev + 1);
     } else {
-      setCurrentQuestionIndex(prev => prev + 1);
+      handleComplete();
     }
   };
 
+  // When the question flow is complete, process the answers.
   const handleComplete = async () => {
-    console.log("Completing category with answers:", answers);
     if (Object.keys(answers).length === 0) {
       toast({
         title: "Error",
@@ -135,18 +123,15 @@ export const QuestionManager = ({
       });
       return;
     }
-
     setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-estimate", {
         body: { 
           answers,
-          category: currentCategory
-        }
+          category: currentCategory,
+        },
       });
-
       if (error) throw error;
-      
       setShowAdditionalServices(true);
     } catch (error) {
       console.error("Error processing answers:", error);
@@ -172,9 +157,9 @@ export const QuestionManager = ({
   if (showAdditionalServices) {
     return (
       <AdditionalServicesGrid
-        categories={categories.filter(cat => !completedCategories.includes(cat.id))}
+        categories={categories}
         selectedCategory={selectedAdditionalCategory}
-        onSelect={handleAdditionalCategorySelect}
+        onSelectCategory={handleAdditionalCategorySelect}
         onComplete={() => onComplete(answers)}
         completedCategories={completedCategories}
       />
@@ -182,21 +167,22 @@ export const QuestionManager = ({
   }
 
   const currentQuestion = questionSequence[currentQuestionIndex];
-  
   if (!currentQuestion) {
-    console.log("No current question available");
-    return null;
+    return <div className="text-center p-8">No questions available.</div>;
   }
-
+  const isLastQuestion = !findNextQuestionId(currentQuestion, currentQuestion.options[0]?.value || "");
+  
   return (
     <QuestionCard
       question={currentQuestion}
       selectedOptions={answers[currentQuestion.id] || []}
       onSelect={handleAnswer}
       onNext={handleNext}
-      isLastQuestion={currentQuestionIndex === questionSequence.length - 1}
+      isLastQuestion={isLastQuestion}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />
   );
 };
+
+export default QuestionManager;
