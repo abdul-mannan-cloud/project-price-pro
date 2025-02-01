@@ -160,44 +160,19 @@ const EstimatePage = () => {
     try {
       console.log('Loading questions for category:', categoryName);
       
-      // First, get the category ID from the categories table
-      const { data: categoryData, error: categoryError } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('name', categoryName)
-        .maybeSingle();
-
-      if (categoryError) {
-        console.error('Error fetching category:', categoryError);
-        throw categoryError;
-      }
-
-      if (!categoryData) {
-        console.error('Category not found:', categoryName);
-        toast({
-          title: "Category not found",
-          description: `No questions available for ${categoryName}`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log('Found category ID:', categoryData.id);
-
-      // Now use the category ID to fetch the question set
-      const { data: questionSetData, error: questionSetError } = await supabase
-        .from('question_sets')
+      const { data: optionsData, error: optionsError } = await supabase
+        .from('Options')
         .select('*')
-        .eq('category', categoryData.id)
-        .maybeSingle();
+        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .single();
 
-      if (questionSetError) {
-        console.error('Error loading question set:', questionSetError);
-        throw questionSetError;
+      if (optionsError) {
+        console.error('Error fetching options:', optionsError);
+        throw optionsError;
       }
 
-      if (!questionSetData) {
-        console.error('No question set found for category:', categoryName);
+      if (!optionsData || !optionsData[categoryName]) {
+        console.error('No data found for category:', categoryName);
         toast({
           title: "No questions available",
           description: `No questions found for ${categoryName}`,
@@ -206,8 +181,7 @@ const EstimatePage = () => {
         return;
       }
 
-      // Properly type cast and validate the data structure
-      const rawData = questionSetData.data as Record<string, any>;
+      const rawData = optionsData[categoryName] as Record<string, any>;
       const parsedData: CategoryQuestions = {
         category: categoryName,
         keywords: Array.isArray(rawData.keywords) ? rawData.keywords : [],
@@ -226,7 +200,7 @@ const EstimatePage = () => {
                   }))
                 : [],
               branch_id: q.branch_id || 'default-branch',
-              keywords: Array.isArray(q.keywords) ? q.keywords : [],
+              keywords: Array.isArray(q.keywords) ? rawData.keywords : [],
               is_branch_start: q.is_branch_start || false,
               skip_branch_on_no: q.skip_branch_on_no || false,
               priority: q.priority || index,
@@ -257,7 +231,6 @@ const EstimatePage = () => {
     }
   };
 
-  // Handle file upload and image processing.
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -311,7 +284,6 @@ const EstimatePage = () => {
     }
   };
 
-  // Format raw questions data into the expected Question[] format.
   const formatQuestions = (rawQuestions: any[]): Question[] => {
     if (!Array.isArray(rawQuestions)) {
       console.error('Invalid questions format:', rawQuestions);
@@ -348,7 +320,6 @@ const EstimatePage = () => {
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 1000; // 1 second
 
-  // Load category questions from Supabase with retry logic.
   const loadCategoryQuestions = async (retryCount = 0) => {
     if (!selectedCategory) {
       console.error('No category selected');
@@ -423,13 +394,11 @@ const EstimatePage = () => {
     }
   };
 
-  // Handle description submission and category matching.
   const handleDescriptionSubmit = async () => {
     setIsProcessing(true);
     try {
       console.log('Processing description:', projectDescription);
       
-      // Fetch all question sets with their categories
       const { data: questionSetsData, error } = await supabase
         .from('Options')
         .select('*')
@@ -443,7 +412,6 @@ const EstimatePage = () => {
 
       console.log('Fetched question sets data:', questionSetsData);
 
-      // Transform the data to match CategoryQuestions type
       const transformedQuestionSets: CategoryQuestions[] = Object.entries(questionSetsData)
         .filter(([key]) => key !== 'Key Options')
         .map(([category, data]) => {
@@ -478,11 +446,9 @@ const EstimatePage = () => {
 
       console.log('Transformed question sets:', transformedQuestionSets);
 
-      // Find matching question sets based on description
       const matches = findMatchingQuestionSets(projectDescription, transformedQuestionSets);
       console.log('Matched sets:', matches);
       
-      // Consolidate to prevent question overload
       const consolidatedSets = consolidateQuestionSets(matches);
       console.log('Consolidated sets:', consolidatedSets);
 
@@ -497,10 +463,8 @@ const EstimatePage = () => {
         return;
       }
 
-      // Set the matched question sets and move to questions stage
       setMatchedQuestionSets(consolidatedSets);
       
-      // If we have a Kitchen Remodel match, set it as the selected category
       const kitchenSet = consolidatedSets.find(set => 
         set.category.toLowerCase().includes('kitchen')
       );
@@ -526,7 +490,6 @@ const EstimatePage = () => {
     }
   };
 
-  // Handle answer selection and submission.
   const handleAnswerSubmit = async (questionId: string, value: string | string[]) => {
     const currentQuestion = questions[currentQuestionIndex];
     setAnswers(prev => ({ 
@@ -549,10 +512,8 @@ const EstimatePage = () => {
     setStage('category');
   };
 
-  // Generate the estimate based on the answers.
   const generateEstimate = async () => {
     try {
-      // Convert answers to the expected format
       const formattedAnswers = Object.entries(answers).reduce((acc, [index, value]) => {
         const question = questions[parseInt(index)];
         if (question) {
@@ -586,7 +547,6 @@ const EstimatePage = () => {
     }
   };
 
-  // Handle contact form submission.
   const handleContactSubmit = async (contactData: any) => {
     try {
       if (!contractorId) {
@@ -628,7 +588,6 @@ const EstimatePage = () => {
     }
   };
 
-  // Calculate the progress bar value.
   const getProgressValue = () => {
     if (stage === 'photo') return 20;
     if (stage === 'description') return 40;
