@@ -5,7 +5,6 @@ import { LoadingScreen } from "./LoadingScreen";
 import { Question, CategoryQuestions, Category } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { findNextQuestionId, findQuestionById, initializeQuestions } from "@/utils/questionNavigation";
 
 interface QuestionManagerProps {
   categoryData: CategoryQuestions;
@@ -36,7 +35,6 @@ export const QuestionManager = ({
       const currentQuestion = currentQuestionId ? findQuestionById(questionSequence, currentQuestionId) : null;
       
       const logData = {
-        timestamp: new Date().toISOString(),
         event,
         currentQuestion: currentQuestion ? {
           id: currentQuestion.id,
@@ -49,10 +47,7 @@ export const QuestionManager = ({
       };
       
       console.log('Question Flow Event:', logData);
-
-      await supabase.functions.invoke('log-question-flow', {
-        body: logData
-      });
+      await supabase.functions.invoke('log-question-flow', { body: logData });
     } catch (error) {
       console.error('Error logging question flow:', error);
     }
@@ -68,8 +63,8 @@ export const QuestionManager = ({
       setCurrentQuestionId(formattedQuestions[0].id);
       setAnswers({});
       setShowAdditionalServices(false);
+      setIsProcessing(false);
 
-      // Log initial question load
       logQuestionFlow('questions_loaded', {
         questionCount: formattedQuestions.length,
         firstQuestionId: formattedQuestions[0].id
@@ -78,38 +73,49 @@ export const QuestionManager = ({
   }, [categoryData]);
 
   const formatQuestions = (rawQuestions: any[]): Question[] => {
-    console.log('Raw questions before formatting:', rawQuestions);
-    
-    return rawQuestions.map((q: any) => {
+    if (!Array.isArray(rawQuestions)) {
+      console.error('Invalid questions format:', rawQuestions);
+      return [];
+    }
+
+    return rawQuestions.map((q: any, index: number) => {
       let options = [];
       
       if (q.type === 'yes_no') {
         options = [
-          { label: 'Yes', value: 'yes', next: q.options?.find((opt: any) => opt.value === 'yes')?.next },
-          { label: 'No', value: 'no', next: q.options?.find((opt: any) => opt.value === 'no')?.next }
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' }
         ];
-      } else if (Array.isArray(q.options)) {
-        options = q.options.map((opt: any) => ({
-          label: opt.label,
-          value: opt.value,
-          next: opt.next,
-          image_url: opt.image_url
+      } else if (q.type === 'multiple_choice' || q.type === 'single_choice') {
+        options = (q.selections || []).map((selection: any, selIndex: number) => ({
+          label: typeof selection === 'string' ? selection : selection.label,
+          value: typeof selection === 'string' ? 
+            selection.toLowerCase().replace(/\s+/g, '_') : 
+            selection.value || `option_${selIndex + 1}`,
+          image_url: q.image_urls?.[selIndex]
         }));
       }
 
-      const formattedQuestion: Question = {
-        id: q.id,
-        order: q.order,
+      return {
+        id: q.id || `q-${index + 1}`,
+        order: q.order || index + 1,
         question: q.question,
-        description: q.description,
-        type: q.type,
+        description: q.description || '',
+        type: q.type || (
+          options.length === 2 && 
+          options[0].label === 'Yes' && 
+          options[1].label === 'No' 
+            ? 'yes_no' 
+            : 'single_choice'
+        ),
         options: options,
-        next: q.next
+        next: q.next_question
       };
-
-      console.log('Formatted question:', formattedQuestion);
-      return formattedQuestion;
     });
+  };
+
+  const findQuestionById = (questions: Question[], id: string): Question | undefined => {
+    return questions.find(q => q.id === id);
   };
 
   const handleAnswer = async (questionId: string, selectedValues: string[]) => {
@@ -119,18 +125,14 @@ export const QuestionManager = ({
     console.log('Processing answer:', {
       questionId,
       selectedValues,
-      currentQuestion: {
-        id: currentQuestion.id,
-        order: currentQuestion.order,
-        type: currentQuestion.type
-      }
+      currentQuestion
     });
 
     setAnswers(prev => ({ ...prev, [questionId]: selectedValues }));
 
     if (currentQuestion.type !== 'multiple_choice') {
-      const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValues[0]);
-      const nextQuestionId = selectedOption?.next || currentQuestion.next;
+      const nextQuestion = questionSequence.find(q => q.order === currentQuestion.order + 1);
+      const nextQuestionId = nextQuestion?.id;
 
       await logQuestionFlow('answer_processed', {
         selectedValues,
@@ -138,7 +140,7 @@ export const QuestionManager = ({
         questionType: currentQuestion.type
       });
 
-      if (nextQuestionId === 'END' || !nextQuestionId) {
+      if (!nextQuestionId) {
         await handleComplete();
       } else {
         setCurrentQuestionId(nextQuestionId);
@@ -152,14 +154,15 @@ export const QuestionManager = ({
     const currentQuestion = findQuestionById(questionSequence, currentQuestionId);
     if (!currentQuestion) return;
 
-    const nextQuestionId = currentQuestion.next;
+    const nextQuestion = questionSequence.find(q => q.order === currentQuestion.order + 1);
+    const nextQuestionId = nextQuestion?.id;
 
     await logQuestionFlow('manual_next', {
       currentQuestionId,
       nextQuestionId
     });
 
-    if (nextQuestionId === 'END' || !nextQuestionId) {
+    if (!nextQuestionId) {
       await handleComplete();
     } else {
       setCurrentQuestionId(nextQuestionId);
@@ -242,7 +245,7 @@ export const QuestionManager = ({
       selectedOptions={answers[currentQuestion.id] || []}
       onSelect={handleAnswer}
       onNext={handleNext}
-      isLastQuestion={!currentQuestion.next || currentQuestion.next === 'END'}
+      isLastQuestion={currentQuestion.order === questionSequence.length}
       currentStage={currentQuestion.order}
       totalStages={questionSequence.length}
     />
