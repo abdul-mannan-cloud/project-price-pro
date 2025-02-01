@@ -11,10 +11,10 @@ interface QuestionCardProps {
   question: Question;
   selectedOptions: string[];
   onSelect: (questionId: string, values: string[]) => void;
-  onNext?: () => void;
+  onNext: () => void;
+  isLastQuestion: boolean;
   currentStage: number;
   totalStages: number;
-  isLastQuestion?: boolean;
 }
 
 export const QuestionCard = ({
@@ -22,56 +22,68 @@ export const QuestionCard = ({
   selectedOptions,
   onSelect,
   onNext,
+  isLastQuestion,
   currentStage,
   totalStages,
-  isLastQuestion = false,
 }: QuestionCardProps) => {
+  const [pressedOption, setPressedOption] = useState<string | null>(null);
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
     if (question.type === 'multiple_choice') {
       setShowNextButton(selectedOptions.length > 0);
-    } else {
-      setShowNextButton(selectedOptions.length === 1);
     }
   }, [selectedOptions, question.type]);
 
-  const handleOptionSelect = (value: string) => {
-    if (question.type === 'multiple_choice') {
-      const newSelection = selectedOptions.includes(value)
-        ? selectedOptions.filter(v => v !== value)
-        : [...selectedOptions, value];
-      onSelect(question.id, newSelection);
-    } else {
-      onSelect(question.id, [value]);
-      if (onNext && (question.type === 'single_choice' || question.type === 'yes_no')) {
-        setTimeout(onNext, 300);
+  const handleSingleOptionSelect = (value: string) => {
+    setPressedOption(value);
+    onSelect(question.id, [value]);
+    setTimeout(() => {
+      setPressedOption(null);
+      if (question.type !== 'multiple_choice') {
+        onNext();
       }
-    }
+    }, 300);
+  };
+
+  const handleMultiOptionSelect = (value: string) => {
+    const newSelection = selectedOptions.includes(value)
+      ? selectedOptions.filter((v) => v !== value)
+      : [...selectedOptions, value];
+    onSelect(question.id, newSelection);
   };
 
   const renderOptions = () => {
     if (question.type === 'multiple_choice') {
       return (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {question.options.map((option) => (
             <div
               key={option.value}
               className={cn(
-                "flex flex-col space-y-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
+                "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
                 selectedOptions.includes(option.value)
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-gray-200"
               )}
-              onClick={() => handleOptionSelect(option.value)}
+              onClick={() => handleMultiOptionSelect(option.value)}
             >
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-4">
                 <Checkbox
                   id={option.value}
                   checked={selectedOptions.includes(option.value)}
-                  onCheckedChange={() => handleOptionSelect(option.value)}
+                  onCheckedChange={() => handleMultiOptionSelect(option.value)}
+                  className="h-6 w-6 rounded-lg"
                 />
-                <Label htmlFor={option.value} className="cursor-pointer">
+                <Label
+                  htmlFor={option.value}
+                  className={cn(
+                    "text-base cursor-pointer flex-1",
+                    selectedOptions.includes(option.value)
+                      ? "text-gray-900 font-medium"
+                      : "text-gray-600"
+                  )}
+                >
                   {option.label}
                 </Label>
               </div>
@@ -84,6 +96,13 @@ export const QuestionCard = ({
               )}
             </div>
           ))}
+          {showNextButton && (
+            <div className="col-span-full mt-6">
+              <Button className="w-full" onClick={onNext} size="lg">
+                {isLastQuestion ? "Generate Estimate" : "Next Question"}
+              </Button>
+            </div>
+          )}
         </div>
       );
     }
@@ -91,23 +110,32 @@ export const QuestionCard = ({
     return (
       <RadioGroup
         value={selectedOptions[0]}
-        onValueChange={(value) => handleOptionSelect(value)}
-        className="space-y-4"
+        onValueChange={handleSingleOptionSelect}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
         {question.options.map((option) => (
           <div
             key={option.value}
             className={cn(
-              "flex flex-col space-y-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
+              "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
               selectedOptions[0] === option.value
                 ? "border-primary bg-primary/5 shadow-sm"
-                : "border-gray-200"
+                : "border-gray-200",
+              pressedOption === option.value && "scale-[0.98]"
             )}
-            onClick={() => handleOptionSelect(option.value)}
+            onClick={() => handleSingleOptionSelect(option.value)}
           >
-            <div className="flex items-center space-x-3">
-              <RadioGroupItem value={option.value} id={option.value} />
-              <Label htmlFor={option.value} className="cursor-pointer">
+            <div className="flex items-center space-x-4">
+              <RadioGroupItem value={option.value} id={option.value} className="h-6 w-6" />
+              <Label
+                htmlFor={option.value}
+                className={cn(
+                  "text-base cursor-pointer flex-1",
+                  selectedOptions[0] === option.value
+                    ? "text-gray-900 font-medium"
+                    : "text-gray-600"
+                )}
+              >
                 {option.label}
               </Label>
             </div>
@@ -125,8 +153,8 @@ export const QuestionCard = ({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4">
-      <div className="mb-4">
+    <div className="max-w-4xl mx-auto p-8 animate-fadeIn">
+      <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-gray-600">
             Question {currentStage} of {totalStages}
@@ -143,26 +171,14 @@ export const QuestionCard = ({
         </div>
       </div>
 
-      <Card className="bg-white rounded-xl shadow-sm">
+      <Card className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {question.question}
-          </h2>
+          <h2 className="text-xl font-bold text-gray-900">{question.question}</h2>
           {question.description && (
             <p className="mt-2 text-gray-600">{question.description}</p>
           )}
         </div>
-        
-        <div className="p-6">
-          {renderOptions()}
-          {showNextButton && onNext && (
-            <div className="mt-6">
-              <Button className="w-full" onClick={onNext} size="lg">
-                {isLastQuestion ? "Complete" : "Continue"}
-              </Button>
-            </div>
-          )}
-        </div>
+        <div className="p-6">{renderOptions()}</div>
       </Card>
     </div>
   );
