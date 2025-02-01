@@ -29,6 +29,7 @@ export const QuestionManager = ({
   const [showAdditionalServices, setShowAdditionalServices] = useState(false);
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
 
   const formatQuestions = (rawQuestions: any[]): Question[] => {
     if (!Array.isArray(rawQuestions)) {
@@ -60,31 +61,46 @@ export const QuestionManager = ({
         question: q.question,
         description: q.description || '',
         type: q.type || 'single_choice',
-        options: options
+        options
       };
     });
   };
 
   useEffect(() => {
-    if (categoryData?.questions?.length > 0) {
-      console.log('Raw category data:', categoryData);
-      const formattedQuestions = formatQuestions(categoryData.questions);
-      console.log('Formatted questions:', formattedQuestions);
-      
-      if (formattedQuestions.length === 0) {
+    const loadQuestions = async () => {
+      setIsLoadingQuestions(true);
+      try {
+        if (!categoryData?.questions?.length) {
+          throw new Error('No questions available');
+        }
+
+        console.log('Raw category data:', categoryData);
+        const formattedQuestions = formatQuestions(categoryData.questions);
+        console.log('Formatted questions:', formattedQuestions);
+        
+        if (formattedQuestions.length === 0) {
+          throw new Error('No questions available for this category');
+        }
+
+        setQuestionSequence(formattedQuestions);
+        setCurrentQuestionId(formattedQuestions[0].id);
+        setAnswers({});
+        setShowAdditionalServices(false);
+        setIsProcessing(false);
+      } catch (error) {
+        console.error('Error loading questions:', error);
         toast({
           title: "Error",
-          description: "No questions available for this category.",
+          description: error instanceof Error ? error.message : "Failed to load questions",
           variant: "destructive",
         });
-        return;
+      } finally {
+        setIsLoadingQuestions(false);
       }
+    };
 
-      setQuestionSequence(formattedQuestions);
-      setCurrentQuestionId(formattedQuestions[0].id);
-      setAnswers({});
-      setShowAdditionalServices(false);
-      setIsProcessing(false);
+    if (categoryData) {
+      loadQuestions();
     }
   }, [categoryData]);
 
@@ -174,6 +190,10 @@ export const QuestionManager = ({
     onSelectAdditionalCategory(categoryId);
   };
 
+  if (isLoadingQuestions) {
+    return <LoadingScreen message="Loading questions..." />;
+  }
+
   if (isProcessing) {
     return <LoadingScreen message="Processing your answers..." />;
   }
@@ -191,7 +211,13 @@ export const QuestionManager = ({
   }
 
   const currentQuestion = currentQuestionId ? questionSequence.find(q => q.id === currentQuestionId) : null;
-  if (!currentQuestion) return null;
+  if (!currentQuestion) {
+    return (
+      <div className="text-center p-8">
+        <p className="text-lg text-gray-600">No questions available. Please try selecting a different category.</p>
+      </div>
+    );
+  }
 
   return (
     <QuestionCard
