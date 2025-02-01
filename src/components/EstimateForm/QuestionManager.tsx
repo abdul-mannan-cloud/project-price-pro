@@ -29,14 +29,15 @@ export const QuestionManager = ({
   const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
 
   useEffect(() => {
+    console.log('Loading questions with description:', projectDescription);
     loadQuestions();
   }, [projectDescription]);
 
   const loadQuestions = async () => {
     try {
       setIsLoadingQuestions(true);
+      console.log('Fetching questions from Options table');
 
-      // Fetch all question sets from Options table
       const { data: optionsData, error: optionsError } = await supabase
         .from('Options')
         .select('*')
@@ -44,8 +45,11 @@ export const QuestionManager = ({
         .single();
 
       if (optionsError) {
+        console.error('Error fetching options:', optionsError);
         throw optionsError;
       }
+
+      console.log('Options data received:', optionsData);
 
       // Convert options data to CategoryQuestions format
       const allQuestionSets: CategoryQuestions[] = Object.entries(optionsData)
@@ -55,18 +59,38 @@ export const QuestionManager = ({
           return {
             category,
             keywords: questionData.keywords || [],
-            questions: questionData.questions || []
+            questions: questionData.questions?.map((q: any, index: number) => ({
+              id: q.id || `q-${index}`,
+              order: q.order || index,
+              question: q.question,
+              type: q.type || 'single_choice',
+              options: q.options?.map((opt: any) => ({
+                label: opt.label,
+                value: opt.value,
+                image_url: opt.image_url || ""
+              })) || [],
+              branch_id: q.branch_id || 'default-branch',
+              keywords: q.keywords || [],
+              is_branch_start: q.is_branch_start || false,
+              skip_branch_on_no: q.skip_branch_on_no || false,
+              priority: q.priority || index
+            })) || []
           };
         });
 
+      console.log('Transformed question sets:', allQuestionSets);
+
       // Find matching question sets based on project description
       const matches = findMatchingQuestionSets(projectDescription, allQuestionSets);
+      console.log('Matched question sets:', matches);
       
       // Consolidate to prevent question overload
       const consolidatedSets = consolidateQuestionSets(matches);
+      console.log('Consolidated sets:', consolidatedSets);
       setMatchedQuestionSets(consolidatedSets);
 
       if (consolidatedSets.length === 0) {
+        console.log('No matching categories found');
         toast({
           title: "No matching categories found",
           description: "Please select a category manually.",
@@ -77,6 +101,7 @@ export const QuestionManager = ({
 
       // Initialize question flow with consolidated sets
       const flow = initializeQuestionFlow(consolidatedSets);
+      console.log('Initialized question flow:', flow);
       setQuestionFlow(flow);
 
     } catch (error) {
