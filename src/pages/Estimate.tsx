@@ -170,7 +170,10 @@ const EstimatePage = () => {
     }));
   };
 
-  const loadCategoryQuestions = async () => {
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 1000; // 1 second
+
+  const loadCategoryQuestions = async (retryCount = 0) => {
     if (!selectedCategory) {
       console.error('No category selected');
       return;
@@ -178,7 +181,7 @@ const EstimatePage = () => {
     
     setIsProcessing(true);
     try {
-      console.log('Loading questions for category:', selectedCategory);
+      console.log(`Attempting to load questions for category: ${selectedCategory} (attempt ${retryCount + 1})`);
       
       const { data, error } = await supabase
         .from('Options')
@@ -193,19 +196,35 @@ const EstimatePage = () => {
 
       if (!data || !data[selectedCategory]) {
         console.error('No data found for category:', selectedCategory);
+        
+        // Implement retry logic
+        if (retryCount < MAX_RETRIES) {
+          console.log(`Retrying in ${RETRY_DELAY}ms... (${retryCount + 1}/${MAX_RETRIES})`);
+          setTimeout(() => loadCategoryQuestions(retryCount + 1), RETRY_DELAY);
+          return;
+        }
+        
         throw new Error(`No questions found for category: ${selectedCategory}`);
       }
 
       const categoryData = data[selectedCategory];
       console.log('Raw category data:', categoryData);
 
-      if (!Array.isArray(categoryData.questions)) {
+      // Validate the JSON structure
+      if (!categoryData || typeof categoryData !== 'object' || !Array.isArray(categoryData.questions)) {
         console.error('Invalid questions format:', categoryData);
+        
+        // Retry if the JSON structure is invalid
+        if (retryCount < MAX_RETRIES) {
+          console.log(`Invalid data format, retrying in ${RETRY_DELAY}ms... (${retryCount + 1}/${MAX_RETRIES})`);
+          setTimeout(() => loadCategoryQuestions(retryCount + 1), RETRY_DELAY);
+          return;
+        }
+        
         throw new Error('Invalid questions format');
       }
 
       const formattedQuestions = formatQuestions(categoryData.questions);
-
       console.log('Final formatted questions:', formattedQuestions);
       
       if (formattedQuestions.length === 0) {
@@ -223,14 +242,21 @@ const EstimatePage = () => {
       setStage('questions');
     } catch (error) {
       console.error('Error loading questions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load questions. Please try again.",
-        variant: "destructive",
-      });
-      setStage('category');
+      
+      // Only show error toast on final retry
+      if (retryCount >= MAX_RETRIES) {
+        toast({
+          title: "Error",
+          description: "Failed to load questions. Please try again.",
+          variant: "destructive",
+        });
+        setStage('category');
+      }
     } finally {
-      setIsProcessing(false);
+      // Only clear processing state if we're not going to retry
+      if (retryCount >= MAX_RETRIES) {
+        setIsProcessing(false);
+      }
     }
   };
 
