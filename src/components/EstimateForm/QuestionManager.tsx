@@ -26,6 +26,7 @@ export const QuestionManager = ({
   const [answers, setAnswers] = useState<Record<string, Record<string, string[]>>>({});
   const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
+  const [questionQueue, setQuestionQueue] = useState<string[]>([]);
 
   useEffect(() => {
     loadCurrentQuestionSet();
@@ -46,6 +47,7 @@ export const QuestionManager = ({
       const sortedQuestions = currentSet.questions.sort((a, b) => a.order - b.order);
       setQuestionSequence(sortedQuestions);
       setCurrentQuestionId(sortedQuestions[0].id);
+      setQuestionQueue([]);
       setIsLoadingQuestions(false);
     } catch (error) {
       console.error('Error loading question set:', error);
@@ -106,7 +108,26 @@ export const QuestionManager = ({
       }
     }));
 
-    if (currentQuestion.type !== 'multiple_choice') {
+    if (currentQuestion.type === 'multiple_choice') {
+      // For multiple choice, add all selected options' next questions to queue
+      const selectedOptions = currentQuestion.options.filter(opt => 
+        selectedValues.includes(opt.value)
+      );
+      const nextQuestions = selectedOptions
+        .map(opt => opt.next)
+        .filter((next): next is string => 
+          next !== undefined && 
+          next !== 'END' && 
+          next !== 'NEXT_BRANCH'
+        );
+      
+      if (nextQuestions.length > 0) {
+        setQuestionQueue(prev => [...nextQuestions, ...prev]);
+        setCurrentQuestionId(nextQuestions[0]);
+      } else {
+        await handleComplete();
+      }
+    } else {
       const nextQuestionId = findNextQuestionId(currentQuestion, selectedValues[0]);
       
       if (!nextQuestionId) {
