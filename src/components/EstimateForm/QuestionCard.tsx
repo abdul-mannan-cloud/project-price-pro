@@ -52,6 +52,10 @@ export const QuestionCard = ({
   };
 
   const renderOptions = () => {
+    if (!question.options || question.options.length === 0) {
+      return <p className="text-gray-500">No options available</p>;
+    }
+
     if (question.type === 'multiple_choice') {
       return (
         <div className="space-y-4">
