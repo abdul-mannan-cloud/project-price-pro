@@ -85,7 +85,7 @@ export const QuestionManager = ({
     <QuestionCard
       question={currentQuestion}
       selectedOptions={currentAnswers[currentQuestion.id] || []}
-      onSelect={(values) => handleAnswer(currentQuestion.id, values)}
+      onSelect={(questionId, values) => handleAnswer(questionId, values)}
       currentStage={questionFlow.currentBranchIndex + 1}
       totalStages={questionFlow.branches.length}
     />
