@@ -59,7 +59,7 @@ const EstimatePage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
+  const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [estimate, setEstimate] = useState<any>(null);
   const [totalStages, setTotalStages] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -418,20 +418,14 @@ const EstimatePage = () => {
   // Generate the estimate based on the answers.
   const generateEstimate = async () => {
     try {
-      const formattedAnswers = Object.entries(answers).map(([index, value]) => {
+      // Convert answers to the expected format
+      const formattedAnswers = Object.entries(answers).reduce((acc, [index, value]) => {
         const question = questions[parseInt(index)];
-        return {
-          question: question.question,
-          answer: Array.isArray(value) 
-            ? value.map(v => question.options.find(opt => opt.value === v)?.label || v)
-            : question.options.find(opt => opt.value === value)?.label || value
-        };
-      });
-
-      let baseEstimate = 0;
-      if (selectedCategory === 'Kitchen Remodel') {
-        baseEstimate = calculateKitchenEstimate(answers);
-      }
+        if (question) {
+          acc[question.id] = Array.isArray(value) ? value : [value];
+        }
+        return acc;
+      }, {} as Record<string, string[]>);
 
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
@@ -439,7 +433,7 @@ const EstimatePage = () => {
           imageUrl: uploadedImageUrl, 
           answers: formattedAnswers,
           contractorId,
-          baseEstimate
+          baseEstimate: selectedCategory === 'Kitchen Remodel' ? calculateKitchenEstimate(formattedAnswers) : 0
         }
       });
 
