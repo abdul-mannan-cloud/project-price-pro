@@ -29,11 +29,12 @@ export const QuestionCard = ({
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
-    setShowNextButton(
-      question.type === 'multiple_choice' 
-        ? selectedOptions.length > 0 
-        : selectedOptions.length === 1
-    );
+    // Update showNextButton based on question type and selected options
+    if (question.type === 'multiple_choice') {
+      setShowNextButton(selectedOptions.length > 0);
+    } else if (question.type === 'single_choice' || question.type === 'yes_no') {
+      setShowNextButton(selectedOptions.length === 1);
+    }
   }, [selectedOptions, question.type]);
 
   const handleOptionSelect = (value: string) => {
@@ -44,7 +45,7 @@ export const QuestionCard = ({
       onSelect(question.id, newSelection);
     } else {
       onSelect(question.id, [value]);
-      if (onNext && question.type !== 'multiple_choice') {
+      if (onNext && (question.type === 'single_choice' || question.type === 'yes_no')) {
         setTimeout(onNext, 300);
       }
     }
