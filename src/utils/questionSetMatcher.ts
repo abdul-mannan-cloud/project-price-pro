@@ -1,9 +1,4 @@
-import { CategoryQuestions } from "@/types/estimate";
-
-interface MatchedQuestionSet {
-  priority: number;
-  questionSet: CategoryQuestions;
-}
+import { CategoryQuestions, Question } from "@/types/estimate";
 
 /**
  * Finds matching question sets based on keywords in the description
@@ -20,7 +15,7 @@ export const findMatchingQuestionSets = (
     return [];
   }
 
-  const matches: MatchedQuestionSet[] = [];
+  const matches: { priority: number; questionSet: CategoryQuestions }[] = [];
   const lowercaseDescription = description.toLowerCase().trim();
 
   // Find all matching question sets based on keywords
@@ -96,4 +91,63 @@ export const getBestMatchingCategory = (
 ): CategoryQuestions | null => {
   const matches = findMatchingQuestionSets(description, allQuestionSets);
   return matches.length > 0 ? matches[0] : null;
+};
+
+/**
+ * Gets the initial question from a question set
+ * @param questionSet - The question set to get the initial question from
+ * @returns The first question in the set or null if not found
+ */
+export const getInitialQuestion = (questionSet: CategoryQuestions): Question | null => {
+  if (!questionSet?.questions?.length) {
+    return null;
+  }
+  return questionSet.questions.find(q => q.order === 1) || questionSet.questions[0];
+};
+
+/**
+ * Gets the next question based on the current question and answer
+ * @param currentQuestion - The current question being answered
+ * @param answer - The user's answer (single value or array for multiple choice)
+ * @param questionSet - The current question set
+ * @returns The next question or null if at the end
+ */
+export const getNextQuestion = (
+  currentQuestion: Question,
+  answer: string | string[],
+  questionSet: CategoryQuestions
+): Question | null => {
+  if (!currentQuestion || !questionSet?.questions) {
+    return null;
+  }
+
+  // For multiple choice questions
+  if (Array.isArray(answer)) {
+    const nextQuestionIds = currentQuestion.options
+      .filter(opt => answer.includes(opt.value))
+      .map(opt => opt.next)
+      .filter((next): next is string => 
+        next !== undefined && 
+        next !== 'END' && 
+        next !== 'NEXT_BRANCH'
+      );
+
+    if (nextQuestionIds.length > 0) {
+      return questionSet.questions.find(q => q.id === nextQuestionIds[0]) || null;
+    }
+  } else {
+    // For single choice/yes-no questions
+    const selectedOption = currentQuestion.options.find(opt => opt.value === answer);
+    if (selectedOption?.next && 
+        selectedOption.next !== 'END' && 
+        selectedOption.next !== 'NEXT_BRANCH') {
+      return questionSet.questions.find(q => q.id === selectedOption.next) || null;
+    }
+  }
+
+  // If no specific next question is defined, try to get the next question by order
+  const currentIndex = questionSet.questions.findIndex(q => q.id === currentQuestion.id);
+  return currentIndex < questionSet.questions.length - 1 
+    ? questionSet.questions[currentIndex + 1] 
+    : null;
 };
