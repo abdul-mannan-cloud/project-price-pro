@@ -63,7 +63,7 @@ export const QuestionManager = ({
         throw new Error('No options data found');
       }
 
-      console.log('Fetched options data:', optionsData);
+      console.log('Raw Options data:', optionsData);
 
       // Process each category's keywords to find matches
       let bestMatch: { category: string; score: number; matchedKeywords: string[] } | null = null;
@@ -79,8 +79,25 @@ export const QuestionManager = ({
           return;
         }
 
+        console.log(`Processing category ${categoryName} with keywords:`, data.keywords);
+
         let score = 0;
         const matchedKeywords: string[] = [];
+
+        // Common kitchen remodel terms
+        const kitchenTerms = ['kitchen', 'remodel', 'cabinets', 'countertop', 'backsplash', 'sink'];
+        const isKitchenCategory = categoryName.toLowerCase().includes('kitchen');
+        
+        // Boost score for kitchen-specific terms if this is the Kitchen Remodel category
+        if (isKitchenCategory) {
+          kitchenTerms.forEach(term => {
+            if (description.includes(term)) {
+              score += 2;
+              matchedKeywords.push(term);
+              console.log(`Matched kitchen term "${term}" with bonus score`);
+            }
+          });
+        }
 
         data.keywords.forEach((keyword: string) => {
           const keywordLower = keyword.toLowerCase();
