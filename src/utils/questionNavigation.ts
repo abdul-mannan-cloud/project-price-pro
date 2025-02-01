@@ -1,4 +1,4 @@
-import { Question, QuestionOption } from "@/types/estimate";
+import { Question, Option } from "@/types/estimate";
 
 export const findNextQuestionId = (
   questions: Question[],
