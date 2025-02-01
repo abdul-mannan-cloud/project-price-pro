@@ -30,48 +30,6 @@ export const QuestionManager = ({
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const logQuestionFlow = async (event: string, details: any) => {
-    try {
-      const currentQuestion = currentQuestionId ? findQuestionById(questionSequence, currentQuestionId) : null;
-      
-      const logData = {
-        event,
-        currentQuestion: currentQuestion ? {
-          id: currentQuestion.id,
-          order: currentQuestion.order,
-          question: currentQuestion.question,
-          type: currentQuestion.type
-        } : null,
-        category: currentCategory,
-        ...details
-      };
-      
-      console.log('Question Flow Event:', logData);
-      await supabase.functions.invoke('log-question-flow', { body: logData });
-    } catch (error) {
-      console.error('Error logging question flow:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (categoryData?.questions?.length > 0) {
-      console.log('Raw category data:', categoryData);
-      const formattedQuestions = formatQuestions(categoryData.questions);
-      console.log('Formatted questions:', formattedQuestions);
-      
-      setQuestionSequence(formattedQuestions);
-      setCurrentQuestionId(formattedQuestions[0].id);
-      setAnswers({});
-      setShowAdditionalServices(false);
-      setIsProcessing(false);
-
-      logQuestionFlow('questions_loaded', {
-        questionCount: formattedQuestions.length,
-        firstQuestionId: formattedQuestions[0].id
-      });
-    }
-  }, [categoryData]);
-
   const formatQuestions = (rawQuestions: any[]): Question[] => {
     if (!Array.isArray(rawQuestions)) {
       console.error('Invalid questions format:', rawQuestions);
@@ -87,13 +45,13 @@ export const QuestionManager = ({
           { label: 'No', value: 'no' }
         ];
       } else if (q.type === 'multiple_choice' || q.type === 'single_choice') {
-        options = (q.selections || []).map((selection: any, selIndex: number) => ({
+        options = Array.isArray(q.selections) ? q.selections.map((selection: any, selIndex: number) => ({
           label: typeof selection === 'string' ? selection : selection.label,
           value: typeof selection === 'string' ? 
             selection.toLowerCase().replace(/\s+/g, '_') : 
             selection.value || `option_${selIndex + 1}`,
           image_url: q.image_urls?.[selIndex]
-        }));
+        })) : [];
       }
 
       return {
@@ -101,25 +59,37 @@ export const QuestionManager = ({
         order: q.order || index + 1,
         question: q.question,
         description: q.description || '',
-        type: q.type || (
-          options.length === 2 && 
-          options[0].label === 'Yes' && 
-          options[1].label === 'No' 
-            ? 'yes_no' 
-            : 'single_choice'
-        ),
-        options: options,
-        next: q.next_question
+        type: q.type || 'single_choice',
+        options: options
       };
     });
   };
 
-  const findQuestionById = (questions: Question[], id: string): Question | undefined => {
-    return questions.find(q => q.id === id);
-  };
+  useEffect(() => {
+    if (categoryData?.questions?.length > 0) {
+      console.log('Raw category data:', categoryData);
+      const formattedQuestions = formatQuestions(categoryData.questions);
+      console.log('Formatted questions:', formattedQuestions);
+      
+      if (formattedQuestions.length === 0) {
+        toast({
+          title: "Error",
+          description: "No questions available for this category.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setQuestionSequence(formattedQuestions);
+      setCurrentQuestionId(formattedQuestions[0].id);
+      setAnswers({});
+      setShowAdditionalServices(false);
+      setIsProcessing(false);
+    }
+  }, [categoryData]);
 
   const handleAnswer = async (questionId: string, selectedValues: string[]) => {
-    const currentQuestion = findQuestionById(questionSequence, questionId);
+    const currentQuestion = questionSequence.find(q => q.id === questionId);
     if (!currentQuestion) return;
 
     console.log('Processing answer:', {
@@ -132,18 +102,10 @@ export const QuestionManager = ({
 
     if (currentQuestion.type !== 'multiple_choice') {
       const nextQuestion = questionSequence.find(q => q.order === currentQuestion.order + 1);
-      const nextQuestionId = nextQuestion?.id;
-
-      await logQuestionFlow('answer_processed', {
-        selectedValues,
-        nextQuestionId,
-        questionType: currentQuestion.type
-      });
-
-      if (!nextQuestionId) {
+      if (!nextQuestion) {
         await handleComplete();
       } else {
-        setCurrentQuestionId(nextQuestionId);
+        setCurrentQuestionId(nextQuestion.id);
       }
     }
   };
@@ -151,26 +113,18 @@ export const QuestionManager = ({
   const handleNext = async () => {
     if (!currentQuestionId) return;
     
-    const currentQuestion = findQuestionById(questionSequence, currentQuestionId);
+    const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
     if (!currentQuestion) return;
 
     const nextQuestion = questionSequence.find(q => q.order === currentQuestion.order + 1);
-    const nextQuestionId = nextQuestion?.id;
-
-    await logQuestionFlow('manual_next', {
-      currentQuestionId,
-      nextQuestionId
-    });
-
-    if (!nextQuestionId) {
+    if (!nextQuestion) {
       await handleComplete();
     } else {
-      setCurrentQuestionId(nextQuestionId);
+      setCurrentQuestionId(nextQuestion.id);
     }
   };
 
   const handleComplete = async () => {
-    console.log('Completing category with answers:', answers);
     if (Object.keys(answers).length === 0) {
       toast({
         title: "Error",
@@ -236,7 +190,7 @@ export const QuestionManager = ({
     );
   }
 
-  const currentQuestion = currentQuestionId ? findQuestionById(questionSequence, currentQuestionId) : null;
+  const currentQuestion = currentQuestionId ? questionSequence.find(q => q.id === currentQuestionId) : null;
   if (!currentQuestion) return null;
 
   return (
