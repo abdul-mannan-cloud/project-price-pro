@@ -3,13 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Question } from "@/types/estimate";
-
-export interface Category {
-  category: string;
-  keywords: string[];
-  questions: Question[];
-}
+import { Category } from "@/types/estimate";
 
 export interface CategoryGridProps {
   categories: Category[];
@@ -25,25 +19,25 @@ export const CategoryGrid = ({
   completedCategories = [],
 }: CategoryGridProps) => {
   const availableCategories = categories.filter(
-    (category) => !completedCategories.includes(category.category)
+    (category) => !completedCategories.includes(category.id)
   );
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {availableCategories.map((category) => (
         <Card
-          key={category.category}
+          key={category.id}
           className={cn(
             "p-6 cursor-pointer hover:shadow-lg transition-shadow group",
-            selectedCategory === category.category && "border-primary"
+            selectedCategory === category.id && "border-primary"
           )}
-          onClick={() => onSelectCategory?.(category.category)}
+          onClick={() => onSelectCategory?.(category.id)}
         >
           <div className="flex flex-col space-y-4">
             <div>
-              <h3 className="font-medium text-lg mb-2">{category.category}</h3>
+              <h3 className="font-medium text-lg mb-2">{category.name}</h3>
               <div className="flex flex-wrap gap-2">
-                {category.keywords.slice(0, 3).map((keyword) => (
+                {category.keywords?.slice(0, 3).map((keyword) => (
                   <Badge
                     key={keyword}
                     variant="secondary"
