@@ -16,6 +16,41 @@ import { Question, Category, CategoryQuestions } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
+const calculateKitchenEstimate = (answers: Record<string, string[]>) => {
+  let estimate = 0;
+  
+  // Cabinet costs
+  if (answers['cabinets']?.includes('yes')) {
+    if (answers['cabinet_type']?.includes('refinish')) {
+      estimate += 2500; // Base cost for refinishing
+      if (answers['cabinet_size']?.includes('large')) {
+        estimate += 1500;
+      }
+    } else if (answers['cabinet_type']?.includes('new')) {
+      estimate += 5000; // Base cost for new cabinets
+      if (answers['cabinet_size']?.includes('large')) {
+        estimate += 3000;
+      }
+    }
+  }
+
+  // Appliance costs
+  if (answers['appliances']?.includes('yes')) {
+    const applianceCosts: Record<string, number> = {
+      'refrigerator': 2000,
+      'dishwasher': 800,
+      'stove': 1200,
+      'microwave': 400
+    };
+
+    answers['appliance_types']?.forEach(appliance => {
+      estimate += applianceCosts[appliance] || 0;
+    });
+  }
+
+  return estimate;
+};
+
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
   const [projectDescription, setProjectDescription] = useState("");
@@ -393,12 +428,18 @@ const EstimatePage = () => {
         };
       });
 
+      let baseEstimate = 0;
+      if (selectedCategory === 'Kitchen Remodel') {
+        baseEstimate = calculateKitchenEstimate(answers);
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           projectDescription, 
           imageUrl: uploadedImageUrl, 
           answers: formattedAnswers,
-          contractorId
+          contractorId,
+          baseEstimate
         }
       });
 
