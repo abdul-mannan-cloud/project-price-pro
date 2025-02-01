@@ -43,7 +43,7 @@ export const QuestionCard = ({
       onSelect(question.id, newSelection);
     } else {
       onSelect(question.id, [value]);
-      if (onNext && question.type !== 'multiple_choice') {
+      if (onNext && (question.type === 'single_choice' || question.type === 'yes_no')) {
         setTimeout(onNext, 300); // Add slight delay for visual feedback
       }
     }
