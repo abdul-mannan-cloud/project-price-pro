@@ -1,19 +1,25 @@
 import { useState, useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
 import { LoadingScreen } from "./LoadingScreen";
-import { Question, CategoryQuestions } from "@/types/estimate";
+import { Question, CategoryQuestions, Category } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 
 interface QuestionManagerProps {
   categoryData: CategoryQuestions;
   onComplete: (answers: Record<string, string[]>) => void;
   currentCategory: string;
+  categories?: Category[];
+  onSelectAdditionalCategory?: (categoryId: string) => void;
+  completedCategories?: string[];
 }
 
 export const QuestionManager = ({
   categoryData,
   onComplete,
   currentCategory,
+  categories,
+  onSelectAdditionalCategory,
+  completedCategories = [],
 }: QuestionManagerProps) => {
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
