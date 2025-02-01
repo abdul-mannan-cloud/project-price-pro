@@ -41,7 +41,7 @@ export const QuestionManager = ({
           ? q.options.map((opt: any, index: number) => ({
               id: `${q.id}-${index}`,
               label: opt.label,
-              value: opt.value,
+              value: opt.value || opt.label.toLowerCase().replace(/\s+/g, '_'),
               next: opt.next,
               image_url: opt.image_url,
             }))
@@ -116,13 +116,36 @@ export const QuestionManager = ({
     }
     setIsProcessing(true);
     try {
+      const formattedAnswers = Object.entries(answers).map(([questionId, values]) => {
+        const question = questionSequence.find(q => q.id === questionId);
+        return {
+          question: question?.question,
+          answers: values.map(value => 
+            question?.options.find(opt => opt.value === value)?.label || value
+          )
+        };
+      });
+
       const { data, error } = await supabase.functions.invoke("generate-estimate", {
         body: { 
-          answers,
+          answers: formattedAnswers,
           category: currentCategory,
         },
       });
+      
       if (error) throw error;
+
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update({ 
+          estimate_data: data,
+          estimated_cost: data.totalCost
+        })
+        .eq('category', currentCategory)
+        .is('user_email', null);
+
+      if (updateError) throw updateError;
+      
       setShowAdditionalServices(true);
     } catch (error) {
       console.error("Error processing answers:", error);
