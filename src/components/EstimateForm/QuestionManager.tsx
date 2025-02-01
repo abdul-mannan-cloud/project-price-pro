@@ -45,6 +45,7 @@ export const QuestionManager = ({
   const findMatchingCategory = async () => {
     try {
       setIsLoadingQuestions(true);
+      console.log('Starting category matching with description:', projectDescription);
       
       const { data: optionsData, error: optionsError } = await supabase
         .from('Options')
@@ -52,28 +53,104 @@ export const QuestionManager = ({
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .maybeSingle();
 
-      if (optionsError) throw optionsError;
-      if (!optionsData) throw new Error('No options data found');
-
-      const categoryData = optionsData[currentCategory];
-      if (!categoryData?.questions) {
-        throw new Error(`No questions found for category: ${currentCategory}`);
+      if (optionsError) {
+        console.error('Error fetching options:', optionsError);
+        throw optionsError;
       }
 
-      // Initialize question flow
-      setQuestionFlow({
-        category: currentCategory,
-        questions: categoryData.questions,
-        currentQuestionId: categoryData.questions[0]?.id || null,
-        answers: {},
-        taskBranches: []
+      if (!optionsData) {
+        console.error('No options data found');
+        throw new Error('No options data found');
+      }
+
+      console.log('Fetched options data:', optionsData);
+
+      // Process each category's keywords to find matches
+      let bestMatch: { category: string; score: number; matchedKeywords: string[] } | null = null;
+      const description = projectDescription.toLowerCase();
+      
+      // Loop through each category in the options data
+      Object.entries(optionsData).forEach(([categoryName, categoryData]) => {
+        if (categoryName === 'Key Options') return;
+        
+        const data = categoryData as any;
+        if (!data?.keywords || !Array.isArray(data.keywords)) {
+          console.log(`Skipping category ${categoryName}: no keywords found`);
+          return;
+        }
+
+        let score = 0;
+        const matchedKeywords: string[] = [];
+
+        data.keywords.forEach((keyword: string) => {
+          const keywordLower = keyword.toLowerCase();
+          if (description.includes(keywordLower)) {
+            // Higher score for keywords at start of description
+            const position = description.indexOf(keywordLower);
+            const positionScore = 1 - (position / description.length);
+            const matchScore = 1 + positionScore;
+            score += matchScore;
+            matchedKeywords.push(keyword);
+
+            console.log(`Matched keyword "${keyword}" in category ${categoryName} with score ${matchScore}`);
+          }
+        });
+
+        if (score > 0 && (!bestMatch || score > bestMatch.score)) {
+          // Find the corresponding category ID
+          const matchingCategory = categories.find(
+            cat => cat.name.toLowerCase() === categoryName.toLowerCase()
+          );
+
+          if (matchingCategory) {
+            bestMatch = { 
+              category: matchingCategory.id, 
+              score,
+              matchedKeywords
+            };
+            console.log(`New best match: ${categoryName} (ID: ${matchingCategory.id}) with score ${score}`);
+            console.log('Matched keywords:', matchedKeywords);
+          }
+        }
       });
+
+      if (bestMatch) {
+        console.log('Final best matching category:', bestMatch.category);
+        console.log('Final score:', bestMatch.score);
+        console.log('Final matched keywords:', bestMatch.matchedKeywords);
+        
+        // Get the category name for the matched ID
+        const matchedCategory = categories.find(cat => cat.id === bestMatch.category);
+        const categoryData = optionsData[matchedCategory?.name || ''];
+        
+        if (categoryData?.questions) {
+          const flow: QuestionFlow = {
+            category: bestMatch.category,
+            questions: categoryData.questions,
+            currentQuestionId: categoryData.questions[0]?.id || null,
+            answers: {},
+            taskBranches: []
+          };
+
+          setQuestionFlow(flow);
+        } else {
+          console.error('No questions found for category:', matchedCategory?.name);
+          throw new Error('No questions found for matched category');
+        }
+      } else {
+        console.log('No matching category found');
+        toast({
+          title: "No matching category found",
+          description: "Please select a category manually.",
+          variant: "destructive",
+        });
+      }
 
     } catch (error) {
       console.error('Error matching category:', error);
       toast({
         title: "Error",
-        description: "Failed to load questions. Please try again.",
+        description: "Failed to process your description. Please try again.",
         variant: "destructive",
       });
     } finally {
