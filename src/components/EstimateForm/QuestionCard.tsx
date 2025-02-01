@@ -29,6 +29,7 @@ export const QuestionCard = ({
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
+    // Show next button if it's multiple choice with selections, or if single/yes_no has one selection
     setShowNextButton(
       question.type === 'multiple_choice' 
         ? selectedOptions.length > 0 
@@ -44,7 +45,7 @@ export const QuestionCard = ({
       onSelect(question.id, newSelection);
     } else {
       onSelect(question.id, [value]);
-      if (question.type !== 'multiple_choice' && onNext) {
+      if (onNext) {
         setTimeout(onNext, 300);
       }
     }
