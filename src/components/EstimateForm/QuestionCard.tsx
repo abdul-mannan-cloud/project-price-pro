@@ -48,82 +48,29 @@ export const QuestionCard = ({
   const renderOptions = () => {
     if (question.type === 'multiple_choice') {
       return (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="space-y-4">
           {question.options.map((option) => (
             <div
               key={option.value}
               className={cn(
-                "relative flex items-start p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
+                "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
                 selectedOptions.includes(option.value)
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-gray-200"
               )}
               onClick={() => handleOptionSelect(option.value)}
             >
-              <div className="flex items-center h-5">
-                <Checkbox
-                  id={option.value}
-                  checked={selectedOptions.includes(option.value)}
-                  onCheckedChange={() => handleOptionSelect(option.value)}
-                  className="h-5 w-5"
-                />
-              </div>
-              <div className="ml-3 flex-grow">
-                <Label
-                  htmlFor={option.value}
-                  className={cn(
-                    "text-base cursor-pointer block",
-                    selectedOptions.includes(option.value)
-                      ? "text-gray-900 font-medium"
-                      : "text-gray-600"
-                  )}
-                >
-                  {option.label}
-                </Label>
-                {option.image_url && (
-                  <img
-                    src={option.image_url}
-                    alt={option.label}
-                    className="mt-3 rounded-lg w-full h-32 object-cover"
-                  />
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    return (
-      <RadioGroup
-        value={selectedOptions[0]}
-        onValueChange={(value) => handleOptionSelect(value)}
-        className="grid grid-cols-1 gap-4"
-      >
-        {question.options.map((option) => (
-          <div
-            key={option.value}
-            className={cn(
-              "relative flex items-start p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
-              selectedOptions[0] === option.value
-                ? "border-primary bg-primary/5 shadow-sm"
-                : "border-gray-200"
-            )}
-            onClick={() => handleOptionSelect(option.value)}
-          >
-            <div className="flex items-center h-5">
-              <RadioGroupItem
-                value={option.value}
+              <Checkbox
                 id={option.value}
+                checked={selectedOptions.includes(option.value)}
+                onCheckedChange={() => handleOptionSelect(option.value)}
                 className="h-5 w-5"
               />
-            </div>
-            <div className="ml-3 flex-grow">
               <Label
                 htmlFor={option.value}
                 className={cn(
-                  "text-base cursor-pointer block",
-                  selectedOptions[0] === option.value
+                  "text-base cursor-pointer flex-grow",
+                  selectedOptions.includes(option.value)
                     ? "text-gray-900 font-medium"
                     : "text-gray-600"
                 )}
@@ -138,6 +85,51 @@ export const QuestionCard = ({
                 />
               )}
             </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <RadioGroup
+        value={selectedOptions[0]}
+        onValueChange={(value) => handleOptionSelect(value)}
+        className="space-y-4"
+      >
+        {question.options.map((option) => (
+          <div
+            key={option.value}
+            className={cn(
+              "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
+              selectedOptions[0] === option.value
+                ? "border-primary bg-primary/5 shadow-sm"
+                : "border-gray-200"
+            )}
+            onClick={() => handleOptionSelect(option.value)}
+          >
+            <RadioGroupItem
+              value={option.value}
+              id={option.value}
+              className="h-5 w-5"
+            />
+            <Label
+              htmlFor={option.value}
+              className={cn(
+                "text-base cursor-pointer flex-grow",
+                selectedOptions[0] === option.value
+                  ? "text-gray-900 font-medium"
+                  : "text-gray-600"
+              )}
+            >
+              {option.label}
+            </Label>
+            {option.image_url && (
+              <img
+                src={option.image_url}
+                alt={option.label}
+                className="mt-3 rounded-lg w-full h-32 object-cover"
+              />
+            )}
           </div>
         ))}
       </RadioGroup>
