@@ -10,8 +10,6 @@ interface QuestionCardProps {
   question: Question;
   selectedOptions: string[];
   onSelect: (questionId: string, values: string[]) => void;
-  onNext?: () => void;
-  isLastQuestion?: boolean;
   currentStage: number;
   totalStages: number;
 }
@@ -20,8 +18,6 @@ export const QuestionCard = ({
   question,
   selectedOptions,
   onSelect,
-  onNext,
-  isLastQuestion,
   currentStage,
   totalStages,
 }: QuestionCardProps) => {
@@ -47,9 +43,6 @@ export const QuestionCard = ({
     } else {
       // For yes/no and single choice, immediately submit and move to next
       onSelect(question.id, [value]);
-      if (onNext && (question.type === 'single_choice' || question.type === 'yes_no')) {
-        setTimeout(onNext, 300); // Add slight delay for visual feedback
-      }
     }
   };
 
@@ -125,11 +118,10 @@ export const QuestionCard = ({
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
           <div className="container max-w-4xl mx-auto">
             <Button 
-              onClick={onNext}
-              disabled={!showNextButton}
+              onClick={() => onSelect(question.id, selectedOptions)}
               className="w-full"
             >
-              {isLastQuestion ? 'Complete' : 'Next'}
+              Continue
             </Button>
           </div>
         </div>
