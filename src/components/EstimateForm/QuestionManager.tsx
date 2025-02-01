@@ -133,18 +133,17 @@ export const QuestionManager = ({
   }
 
   const currentSet = questionSets[currentSetIndex];
-  const setAnswers = answers[currentSet.category] || {};
+  const currentSetAnswers = answers[currentSet.category] || {};
 
   return (
     <QuestionCard
       question={currentQuestion}
-      selectedOptions={setAnswers[currentQuestion.id] || []}
+      selectedOptions={currentSetAnswers[currentQuestion.id] || []}
       onSelect={handleAnswer}
       onNext={handleComplete}
       isLastQuestion={currentSetIndex === questionSets.length - 1}
       currentStage={currentSetIndex + 1}
       totalStages={questionSets.length}
-      categoryName={currentSet.category}
     />
   );
 };
