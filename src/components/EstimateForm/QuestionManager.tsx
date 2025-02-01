@@ -1,99 +1,112 @@
 import { useState, useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
 import { LoadingScreen } from "./LoadingScreen";
-import { Question, CategoryQuestions, Category } from "@/types/estimate";
+import { Question, CategoryQuestions } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 
 interface QuestionManagerProps {
-  categoryData: CategoryQuestions;
-  onComplete: (answers: Record<string, string[]>) => void;
-  currentCategory: string;
-  categories?: Category[];
-  onSelectAdditionalCategory?: (categoryId: string) => void;
-  completedCategories?: string[];
+  questionSets: CategoryQuestions[];
+  onComplete: (answers: Record<string, Record<string, string[]>>) => void;
 }
 
 export const QuestionManager = ({
-  categoryData,
+  questionSets,
   onComplete,
-  currentCategory,
-  categories,
-  onSelectAdditionalCategory,
-  completedCategories = [],
 }: QuestionManagerProps) => {
+  const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string[]>>({});
+  const [answers, setAnswers] = useState<Record<string, Record<string, string[]>>>({});
   const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
 
   useEffect(() => {
-    const loadQuestions = async () => {
-      setIsLoadingQuestions(true);
-      try {
-        if (!categoryData?.questions?.length) {
-          throw new Error('No questions available');
-        }
+    loadCurrentQuestionSet();
+  }, [currentSetIndex, questionSets]);
 
-        const sortedQuestions = categoryData.questions
-          .sort((a, b) => a.order - b.order);
-
-        setQuestionSequence(sortedQuestions);
-        setCurrentQuestionId(sortedQuestions[0].id);
-        setAnswers({});
-      } catch (error) {
-        console.error('Error loading questions:', error);
-        toast({
-          title: "Error",
-          description: error instanceof Error ? error.message : "Failed to load questions",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoadingQuestions(false);
-      }
-    };
-
-    if (categoryData) {
-      loadQuestions();
+  const loadCurrentQuestionSet = () => {
+    if (!questionSets[currentSetIndex]) {
+      onComplete(answers);
+      return;
     }
-  }, [categoryData]);
+
+    try {
+      const currentSet = questionSets[currentSetIndex];
+      if (!currentSet?.questions?.length) {
+        throw new Error('No questions available for this category');
+      }
+
+      const sortedQuestions = currentSet.questions.sort((a, b) => a.order - b.order);
+      setQuestionSequence(sortedQuestions);
+      setCurrentQuestionId(sortedQuestions[0].id);
+      setIsLoadingQuestions(false);
+    } catch (error) {
+      console.error('Error loading question set:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load questions",
+        variant: "destructive",
+      });
+      moveToNextQuestionSet();
+    }
+  };
 
   const findNextQuestionId = (currentQuestion: Question, selectedValue: string): string | null => {
-    // First check if the selected option has a next question specified
     const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValue);
+    
     if (selectedOption?.next) {
-      if (selectedOption.next === 'END') return null;
+      if (selectedOption.next === 'END') {
+        return null;
+      }
       if (selectedOption.next === 'NEXT_BRANCH') {
-        // Find the next branch's first question
-        const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
-        const nextBranchQuestion = questionSequence
-          .slice(currentIndex + 1)
-          .find(q => !q.id.includes('-'));
-        return nextBranchQuestion?.id || null;
+        moveToNextQuestionSet();
+        return null;
       }
       return selectedOption.next;
     }
 
-    // If the current question has a next property, use that
-    if (currentQuestion.next) {
-      return currentQuestion.next === 'END' ? null : currentQuestion.next;
+    if (currentQuestion.next === 'END') {
+      return null;
+    }
+    if (currentQuestion.next === 'NEXT_BRANCH') {
+      moveToNextQuestionSet();
+      return null;
     }
 
-    // If no specific navigation is defined, move to the next question in order
     const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
     return currentIndex < questionSequence.length - 1 ? questionSequence[currentIndex + 1].id : null;
+  };
+
+  const moveToNextQuestionSet = () => {
+    if (currentSetIndex < questionSets.length - 1) {
+      setCurrentSetIndex(prev => prev + 1);
+    } else {
+      onComplete(answers);
+    }
   };
 
   const handleAnswer = async (questionId: string, selectedValues: string[]) => {
     const currentQuestion = questionSequence.find(q => q.id === questionId);
     if (!currentQuestion) return;
 
-    setAnswers(prev => ({ ...prev, [questionId]: selectedValues }));
+    const currentSet = questionSets[currentSetIndex];
+    
+    setAnswers(prev => ({
+      ...prev,
+      [currentSet.category]: {
+        ...prev[currentSet.category],
+        [questionId]: selectedValues
+      }
+    }));
 
     if (currentQuestion.type !== 'multiple_choice') {
       const nextQuestionId = findNextQuestionId(currentQuestion, selectedValues[0]);
       
       if (!nextQuestionId) {
-        await handleComplete();
+        if (selectedValues[0] === 'no' && currentQuestion.type === 'yes_no') {
+          moveToNextQuestionSet();
+        } else {
+          await handleComplete();
+        }
       } else {
         setCurrentQuestionId(nextQuestionId);
       }
@@ -101,16 +114,7 @@ export const QuestionManager = ({
   };
 
   const handleComplete = async () => {
-    if (Object.keys(answers).length === 0) {
-      toast({
-        title: "Error",
-        description: "Please answer at least one question before continuing.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    onComplete(answers);
+    moveToNextQuestionSet();
   };
 
   if (isLoadingQuestions) {
@@ -118,28 +122,29 @@ export const QuestionManager = ({
   }
 
   const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
-
   if (!currentQuestion) {
     return (
       <div className="text-center p-8">
         <p className="text-lg text-gray-600">
-          No questions available. Please try selecting a different category.
+          No questions available. Moving to next category...
         </p>
       </div>
     );
   }
 
-  const isLastQuestion = !findNextQuestionId(currentQuestion, currentQuestion.options[0].value);
+  const currentSet = questionSets[currentSetIndex];
+  const setAnswers = answers[currentSet.category] || {};
 
   return (
     <QuestionCard
       question={currentQuestion}
-      selectedOptions={answers[currentQuestion.id] || []}
+      selectedOptions={setAnswers[currentQuestion.id] || []}
       onSelect={handleAnswer}
       onNext={handleComplete}
-      isLastQuestion={isLastQuestion}
-      currentStage={currentQuestion.order}
-      totalStages={questionSequence.length}
+      isLastQuestion={currentSetIndex === questionSets.length - 1}
+      currentStage={currentSetIndex + 1}
+      totalStages={questionSets.length}
+      categoryName={currentSet.category}
     />
   );
 };
