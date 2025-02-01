@@ -1,8 +1,8 @@
+import { useState, useEffect } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Question } from "@/types/estimate";
 import { Card } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 interface QuestionCardProps {
   question: Question;
   selectedOptions: string[];
-  onSelect: (questionId: string, value: string[]) => void;
+  onSelect: (questionId: string, values: string[]) => void;
   onNext: () => void;
   isLastQuestion: boolean;
   currentStage: number;
@@ -30,35 +30,31 @@ export const QuestionCard = ({
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
-    if (question.multi_choice || question.is_branching) {
+    // For multi-choice questions, show Continue only when at least one option is selected.
+    if (question.multi_choice) {
       setShowNextButton(selectedOptions.length > 0);
     }
-  }, [selectedOptions, question.multi_choice, question.is_branching]);
+  }, [selectedOptions, question.multi_choice]);
 
   const handleSingleOptionSelect = (value: string) => {
-    console.log("Selected single option:", value);
     setPressedOption(value);
     onSelect(question.id, [value]);
-
-    // Auto-advance if it's not a branching question
-    if (!question.is_branching) {
-      setTimeout(() => {
-        setPressedOption(null);
-        onNext();
-      }, 300);
-    }
+    // Auto-advance for single-choice or yes/no questions.
+    setTimeout(() => {
+      setPressedOption(null);
+      onNext();
+    }, 300);
   };
 
-  const handleMultiOptionSelect = (optionId: string) => {
-    const newSelection = selectedOptions.includes(optionId)
-      ? selectedOptions.filter((id) => id !== optionId)
-      : [...selectedOptions, optionId];
+  const handleMultiOptionSelect = (value: string) => {
+    const newSelection = selectedOptions.includes(value)
+      ? selectedOptions.filter((v) => v !== value)
+      : [...selectedOptions, value];
     onSelect(question.id, newSelection);
   };
 
   const renderOptions = () => {
     const options = question.options || [];
-
     if (question.multi_choice) {
       return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -92,6 +88,13 @@ export const QuestionCard = ({
                   {option.label}
                 </Label>
               </div>
+              {option.image_url && (
+                <img
+                  src={option.image_url}
+                  alt={option.label}
+                  className="rounded-lg w-full h-32 object-cover"
+                />
+              )}
             </div>
           ))}
           {showNextButton && (
@@ -104,7 +107,7 @@ export const QuestionCard = ({
         </div>
       );
     }
-
+    // For single-choice and yes-no questions, use a radio group.
     return (
       <RadioGroup
         value={selectedOptions[0]}
@@ -137,9 +140,16 @@ export const QuestionCard = ({
                 {option.label}
               </Label>
             </div>
+            {option.image_url && (
+              <img
+                src={option.image_url}
+                alt={option.label}
+                className="rounded-lg w-full h-32 object-cover"
+              />
+            )}
           </div>
         ))}
-        {(question.is_branching && selectedOptions[0]) && (
+        {question.is_branching && selectedOptions[0] && (
           <div className="col-span-full mt-6">
             <Button className="w-full" onClick={onNext} size="lg">
               {isLastQuestion ? "Generate Estimate" : "Next Question"}
@@ -152,6 +162,7 @@ export const QuestionCard = ({
 
   return (
     <div className="max-w-4xl mx-auto p-8 animate-fadeIn">
+      {/* Progress Indicator */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-gray-600">
@@ -173,7 +184,6 @@ export const QuestionCard = ({
         <div className="p-6 border-b">
           <h2 className="text-xl font-bold text-gray-900">{question.question}</h2>
         </div>
-
         <div className="p-6">{renderOptions()}</div>
       </Card>
     </div>
