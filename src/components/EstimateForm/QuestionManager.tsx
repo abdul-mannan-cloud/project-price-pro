@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
 import { LoadingScreen } from "./LoadingScreen";
-import { Question, CategoryQuestions, Category, QuestionFlow } from "@/types/estimate";
+import { Question, CategoryQuestions, Category, QuestionFlow, TaskBranch } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
-import { initializeQuestionFlow, updateQuestionFlow } from "@/utils/questionFlowManager";
 import { supabase } from "@/integrations/supabase/client";
-import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 
 interface QuestionManagerProps {
   projectDescription: string;
@@ -26,82 +24,47 @@ export const QuestionManager = ({
 }: QuestionManagerProps) => {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [questionFlow, setQuestionFlow] = useState<QuestionFlow | null>(null);
+  const [taskBranches, setTaskBranches] = useState<TaskBranch[]>([]);
   const [categoryKeywords, setCategoryKeywords] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     console.log('Loading questions with description:', projectDescription);
-    loadQuestions();
+    findMatchingCategory();
   }, [projectDescription]);
 
-  const loadQuestions = async () => {
+  useEffect(() => {
+    loadCategoryKeywords();
+  }, [categories]);
+
+  const findMatchingCategory = async () => {
     try {
       setIsLoadingQuestions(true);
-      console.log('Fetching questions from Options table');
-
+      
       const { data: optionsData, error: optionsError } = await supabase
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .maybeSingle();
 
-      if (optionsError) {
-        console.error('Error fetching options:', optionsError);
-        throw optionsError;
+      if (optionsError) throw optionsError;
+      if (!optionsData) throw new Error('No options data found');
+
+      const categoryData = optionsData[currentCategory];
+      if (!categoryData?.questions) {
+        throw new Error(`No questions found for category: ${currentCategory}`);
       }
 
-      if (!optionsData) {
-        throw new Error('No options data found');
-      }
-
-      console.log('Options data received:', optionsData);
-
-      // Convert options data to CategoryQuestions format
-      const allQuestionSets: CategoryQuestions[] = Object.entries(optionsData)
-        .filter(([key]) => key !== 'Key Options')
-        .map(([category, data]) => {
-          const questionData = data as any;
-          return {
-            category,
-            keywords: questionData.keywords || [],
-            questions: questionData.questions?.map((q: any, index: number) => ({
-              id: q.id || `q-${index}`,
-              order: q.order || index + 1,
-              question: q.question,
-              type: q.type || 'single_choice',
-              options: q.options?.map((opt: any) => ({
-                label: opt.label,
-                value: opt.value,
-                image_url: opt.image_url || "",
-                next: opt.next
-              })) || [],
-              branch_id: q.branch_id || 'default-branch',
-              keywords: q.keywords || [],
-              is_branch_start: q.is_branch_start || false,
-              skip_branch_on_no: q.skip_branch_on_no || false,
-              priority: q.priority || index,
-              next: q.next
-            })) || []
-          };
-        });
-
-      // Store keywords for each category
-      const keywords: Record<string, string[]> = {};
-      allQuestionSets.forEach(set => {
-        keywords[set.category] = set.keywords;
+      // Initialize question flow
+      setQuestionFlow({
+        category: currentCategory,
+        questions: categoryData.questions,
+        currentQuestionId: categoryData.questions[0]?.id || null,
+        answers: {},
+        taskBranches: []
       });
-      setCategoryKeywords(keywords);
-
-      // Find matching question sets based on project description
-      const matches = findMatchingQuestionSets(projectDescription, allQuestionSets);
-      console.log('Matched question sets:', matches);
-      
-      // Initialize question flow with matched sets
-      const flow = initializeQuestionFlow(matches);
-      console.log('Initialized question flow:', flow);
-      setQuestionFlow(flow);
 
     } catch (error) {
-      console.error('Error loading questions:', error);
+      console.error('Error matching category:', error);
       toast({
         title: "Error",
         description: "Failed to load questions. Please try again.",
@@ -112,26 +75,126 @@ export const QuestionManager = ({
     }
   };
 
+  const loadCategoryKeywords = async () => {
+    try {
+      const { data: optionsData, error } = await supabase
+        .from('Options')
+        .select('*')
+        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .single();
+
+      if (error) {
+        console.error('Error loading options:', error);
+        return;
+      }
+
+      // Extract keywords for each category
+      const keywords: Record<string, string[]> = {};
+      Object.entries(optionsData).forEach(([category, data]) => {
+        if (category !== 'Key Options' && data && typeof data === 'object') {
+          const categoryData = data as { keywords?: string[] };
+          if (categoryData.keywords) {
+            // Map the category name to the category ID
+            const matchingCategory = categories.find(
+              c => c.name.toLowerCase() === category.toLowerCase()
+            );
+            if (matchingCategory) {
+              keywords[matchingCategory.id] = categoryData.keywords;
+            }
+          }
+        }
+      });
+
+      setCategoryKeywords(keywords);
+    } catch (error) {
+      console.error('Error loading category keywords:', error);
+    }
+  };
+
   const handleAnswer = (questionId: string, selectedValues: string[]) => {
     if (!questionFlow) return;
 
-    const currentBranch = questionFlow.branches[questionFlow.currentBranchIndex];
-    if (!currentBranch) {
-      onComplete(questionFlow.answers);
+    const currentQuestion = questionFlow.questions.find(q => q.id === questionId);
+    if (!currentQuestion) return;
+
+    // Update answers
+    const newAnswers = {
+      ...questionFlow.answers,
+      [currentCategory]: {
+        ...questionFlow.answers[currentCategory],
+        [questionId]: selectedValues
+      }
+    };
+
+    // Handle task branching for multiple choice questions
+    if (currentQuestion.type === 'multiple_choice') {
+      const newTaskBranches: TaskBranch[] = currentQuestion.options
+        .filter(opt => selectedValues.includes(opt.value))
+        .map(opt => ({
+          value: opt.value,
+          next: opt.next || '',
+          completed: false
+        }));
+
+      if (newTaskBranches.length > 0) {
+        setTaskBranches(newTaskBranches);
+        const firstBranch = newTaskBranches[0];
+        setQuestionFlow(prev => ({
+          ...prev!,
+          currentQuestionId: firstBranch.next,
+          answers: newAnswers,
+          taskBranches: newTaskBranches
+        }));
+        return;
+      }
+    }
+
+    // Handle navigation for single choice questions
+    const selectedOption = currentQuestion.options.find(
+      opt => selectedValues.includes(opt.value)
+    );
+
+    const nextQuestionId = selectedOption?.next || null;
+
+    if (nextQuestionId === 'NEXT_BRANCH') {
+      const nextCategory = findNextCategory();
+      if (nextCategory) {
+        onSelectAdditionalCategory(nextCategory);
+      } else {
+        onComplete(newAnswers);
+      }
       return;
     }
 
-    const currentQuestion = currentBranch.questions.find(q => q.id === questionId);
-    if (!currentQuestion) return;
-
-    // Update question flow based on answer
-    const updatedFlow = updateQuestionFlow(questionFlow, selectedValues);
-    setQuestionFlow(updatedFlow);
-
-    // Check if we need to move to next branch or complete the flow
-    if (updatedFlow.currentBranchIndex >= updatedFlow.branches.length) {
-      onComplete(updatedFlow.answers);
+    if (!nextQuestionId || nextQuestionId === 'END') {
+      // Check for remaining task branches
+      const currentTaskIndex = taskBranches.findIndex(t => !t.completed);
+      if (currentTaskIndex >= 0) {
+        const updatedBranches = taskBranches.map((branch, index) => 
+          index === currentTaskIndex ? { ...branch, completed: true } : branch
+        );
+        
+        const nextTask = updatedBranches.find((t, i) => i > currentTaskIndex && !t.completed);
+        if (nextTask) {
+          setTaskBranches(updatedBranches);
+          setQuestionFlow(prev => ({
+            ...prev!,
+            currentQuestionId: nextTask.next,
+            answers: newAnswers
+          }));
+          return;
+        }
+      }
+      
+      onComplete(newAnswers);
+      return;
     }
+
+    setQuestionFlow(prev => ({
+      ...prev!,
+      currentQuestionId: nextQuestionId,
+      answers: newAnswers
+    }));
   };
 
   const findNextCategory = () => {
@@ -144,7 +207,7 @@ export const QuestionManager = ({
     let highestScore = 0;
 
     for (const category of availableCategories) {
-      const keywords = categoryKeywords[category.name] || [];
+      const keywords = categoryKeywords[category.id] || [];
       let score = 0;
 
       keywords.forEach(keyword => {
@@ -166,7 +229,7 @@ export const QuestionManager = ({
     return <LoadingScreen message="Loading questions..." />;
   }
 
-  if (!questionFlow) {
+  if (!questionFlow?.currentQuestionId) {
     return (
       <div className="text-center p-8">
         <p className="text-lg text-muted-foreground">
@@ -176,27 +239,21 @@ export const QuestionManager = ({
     );
   }
 
-  const currentBranch = questionFlow.branches[questionFlow.currentBranchIndex];
-  if (!currentBranch) {
-    return null;
-  }
-
-  const currentQuestion = currentBranch.questions.find(
-    q => q.id === currentBranch.currentQuestionId
+  const currentQuestion = questionFlow.questions.find(
+    q => q.id === questionFlow.currentQuestionId
   );
-  if (!currentQuestion) {
-    return null;
-  }
 
-  const currentAnswers = questionFlow.answers[currentBranch.category]?.[currentQuestion.id] || [];
+  if (!currentQuestion) return null;
+
+  const currentAnswers = questionFlow.answers[currentCategory]?.[currentQuestion.id] || [];
 
   return (
     <QuestionCard
       question={currentQuestion}
       selectedOptions={currentAnswers}
-      onSelect={(questionId, values) => handleAnswer(questionId, values)}
-      currentStage={questionFlow.currentBranchIndex + 1}
-      totalStages={questionFlow.branches.length}
+      onSelect={handleAnswer}
+      currentStage={currentQuestion.order || 1}
+      totalStages={questionFlow.questions.length}
     />
   );
 };
