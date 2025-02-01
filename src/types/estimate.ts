@@ -1,4 +1,4 @@
-export interface QuestionOption {
+export interface Option {
   label: string;
   value: string;
   next?: string;
@@ -7,12 +7,12 @@ export interface QuestionOption {
 
 export interface Question {
   id: string;
-  order: number;
   question: string;
-  description?: string;
   type: 'yes_no' | 'single_choice' | 'multiple_choice';
-  options: QuestionOption[];
+  order: number;
+  options: Option[];
   next?: string;
+  description?: string;
 }
 
 export interface CategoryQuestions {
@@ -25,6 +25,7 @@ export interface Category {
   id: string;
   name: string;
   description?: string;
+  icon?: string;
 }
 
 export interface EstimateFormState {
