@@ -132,9 +132,13 @@ const EstimatePage = () => {
 
       if (error) throw error;
       
-      // Parse the JSONB data
-      const questionSet = data.data as CategoryQuestions;
-      setCategoryData(questionSet);
+      // Ensure the data matches CategoryQuestions type
+      const parsedData = data.data as unknown as CategoryQuestions;
+      if (!parsedData.category || !Array.isArray(parsedData.questions)) {
+        throw new Error('Invalid question set format');
+      }
+      
+      setCategoryData(parsedData);
     } catch (error) {
       console.error('Error loading question set:', error);
       toast({
@@ -472,7 +476,7 @@ const EstimatePage = () => {
     setSelectedCategory(categoryId);
   };
 
-  const handleQuestionComplete = (answers: Record<string, string[]>) => {
+  const handleQuestionComplete = (answers: Record<string, Record<string, string[]>>) => {
     if (selectedCategory) {
       setCompletedCategories(prev => [...prev, selectedCategory]);
     }
@@ -617,8 +621,9 @@ const EstimatePage = () => {
             <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
             <CategoryGrid 
               categories={categories}
-              onSelect={handleCategorySelect}
+              onSelectCategory={handleCategorySelect}
               completedCategories={completedCategories}
+              selectedCategory={selectedCategory || undefined}
             />
           </div>
         )}
