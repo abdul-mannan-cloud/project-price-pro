@@ -336,12 +336,15 @@ const EstimatePage = () => {
 
       if (error) throw error;
 
-      // Transform the data to match CategoryQuestions type
-      const transformedQuestionSets: CategoryQuestions[] = questionSetsData.map(qs => ({
-        category: qs.categories?.name || qs.category,
-        keywords: qs.data.keywords || [],
-        questions: qs.data.questions || []
-      }));
+      // Transform the data to match CategoryQuestions type with proper type checking
+      const transformedQuestionSets: CategoryQuestions[] = questionSetsData.map(qs => {
+        const data = typeof qs.data === 'string' ? JSON.parse(qs.data) : qs.data;
+        return {
+          category: qs.categories?.name || qs.category,
+          keywords: Array.isArray(data?.keywords) ? data.keywords : [],
+          questions: Array.isArray(data?.questions) ? data.questions : []
+        };
+      });
 
       // Find matching question sets based on description
       const matches = findMatchingQuestionSets(projectDescription, transformedQuestionSets);
