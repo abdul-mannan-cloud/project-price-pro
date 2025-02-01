@@ -652,7 +652,7 @@ const EstimatePage = () => {
 
         {selectedCategory && categoryData && (
           <QuestionManager
-            categoryData={categoryData}
+            questionSets={[categoryData]}
             onComplete={handleQuestionComplete}
             categories={categories}
             currentCategory={selectedCategory}
