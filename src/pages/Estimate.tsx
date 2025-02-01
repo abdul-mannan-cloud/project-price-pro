@@ -330,14 +330,21 @@ const EstimatePage = () => {
     setIsProcessing(true);
     try {
       // Fetch all question sets
-      const { data: questionSets, error } = await supabase
+      const { data: questionSetsData, error } = await supabase
         .from('question_sets')
-        .select('*');
+        .select('*, categories(name)');
 
       if (error) throw error;
 
+      // Transform the data to match CategoryQuestions type
+      const transformedQuestionSets: CategoryQuestions[] = questionSetsData.map(qs => ({
+        category: qs.categories?.name || qs.category,
+        keywords: qs.data.keywords || [],
+        questions: qs.data.questions || []
+      }));
+
       // Find matching question sets based on description
-      const matches = findMatchingQuestionSets(projectDescription, questionSets);
+      const matches = findMatchingQuestionSets(projectDescription, transformedQuestionSets);
       
       // Consolidate to prevent question overload
       const consolidatedSets = consolidateQuestionSets(matches);
