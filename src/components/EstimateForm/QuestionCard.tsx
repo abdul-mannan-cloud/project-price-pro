@@ -14,7 +14,7 @@ interface QuestionCardProps {
   onNext?: () => void;
   currentStage: number;
   totalStages: number;
-  isLastQuestion?: boolean; // Added this prop to the interface
+  isLastQuestion?: boolean;
 }
 
 export const QuestionCard = ({
@@ -24,34 +24,37 @@ export const QuestionCard = ({
   onNext,
   currentStage,
   totalStages,
-  isLastQuestion = false, // Added with default value
+  isLastQuestion = false,
 }: QuestionCardProps) => {
   const [showNextButton, setShowNextButton] = useState(false);
 
+  // Determine when to show the Continue button:
   useEffect(() => {
-    if (question.type === 'multiple_choice') {
+    if (question.type === "multiple_choice") {
       setShowNextButton(selectedOptions.length > 0);
     } else {
+      // For single_choice and yes_no, auto-advance after selection.
       setShowNextButton(selectedOptions.length === 1);
     }
   }, [selectedOptions, question.type]);
 
   const handleOptionSelect = (value: string) => {
-    if (question.type === 'multiple_choice') {
+    if (question.type === "multiple_choice") {
       const newSelection = selectedOptions.includes(value)
-        ? selectedOptions.filter(v => v !== value)
+        ? selectedOptions.filter((v) => v !== value)
         : [...selectedOptions, value];
       onSelect(question.id, newSelection);
     } else {
       onSelect(question.id, [value]);
-      if (onNext && (question.type === 'single_choice' || question.type === 'yes_no')) {
+      // Auto-advance for single_choice or yes_no questions.
+      if (onNext && (question.type === "single_choice" || question.type === "yes_no")) {
         setTimeout(onNext, 300);
       }
     }
   };
 
   const renderOptions = () => {
-    if (question.type === 'multiple_choice') {
+    if (question.type === "multiple_choice") {
       return (
         <div className="space-y-4">
           {question.options.map((option) => (
@@ -126,6 +129,7 @@ export const QuestionCard = ({
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4">
+      {/* Progress Indicator */}
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-gray-600">
@@ -152,9 +156,10 @@ export const QuestionCard = ({
             <p className="mt-2 text-gray-600">{question.description}</p>
           )}
         </div>
-        
+
         <div className="p-6">
           {renderOptions()}
+          {/* For multiple_choice questions, display a Continue button when at least one option is selected */}
           {showNextButton && onNext && (
             <div className="mt-6">
               <Button className="w-full" onClick={onNext} size="lg">

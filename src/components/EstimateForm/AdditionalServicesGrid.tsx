@@ -19,10 +19,12 @@ export const AdditionalServicesGrid = ({
   onComplete,
   completedCategories,
 }: AdditionalServicesGridProps) => {
+  // Filter out categories that have already been completed.
   const availableCategories = categories.filter(
-    cat => !completedCategories.includes(cat.id)
+    (cat) => !completedCategories.includes(cat.id)
   );
 
+  // If no available categories remain, show a final action button.
   if (availableCategories.length === 0) {
     return (
       <div className="text-center p-8">
@@ -34,7 +36,9 @@ export const AdditionalServicesGrid = ({
 
   return (
     <Card className="p-6">
-      <h3 className="text-xl font-semibold mb-6">Would you like any additional work done?</h3>
+      <h3 className="text-xl font-semibold mb-6">
+        Would you like any additional work done?
+      </h3>
       <RadioGroup
         value={selectedCategory || ""}
         onValueChange={onSelect}
@@ -47,10 +51,7 @@ export const AdditionalServicesGrid = ({
           >
             <div className="flex items-center space-x-3">
               <RadioGroupItem value={category.id} id={category.id} />
-              <Label
-                htmlFor={category.id}
-                className="flex flex-col cursor-pointer"
-              >
+              <Label htmlFor={category.id} className="flex flex-col cursor-pointer">
                 <span className="font-medium">{category.name}</span>
                 {category.description && (
                   <span className="text-sm text-muted-foreground">
@@ -62,18 +63,13 @@ export const AdditionalServicesGrid = ({
           </div>
         ))}
       </RadioGroup>
-      
+
       <div className="mt-6 flex justify-between">
-        <Button
-          variant="outline"
-          onClick={onComplete}
-        >
+        <Button variant="outline" onClick={onComplete}>
           Complete Estimate
         </Button>
         {selectedCategory && (
-          <Button 
-            onClick={() => onSelect(selectedCategory)}
-          >
+          <Button onClick={() => onSelect(selectedCategory)}>
             Continue with Selected Service
           </Button>
         )}

@@ -15,7 +15,7 @@ export const CategoryGrid = ({
   onSelectCategory,
   completedCategories = [], // Default to empty array if not provided
 }: CategoryGridProps) => {
-  // Filter out completed categories
+  // Filter out categories that have already been completed
   const availableCategories = categories.filter(
     (category) => !completedCategories.includes(category.id)
   );

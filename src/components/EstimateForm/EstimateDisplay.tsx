@@ -17,12 +17,12 @@ interface ItemGroup {
   items: LineItem[];
 }
 
-interface EstimateDisplayProps {
+export interface EstimateDisplayProps {
   groups: ItemGroup[];
   totalCost: number;
   isBlurred?: boolean;
-  contractor?: Database['public']['Tables']['contractors']['Row'] & {
-    contractor_settings: Database['public']['Tables']['contractor_settings']['Row'] | null;
+  contractor?: Database["public"]["Tables"]["contractors"]["Row"] & {
+    contractor_settings: Database["public"]["Tables"]["contractor_settings"]["Row"] | null;
   };
 }
 
@@ -48,7 +48,9 @@ export const EstimateDisplay = ({
             />
           )}
           <div>
-            <h1 className="text-2xl font-bold">{contractor?.business_name || 'Project Estimate'}</h1>
+            <h1 className="text-2xl font-bold">
+              {contractor?.business_name || "Project Estimate"}
+            </h1>
             {contractor?.contact_email && (
               <p className="text-sm text-muted-foreground">{contractor.contact_email}</p>
             )}
@@ -70,7 +72,9 @@ export const EstimateDisplay = ({
             <div className="mb-4">
               <h3 className="text-lg font-semibold">{group.name}</h3>
               {group.description && (
-                <p className="text-sm text-muted-foreground mt-1">{group.description}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {group.description}
+                </p>
               )}
             </div>
 
@@ -90,10 +94,18 @@ export const EstimateDisplay = ({
                   {group.items.map((item, itemIndex) => (
                     <tr key={itemIndex} className="border-b border-gray-100">
                       <td className="py-3 px-4">{item.title}</td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground">{item.description}</td>
-                      <td className="py-3 px-4 text-right">{item.quantity} {item.unit}</td>
-                      <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-sm text-muted-foreground">
+                        {item.description}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        {item.quantity} {item.unit}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        ${item.unitAmount.toFixed(2)}
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium">
+                        ${item.totalPrice.toFixed(2)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -104,14 +116,17 @@ export const EstimateDisplay = ({
             <div className="mt-4 pt-4 border-t flex justify-between items-center">
               <p className="font-medium">Subtotal for {group.name}</p>
               <p className="font-semibold">
-                ${group.items.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2)}
+                $
+                {group.items
+                  .reduce((sum, item) => sum + item.totalPrice, 0)
+                  .toFixed(2)}
               </p>
             </div>
           </div>
         ))}
       </div>
       
-      {/* Total */}
+      {/* Total Estimate */}
       <div className="mt-8 pt-6 border-t">
         <div className="flex justify-between items-center">
           <p className="text-xl font-semibold">Total Estimate</p>

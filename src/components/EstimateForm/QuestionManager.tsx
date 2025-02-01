@@ -53,8 +53,7 @@ export const QuestionManager = ({
         console.error("Error loading questions:", error);
         toast({
           title: "Error",
-          description:
-            error instanceof Error ? error.message : "Failed to load questions",
+          description: error instanceof Error ? error.message : "Failed to load questions",
           variant: "destructive",
         });
       } finally {
@@ -95,14 +94,14 @@ export const QuestionManager = ({
     return null;
   };
 
-  // When an answer is provided, store it and determine navigation.
+  // When an answer is provided, store it and, for single-choice/yes-no, auto-advance.
   const handleAnswer = async (questionId: string, selectedValues: string[]) => {
     const currentQuestion = questionSequence.find((q) => q.id === questionId);
     if (!currentQuestion) return;
 
     setAnswers((prev) => ({ ...prev, [questionId]: selectedValues }));
 
-    // For single-choice questions, automatically proceed.
+    // For single-choice (or yes/no) questions, automatically proceed.
     if (currentQuestion.type !== "multiple_choice") {
       const nextQuestionId = findNextQuestionId(
         currentQuestion,
@@ -114,7 +113,7 @@ export const QuestionManager = ({
         setCurrentQuestionId(nextQuestionId);
       }
     }
-    // For multiple-choice, assume the QuestionCard component will provide a continue button.
+    // For multiple_choice, the Continue button will trigger handleNextQuestion.
   };
 
   // When all questions are answered, process the answers.
@@ -175,6 +174,26 @@ export const QuestionManager = ({
     onSelectAdditionalCategory(categoryId);
   };
 
+  // Function to advance to the next question (used for multiple_choice questions).
+  const handleNextQuestion = async () => {
+    const currentQuestion = questionSequence.find(
+      (q) => q.id === currentQuestionId
+    );
+    if (!currentQuestion) return;
+
+    // Only process manual advancement for multiple_choice questions.
+    if (currentQuestion.type === "multiple_choice") {
+      const selected = answers[currentQuestion.id] || [];
+      if (selected.length === 0) return;
+      const nextQuestionId = findNextQuestionId(currentQuestion, selected[0]);
+      if (!nextQuestionId || nextQuestionId === "END") {
+        await handleComplete();
+      } else {
+        setCurrentQuestionId(nextQuestionId);
+      }
+    }
+  };
+
   // Render a loading screen while questions are being loaded.
   if (isLoadingQuestions) {
     return <LoadingScreen message="Loading questions..." />;
@@ -224,7 +243,7 @@ export const QuestionManager = ({
       question={currentQuestion}
       selectedOptions={answers[currentQuestion.id] || []}
       onSelect={handleAnswer}
-      onNext={handleComplete}
+      onNext={handleNextQuestion}
       isLastQuestion={isLastQuestion}
       currentStage={currentQuestion.order}
       totalStages={questionSequence.length}

@@ -16,7 +16,9 @@ import { Question, Category } from "@/types/estimate";
 import { findBestMatchingCategory } from "@/utils/categoryMatcher";
 
 const EstimatePage = () => {
-  const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
+  const [stage, setStage] = useState<
+    "photo" | "description" | "questions" | "contact" | "estimate" | "category"
+  >("photo");
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
@@ -60,20 +62,22 @@ const EstimatePage = () => {
     if (isContractorError) {
       toast({
         title: "Error",
-        description: "Unable to load contractor information. Please try again later.",
+        description:
+          "Unable to load contractor information. Please try again later.",
         variant: "destructive",
       });
     }
   }, [isContractorError, toast]);
 
+  // Query for options data based on selected category.
   const { data: optionsData, isLoading: isLoadingOptions } = useQuery({
     queryKey: ["options", selectedCategory],
     queryFn: async () => {
       if (!selectedCategory) return null;
       const { data, error } = await supabase
-        .from('Options')
-        .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .from("Options")
+        .select("*")
+        .eq("Key Options", "42e64c9c-53b2-49bd-ad77-995ecb3106c6")
         .single();
       if (error) throw error;
       const categoryData = data[selectedCategory];
@@ -82,18 +86,20 @@ const EstimatePage = () => {
       }
       return categoryData;
     },
-    enabled: !!selectedCategory
+    enabled: !!selectedCategory,
   });
 
   // Handle file upload and image processing.
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     try {
       setIsUploading(true);
 
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith("image/")) {
         toast({
           title: "Invalid file type",
           description: "Please upload an image file",
@@ -111,27 +117,28 @@ const EstimatePage = () => {
         return;
       }
 
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('project_images')
+        .from("project_images")
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('project_images')
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("project_images").getPublicUrl(fileName);
 
       setUploadedImageUrl(publicUrl);
-      setStage('description');
+      setStage("description");
       toast({ title: "Success", description: "Image uploaded successfully" });
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
       toast({
         title: "Upload failed",
-        description: "There was an error uploading your image. Please try again.",
+        description:
+          "There was an error uploading your image. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -142,7 +149,7 @@ const EstimatePage = () => {
   // Format raw questions data into the expected Question[] format.
   const formatQuestions = (rawQuestions: any[]): Question[] => {
     if (!Array.isArray(rawQuestions)) {
-      console.error('Invalid questions format:', rawQuestions);
+      console.error("Invalid questions format:", rawQuestions);
       return [];
     }
     return rawQuestions.map((q: any) => {
@@ -151,19 +158,25 @@ const EstimatePage = () => {
         id: q.id || `q-${q.order}`,
         order: q.order || 0,
         question: q.question,
-        type: q.type || (q.multi_choice
-                  ? 'multiple_choice'
-                  : (selectionData.length === 2 && selectionData[0] === 'Yes' && selectionData[1] === 'No'
-                      ? 'yes_no'
-                      : 'single_choice')),
+        type:
+          q.type ||
+          (q.multi_choice
+            ? "multiple_choice"
+            : selectionData.length === 2 &&
+              selectionData[0] === "Yes" &&
+              selectionData[1] === "No"
+            ? "yes_no"
+            : "single_choice"),
         options: Array.isArray(selectionData)
           ? selectionData.map((opt: any, optIndex: number) => ({
-              label: typeof opt === 'string' ? opt : opt.label,
-              value: typeof opt === 'string' ? opt.toLowerCase() : opt.value,
-              image_url: (q.image_urls && q.image_urls[optIndex]) || ""
+              label: typeof opt === "string" ? opt : opt.label,
+              value:
+                typeof opt === "string" ? opt.toLowerCase() : opt.value,
+              image_url:
+                (q.image_urls && q.image_urls[optIndex]) || "",
             }))
           : [],
-        next: q.next_question
+        next: q.next, // Use the "next" property from JSON
       };
     });
   };
@@ -174,28 +187,34 @@ const EstimatePage = () => {
   // Load category questions from Supabase with retry logic.
   const loadCategoryQuestions = async (retryCount = 0) => {
     if (!selectedCategory) {
-      console.error('No category selected');
+      console.error("No category selected");
       return;
     }
-    
+
     setIsProcessing(true);
     try {
-      console.log(`Attempting to load questions for category: ${selectedCategory} (attempt ${retryCount + 1})`);
+      console.log(
+        `Attempting to load questions for category: ${selectedCategory} (attempt ${
+          retryCount + 1
+        })`
+      );
       const { data, error } = await supabase
-        .from('Options')
-        .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .from("Options")
+        .select("*")
+        .eq("Key Options", "42e64c9c-53b2-49bd-ad77-995ecb3106c6")
         .single();
 
       if (error) {
-        console.error('Error fetching options:', error);
+        console.error("Error fetching options:", error);
         throw error;
       }
 
       if (!data || !data[selectedCategory]) {
-        console.error('No data found for category:', selectedCategory);
+        console.error("No data found for category:", selectedCategory);
         if (retryCount < MAX_RETRIES) {
-          console.log(`Retrying in ${RETRY_DELAY}ms... (${retryCount + 1}/${MAX_RETRIES})`);
+          console.log(
+            `Retrying in ${RETRY_DELAY}ms... (${retryCount + 1}/${MAX_RETRIES})`
+          );
           setTimeout(() => loadCategoryQuestions(retryCount + 1), RETRY_DELAY);
           return;
         }
@@ -203,43 +222,49 @@ const EstimatePage = () => {
       }
 
       const categoryData = data[selectedCategory];
-      console.log('Raw category data:', categoryData);
+      console.log("Raw category data:", categoryData);
 
-      if (!categoryData || typeof categoryData !== 'object' || !Array.isArray(categoryData.questions)) {
-        console.error('Invalid questions format:', categoryData);
+      if (
+        !categoryData ||
+        typeof categoryData !== "object" ||
+        !Array.isArray(categoryData.questions)
+      ) {
+        console.error("Invalid questions format:", categoryData);
         if (retryCount < MAX_RETRIES) {
-          console.log(`Invalid data format, retrying in ${RETRY_DELAY}ms... (${retryCount + 1}/${MAX_RETRIES})`);
+          console.log(
+            `Invalid data format, retrying in ${RETRY_DELAY}ms... (${retryCount + 1}/${MAX_RETRIES})`
+          );
           setTimeout(() => loadCategoryQuestions(retryCount + 1), RETRY_DELAY);
           return;
         }
-        throw new Error('Invalid questions format');
+        throw new Error("Invalid questions format");
       }
 
       const formattedQuestions = formatQuestions(categoryData.questions);
-      console.log('Final formatted questions:', formattedQuestions);
-      
+      console.log("Final formatted questions:", formattedQuestions);
+
       if (formattedQuestions.length === 0) {
         toast({
           title: "No questions available",
           description: "Unable to load questions for this category.",
           variant: "destructive",
         });
-        setStage('category');
+        setStage("category");
         return;
       }
 
       setQuestions(formattedQuestions);
       setTotalStages(formattedQuestions.length);
-      setStage('questions');
+      setStage("questions");
     } catch (error) {
-      console.error('Error loading questions:', error);
+      console.error("Error loading questions:", error);
       if (retryCount >= MAX_RETRIES) {
         toast({
           title: "Error",
           description: "Failed to load questions. Please try again.",
           variant: "destructive",
         });
-        setStage('category');
+        setStage("category");
       }
     } finally {
       setIsProcessing(false);
@@ -248,74 +273,80 @@ const EstimatePage = () => {
 
   // Handle description submission and category matching.
   const handleDescriptionSubmit = async () => {
-    console.log('Processing description:', projectDescription);
+    console.log("Processing description:", projectDescription);
     try {
       const match = await findBestMatchingCategory(projectDescription);
-      console.log('Category match result:', match);
+      console.log("Category match result:", match);
       if (match) {
-        console.log('Found matching category:', match);
+        console.log("Found matching category:", match);
         setSelectedCategory(match.categoryId);
-        
+
         const { data: optionsData, error: optionsError } = await supabase
-          .from('Options')
-          .select('*')
-          .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+          .from("Options")
+          .select("*")
+          .eq("Key Options", "42e64c9c-53b2-49bd-ad77-995ecb3106c6")
           .single();
 
         if (optionsError) {
-          console.error('Error fetching options:', optionsError);
+          console.error("Error fetching options:", optionsError);
           throw optionsError;
         }
 
         const categoryData = optionsData[match.categoryId];
         if (!categoryData || !Array.isArray(categoryData.questions)) {
-          console.error('Invalid questions format:', categoryData);
-          throw new Error('Invalid questions format');
+          console.error("Invalid questions format:", categoryData);
+          throw new Error("Invalid questions format");
         }
 
-        console.log('Loaded questions for category:', {
+        console.log("Loaded questions for category:", {
           category: match.categoryId,
-          questions: categoryData.questions.map(q => ({
+          questions: categoryData.questions.map((q: any) => ({
             id: q.id,
             order: q.order,
             question: q.question,
             selections: q.selections,
             multi_choice: q.multi_choice,
-            next_question: q.next_question,
-            next_if_no: q.next_if_no,
-            is_branching: q.selections?.length === 2 && q.selections[0] === 'Yes' && q.selections[1] === 'No'
-          }))
+            next: q.next, // using "next" property from JSON
+            is_branching:
+              q.selections?.length === 2 &&
+              q.selections[0] === "Yes" &&
+              q.selections[1] === "No",
+          })),
         });
 
         setCurrentQuestionIndex(0);
         setAnswers({});
         await loadCategoryQuestions();
       } else {
-        console.log('No matching category found, showing category selection');
-        setStage('category');
+        console.log("No matching category found, showing category selection");
+        setStage("category");
       }
     } catch (error) {
-      console.error('Error matching category:', error);
+      console.error("Error matching category:", error);
       toast({
         title: "Error",
-        description: "Failed to process your description. Please try again or select a category manually.",
+        description:
+          "Failed to process your description. Please try again or select a category manually.",
         variant: "destructive",
       });
-      setStage('category');
+      setStage("category");
     }
   };
 
   // Handle answer selection and submission.
-  const handleAnswerSubmit = async (questionId: string, value: string | string[]) => {
+  const handleAnswerSubmit = async (
+    questionId: string,
+    value: string | string[]
+  ) => {
     const currentQuestion = questions[currentQuestionIndex];
-    setAnswers(prev => ({ 
-      ...prev, 
-      [currentQuestionIndex]: Array.isArray(value) ? value : [value]
+    setAnswers((prev) => ({
+      ...prev,
+      [currentQuestionIndex]: Array.isArray(value) ? value : [value],
     }));
 
-    if (currentQuestion.type !== 'multiple_choice') {
+    if (currentQuestion.type !== "multiple_choice") {
       if (currentQuestionIndex < questions.length - 1) {
-        setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
+        setTimeout(() => setCurrentQuestionIndex((prev) => prev + 1), 300);
       } else {
         setIsProcessing(true);
         await generateEstimate();
@@ -324,37 +355,42 @@ const EstimatePage = () => {
   };
 
   const handleCategoryComplete = (categoryId: string) => {
-    setCompletedCategories(prev => [...prev, categoryId]);
-    setStage('category');
+    setCompletedCategories((prev) => [...prev, categoryId]);
+    setStage("category");
   };
 
   // Generate the estimate based on the answers.
   const generateEstimate = async () => {
     try {
-      const formattedAnswers = Object.entries(answers).map(([index, value]) => {
-        const question = questions[parseInt(index)];
-        return {
-          question: question.question,
-          answer: Array.isArray(value) 
-            ? value.map(v => question.options.find(opt => opt.value === v)?.label || v)
-            : question.options.find(opt => opt.value === value)?.label || value
-        };
-      });
-
-      const { data, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          projectDescription, 
-          imageUrl: uploadedImageUrl, 
-          answers: formattedAnswers,
-          contractorId
+      const formattedAnswers = Object.entries(answers).map(
+        ([index, value]) => {
+          const question = questions[parseInt(index)];
+          return {
+            question: question.question,
+            answer: Array.isArray(value)
+              ? value.map(
+                  (v) =>
+                    question.options.find((opt) => opt.value === v)?.label || v
+                )
+              : question.options.find((opt) => opt.value === value)?.label || value,
+          };
         }
+      );
+
+      const { data, error } = await supabase.functions.invoke("generate-estimate", {
+        body: {
+          projectDescription,
+          imageUrl: uploadedImageUrl,
+          answers: formattedAnswers,
+          contractorId,
+        },
       });
 
       if (error) throw error;
       setEstimate(data);
-      setStage('contact');
+      setStage("contact");
     } catch (error) {
-      console.error('Error generating estimate:', error);
+      console.error("Error generating estimate:", error);
       toast({
         title: "Error",
         description: "Failed to generate estimate. Please try again.",
@@ -373,32 +409,32 @@ const EstimatePage = () => {
       }
 
       const { data: lead, error: leadError } = await supabase
-        .from('leads')
+        .from("leads")
         .insert({
           contractor_id: contractorId,
-          project_title: `${selectedCategory || ''} Project`,
+          project_title: `${selectedCategory || ""} Project`,
           user_name: contactData.fullName,
           user_email: contactData.email,
           user_phone: contactData.phone,
           project_address: contactData.address,
-          category: selectedCategory || '',
+          category: selectedCategory || "",
           answers: answers,
           estimate_data: estimate,
           estimated_cost: estimate?.totalCost || 0,
-          status: 'new'
+          status: "new",
         })
         .select()
         .single();
 
       if (leadError) throw leadError;
 
-      setStage('estimate');
+      setStage("estimate");
       toast({
         title: "Success",
         description: "Your estimate has been saved!",
       });
     } catch (error) {
-      console.error('Error saving lead:', error);
+      console.error("Error saving lead:", error);
       toast({
         title: "Error",
         description: "Failed to save your information. Please try again.",
@@ -409,13 +445,13 @@ const EstimatePage = () => {
 
   // Calculate the progress bar value.
   const getProgressValue = () => {
-    if (stage === 'photo') return 20;
-    if (stage === 'description') return 40;
-    if (stage === 'questions') {
+    if (stage === "photo") return 20;
+    if (stage === "description") return 40;
+    if (stage === "questions") {
       return 40 + ((currentQuestionIndex + 1) / questions.length) * 30;
     }
-    if (stage === 'contact') return 90;
-    if (stage === 'estimate') return 100;
+    if (stage === "contact") return 90;
+    if (stage === "estimate") return 100;
     return 0;
   };
 
@@ -423,25 +459,25 @@ const EstimatePage = () => {
     {
       id: "Kitchen Remodel 2",
       name: "Kitchen Remodeling",
-      description: "Update or renovate your kitchen"
+      description: "Update or renovate your kitchen",
     },
     {
       id: "Bathroom Remodel",
       name: "Bathroom Remodeling",
-      description: "Renovate your bathroom"
+      description: "Renovate your bathroom",
     },
     {
       id: "Basement Remodeling",
       name: "Basement Finishing",
-      description: "Finish or remodel your basement"
-    }
+      description: "Finish or remodel your basement",
+    },
   ];
 
   if (isProcessing) {
     return (
       <LoadingScreen
         message={
-          stage === 'questions' && currentQuestionIndex === questions.length - 1
+          stage === "questions" && currentQuestionIndex === questions.length - 1
             ? "Generating your estimate..."
             : "Processing your request..."
         }
@@ -449,16 +485,16 @@ const EstimatePage = () => {
     );
   }
 
-  if (isLoadingOptions && stage === 'questions') {
+  if (isLoadingOptions && stage === "questions") {
     return <LoadingScreen message="Loading questions..." />;
   }
 
   return (
     <div className="min-h-screen bg-white">
       <Progress value={getProgressValue()} className="h-8 rounded-none" />
-      
+
       {contractor && (
-        <button 
+        <button
           onClick={() => navigate("/dashboard")}
           className="absolute top-4 left-4 text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
         >
@@ -468,7 +504,7 @@ const EstimatePage = () => {
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-12">
-        {stage === 'photo' && (
+        {stage === "photo" && (
           <div className="card p-8 animate-fadeIn">
             <div className="flex items-start justify-between mb-6">
               <div>
@@ -490,23 +526,18 @@ const EstimatePage = () => {
                   capture="environment"
                   disabled={isUploading}
                 />
-                <Button 
-                  className="w-full" 
-                  size="lg" 
-                  disabled={isUploading}
-                  asChild
-                >
+                <Button className="w-full" size="lg" disabled={isUploading} asChild>
                   <div>
                     <Camera className="mr-2" />
                     {isUploading ? "UPLOADING..." : "TAKE A PHOTO"}
                   </div>
                 </Button>
               </label>
-              <Button 
-                variant="ghost" 
-                className="w-full" 
-                size="lg" 
-                onClick={() => setStage('description')}
+              <Button
+                variant="ghost"
+                className="w-full"
+                size="lg"
+                onClick={() => setStage("description")}
               >
                 <SkipForward className="mr-2" />
                 Skip Photo
@@ -515,7 +546,7 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'description' && (
+        {stage === "description" && (
           <div className="card p-8 animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
             <div className="space-y-2">
@@ -531,7 +562,7 @@ const EstimatePage = () => {
                 </p>
               )}
             </div>
-            <Button 
+            <Button
               className="w-full mt-6"
               onClick={handleDescriptionSubmit}
               disabled={projectDescription.trim().length < 30}
@@ -541,34 +572,36 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'questions' && questions.length > 0 && currentQuestionIndex < questions.length && (
-          <QuestionCard
-            question={questions[currentQuestionIndex]}
-            selectedOptions={
-              Array.isArray(answers[currentQuestionIndex])
-                ? answers[currentQuestionIndex] as string[]
-                : answers[currentQuestionIndex] 
-                  ? [answers[currentQuestionIndex] as string] 
+        {stage === "questions" &&
+          questions.length > 0 &&
+          currentQuestionIndex < questions.length && (
+            <QuestionCard
+              question={questions[currentQuestionIndex]}
+              selectedOptions={
+                Array.isArray(answers[currentQuestionIndex])
+                  ? (answers[currentQuestionIndex] as string[])
+                  : answers[currentQuestionIndex]
+                  ? [answers[currentQuestionIndex] as string]
                   : []
-            }
-            onSelect={handleAnswerSubmit}
-            onNext={() => {
-              if (currentQuestionIndex < questions.length - 1) {
-                setCurrentQuestionIndex(prev => prev + 1);
-              } else {
-                generateEstimate();
               }
-            }}
-            isLastQuestion={currentQuestionIndex === questions.length - 1}
-            currentStage={currentQuestionIndex + 1}
-            totalStages={totalStages}
-          />
-        )}
+              onSelect={handleAnswerSubmit}
+              onNext={() => {
+                if (currentQuestionIndex < questions.length - 1) {
+                  setCurrentQuestionIndex((prev) => prev + 1);
+                } else {
+                  generateEstimate();
+                }
+              }}
+              isLastQuestion={currentQuestionIndex === questions.length - 1}
+              currentStage={currentQuestionIndex + 1}
+              totalStages={totalStages}
+            />
+          )}
 
-        {stage === 'category' && (
+        {stage === "category" && (
           <div className="animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
-            <CategoryGrid 
+            <CategoryGrid
               categories={categories}
               onSelectCategory={(categoryId) => {
                 setSelectedCategory(categoryId);
@@ -581,11 +614,11 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'contact' && estimate && (
+        {stage === "contact" && estimate && (
           <div className="animate-fadeIn">
-            <EstimateDisplay 
-              groups={estimate.groups} 
-              totalCost={estimate.totalCost} 
+            <EstimateDisplay
+              groups={estimate.groups}
+              totalCost={estimate.totalCost}
               isBlurred={true}
               contractor={contractor || undefined}
             />
@@ -595,9 +628,9 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'estimate' && estimate && (
-          <EstimateDisplay 
-            groups={estimate.groups} 
+        {stage === "estimate" && estimate && (
+          <EstimateDisplay
+            groups={estimate.groups}
             totalCost={estimate.totalCost}
             contractor={contractor || undefined}
           />

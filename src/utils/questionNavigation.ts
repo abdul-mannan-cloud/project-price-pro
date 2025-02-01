@@ -5,7 +5,7 @@ export const findNextQuestionId = (
   currentQuestion: Question,
   selectedValue: string
 ): string | null => {
-  // First check if the selected option has a next question specified
+  // First, check if the selected option has a next question specified.
   const selectedOption = currentQuestion.options.find(
     (opt) => opt.value === selectedValue
   );
@@ -14,17 +14,17 @@ export const findNextQuestionId = (
     return selectedOption.next;
   }
 
-  // If the current question has a next property, use that
+  // Next, if the current question itself has a "next" property, use that.
   if (currentQuestion.next) {
     return currentQuestion.next;
   }
 
-  // If no specific navigation is defined, move to the next question in order
+  // Otherwise, fallback to the next question in the array order.
   const currentIndex = questions.findIndex((q) => q.id === currentQuestion.id);
-  if (currentIndex < questions.length - 1) {
+  if (currentIndex !== -1 && currentIndex < questions.length - 1) {
     return questions[currentIndex + 1].id;
   }
 
-  // If we've reached the end of the questions
+  // If there are no more questions, return null.
   return null;
 };
