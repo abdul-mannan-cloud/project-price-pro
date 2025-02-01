@@ -40,8 +40,9 @@ export const QuestionManager = ({
         }
 
         console.log('Raw category data:', categoryData);
-        setQuestionSequence(categoryData.questions);
-        setCurrentQuestionId(categoryData.questions[0].id);
+        const sortedQuestions = [...categoryData.questions].sort((a, b) => a.order - b.order);
+        setQuestionSequence(sortedQuestions);
+        setCurrentQuestionId(sortedQuestions[0].id);
         setAnswers({});
         setShowAdditionalServices(false);
         setIsProcessing(false);
@@ -66,12 +67,12 @@ export const QuestionManager = ({
     // First check if the selected option has a next question specified
     const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValue);
     if (selectedOption?.next) {
-      return selectedOption.next;
+      return selectedOption.next === 'END' ? null : selectedOption.next;
     }
 
     // If the current question has a next property, use that
     if (currentQuestion.next) {
-      return currentQuestion.next;
+      return currentQuestion.next === 'END' ? null : currentQuestion.next;
     }
 
     // If no specific navigation is defined, move to the next question in order
@@ -92,7 +93,7 @@ export const QuestionManager = ({
     if (currentQuestion.type !== 'multiple_choice') {
       const nextQuestionId = findNextQuestionId(currentQuestion, selectedValues[0]);
       
-      if (!nextQuestionId || nextQuestionId === 'END') {
+      if (!nextQuestionId) {
         await handleComplete();
       } else {
         setCurrentQuestionId(nextQuestionId);
@@ -179,9 +180,7 @@ export const QuestionManager = ({
     );
   }
 
-  const isLastQuestion = !findNextQuestionId(currentQuestion, 'yes') || 
-                        currentQuestion.next === 'END' ||
-                        questionSequence.indexOf(currentQuestion) === questionSequence.length - 1;
+  const isLastQuestion = !findNextQuestionId(currentQuestion, currentQuestion.options[0].value);
 
   return (
     <QuestionCard

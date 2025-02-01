@@ -17,7 +17,7 @@ export interface Question {
 
 export interface CategoryQuestions {
   category: string;
-  keywords?: string[];
+  keywords: string[];
   questions: Question[];
 }
 
