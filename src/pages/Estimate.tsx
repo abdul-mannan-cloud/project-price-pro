@@ -152,20 +152,21 @@ const EstimatePage = () => {
       return [];
     }
 
-    return rawQuestions.map((q: any, index: number) => ({
-      id: `${index}`,
-      order: q.order || index + 1,
+    return rawQuestions.map((q: any) => ({
+      id: q.id || `q-${q.order}`,
+      order: q.order || 0,
       question: q.question,
-      selections: q.selections,
-      options: Array.isArray(q.selections) ? q.selections.map((opt: any, optIndex: number) => ({
-        id: `${index}-${optIndex}`,
-        label: typeof opt === 'string' ? opt : opt.label
-      })) : [],
-      multi_choice: q.multi_choice || false,
-      next_question: q.next_question,
-      next_if_no: q.next_if_no,
-      is_branching: q.is_branching || false,
-      sub_questions: q.sub_questions || {}
+      type: q.type || (q.selections?.length === 2 && 
+           q.selections[0] === 'Yes' && 
+           q.selections[1] === 'No' ? 'yes_no' : 'single_choice'),
+      options: Array.isArray(q.selections) 
+        ? q.selections.map((opt: any, optIndex: number) => ({
+            label: typeof opt === 'string' ? opt : opt.label,
+            value: typeof opt === 'string' ? opt.toLowerCase() : opt.value,
+            image_url: q.image_urls?.[optIndex]
+          }))
+        : [],
+      next: q.next_question
     }));
   };
 
@@ -203,30 +204,7 @@ const EstimatePage = () => {
         throw new Error('Invalid questions format');
       }
 
-      const formattedQuestions = categoryData.questions.map((q: any, index: number) => {
-        const formattedQuestion = {
-          id: q.id || `q-${index}`,
-          order: q.order || index + 1,
-          question: q.question,
-          selections: q.selections,
-          options: Array.isArray(q.selections) 
-            ? q.selections.map((opt: any, optIndex: number) => ({
-                id: `${index}-${optIndex}`,
-                label: typeof opt === 'string' ? opt : opt.label
-              }))
-            : [],
-          multi_choice: q.multi_choice || false,
-          next_question: q.next_question,
-          next_if_no: q.next_if_no,
-          is_branching: q.selections?.length === 2 && 
-                       q.selections[0] === 'Yes' && 
-                       q.selections[1] === 'No',
-          sub_questions: q.sub_questions || {}
-        };
-        
-        console.log(`Formatted question ${index}:`, formattedQuestion);
-        return formattedQuestion;
-      });
+      const formattedQuestions = formatQuestions(categoryData.questions);
 
       console.log('Final formatted questions:', formattedQuestions);
       
@@ -327,7 +305,7 @@ const EstimatePage = () => {
       [currentQuestionIndex]: Array.isArray(value) ? value : [value]
     }));
 
-    if (!currentQuestion.is_branching && !currentQuestion.multi_choice) {
+    if (currentQuestion.type !== 'multiple_choice') {
       if (currentQuestionIndex < questions.length - 1) {
         setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
       } else {
@@ -349,8 +327,8 @@ const EstimatePage = () => {
         return {
           question: question.question,
           answer: Array.isArray(value) 
-            ? value.map(v => question.options.find(opt => opt.id === v)?.label || v)
-            : question.options.find(opt => opt.id === value)?.label || value
+            ? value.map(v => question.options.find(opt => opt.value === v)?.label || v)
+            : question.options.find(opt => opt.value === value)?.label || value
         };
       });
 
