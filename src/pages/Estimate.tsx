@@ -52,14 +52,14 @@ const calculateKitchenEstimate = (answers: Record<string, string[]>) => {
 };
 
 const EstimatePage = () => {
-  const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
+  const [stage, setStage] = useState<'photo' | 'description' | 'category' | 'questions' | 'contact' | 'estimate'>('photo');
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string[]>>({});
+  const [answers, setAnswers] = useState<Record<string, Record<string, string[]>>>({});
   const [estimate, setEstimate] = useState<any>(null);
   const [totalStages, setTotalStages] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -397,8 +397,6 @@ const EstimatePage = () => {
   const handleDescriptionSubmit = async () => {
     setIsProcessing(true);
     try {
-      console.log('Processing description:', projectDescription);
-      
       const { data: optionsData, error } = await supabase
         .from('Options')
         .select('*')
@@ -407,7 +405,7 @@ const EstimatePage = () => {
 
       if (error) throw error;
 
-      // Process each category's keywords to find matches
+      // Find best matching category based on keywords
       let bestMatch: { category: string; score: number } | null = null;
       const description = projectDescription.toLowerCase();
       
@@ -417,12 +415,11 @@ const EstimatePage = () => {
         const categoryData = data as any;
         if (!categoryData.keywords) return;
 
-        // Calculate match score based on keyword presence and position
         let score = 0;
         categoryData.keywords.forEach((keyword: string) => {
           const keywordLower = keyword.toLowerCase();
           if (description.includes(keywordLower)) {
-            // Higher score for keywords at the start of description
+            // Higher score for keywords at start of description
             const position = description.indexOf(keywordLower);
             const positionScore = 1 - (position / description.length);
             score += 1 + positionScore;
@@ -440,11 +437,18 @@ const EstimatePage = () => {
       });
 
       if (bestMatch) {
-        console.log('Best matching category:', bestMatch.category, 'with score:', bestMatch.score);
-        setSelectedCategory(bestMatch.category);
-        setStage('questions');
+        // Find matching category in our categories list
+        const matchingCategory = categories.find(
+          cat => cat.name.toLowerCase() === bestMatch!.category.toLowerCase()
+        );
+        
+        if (matchingCategory) {
+          setSelectedCategory(matchingCategory.id);
+          setStage('questions');
+        } else {
+          setStage('category');
+        }
       } else {
-        console.log('No matching categories found');
         toast({
           title: "No matching categories found",
           description: "Please select a category manually.",
@@ -582,34 +586,28 @@ const EstimatePage = () => {
   const handleQuestionComplete = (answers: Record<string, Record<string, string[]>>) => {
     if (selectedCategory) {
       setCompletedCategories(prev => [...prev, selectedCategory]);
-      
-      // Flatten the nested answers structure to match our state type
-      const flattenedAnswers: Record<string, string[]> = {};
-      Object.entries(answers[selectedCategory] || {}).forEach(([questionId, answerArray]) => {
-        flattenedAnswers[questionId] = answerArray;
-      });
-
       setAnswers(prev => ({
         ...prev,
-        ...flattenedAnswers
+        [selectedCategory]: answers[selectedCategory] || {}
       }));
-    }
 
-    // Check if there are more categories to process
-    const remainingCategories = categories.filter(
-      cat => !completedCategories.includes(cat.id)
-    );
+      // Check for remaining categories based on keywords
+      const remainingCategories = categories.filter(
+        cat => !completedCategories.includes(cat.id)
+      );
 
-    if (remainingCategories.length > 0) {
-      setStage('category');
-      setSelectedCategory(null);
-    } else {
-      generateEstimate();
+      if (remainingCategories.length > 0) {
+        setStage('category');
+        setSelectedCategory(null);
+      } else {
+        generateEstimate();
+      }
     }
   };
 
   const handleAdditionalCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
+    setStage('questions');
   };
 
   if (isProcessing) {
@@ -719,13 +717,7 @@ const EstimatePage = () => {
         {stage === 'questions' && questions.length > 0 && currentQuestionIndex < questions.length && (
           <QuestionCard
             question={questions[currentQuestionIndex]}
-            selectedOptions={
-              Array.isArray(answers[currentQuestionIndex])
-                ? answers[currentQuestionIndex]
-                : answers[currentQuestionIndex] 
-                  ? [answers[currentQuestionIndex] as string] 
-                  : []
-            }
+            selectedOptions={answers[currentQuestionIndex] || []}
             onSelect={handleAnswerSubmit}
             currentStage={currentQuestionIndex + 1}
             totalStages={totalStages}
