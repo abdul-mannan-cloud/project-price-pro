@@ -470,7 +470,7 @@ const EstimatePage = () => {
     const currentQuestion = questions[currentQuestionIndex];
     setAnswers(prev => ({ 
       ...prev, 
-      [currentQuestionIndex]: Array.isArray(value) ? value : [value]
+      [currentQuestion.id]: Array.isArray(value) ? value : [value]
     }));
 
     if (currentQuestion.type !== 'multiple_choice') {
@@ -579,12 +579,22 @@ const EstimatePage = () => {
     setSelectedCategory(categoryId);
   };
 
-  const handleQuestionComplete = (answers: Record<string, Record<string, string[]>>) => {
+  const handleQuestionComplete = (categoryAnswers: Record<string, Record<string, string[]>>) => {
     if (selectedCategory) {
       setCompletedCategories(prev => [...prev, selectedCategory]);
+      
+      // Flatten the nested answers structure
+      const flattenedAnswers = Object.entries(categoryAnswers[selectedCategory] || {}).reduce(
+        (acc, [questionId, answers]) => ({
+          ...acc,
+          [questionId]: answers
+        }),
+        {} as Record<string, string[]>
+      );
+
       setAnswers(prev => ({
         ...prev,
-        [selectedCategory]: answers[selectedCategory] || {}
+        ...flattenedAnswers
       }));
     }
 
