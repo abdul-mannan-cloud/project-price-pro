@@ -12,7 +12,10 @@ const getKeywordsFromOptions = async () => {
     .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
     .single();
 
-  if (!optionsData) return {};
+  if (!optionsData) {
+    console.error('No options data found');
+    return {};
+  }
 
   const keywords: Record<string, string[]> = {};
   
@@ -22,6 +25,7 @@ const getKeywordsFromOptions = async () => {
       try {
         const categoryData = value as { keywords?: string[] };
         if (categoryData.keywords) {
+          console.log(`Found keywords for category ${key}:`, categoryData.keywords);
           keywords[key] = categoryData.keywords;
         }
       } catch (error) {
@@ -48,15 +52,23 @@ const isSubstringOfMatch = (word: string, matches: string[]): boolean => {
   );
 };
 
+// Helper function to normalize and split text into words
+const normalizeText = (text: string): string[] => {
+  return text.toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters except hyphens
+    .split(/\s+/); // Split on whitespace
+};
+
 export const findBestMatchingCategory = async (description: string): Promise<CategoryMatch | null> => {
   if (!description) return null;
   
-  const lowercaseDescription = description.toLowerCase();
+  console.log('Processing description:', description);
+  const words = normalizeText(description);
   let bestMatch: CategoryMatch | null = null;
   let highestConfidence = 0;
-  let matchedKeywords: string[] = [];
 
   const categoryKeywords = await getKeywordsFromOptions();
+  console.log('Retrieved category keywords:', categoryKeywords);
 
   Object.entries(categoryKeywords).forEach(([categoryId, keywords]) => {
     let matchCount = 0;
@@ -64,19 +76,27 @@ export const findBestMatchingCategory = async (description: string): Promise<Cat
     let categoryMatches: string[] = [];
 
     keywords.forEach(keyword => {
-      if (lowercaseDescription.includes(keyword.toLowerCase())) {
-        // Skip if this keyword is part of an already matched longer keyword
-        if (isSubstringOfMatch(keyword, categoryMatches)) {
-          return;
+      // Check for exact matches
+      if (description.toLowerCase().includes(keyword.toLowerCase())) {
+        if (!isSubstringOfMatch(keyword, categoryMatches)) {
+          categoryMatches.push(keyword);
+          const positionWeight = getPositionWeight(description, keyword);
+          const lengthWeight = 1 + (keyword.length / 20); // max 2.0 for very long keywords
+          totalWeight += positionWeight * lengthWeight;
+          matchCount++;
         }
+      }
 
-        categoryMatches.push(keyword);
-        const positionWeight = getPositionWeight(description, keyword);
-        // Longer keywords get higher weight
-        const lengthWeight = 1 + (keyword.length / 20); // max 2.0 for very long keywords
-        
-        totalWeight += positionWeight * lengthWeight;
-        matchCount++;
+      // Check for partial matches in individual words
+      const keywordParts = normalizeText(keyword);
+      const partialMatches = words.filter(word => 
+        keywordParts.some(part => word.includes(part))
+      );
+      
+      if (partialMatches.length > 0) {
+        const partialMatchWeight = 0.5 * (partialMatches.length / keywordParts.length);
+        totalWeight += partialMatchWeight;
+        matchCount += partialMatchWeight;
       }
     });
 
@@ -85,13 +105,16 @@ export const findBestMatchingCategory = async (description: string): Promise<Cat
       ? (totalWeight / matchCount) * (matchCount / Math.sqrt(keywords.length))
       : 0;
 
+    console.log(`Category ${categoryId} confidence:`, confidence);
+
     if (confidence > highestConfidence) {
       bestMatch = { categoryId, confidence };
       highestConfidence = confidence;
-      matchedKeywords = categoryMatches;
     }
   });
 
   // Only return a match if confidence is above threshold
-  return bestMatch && bestMatch.confidence >= 0.2 ? bestMatch : null;
+  const match = bestMatch && bestMatch.confidence >= 0.2 ? bestMatch : null;
+  console.log('Best match found:', match);
+  return match;
 };
