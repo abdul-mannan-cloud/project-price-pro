@@ -493,7 +493,7 @@ const EstimatePage = () => {
     loadQuestionSet(categoryId);
   };
 
-  const handleQuestionComplete = (answers: Record<string, string[]>) => {
+  const handleQuestionComplete = (answers: Record<string, Record<string, string[]>>) => {
     if (selectedCategory) {
       setCompletedCategories(prev => [...prev, selectedCategory]);
     }
@@ -669,12 +669,8 @@ const EstimatePage = () => {
 
         {selectedCategory && categoryData && (
           <QuestionManager
-            categoryData={categoryData}
+            questionSets={categoryData.questions}
             onComplete={handleQuestionComplete}
-            categories={categories}
-            currentCategory={selectedCategory}
-            onSelectAdditionalCategory={handleAdditionalCategorySelect}
-            completedCategories={completedCategories}
           />
         )}
       </div>
