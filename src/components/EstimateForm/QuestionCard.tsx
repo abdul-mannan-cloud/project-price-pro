@@ -29,7 +29,6 @@ export const QuestionCard = ({
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
-    // Only show next button for multiple choice questions with selections
     setShowNextButton(
       question.type === 'multiple_choice' && selectedOptions.length > 0
     );
@@ -161,16 +160,19 @@ export const QuestionCard = ({
       </div>
 
       <Card className="bg-white rounded-xl shadow-sm">
-        <div className="p-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className="p-6 border-b">
+          <h2 className="text-xl font-semibold text-gray-900">
             {question.question}
           </h2>
+          {question.description && (
+            <p className="mt-2 text-gray-600">{question.description}</p>
+          )}
         </div>
         
-        <div className="p-4">
+        <div className="p-6">
           {renderOptions()}
           {showNextButton && onNext && (
-            <div className="mt-4">
+            <div className="mt-6">
               <Button
                 className="w-full"
                 onClick={onNext}
