@@ -40,8 +40,21 @@ export const QuestionManager = ({
         }
 
         console.log('Raw category data:', categoryData);
-        // Sort questions by order property
-        const sortedQuestions = [...categoryData.questions].sort((a, b) => a.order - b.order);
+        // Sort questions by order property and ensure proper typing
+        const sortedQuestions = [...categoryData.questions]
+          .sort((a, b) => a.order - b.order)
+          .map(q => ({
+            ...q,
+            type: q.type || (q.options.length === 2 && 
+                   q.options[0].label.toLowerCase() === 'yes' && 
+                   q.options[1].label.toLowerCase() === 'no' 
+                   ? 'yes_no' : 'single_choice'),
+            options: q.options.map(opt => ({
+              ...opt,
+              value: opt.value || opt.label.toLowerCase().replace(/\s+/g, '_')
+            }))
+          }));
+
         setQuestionSequence(sortedQuestions);
         setCurrentQuestionId(sortedQuestions[0].id);
         setAnswers({});
@@ -78,11 +91,7 @@ export const QuestionManager = ({
 
     // If no specific navigation is defined, move to the next question in order
     const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
-    if (currentIndex < questionSequence.length - 1) {
-      return questionSequence[currentIndex + 1].id;
-    }
-
-    return null;
+    return currentIndex < questionSequence.length - 1 ? questionSequence[currentIndex + 1].id : null;
   };
 
   const handleAnswer = async (questionId: string, selectedValues: string[]) => {
@@ -114,9 +123,19 @@ export const QuestionManager = ({
 
     setIsProcessing(true);
     try {
+      const formattedAnswers = Object.entries(answers).map(([questionId, values]) => {
+        const question = questionSequence.find(q => q.id === questionId);
+        return {
+          question: question?.question,
+          answers: values.map(value => 
+            question?.options.find(opt => opt.value === value)?.label || value
+          )
+        };
+      });
+
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
-          answers,
+          answers: formattedAnswers,
           category: currentCategory
         }
       });
@@ -172,9 +191,7 @@ export const QuestionManager = ({
     );
   }
 
-  const currentQuestion = currentQuestionId 
-    ? questionSequence.find(q => q.id === currentQuestionId) 
-    : null;
+  const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
 
   if (!currentQuestion) {
     return (
@@ -186,7 +203,6 @@ export const QuestionManager = ({
     );
   }
 
-  // Determine if this is the last question based on next pointers
   const isLastQuestion = !findNextQuestionId(currentQuestion, currentQuestion.options[0].value);
 
   return (
