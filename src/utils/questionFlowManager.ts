@@ -7,8 +7,8 @@ export const initializeQuestionFlow = (matchedSets: CategoryQuestions[]): Questi
     // Sort questions by order
     const sortedQuestions = [...set.questions].sort((a, b) => {
       // Handle decimal orders (e.g., 1.1, 1.2)
-      const orderA = typeof a.order === 'number' ? a.order : parseFloat(a.order.toString());
-      const orderB = typeof b.order === 'number' ? b.order : parseFloat(b.order.toString());
+      const orderA = typeof a.order === 'number' ? a.order : Number(a.order);
+      const orderB = typeof b.order === 'number' ? b.order : Number(b.order);
       return orderA - orderB;
     });
 
@@ -84,8 +84,8 @@ export const findNextQuestion = (
 
   // If no specific next question is defined, find the next question by order
   const sortedQuestions = [...questions].sort((a, b) => {
-    const orderA = typeof a.order === 'number' ? a.order : parseFloat(a.order.toString());
-    const orderB = typeof b.order === 'number' ? b.order : parseFloat(b.order.toString());
+    const orderA = typeof a.order === 'number' ? a.order : Number(a.order);
+    const orderB = typeof b.order === 'number' ? b.order : Number(b.order);
     return orderA - orderB;
   });
 
