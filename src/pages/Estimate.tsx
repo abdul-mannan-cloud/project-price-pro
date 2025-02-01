@@ -332,6 +332,7 @@ const EstimatePage = () => {
       if (match) {
         console.log('Found matching category:', match);
         setSelectedCategory(match.categoryId);
+        setStage('questions'); // Immediately move to questions stage when match is found
         
         const { data: optionsData, error: optionsError } = await supabase
           .from('Options')
@@ -352,16 +353,7 @@ const EstimatePage = () => {
 
         console.log('Loaded questions for category:', {
           category: match.categoryId,
-          questions: categoryData.questions.map(q => ({
-            id: q.id,
-            order: q.order,
-            question: q.question,
-            selections: q.selections,
-            multi_choice: q.multi_choice,
-            next_question: q.next_question,
-            next_if_no: q.next_if_no,
-            is_branching: q.selections?.length === 2 && q.selections[0] === 'Yes' && q.selections[1] === 'No'
-          }))
+          questions: categoryData.questions
         });
 
         setCurrentQuestionIndex(0);
@@ -591,7 +583,7 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'description' && (
+        {stage === 'description' && !selectedCategory && (
           <div className="card p-8 animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
             <div className="space-y-2">
