@@ -9,7 +9,7 @@ import { Check } from "lucide-react";
 interface QuestionCardProps {
   question: Question;
   selectedOptions: string[];
-  onSelect: (questionId: string, values: string[]) => void;
+  onSelect: (questionId: string, values: string[], autoAdvance: boolean) => void;
   currentStage: number;
   totalStages: number;
 }
@@ -28,7 +28,6 @@ export const QuestionCard = ({
     if (question.type === 'multiple_choice') {
       setShowNextButton(selectedOptions.length > 0);
     } else {
-      // For yes/no and single choice, we auto-advance so no next button needed
       setShowNextButton(false);
     }
   }, [selectedOptions, question.type]);
@@ -39,10 +38,10 @@ export const QuestionCard = ({
       const newSelection = selectedOptions.includes(value)
         ? selectedOptions.filter(v => v !== value)
         : [...selectedOptions, value];
-      onSelect(question.id, newSelection);
+      onSelect(question.id, newSelection, false);
     } else {
       // For yes/no and single choice, immediately submit and move to next
-      onSelect(question.id, [value]);
+      onSelect(question.id, [value], true);
     }
   };
 
@@ -118,10 +117,10 @@ export const QuestionCard = ({
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
           <div className="container max-w-4xl mx-auto">
             <Button 
-              onClick={() => onSelect(question.id, selectedOptions)}
+              onClick={() => onSelect(question.id, selectedOptions, true)}
               className="w-full"
             >
-              Continue
+              Continue with {selectedOptions.length} Selected {selectedOptions.length === 1 ? 'Item' : 'Items'}
             </Button>
           </div>
         </div>

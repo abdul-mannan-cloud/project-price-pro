@@ -1,9 +1,15 @@
 import { useState, useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
 import { LoadingScreen } from "./LoadingScreen";
-import { Question, CategoryQuestions, Category, QuestionFlow, TaskBranch } from "@/types/estimate";
+import { Question, CategoryQuestions, Category, QuestionFlow } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+
+interface TaskBranch {
+  value: string;
+  next: string;
+  completed?: boolean;
+}
 
 interface QuestionManagerProps {
   projectDescription: string;
@@ -111,7 +117,7 @@ export const QuestionManager = ({
     }
   };
 
-  const handleAnswer = (questionId: string, selectedValues: string[]) => {
+  const handleAnswer = (questionId: string, selectedValues: string[], autoAdvance: boolean) => {
     if (!questionFlow) return;
 
     const currentQuestion = questionFlow.questions.find(q => q.id === questionId);
@@ -127,7 +133,7 @@ export const QuestionManager = ({
     };
 
     // Handle task branching for multiple choice questions
-    if (currentQuestion.type === 'multiple_choice') {
+    if (currentQuestion.type === 'multiple_choice' && autoAdvance) {
       const newTaskBranches: TaskBranch[] = currentQuestion.options
         .filter(opt => selectedValues.includes(opt.value))
         .map(opt => ({
