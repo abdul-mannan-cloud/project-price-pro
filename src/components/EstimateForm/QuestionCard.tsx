@@ -29,12 +29,10 @@ export const QuestionCard = ({
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
-    // Show next button for multiple choice questions with selections
-    if (question.type === 'multiple_choice') {
-      setShowNextButton(selectedOptions.length > 0);
-    } else {
-      setShowNextButton(false);
-    }
+    // Only show next button for multiple choice questions with selections
+    setShowNextButton(
+      question.type === 'multiple_choice' && selectedOptions.length > 0
+    );
   }, [selectedOptions, question.type]);
 
   const handleOptionSelect = (value: string) => {
@@ -51,24 +49,24 @@ export const QuestionCard = ({
   const renderOptions = () => {
     if (question.type === 'multiple_choice') {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-3">
           {question.options.map((option) => (
             <div
               key={option.value}
               className={cn(
-                "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
+                "relative p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
                 selectedOptions.includes(option.value)
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-gray-200"
               )}
               onClick={() => handleOptionSelect(option.value)}
             >
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <Checkbox
                   id={option.value}
                   checked={selectedOptions.includes(option.value)}
                   onCheckedChange={() => handleOptionSelect(option.value)}
-                  className="h-6 w-6 rounded-lg"
+                  className="h-5 w-5"
                 />
                 <Label
                   htmlFor={option.value}
@@ -86,7 +84,7 @@ export const QuestionCard = ({
                 <img
                   src={option.image_url}
                   alt={option.label}
-                  className="mt-4 rounded-lg w-full h-32 object-cover"
+                  className="mt-3 rounded-lg w-full h-32 object-cover"
                 />
               )}
             </div>
@@ -99,24 +97,24 @@ export const QuestionCard = ({
       <RadioGroup
         value={selectedOptions[0]}
         onValueChange={(value) => handleOptionSelect(value)}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        className="grid grid-cols-1 gap-3"
       >
         {question.options.map((option) => (
           <div
             key={option.value}
             className={cn(
-              "relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
+              "relative p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
               selectedOptions[0] === option.value
                 ? "border-primary bg-primary/5 shadow-sm"
                 : "border-gray-200"
             )}
             onClick={() => handleOptionSelect(option.value)}
           >
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <RadioGroupItem
                 value={option.value}
                 id={option.value}
-                className="h-6 w-6"
+                className="h-5 w-5"
               />
               <Label
                 htmlFor={option.value}
@@ -134,7 +132,7 @@ export const QuestionCard = ({
               <img
                 src={option.image_url}
                 alt={option.label}
-                className="mt-4 rounded-lg w-full h-32 object-cover"
+                className="mt-3 rounded-lg w-full h-32 object-cover"
               />
             )}
           </div>
@@ -144,8 +142,8 @@ export const QuestionCard = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-8 animate-fadeIn">
-      <div className="mb-6">
+    <div className="w-full max-w-2xl mx-auto px-4 animate-fadeIn">
+      <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-gray-600">
             Question {currentStage} of {totalStages}
@@ -162,23 +160,23 @@ export const QuestionCard = ({
         </div>
       </div>
 
-      <Card className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">
+      <Card className="bg-white rounded-xl shadow-sm">
+        <div className="p-4 border-b">
+          <h2 className="text-lg font-semibold text-gray-900">
             {question.question}
           </h2>
         </div>
         
-        <div className="p-6">
+        <div className="p-4">
           {renderOptions()}
           {showNextButton && onNext && (
-            <div className="mt-6">
+            <div className="mt-4">
               <Button
                 className="w-full"
                 onClick={onNext}
                 size="lg"
               >
-                {isLastQuestion ? "Generate Estimate" : "Next Question"}
+                {isLastQuestion ? "Complete" : "Continue"}
               </Button>
             </div>
           )}
