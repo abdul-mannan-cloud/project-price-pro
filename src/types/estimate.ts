@@ -1,20 +1,17 @@
 export interface QuestionOption {
-  id?: string;
   label: string;
-  value?: string;
+  value: string;
+  next?: string;
+  image_url?: string;
 }
 
 export interface Question {
-  id?: string;
+  id: string;
   order: number;
   question: string;
-  selections?: string[];
-  options?: QuestionOption[];
-  multi_choice: boolean;
-  next_question?: number | null;
-  next_if_no?: number | null;
-  is_branching?: boolean;
-  sub_questions?: Record<string, Question[]>;
+  type: 'yes_no' | 'single_choice' | 'multiple_choice';
+  options: QuestionOption[];
+  next?: string;
 }
 
 export interface CategoryQuestions {

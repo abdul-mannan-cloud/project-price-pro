@@ -5,7 +5,7 @@ import { LoadingScreen } from "./LoadingScreen";
 import { Question, CategoryQuestions, Category } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { findNextQuestionIndex, initializeQuestions } from "@/utils/questionNavigation";
+import { findNextQuestionId, findQuestionById, initializeQuestions } from "@/utils/questionNavigation";
 
 interface QuestionManagerProps {
   categoryData: CategoryQuestions;
@@ -24,35 +24,26 @@ export const QuestionManager = ({
   onSelectAdditionalCategory,
   completedCategories
 }: QuestionManagerProps) => {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
   const [showAdditionalServices, setShowAdditionalServices] = useState(false);
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [pendingAnswer, setPendingAnswer] = useState<{
-    questionId: string;
-    selectedOptions: string[];
-    selectedLabel: string;
-  } | null>(null);
 
   const logQuestionFlow = async (event: string, details: any) => {
     try {
-      const currentQuestion = questionSequence[currentQuestionIndex];
+      const currentQuestion = currentQuestionId ? findQuestionById(questionSequence, currentQuestionId) : null;
       
       const logData = {
         timestamp: new Date().toISOString(),
         event,
-        currentQuestion: {
-          order: currentQuestion?.order,
-          question: currentQuestion?.question,
-          next_question: currentQuestion?.next_question,
-          next_if_no: currentQuestion?.next_if_no,
-          is_branching: currentQuestion?.selections?.length === 2 && 
-                       currentQuestion?.selections[0] === 'Yes' && 
-                       currentQuestion?.selections[1] === 'No',
-          multi_choice: currentQuestion?.multi_choice
-        },
+        currentQuestion: currentQuestion ? {
+          id: currentQuestion.id,
+          order: currentQuestion.order,
+          question: currentQuestion.question,
+          type: currentQuestion.type
+        } : null,
         ...details
       };
       
@@ -64,12 +55,7 @@ export const QuestionManager = ({
           questionId: currentQuestion?.id,
           questionOrder: currentQuestion?.order,
           question: currentQuestion?.question,
-          next_question: currentQuestion?.next_question,
-          next_if_no: currentQuestion?.next_if_no,
-          is_branching: currentQuestion?.selections?.length === 2 && 
-                       currentQuestion?.selections[0] === 'Yes' && 
-                       currentQuestion?.selections[1] === 'No',
-          multi_choice: currentQuestion?.multi_choice,
+          type: currentQuestion?.type,
           category: currentCategory,
           ...details
         }
@@ -88,85 +74,68 @@ export const QuestionManager = ({
       });
       
       setQuestionSequence(initializedQuestions);
-      setCurrentQuestionIndex(0);
+      setCurrentQuestionId(initializedQuestions[0].id);
       setAnswers({});
       setShowAdditionalServices(false);
     }
   }, [categoryData, currentCategory]);
 
-  const handleAnswer = async (questionId: string, selectedOptions: string[], selectedLabel: string) => {
-    const currentQuestion = questionSequence[currentQuestionIndex];
-    const isYesNoQuestion = currentQuestion.selections?.length === 2 && 
-                           currentQuestion.selections[0] === 'Yes' && 
-                           currentQuestion.selections[1] === 'No';
-    
+  const handleAnswer = async (questionId: string, selectedValues: string[]) => {
+    const currentQuestion = findQuestionById(questionSequence, questionId);
+    if (!currentQuestion) return;
+
     console.log('Processing answer:', {
       questionId,
-      selectedOptions,
-      selectedLabel,
+      selectedValues,
       currentQuestion: {
+        id: currentQuestion.id,
         order: currentQuestion.order,
-        question: currentQuestion.question,
-        next_question: currentQuestion.next_question,
-        next_if_no: currentQuestion.next_if_no,
-        isYesNoQuestion
+        type: currentQuestion.type
       }
     });
 
-    // Update answers immediately
-    const updatedAnswers = { ...answers, [questionId]: selectedOptions };
-    setAnswers(updatedAnswers);
+    // Update answers
+    setAnswers(prev => ({ ...prev, [questionId]: selectedValues }));
 
-    // For Yes/No questions, navigate immediately
-    if (isYesNoQuestion) {
-      // Determine if Yes was selected by checking if the first selection was chosen
-      const isYesSelected = selectedOptions[0] === currentQuestion.selections[0];
-      const nextIndex = findNextQuestionIndex(
-        questionSequence, 
-        currentQuestion, 
-        isYesSelected ? 'Yes' : 'No'
+    // For yes/no and single_choice questions, navigate immediately
+    if (currentQuestion.type !== 'multiple_choice') {
+      const nextQuestionId = findNextQuestionId(
+        questionSequence,
+        currentQuestion,
+        selectedValues[0]
       );
-      
+
       await logQuestionFlow('answer_processed', {
-        selectedOptions,
-        selectedLabel,
-        nextQuestionIndex: nextIndex,
-        nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null,
-        isYesNoQuestion: true,
-        navigationPath: isYesSelected ? 'next_question' : 'next_if_no'
+        selectedValues,
+        nextQuestionId,
+        questionType: currentQuestion.type
       });
 
-      if (nextIndex !== -1) {
-        setCurrentQuestionIndex(nextIndex);
-      } else {
+      if (nextQuestionId === 'END' || !nextQuestionId) {
         await handleComplete();
+      } else {
+        setCurrentQuestionId(nextQuestionId);
       }
-    } else {
-      // For other questions, store the pending answer
-      setPendingAnswer({ questionId, selectedOptions, selectedLabel });
     }
   };
 
   const handleNext = async () => {
-    if (!pendingAnswer) return;
+    if (!currentQuestionId) return;
+    
+    const currentQuestion = findQuestionById(questionSequence, currentQuestionId);
+    if (!currentQuestion) return;
 
-    const currentQuestion = questionSequence[currentQuestionIndex];
-    const nextIndex = findNextQuestionIndex(questionSequence, currentQuestion, pendingAnswer.selectedLabel);
+    const nextQuestionId = currentQuestion.next;
 
-    await logQuestionFlow('answer_processed', {
-      selectedOptions: pendingAnswer.selectedOptions,
-      selectedLabel: pendingAnswer.selectedLabel,
-      nextQuestionIndex: nextIndex,
-      nextQuestionOrder: nextIndex !== -1 ? questionSequence[nextIndex]?.order : null,
-      isYesNoQuestion: false
+    await logQuestionFlow('manual_next', {
+      currentQuestionId,
+      nextQuestionId
     });
 
-    setPendingAnswer(null);
-
-    if (nextIndex !== -1) {
-      setCurrentQuestionIndex(nextIndex);
-    } else {
+    if (nextQuestionId === 'END' || !nextQuestionId) {
       await handleComplete();
+    } else {
+      setCurrentQuestionId(nextQuestionId);
     }
   };
 
@@ -237,17 +206,17 @@ export const QuestionManager = ({
     );
   }
 
-  const currentQuestion = questionSequence[currentQuestionIndex];
+  const currentQuestion = currentQuestionId ? findQuestionById(questionSequence, currentQuestionId) : null;
   if (!currentQuestion) return null;
 
   return (
     <QuestionCard
       question={currentQuestion}
-      selectedOptions={answers[currentQuestion.id || ''] || []}
+      selectedOptions={answers[currentQuestion.id] || []}
       onSelect={handleAnswer}
       onNext={handleNext}
-      isLastQuestion={currentQuestionIndex === questionSequence.length - 1}
-      currentStage={currentQuestionIndex + 1}
+      isLastQuestion={!currentQuestion.next || currentQuestion.next === 'END'}
+      currentStage={currentQuestion.order}
       totalStages={questionSequence.length}
     />
   );

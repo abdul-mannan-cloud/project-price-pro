@@ -1,97 +1,61 @@
 import { Question } from "@/types/estimate";
 
-export const findNextQuestionIndex = (
+export const findNextQuestionId = (
   questions: Question[],
   currentQuestion: Question,
-  selectedLabel: string
-): number => {
+  selectedValue: string
+): string | null => {
   // Log the current navigation attempt
   console.log('Navigation attempt:', {
+    currentQuestionId: currentQuestion.id,
+    selectedValue,
     currentQuestion: {
-      order: currentQuestion.order,
-      question: currentQuestion.question,
-      next_question: currentQuestion.next_question,
-      next_if_no: currentQuestion.next_if_no,
-      isYesNo: currentQuestion.selections?.length === 2 && 
-               currentQuestion.selections[0] === 'Yes' && 
-               currentQuestion.selections[1] === 'No'
-    },
-    selectedLabel
+      type: currentQuestion.type,
+      options: currentQuestion.options
+    }
   });
 
-  // Check if this is a Yes/No question
-  const isYesNoQuestion = currentQuestion.selections?.length === 2 && 
-                         currentQuestion.selections[0] === 'Yes' && 
-                         currentQuestion.selections[1] === 'No';
-
-  if (isYesNoQuestion) {
-    console.log('Processing Yes/No question navigation');
-    
-    // Handle Yes selection - go to next_question if defined
-    if (selectedLabel === 'Yes' && typeof currentQuestion.next_question === 'number') {
-      const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-      console.log('Yes selected, navigating to:', {
-        nextQuestionOrder: currentQuestion.next_question,
-        foundIndex: nextIndex
-      });
-      return nextIndex;
-    }
-    
-    // Handle No selection - go to next_if_no if defined
-    if (selectedLabel === 'No' && typeof currentQuestion.next_if_no === 'number') {
-      const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_if_no);
-      console.log('No selected, navigating to:', {
-        nextQuestionOrder: currentQuestion.next_if_no,
-        foundIndex: nextIndex
-      });
-      return nextIndex;
-    }
-  } else {
-    console.log('Processing non-Yes/No question navigation');
-    // For non-Yes/No questions with explicit next_question
-    if (typeof currentQuestion.next_question === 'number') {
-      const nextIndex = questions.findIndex(q => q.order === currentQuestion.next_question);
-      console.log('Following explicit next_question:', {
-        nextQuestionOrder: currentQuestion.next_question,
-        foundIndex: nextIndex
-      });
-      return nextIndex;
-    }
+  // Find the selected option
+  const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValue);
+  
+  // If the option has a next question specified, use that
+  if (selectedOption?.next) {
+    console.log('Following option-specific next:', selectedOption.next);
+    return selectedOption.next;
   }
 
-  // Default to sequential navigation if no specific navigation is defined
-  const nextOrder = currentQuestion.order + 1;
-  const nextIndex = questions.findIndex(q => q.order === nextOrder);
-  console.log('Sequential navigation:', {
-    fromOrder: currentQuestion.order,
-    toOrder: nextOrder,
-    foundIndex: nextIndex
-  });
-  return nextIndex;
+  // If the question has a default next question, use that
+  if (currentQuestion.next) {
+    console.log('Following default next:', currentQuestion.next);
+    return currentQuestion.next;
+  }
+
+  // If we reach here, we've reached the end of the questionnaire
+  console.log('No next question found, ending questionnaire');
+  return null;
+};
+
+export const findQuestionById = (questions: Question[], id: string): Question | undefined => {
+  return questions.find(q => q.id === id);
 };
 
 export const initializeQuestions = (rawQuestions: Question[]): Question[] => {
-  // Sort questions by order and initialize
+  // Sort questions by order and ensure all required fields are present
   const questions = [...rawQuestions]
     .sort((a, b) => (a.order || 0) - (b.order || 0))
     .map((q) => ({
       ...q,
-      options: q.selections?.map((selection: string, optIndex: number) => ({
-        id: `${q.order}-${optIndex}`,
-        label: selection
-      })) || [],
-      is_branching: q.selections?.length === 2 && 
-                    q.selections[0] === 'Yes' && 
-                    q.selections[1] === 'No'
+      type: q.type || (q.options.length === 2 && 
+             q.options[0].label === 'Yes' && 
+             q.options[1].label === 'No' ? 'yes_no' : 'single_choice')
     }));
 
   // Log initialized questions for debugging
   console.log('Initialized questions:', questions.map(q => ({
+    id: q.id,
     order: q.order,
-    question: q.question,
-    next_question: q.next_question,
-    next_if_no: q.next_if_no,
-    is_branching: q.is_branching
+    type: q.type,
+    optionsCount: q.options.length
   })));
   
   return questions;
