@@ -114,9 +114,9 @@ const EstimatePage = () => {
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .maybeSingle();
+        .single();
       if (error) throw error;
-      const categoryData = data?.[selectedCategory];
+      const categoryData = data[selectedCategory];
       if (!categoryData) {
         throw new Error(`No questions found for category: ${selectedCategory}`);
       }
@@ -164,7 +164,7 @@ const EstimatePage = () => {
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .maybeSingle();
+        .single();
 
       if (optionsError) {
         console.error('Error fetching options:', optionsError);
@@ -333,7 +333,7 @@ const EstimatePage = () => {
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error('Error fetching options:', error);
@@ -403,7 +403,7 @@ const EstimatePage = () => {
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
 
@@ -466,11 +466,11 @@ const EstimatePage = () => {
     }
   };
 
-  const handleAnswerSubmit = async (questionId: string, value: string | string[]) => {
+  const handleAnswerSubmit = async (questionId: string, value: string[]) => {
     const currentQuestion = questions[currentQuestionIndex];
     setAnswers(prev => ({ 
       ...prev, 
-      [currentQuestion.id]: Array.isArray(value) ? value : [value]
+      [currentQuestionIndex]: value
     }));
 
     if (currentQuestion.type !== 'multiple_choice') {
@@ -579,25 +579,16 @@ const EstimatePage = () => {
     setSelectedCategory(categoryId);
   };
 
-  const handleQuestionComplete = (categoryAnswers: Record<string, Record<string, string[]>>) => {
+  const handleQuestionComplete = (answers: Record<string, Record<string, string[]>>) => {
     if (selectedCategory) {
       setCompletedCategories(prev => [...prev, selectedCategory]);
-      
-      // Flatten the nested answers structure
-      const flattenedAnswers = Object.entries(categoryAnswers[selectedCategory] || {}).reduce(
-        (acc, [questionId, answers]) => ({
-          ...acc,
-          [questionId]: answers
-        }),
-        {} as Record<string, string[]>
-      );
-
       setAnswers(prev => ({
         ...prev,
-        ...flattenedAnswers
+        [selectedCategory]: answers[selectedCategory] || {}
       }));
     }
 
+    // Check if there are more categories to process
     const remainingCategories = categories.filter(
       cat => !completedCategories.includes(cat.id)
     );
@@ -723,19 +714,12 @@ const EstimatePage = () => {
             question={questions[currentQuestionIndex]}
             selectedOptions={
               Array.isArray(answers[currentQuestionIndex])
-                ? answers[currentQuestionIndex] as string[]
+                ? answers[currentQuestionIndex]
                 : answers[currentQuestionIndex] 
                   ? [answers[currentQuestionIndex] as string] 
                   : []
             }
-            onSelect={async (questionId, value) => {
-              await handleAnswerSubmit(questionId, value);
-              // Auto-advance for non-multiple choice questions
-              const currentQuestion = questions[currentQuestionIndex];
-              if (currentQuestion.type !== 'multiple_choice' && currentQuestionIndex < questions.length - 1) {
-                setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
-              }
-            }}
+            onSelect={handleAnswerSubmit}
             currentStage={currentQuestionIndex + 1}
             totalStages={totalStages}
           />
