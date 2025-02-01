@@ -66,6 +66,20 @@ export interface QuestionFlow {
   mergedBranches: Record<string, string[]>; // Track which branches were merged
 }
 
+export interface TaskBranch {
+  value: string;
+  next: string;
+  completed?: boolean;
+}
+
+export interface QuestionFlow {
+  category: string;
+  questions: Question[];
+  currentQuestionId: string | null;
+  answers: Record<string, Record<string, string[]>>;
+  taskBranches?: TaskBranch[];
+}
+
 // New interfaces for branch management
 export interface BranchMergeRule {
   source_branch: string;
