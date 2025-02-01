@@ -5,6 +5,7 @@ import { LoadingScreen } from "./LoadingScreen";
 import { Question, CategoryQuestions, Category } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { findNextQuestionId } from "@/utils/questionNavigation";
 
 interface QuestionManagerProps {
   categoryData: CategoryQuestions;
@@ -42,17 +43,22 @@ export const QuestionManager = ({
       
       if (q.type === 'yes_no') {
         options = [
-          { label: 'Yes', value: 'yes' },
-          { label: 'No', value: 'no' }
+          { label: 'Yes', value: 'yes', next: q.next_if_yes },
+          { label: 'No', value: 'no', next: q.next_if_no }
         ];
-      } else if (q.type === 'multiple_choice' || q.type === 'single_choice') {
-        options = Array.isArray(q.selections) ? q.selections.map((selection: any, selIndex: number) => ({
-          label: typeof selection === 'string' ? selection : selection.label,
-          value: typeof selection === 'string' ? 
-            selection.toLowerCase().replace(/\s+/g, '_') : 
-            selection.value || `option_${selIndex + 1}`,
-          image_url: q.image_urls?.[selIndex]
-        })) : [];
+      } else {
+        // Check for options first, then fall back to selections
+        const rawOptions = Array.isArray(q.options) ? q.options : 
+                         Array.isArray(q.selections) ? q.selections : [];
+        
+        options = rawOptions.map((opt: any, optIndex: number) => ({
+          label: typeof opt === 'object' ? opt.label : opt,
+          value: typeof opt === 'object' ? 
+            opt.value || opt.label.toLowerCase().replace(/\s+/g, '_') : 
+            opt.toLowerCase().replace(/\s+/g, '_'),
+          next: typeof opt === 'object' ? opt.next : undefined,
+          image_url: q.image_urls?.[optIndex] || (typeof opt === 'object' ? opt.image_url : undefined)
+        }));
       }
 
       return {
@@ -117,11 +123,14 @@ export const QuestionManager = ({
     setAnswers(prev => ({ ...prev, [questionId]: selectedValues }));
 
     if (currentQuestion.type !== 'multiple_choice') {
-      const nextQuestion = questionSequence.find(q => q.order === currentQuestion.order + 1);
-      if (!nextQuestion) {
+      const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValues[0]);
+      const nextQuestionId = selectedOption?.next || 
+                           findNextQuestionId(questionSequence, currentQuestion, selectedValues[0]);
+      
+      if (!nextQuestionId) {
         await handleComplete();
       } else {
-        setCurrentQuestionId(nextQuestion.id);
+        setCurrentQuestionId(nextQuestionId);
       }
     }
   };
@@ -132,11 +141,15 @@ export const QuestionManager = ({
     const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
     if (!currentQuestion) return;
 
-    const nextQuestion = questionSequence.find(q => q.order === currentQuestion.order + 1);
-    if (!nextQuestion) {
+    const selectedValue = answers[currentQuestionId]?.[0];
+    const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValue);
+    const nextQuestionId = selectedOption?.next || 
+                         findNextQuestionId(questionSequence, currentQuestion, selectedValue);
+
+    if (!nextQuestionId) {
       await handleComplete();
     } else {
-      setCurrentQuestionId(nextQuestion.id);
+      setCurrentQuestionId(nextQuestionId);
     }
   };
 
