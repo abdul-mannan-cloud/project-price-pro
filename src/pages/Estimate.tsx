@@ -101,13 +101,24 @@ const EstimatePage = () => {
 
   const loadCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('categories')
+      const { data: optionsData, error: optionsError } = await supabase
+        .from('Options')
         .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      setCategories(data || []);
+        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .single();
+
+      if (optionsError) throw optionsError;
+
+      // Transform Options data into Category format
+      const transformedCategories: Category[] = Object.keys(optionsData)
+        .filter(key => key !== 'Key Options')
+        .map(key => ({
+          id: key,
+          name: key.replace(/_/g, ' '),
+          description: `Get an estimate for your ${key.toLowerCase()} project`
+        }));
+
+      setCategories(transformedCategories);
     } catch (error) {
       console.error('Error loading categories:', error);
       toast({
@@ -122,16 +133,24 @@ const EstimatePage = () => {
 
   const loadQuestionSet = async (categoryId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('question_sets')
+      const { data: optionsData, error: optionsError } = await supabase
+        .from('Options')
         .select('*')
-        .eq('category', categoryId)
+        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
 
-      if (error) throw error;
-      
-      // Parse the JSONB data
-      const questionSet = data.data as CategoryQuestions;
+      if (optionsError) throw optionsError;
+
+      const categoryData = optionsData[categoryId];
+      if (!categoryData) throw new Error('Category data not found');
+
+      // Transform the data into CategoryQuestions format
+      const questionSet: CategoryQuestions = {
+        category: categoryId,
+        keywords: categoryData.keywords || [],
+        questions: categoryData.questions || []
+      };
+
       setCategoryData(questionSet);
     } catch (error) {
       console.error('Error loading question set:', error);
@@ -627,7 +646,8 @@ const EstimatePage = () => {
             <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
             <CategoryGrid 
               categories={categories}
-              onSelect={handleCategorySelect}
+              selectedCategory={selectedCategory || undefined}
+              onSelectCategory={handleCategorySelect}
               completedCategories={completedCategories}
             />
           </div>
