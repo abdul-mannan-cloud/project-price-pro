@@ -32,25 +32,23 @@ export const QuestionManager = ({
 
   useEffect(() => {
     if (categoryData && Array.isArray(categoryData.questions) && categoryData.questions.length > 0) {
-      const formattedQuestions: Question[] = categoryData.questions.map((q: any) => {
-        return {
-          id: q.id,
-          question: q.question,
-          options: Array.isArray(q.options)
-            ? q.options.map((opt: any, index: number) => ({
-                id: `${q.id}-${index}`,
-                label: opt.label,
-                value: opt.value,
-                next: opt.next,
-                image_url: opt.image_url,
-              }))
-            : [],
-          type: q.type || 'single_choice',
-          next: q.next || null,
-          order: q.order || 0,
-          description: q.description
-        };
-      });
+      const formattedQuestions: Question[] = categoryData.questions.map((q: any) => ({
+        id: q.id,
+        question: q.question,
+        description: q.description,
+        type: q.type || 'single_choice',
+        options: Array.isArray(q.options)
+          ? q.options.map((opt: any, index: number) => ({
+              id: `${q.id}-${index}`,
+              label: opt.label,
+              value: opt.value,
+              next: opt.next,
+              image_url: opt.image_url,
+            }))
+          : [],
+        next: q.next || null,
+        order: q.order || 0
+      }));
       setQuestionSequence(formattedQuestions);
       setCurrentQuestionIndex(0);
       setAnswers({});
@@ -164,15 +162,13 @@ export const QuestionManager = ({
     return <div className="text-center p-8">No questions available.</div>;
   }
   
-  const isLastQuestion = currentQuestionIndex === questionSequence.length - 1;
-  
   return (
     <QuestionCard
       question={currentQuestion}
       selectedOptions={answers[currentQuestion.id] || []}
       onSelect={handleAnswer}
       onNext={handleNext}
-      isLastQuestion={isLastQuestion}
+      isLastQuestion={currentQuestionIndex === questionSequence.length - 1}
       currentStage={currentQuestionIndex + 1}
       totalStages={questionSequence.length}
     />
