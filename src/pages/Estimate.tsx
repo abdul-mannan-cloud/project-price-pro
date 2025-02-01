@@ -582,9 +582,16 @@ const EstimatePage = () => {
   const handleQuestionComplete = (answers: Record<string, Record<string, string[]>>) => {
     if (selectedCategory) {
       setCompletedCategories(prev => [...prev, selectedCategory]);
+      
+      // Flatten the nested answers structure to match our state type
+      const flattenedAnswers: Record<string, string[]> = {};
+      Object.entries(answers[selectedCategory] || {}).forEach(([questionId, answerArray]) => {
+        flattenedAnswers[questionId] = answerArray;
+      });
+
       setAnswers(prev => ({
         ...prev,
-        [selectedCategory]: answers[selectedCategory] || {}
+        ...flattenedAnswers
       }));
     }
 
