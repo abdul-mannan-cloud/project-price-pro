@@ -42,11 +42,15 @@ export const QuestionManager = ({
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .single();
+        .maybeSingle();
 
       if (optionsError) {
         console.error('Error fetching options:', optionsError);
         throw optionsError;
+      }
+
+      if (!optionsData) {
+        throw new Error('No options data found');
       }
 
       console.log('Options data received:', optionsData);
@@ -61,19 +65,21 @@ export const QuestionManager = ({
             keywords: questionData.keywords || [],
             questions: questionData.questions?.map((q: any, index: number) => ({
               id: q.id || `q-${index}`,
-              order: q.order || index,
+              order: q.order || index + 1,
               question: q.question,
               type: q.type || 'single_choice',
               options: q.options?.map((opt: any) => ({
                 label: opt.label,
                 value: opt.value,
-                image_url: opt.image_url || ""
+                image_url: opt.image_url || "",
+                next: opt.next
               })) || [],
               branch_id: q.branch_id || 'default-branch',
               keywords: q.keywords || [],
               is_branch_start: q.is_branch_start || false,
               skip_branch_on_no: q.skip_branch_on_no || false,
-              priority: q.priority || index
+              priority: q.priority || index,
+              next: q.next
             })) || []
           };
         });
