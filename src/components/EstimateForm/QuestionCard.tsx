@@ -14,6 +14,7 @@ interface QuestionCardProps {
   onNext?: () => void;
   currentStage: number;
   totalStages: number;
+  isLastQuestion?: boolean; // Added this prop to the interface
 }
 
 export const QuestionCard = ({
@@ -23,6 +24,7 @@ export const QuestionCard = ({
   onNext,
   currentStage,
   totalStages,
+  isLastQuestion = false, // Added with default value
 }: QuestionCardProps) => {
   const [showNextButton, setShowNextButton] = useState(false);
 
@@ -156,7 +158,7 @@ export const QuestionCard = ({
           {showNextButton && onNext && (
             <div className="mt-6">
               <Button className="w-full" onClick={onNext} size="lg">
-                Continue
+                {isLastQuestion ? "Complete" : "Continue"}
               </Button>
             </div>
           )}
