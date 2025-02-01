@@ -1,17 +1,23 @@
 import { CategoryQuestions, Question, QuestionFlow, QuestionBranch } from "@/types/estimate";
 
 export const initializeQuestionFlow = (matchedSets: CategoryQuestions[]): QuestionFlow => {
-  const branches: QuestionBranch[] = matchedSets.map(set => ({
+  const branches: QuestionBranch[] = matchedSets.map((set, index) => ({
     category: set.category,
     questions: set.questions,
     currentQuestionId: set.questions[0]?.id || null,
-    isComplete: false
+    isComplete: false,
+    branch_id: set.branch_id || `branch-${index}`,
+    priority: set.priority || index
   }));
+
+  const branchOrder = branches.map(branch => branch.branch_id);
 
   return {
     branches,
     currentBranchIndex: 0,
-    answers: {}
+    answers: {},
+    branchOrder,
+    mergedBranches: {}
   };
 };
 
@@ -21,7 +27,6 @@ export const findNextQuestion = (
   answer: string | string[]
 ): string | null => {
   if (Array.isArray(answer)) {
-    // For multiple choice questions, get next questions from selected options
     const nextQuestions = currentQuestion.options
       .filter(opt => answer.includes(opt.value))
       .map(opt => opt.next)
@@ -33,7 +38,6 @@ export const findNextQuestion = (
     
     return nextQuestions[0] || null;
   } else {
-    // For single choice/yes-no questions
     const selectedOption = currentQuestion.options.find(opt => opt.value === answer);
     
     if (selectedOption?.next === 'NEXT_BRANCH') {
@@ -45,7 +49,6 @@ export const findNextQuestion = (
     }
   }
 
-  // If no specific next question, get next by order
   const currentIndex = questions.findIndex(q => q.id === currentQuestion.id);
   return currentIndex < questions.length - 1 ? questions[currentIndex + 1].id : null;
 };
@@ -54,7 +57,7 @@ export const updateQuestionFlow = (
   flow: QuestionFlow,
   answer: string | string[]
 ): QuestionFlow => {
-  const { branches, currentBranchIndex } = flow;
+  const { branches, currentBranchIndex, branchOrder, mergedBranches } = flow;
   const currentBranch = branches[currentBranchIndex];
   
   if (!currentBranch || !currentBranch.currentQuestionId) {
@@ -69,7 +72,6 @@ export const updateQuestionFlow = (
     return flow;
   }
 
-  // Update answers
   const newAnswers = {
     ...flow.answers,
     [currentBranch.category]: {
@@ -78,13 +80,12 @@ export const updateQuestionFlow = (
     }
   };
 
-  // Handle "No" answer for yes/no questions
   if (
     currentQuestion.type === 'yes_no' && 
     !Array.isArray(answer) && 
-    answer === 'no'
+    answer === 'no' &&
+    currentQuestion.skip_branch_on_no
   ) {
-    // Move to next branch
     const nextBranchIndex = currentBranchIndex + 1;
     if (nextBranchIndex < branches.length) {
       const updatedBranches = branches.map((branch, index) => {
@@ -97,12 +98,13 @@ export const updateQuestionFlow = (
       return {
         branches: updatedBranches,
         currentBranchIndex: nextBranchIndex,
-        answers: newAnswers
+        answers: newAnswers,
+        branchOrder,
+        mergedBranches
       };
     }
   }
 
-  // Find next question in current branch
   const nextQuestionId = findNextQuestion(
     currentBranch.questions,
     currentQuestion,
@@ -110,7 +112,6 @@ export const updateQuestionFlow = (
   );
 
   if (!nextQuestionId) {
-    // Current branch is complete, move to next branch
     const nextBranchIndex = currentBranchIndex + 1;
     const updatedBranches = branches.map((branch, index) => {
       if (index === currentBranchIndex) {
@@ -122,11 +123,12 @@ export const updateQuestionFlow = (
     return {
       branches: updatedBranches,
       currentBranchIndex: nextBranchIndex,
-      answers: newAnswers
+      answers: newAnswers,
+      branchOrder,
+      mergedBranches
     };
   }
 
-  // Update current branch with next question
   const updatedBranches = branches.map((branch, index) => {
     if (index === currentBranchIndex) {
       return { ...branch, currentQuestionId: nextQuestionId };
@@ -137,6 +139,8 @@ export const updateQuestionFlow = (
   return {
     branches: updatedBranches,
     currentBranchIndex,
-    answers: newAnswers
+    answers: newAnswers,
+    branchOrder,
+    mergedBranches
   };
 };
