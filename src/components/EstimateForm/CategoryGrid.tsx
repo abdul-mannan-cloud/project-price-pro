@@ -6,16 +6,15 @@ interface CategoryGridProps {
   categories: Category[];
   selectedCategory?: string;
   onSelectCategory: (categoryId: string) => void;
-  completedCategories?: string[]; // New prop to track completed categories
+  completedCategories?: string[];
 }
 
 export const CategoryGrid = ({
   categories,
   selectedCategory,
   onSelectCategory,
-  completedCategories = [], // Default to empty array if not provided
+  completedCategories = [],
 }: CategoryGridProps) => {
-  // Filter out completed categories
   const availableCategories = categories.filter(
     (category) => !completedCategories.includes(category.id)
   );
@@ -33,6 +32,7 @@ export const CategoryGrid = ({
           )}
           onClick={() => onSelectCategory(category.id)}
         >
+          <h3 className="font-medium mb-2">{category.name}</h3>
           <p className="text-sm text-muted-foreground">
             {category.description || "Select this option"}
           </p>
