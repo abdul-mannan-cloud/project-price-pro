@@ -28,20 +28,24 @@ export const QuestionCard = ({
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
+    // Show next button for multiple choice only when at least one option is selected
     if (question.type === 'multiple_choice') {
       setShowNextButton(selectedOptions.length > 0);
     } else {
-      setShowNextButton(selectedOptions.length === 1);
+      // For yes/no and single choice, we auto-advance so no next button needed
+      setShowNextButton(false);
     }
   }, [selectedOptions, question.type]);
 
   const handleOptionClick = (value: string) => {
     if (question.type === 'multiple_choice') {
+      // Toggle selection for multiple choice
       const newSelection = selectedOptions.includes(value)
         ? selectedOptions.filter(v => v !== value)
         : [...selectedOptions, value];
       onSelect(question.id, newSelection);
     } else {
+      // For yes/no and single choice, immediately submit and move to next
       onSelect(question.id, [value]);
       if (onNext && (question.type === 'single_choice' || question.type === 'yes_no')) {
         setTimeout(onNext, 300); // Add slight delay for visual feedback
@@ -53,8 +57,8 @@ export const QuestionCard = ({
 
   const shouldShowImage = (option: any) => {
     if (!option.image_url) return false;
-    if (option.image_url.includes('example')) return false;
-    if (!isNaN(option.value)) return false;
+    if (option.image_url.includes('example')) return false; // Skip example URLs
+    if (!isNaN(option.value)) return false; // Skip numeric values
     return true;
   };
 
