@@ -114,9 +114,9 @@ const EstimatePage = () => {
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .single();
+        .maybeSingle();
       if (error) throw error;
-      const categoryData = data[selectedCategory];
+      const categoryData = data?.[selectedCategory];
       if (!categoryData) {
         throw new Error(`No questions found for category: ${selectedCategory}`);
       }
@@ -164,7 +164,7 @@ const EstimatePage = () => {
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .single();
+        .maybeSingle();
 
       if (optionsError) {
         console.error('Error fetching options:', optionsError);
@@ -333,7 +333,7 @@ const EstimatePage = () => {
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching options:', error);
@@ -399,60 +399,51 @@ const EstimatePage = () => {
     try {
       console.log('Processing description:', projectDescription);
       
-      const { data: questionSetsData, error } = await supabase
+      const { data: optionsData, error } = await supabase
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching options:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('Fetched question sets data:', questionSetsData);
+      // Process each category's keywords to find matches
+      let bestMatch: { category: string; score: number } | null = null;
+      const description = projectDescription.toLowerCase();
+      
+      Object.entries(optionsData).forEach(([category, data]) => {
+        if (category === 'Key Options') return;
+        
+        const categoryData = data as any;
+        if (!categoryData.keywords) return;
 
-      const transformedQuestionSets: CategoryQuestions[] = Object.entries(questionSetsData)
-        .filter(([key]) => key !== 'Key Options')
-        .map(([category, data]) => {
-          const questionData = data as any;
-          return {
-            category,
-            keywords: Array.isArray(questionData.keywords) ? questionData.keywords : [],
-            questions: Array.isArray(questionData.questions) 
-              ? questionData.questions.map((q: any, index: number) => ({
-                  id: q.id || `q-${index}`,
-                  order: q.order || index,
-                  question: q.question,
-                  type: q.type || 'single_choice',
-                  options: Array.isArray(q.options) 
-                    ? q.options.map((opt: any) => ({
-                        label: opt.label,
-                        value: opt.value,
-                        image_url: opt.image_url || "",
-                        next: opt.next
-                      }))
-                    : [],
-                  branch_id: q.branch_id || 'default-branch',
-                  keywords: Array.isArray(q.keywords) ? questionData.keywords : [],
-                  is_branch_start: q.is_branch_start || false,
-                  skip_branch_on_no: q.skip_branch_on_no || false,
-                  priority: q.priority || index,
-                  next: q.next
-                }))
-              : []
-          };
+        // Calculate match score based on keyword presence and position
+        let score = 0;
+        categoryData.keywords.forEach((keyword: string) => {
+          const keywordLower = keyword.toLowerCase();
+          if (description.includes(keywordLower)) {
+            // Higher score for keywords at the start of description
+            const position = description.indexOf(keywordLower);
+            const positionScore = 1 - (position / description.length);
+            score += 1 + positionScore;
+
+            // Bonus for exact matches
+            if (description.includes(` ${keywordLower} `)) {
+              score += 0.5;
+            }
+          }
         });
 
-      console.log('Transformed question sets:', transformedQuestionSets);
+        if (score > 0 && (!bestMatch || score > bestMatch.score)) {
+          bestMatch = { category, score };
+        }
+      });
 
-      const matches = findMatchingQuestionSets(projectDescription, transformedQuestionSets);
-      console.log('Matched sets:', matches);
-      
-      const consolidatedSets = consolidateQuestionSets(matches);
-      console.log('Consolidated sets:', consolidatedSets);
-
-      if (consolidatedSets.length === 0) {
+      if (bestMatch) {
+        console.log('Best matching category:', bestMatch.category, 'with score:', bestMatch.score);
+        setSelectedCategory(bestMatch.category);
+        setStage('questions');
+      } else {
         console.log('No matching categories found');
         toast({
           title: "No matching categories found",
@@ -460,25 +451,10 @@ const EstimatePage = () => {
           variant: "destructive",
         });
         setStage('category');
-        return;
-      }
-
-      setMatchedQuestionSets(consolidatedSets);
-      
-      const kitchenSet = consolidatedSets.find(set => 
-        set.category.toLowerCase().includes('kitchen')
-      );
-      
-      if (kitchenSet) {
-        console.log('Setting kitchen category:', kitchenSet.category);
-        setSelectedCategory(kitchenSet.category);
-        setStage('questions');
-      } else {
-        setStage('category');
       }
 
     } catch (error) {
-      console.error('Error matching question sets:', error);
+      console.error('Error matching categories:', error);
       toast({
         title: "Error",
         description: "Failed to process your description. Please try again.",
@@ -606,9 +582,22 @@ const EstimatePage = () => {
   const handleQuestionComplete = (answers: Record<string, Record<string, string[]>>) => {
     if (selectedCategory) {
       setCompletedCategories(prev => [...prev, selectedCategory]);
+      setAnswers(prev => ({
+        ...prev,
+        [selectedCategory]: answers[selectedCategory] || {}
+      }));
     }
-    setSelectedCategory(null);
-    setCategoryData(null);
+
+    const remainingCategories = categories.filter(
+      cat => !completedCategories.includes(cat.id)
+    );
+
+    if (remainingCategories.length > 0) {
+      setStage('category');
+      setSelectedCategory(null);
+    } else {
+      generateEstimate();
+    }
   };
 
   const handleAdditionalCategorySelect = (categoryId: string) => {
@@ -777,7 +766,7 @@ const EstimatePage = () => {
           />
         )}
 
-        {selectedCategory && categoryData && (
+        {stage === 'questions' && selectedCategory && (
           <QuestionManager
             projectDescription={projectDescription}
             onComplete={handleQuestionComplete}
