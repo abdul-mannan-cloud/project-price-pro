@@ -7,11 +7,19 @@ import { toast } from "@/hooks/use-toast";
 interface QuestionManagerProps {
   questionSets: CategoryQuestions[];
   onComplete: (answers: Record<string, Record<string, string[]>>) => void;
+  categories: Category[];
+  currentCategory: string;
+  onSelectAdditionalCategory: (categoryId: string) => void;
+  completedCategories: string[];
 }
 
 export const QuestionManager = ({
   questionSets,
   onComplete,
+  categories,
+  currentCategory,
+  onSelectAdditionalCategory,
+  completedCategories,
 }: QuestionManagerProps) => {
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
