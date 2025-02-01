@@ -67,18 +67,53 @@ export const QuestionManager = ({
 
   useEffect(() => {
     if (categoryData?.questions?.length > 0) {
-      const initializedQuestions = initializeQuestions(categoryData.questions);
-      console.log('Initializing questions for category:', {
-        category: currentCategory,
-        questions: initializedQuestions
-      });
+      console.log('Raw category data:', categoryData);
+      const formattedQuestions = formatQuestions(categoryData.questions);
+      console.log('Formatted questions:', formattedQuestions);
       
-      setQuestionSequence(initializedQuestions);
-      setCurrentQuestionId(initializedQuestions[0].id);
+      setQuestionSequence(formattedQuestions);
+      setCurrentQuestionId(formattedQuestions[0].id);
       setAnswers({});
       setShowAdditionalServices(false);
     }
-  }, [categoryData, currentCategory]);
+  }, [categoryData]);
+
+  const formatQuestions = (rawQuestions: any[]): Question[] => {
+    console.log('Raw questions before formatting:', rawQuestions);
+    
+    return rawQuestions.map((q: any) => {
+      // Create options array based on question type
+      let options = [];
+      
+      if (q.type === 'yes_no') {
+        options = [
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' }
+        ];
+      } else if (Array.isArray(q.selections)) {
+        options = q.selections.map((selection: any, index: number) => ({
+          label: typeof selection === 'string' ? selection : selection.label,
+          value: typeof selection === 'string' ? selection.toLowerCase() : selection.value,
+          image_url: q.image_urls?.[index]
+        }));
+      }
+
+      const formattedQuestion: Question = {
+        id: q.id || `q-${q.order}`,
+        order: q.order || 0,
+        question: q.question,
+        description: q.description,
+        type: q.type || (options.length === 2 && 
+               options[0].label === 'Yes' && 
+               options[1].label === 'No' ? 'yes_no' : 'single_choice'),
+        options: options,
+        next: q.next_question
+      };
+
+      console.log('Formatted question:', formattedQuestion);
+      return formattedQuestion;
+    });
+  };
 
   const handleAnswer = async (questionId: string, selectedValues: string[]) => {
     const currentQuestion = findQuestionById(questionSequence, questionId);

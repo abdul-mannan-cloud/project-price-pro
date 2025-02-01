@@ -5,7 +5,6 @@ export const findNextQuestionId = (
   currentQuestion: Question,
   selectedValue: string
 ): string | null => {
-  // Log the current navigation attempt
   console.log('Navigation attempt:', {
     currentQuestionId: currentQuestion.id,
     selectedValue,
@@ -30,6 +29,13 @@ export const findNextQuestionId = (
     return currentQuestion.next;
   }
 
+  // Find the next question by order
+  const nextQuestion = questions.find(q => q.order === currentQuestion.order + 1);
+  if (nextQuestion) {
+    console.log('Following sequential order:', nextQuestion.id);
+    return nextQuestion.id;
+  }
+
   // If we reach here, we've reached the end of the questionnaire
   console.log('No next question found, ending questionnaire');
   return null;
@@ -43,8 +49,9 @@ export const initializeQuestions = (rawQuestions: Question[]): Question[] => {
   // Sort questions by order and ensure all required fields are present
   const questions = [...rawQuestions]
     .sort((a, b) => (a.order || 0) - (b.order || 0))
-    .map((q) => ({
+    .map((q, index) => ({
       ...q,
+      order: q.order || index + 1,
       type: q.type || (q.options.length === 2 && 
              q.options[0].label === 'Yes' && 
              q.options[1].label === 'No' ? 'yes_no' : 'single_choice')
