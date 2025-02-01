@@ -23,6 +23,8 @@ export const QuestionManager = ({
   onSelectAdditionalCategory,
   completedCategories,
 }: QuestionManagerProps) => {
+  // State for current question (using its ID), collected answers,
+  // the sequence of questions, additional services view, and loading/processing flags.
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
@@ -31,25 +33,28 @@ export const QuestionManager = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
 
+  // Load questions from the provided categoryData on mount or when it changes.
   useEffect(() => {
     const loadQuestions = async () => {
       setIsLoadingQuestions(true);
       try {
         if (!categoryData?.questions?.length) {
-          throw new Error('No questions available');
+          throw new Error("No questions available");
         }
-
-        console.log('Raw category data:', categoryData);
+        console.log("Raw category data:", categoryData);
+        // Use the questions array from the JSON data.
         setQuestionSequence(categoryData.questions);
+        // Start with the first question's id.
         setCurrentQuestionId(categoryData.questions[0].id);
+        // Clear any previous answers and additional service view.
         setAnswers({});
         setShowAdditionalServices(false);
-        setIsProcessing(false);
       } catch (error) {
-        console.error('Error loading questions:', error);
+        console.error("Error loading questions:", error);
         toast({
           title: "Error",
-          description: error instanceof Error ? error.message : "Failed to load questions",
+          description:
+            error instanceof Error ? error.message : "Failed to load questions",
           variant: "destructive",
         });
       } finally {
@@ -62,44 +67,57 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
-  const findNextQuestionId = (currentQuestion: Question, selectedValue: string): string | null => {
-    // First check if the selected option has a next question specified
-    const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValue);
+  // Determine the next question based on the current question and the selected answer.
+  const findNextQuestionId = (
+    currentQuestion: Question,
+    selectedValue: string
+  ): string | null => {
+    // Look for a matching option that has a "next" property.
+    const selectedOption = currentQuestion.options.find(
+      (opt) => opt.value === selectedValue
+    );
     if (selectedOption?.next) {
       return selectedOption.next;
     }
 
-    // If the current question has a next property, use that
+    // Fallback: if the current question itself has a "next" property, use it.
     if (currentQuestion.next) {
       return currentQuestion.next;
     }
 
-    // If no specific navigation is defined, move to the next question in order
-    const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
+    // If no specific navigation is defined, move to the next question in the sequence.
+    const currentIndex = questionSequence.findIndex(
+      (q) => q.id === currentQuestion.id
+    );
     if (currentIndex < questionSequence.length - 1) {
       return questionSequence[currentIndex + 1].id;
     }
-
     return null;
   };
 
+  // When an answer is provided, store it and determine navigation.
   const handleAnswer = async (questionId: string, selectedValues: string[]) => {
-    const currentQuestion = questionSequence.find(q => q.id === questionId);
+    const currentQuestion = questionSequence.find((q) => q.id === questionId);
     if (!currentQuestion) return;
 
-    setAnswers(prev => ({ ...prev, [questionId]: selectedValues }));
+    setAnswers((prev) => ({ ...prev, [questionId]: selectedValues }));
 
-    if (currentQuestion.type !== 'multiple_choice') {
-      const nextQuestionId = findNextQuestionId(currentQuestion, selectedValues[0]);
-      
-      if (!nextQuestionId || nextQuestionId === 'END') {
+    // For single-choice questions, automatically proceed.
+    if (currentQuestion.type !== "multiple_choice") {
+      const nextQuestionId = findNextQuestionId(
+        currentQuestion,
+        selectedValues[0]
+      );
+      if (!nextQuestionId || nextQuestionId === "END") {
         await handleComplete();
       } else {
         setCurrentQuestionId(nextQuestionId);
       }
     }
+    // For multiple-choice, assume the QuestionCard component will provide a continue button.
   };
 
+  // When all questions are answered, process the answers.
   const handleComplete = async () => {
     if (Object.keys(answers).length === 0) {
       toast({
@@ -112,29 +130,35 @@ export const QuestionManager = ({
 
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          answers,
-          category: currentCategory
+      // Invoke the generate-estimate function on Supabase.
+      const { data, error } = await supabase.functions.invoke(
+        "generate-estimate",
+        {
+          body: {
+            answers,
+            category: currentCategory,
+          },
         }
-      });
+      );
 
       if (error) throw error;
-      
+
+      // Update the lead with the generated estimate.
       const { error: updateError } = await supabase
-        .from('leads')
-        .update({ 
+        .from("leads")
+        .update({
           estimate_data: data,
-          estimated_cost: data.totalCost
+          estimated_cost: data.totalCost,
         })
-        .eq('category', currentCategory)
-        .is('user_email', null);
+        .eq("category", currentCategory)
+        .is("user_email", null);
 
       if (updateError) throw updateError;
-      
+
+      // After processing, show additional services.
       setShowAdditionalServices(true);
     } catch (error) {
-      console.error('Error processing answers:', error);
+      console.error("Error processing answers:", error);
       toast({
         title: "Error",
         description: "Failed to process your answers. Please try again.",
@@ -145,19 +169,23 @@ export const QuestionManager = ({
     }
   };
 
+  // Handle selection of an additional service category.
   const handleAdditionalCategorySelect = (categoryId: string) => {
     setSelectedAdditionalCategory(categoryId);
     onSelectAdditionalCategory(categoryId);
   };
 
+  // Render a loading screen while questions are being loaded.
   if (isLoadingQuestions) {
     return <LoadingScreen message="Loading questions..." />;
   }
 
+  // Render a processing/loading screen if we're processing an action.
   if (isProcessing) {
     return <LoadingScreen message="Processing your answers..." />;
   }
 
+  // Once answers are processed, show the additional services grid.
   if (showAdditionalServices) {
     return (
       <AdditionalServicesGrid
@@ -170,18 +198,26 @@ export const QuestionManager = ({
     );
   }
 
-  const currentQuestion = currentQuestionId ? questionSequence.find(q => q.id === currentQuestionId) : null;
+  // Find the current question based on its ID.
+  const currentQuestion = currentQuestionId
+    ? questionSequence.find((q) => q.id === currentQuestionId)
+    : null;
+
   if (!currentQuestion) {
     return (
       <div className="text-center p-8">
-        <p className="text-lg text-gray-600">No questions available. Please try selecting a different category.</p>
+        <p className="text-lg text-gray-600">
+          No questions available. Please try selecting a different category.
+        </p>
       </div>
     );
   }
 
-  const isLastQuestion = !findNextQuestionId(currentQuestion, 'yes') || 
-                        currentQuestion.next === 'END' ||
-                        questionSequence.indexOf(currentQuestion) === questionSequence.length - 1;
+  // Determine if the current question is the last in the sequence.
+  const isLastQuestion =
+    !findNextQuestionId(currentQuestion, "yes") ||
+    currentQuestion.next === "END" ||
+    questionSequence.indexOf(currentQuestion) === questionSequence.length - 1;
 
   return (
     <QuestionCard
