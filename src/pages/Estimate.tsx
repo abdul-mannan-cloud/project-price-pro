@@ -243,7 +243,7 @@ const EstimatePage = () => {
       console.error('Invalid questions format:', rawQuestions);
       return [];
     }
-    return rawQuestions.map((q: any) => {
+    return rawQuestions.map((q: any, index: number) => {
       const selectionData = q.selections || q.options || [];
       return {
         id: q.id || `q-${q.order}`,
@@ -261,7 +261,12 @@ const EstimatePage = () => {
               image_url: (q.image_urls && q.image_urls[optIndex]) || ""
             }))
           : [],
-        next: q.next_question
+        next: q.next,
+        branch_id: q.branch_id || `default-branch`,
+        keywords: q.keywords || [],
+        is_branch_start: q.is_branch_start || false,
+        skip_branch_on_no: q.skip_branch_on_no || false,
+        priority: q.priority || index
       };
     });
   };
