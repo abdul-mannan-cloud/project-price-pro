@@ -1,22 +1,31 @@
 import { CategoryQuestions, Question, QuestionFlow, QuestionBranch } from "@/types/estimate";
 
 export const initializeQuestionFlow = (matchedSets: CategoryQuestions[]): QuestionFlow => {
-  const branches: QuestionBranch[] = matchedSets.map((set, index) => ({
-    category: set.category,
-    questions: set.questions,
-    currentQuestionId: set.questions[0]?.id || null,
-    isComplete: false,
-    branch_id: set.branch_id || `branch-${index}`,
-    priority: set.priority || index
-  }));
+  console.log('Initializing question flow with sets:', matchedSets);
+  
+  const branches: QuestionBranch[] = matchedSets.map((set, index) => {
+    // Find the first question (should be yes/no type)
+    const startingQuestion = set.questions.find(q => q.order === 1) || set.questions[0];
+    
+    if (!startingQuestion) {
+      console.warn(`No starting question found for category ${set.category}`);
+    }
 
-  const branchOrder = branches.map(branch => branch.branch_id);
+    return {
+      category: set.category,
+      questions: set.questions.sort((a, b) => a.order - b.order), // Sort by order
+      currentQuestionId: startingQuestion?.id || null,
+      isComplete: false,
+      branch_id: set.branch_id || `branch-${index}`,
+      priority: set.priority || index
+    };
+  });
 
   return {
-    branches,
+    branches: branches.sort((a, b) => a.priority - b.priority),
     currentBranchIndex: 0,
     answers: {},
-    branchOrder,
+    branchOrder: branches.map(branch => branch.branch_id),
     mergedBranches: {}
   };
 };
@@ -26,38 +35,62 @@ export const findNextQuestion = (
   currentQuestion: Question,
   answer: string | string[]
 ): string | null => {
-  if (Array.isArray(answer)) {
-    const nextQuestions = currentQuestion.options
-      .filter(opt => answer.includes(opt.value))
-      .map(opt => opt.next)
-      .filter((next): next is string => 
-        next !== undefined && 
-        next !== 'END' && 
-        next !== 'NEXT_BRANCH'
-      );
-    
-    return nextQuestions[0] || null;
-  } else {
+  console.log('Finding next question for:', currentQuestion.id, 'with answer:', answer);
+
+  // Handle yes/no questions
+  if (currentQuestion.type === 'yes_no' && !Array.isArray(answer)) {
     const selectedOption = currentQuestion.options.find(opt => opt.value === answer);
     
     if (selectedOption?.next === 'NEXT_BRANCH') {
+      console.log('Moving to next branch');
       return null;
     }
     
-    if (selectedOption?.next && selectedOption.next !== 'END') {
+    if (selectedOption?.next) {
+      console.log('Moving to specified next question:', selectedOption.next);
       return selectedOption.next;
     }
   }
 
+  // Handle multiple choice questions
+  if (currentQuestion.type === 'multiple_choice' && Array.isArray(answer)) {
+    // Find the first selected option with a next question
+    const nextQuestion = currentQuestion.options
+      .filter(opt => answer.includes(opt.value))
+      .find(opt => opt.next)?.next;
+
+    if (nextQuestion) {
+      console.log('Moving to first selected option next question:', nextQuestion);
+      return nextQuestion;
+    }
+  }
+
+  // Handle single choice questions
+  if (currentQuestion.type === 'single_choice' && !Array.isArray(answer)) {
+    const selectedOption = currentQuestion.options.find(opt => opt.value === answer);
+    if (selectedOption?.next) {
+      console.log('Moving to selected option next question:', selectedOption.next);
+      return selectedOption.next;
+    }
+  }
+
+  // If no specific next question is defined, move to the next question in order
   const currentIndex = questions.findIndex(q => q.id === currentQuestion.id);
-  return currentIndex < questions.length - 1 ? questions[currentIndex + 1].id : null;
+  if (currentIndex < questions.length - 1) {
+    const nextQuestion = questions[currentIndex + 1];
+    console.log('Moving to next question in sequence:', nextQuestion.id);
+    return nextQuestion.id;
+  }
+
+  console.log('No next question found, completing branch');
+  return null;
 };
 
 export const updateQuestionFlow = (
   flow: QuestionFlow,
   answer: string | string[]
 ): QuestionFlow => {
-  const { branches, currentBranchIndex, branchOrder, mergedBranches } = flow;
+  const { branches, currentBranchIndex } = flow;
   const currentBranch = branches[currentBranchIndex];
   
   if (!currentBranch || !currentBranch.currentQuestionId) {
@@ -72,6 +105,7 @@ export const updateQuestionFlow = (
     return flow;
   }
 
+  // Update answers
   const newAnswers = {
     ...flow.answers,
     [currentBranch.category]: {
@@ -80,14 +114,15 @@ export const updateQuestionFlow = (
     }
   };
 
+  // Check if we should skip to next branch (for "no" answers on yes/no questions)
   if (
-    currentQuestion.type === 'yes_no' && 
-    !Array.isArray(answer) && 
-    answer === 'no' &&
-    currentQuestion.skip_branch_on_no
+    currentQuestion.type === 'yes_no' &&
+    !Array.isArray(answer) &&
+    answer === 'no'
   ) {
-    const nextBranchIndex = currentBranchIndex + 1;
-    if (nextBranchIndex < branches.length) {
+    const selectedOption = currentQuestion.options.find(opt => opt.value === 'no');
+    if (selectedOption?.next === 'NEXT_BRANCH') {
+      const nextBranchIndex = currentBranchIndex + 1;
       const updatedBranches = branches.map((branch, index) => {
         if (index === currentBranchIndex) {
           return { ...branch, isComplete: true, currentQuestionId: null };
@@ -96,15 +131,15 @@ export const updateQuestionFlow = (
       });
 
       return {
+        ...flow,
         branches: updatedBranches,
         currentBranchIndex: nextBranchIndex,
-        answers: newAnswers,
-        branchOrder,
-        mergedBranches
+        answers: newAnswers
       };
     }
   }
 
+  // Find next question
   const nextQuestionId = findNextQuestion(
     currentBranch.questions,
     currentQuestion,
@@ -112,6 +147,7 @@ export const updateQuestionFlow = (
   );
 
   if (!nextQuestionId) {
+    // Move to next branch
     const nextBranchIndex = currentBranchIndex + 1;
     const updatedBranches = branches.map((branch, index) => {
       if (index === currentBranchIndex) {
@@ -121,14 +157,14 @@ export const updateQuestionFlow = (
     });
 
     return {
+      ...flow,
       branches: updatedBranches,
       currentBranchIndex: nextBranchIndex,
-      answers: newAnswers,
-      branchOrder,
-      mergedBranches
+      answers: newAnswers
     };
   }
 
+  // Update current question in current branch
   const updatedBranches = branches.map((branch, index) => {
     if (index === currentBranchIndex) {
       return { ...branch, currentQuestionId: nextQuestionId };
@@ -137,10 +173,8 @@ export const updateQuestionFlow = (
   });
 
   return {
+    ...flow,
     branches: updatedBranches,
-    currentBranchIndex,
-    answers: newAnswers,
-    branchOrder,
-    mergedBranches
+    answers: newAnswers
   };
 };
