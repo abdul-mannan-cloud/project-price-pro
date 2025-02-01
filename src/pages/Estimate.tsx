@@ -156,28 +156,66 @@ const EstimatePage = () => {
     }
   };
 
-  const loadQuestionSet = async (categoryId: string) => {
+  const loadQuestionSet = async (categoryName: string) => {
     try {
-      const { data, error } = await supabase
+      console.log('Loading questions for category:', categoryName);
+      
+      // First, get the category ID from the categories table
+      const { data: categoryData, error: categoryError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('name', categoryName)
+        .maybeSingle();
+
+      if (categoryError) {
+        console.error('Error fetching category:', categoryError);
+        throw categoryError;
+      }
+
+      if (!categoryData) {
+        console.error('Category not found:', categoryName);
+        toast({
+          title: "Category not found",
+          description: `No questions available for ${categoryName}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Found category ID:', categoryData.id);
+
+      // Now use the category ID to fetch the question set
+      const { data: questionSetData, error: questionSetError } = await supabase
         .from('question_sets')
         .select('*')
-        .eq('category', categoryId)
-        .single();
+        .eq('category', categoryData.id)
+        .maybeSingle();
 
-      if (error) throw error;
-      
-      // Ensure the data matches CategoryQuestions type
-      const parsedData = data.data as unknown as CategoryQuestions;
-      if (!parsedData.category || !Array.isArray(parsedData.questions)) {
-        throw new Error('Invalid question set format');
+      if (questionSetError) {
+        console.error('Error loading question set:', questionSetError);
+        throw questionSetError;
       }
+
+      if (!questionSetData) {
+        console.error('No question set found for category:', categoryName);
+        toast({
+          title: "No questions available",
+          description: `No questions found for ${categoryName}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Parse the data field which contains the actual questions
+      const parsedData = questionSetData.data as CategoryQuestions;
+      console.log('Loaded question set:', parsedData);
       
       setCategoryData(parsedData);
     } catch (error) {
       console.error('Error loading question set:', error);
       toast({
         title: "Error",
-        description: "Failed to load questions",
+        description: "Failed to load questions. Please try again.",
         variant: "destructive",
       });
     }
