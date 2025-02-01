@@ -206,10 +206,46 @@ const EstimatePage = () => {
         return;
       }
 
-      // Parse the data field which contains the actual questions
-      const parsedData = questionSetData.data as CategoryQuestions;
-      console.log('Loaded question set:', parsedData);
+      // Properly type cast and validate the data structure
+      const rawData = questionSetData.data as Record<string, any>;
+      const parsedData: CategoryQuestions = {
+        category: categoryName,
+        keywords: Array.isArray(rawData.keywords) ? rawData.keywords : [],
+        questions: Array.isArray(rawData.questions) 
+          ? rawData.questions.map((q: any, index: number) => ({
+              id: q.id || `q-${index}`,
+              order: q.order || index,
+              question: q.question,
+              type: q.type || 'single_choice',
+              options: Array.isArray(q.options) 
+                ? q.options.map((opt: any) => ({
+                    label: opt.label,
+                    value: opt.value,
+                    image_url: opt.image_url || "",
+                    next: opt.next
+                  }))
+                : [],
+              branch_id: q.branch_id || 'default-branch',
+              keywords: Array.isArray(q.keywords) ? q.keywords : [],
+              is_branch_start: q.is_branch_start || false,
+              skip_branch_on_no: q.skip_branch_on_no || false,
+              priority: q.priority || index,
+              next: q.next
+            }))
+          : []
+      };
+
+      console.log('Parsed question set:', parsedData);
       
+      if (!Array.isArray(parsedData.questions) || parsedData.questions.length === 0) {
+        toast({
+          title: "No questions available",
+          description: `No valid questions found for ${categoryName}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       setCategoryData(parsedData);
     } catch (error) {
       console.error('Error loading question set:', error);
@@ -430,7 +466,7 @@ const EstimatePage = () => {
                       }))
                     : [],
                   branch_id: q.branch_id || 'default-branch',
-                  keywords: Array.isArray(q.keywords) ? q.keywords : [],
+                  keywords: Array.isArray(q.keywords) ? questionData.keywords : [],
                   is_branch_start: q.is_branch_start || false,
                   skip_branch_on_no: q.skip_branch_on_no || false,
                   priority: q.priority || index,
