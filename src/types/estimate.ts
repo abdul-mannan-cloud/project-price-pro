@@ -25,12 +25,23 @@ export interface Category {
   name: string;
   description?: string;
   icon?: string;
-  keywords?: string[];
-  questions?: Question[];
 }
 
 export interface EstimateFormState {
   currentQuestionId: string | null;
   answers: Record<string, string[]>;
   isComplete: boolean;
+}
+
+export interface QuestionBranch {
+  category: string;
+  questions: Question[];
+  currentQuestionId: string | null;
+  isComplete: boolean;
+}
+
+export interface QuestionFlow {
+  branches: QuestionBranch[];
+  currentBranchIndex: number;
+  answers: Record<string, Record<string, string[]>>;
 }
