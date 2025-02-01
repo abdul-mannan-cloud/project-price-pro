@@ -30,7 +30,9 @@ export const QuestionCard = ({
 
   useEffect(() => {
     setShowNextButton(
-      question.type === 'multiple_choice' && selectedOptions.length > 0
+      question.type === 'multiple_choice' 
+        ? selectedOptions.length > 0 
+        : selectedOptions.length === 1
     );
   }, [selectedOptions, question.type]);
 
@@ -42,6 +44,9 @@ export const QuestionCard = ({
       onSelect(question.id, newSelection);
     } else {
       onSelect(question.id, [value]);
+      if (question.type !== 'multiple_choice' && onNext) {
+        setTimeout(onNext, 300);
+      }
     }
   };
 
@@ -53,35 +58,37 @@ export const QuestionCard = ({
             <div
               key={option.value}
               className={cn(
-                "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
+                "flex flex-col space-y-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
                 selectedOptions.includes(option.value)
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-gray-200"
               )}
               onClick={() => handleOptionSelect(option.value)}
             >
-              <Checkbox
-                id={option.value}
-                checked={selectedOptions.includes(option.value)}
-                onCheckedChange={() => handleOptionSelect(option.value)}
-                className="h-5 w-5"
-              />
-              <Label
-                htmlFor={option.value}
-                className={cn(
-                  "text-base cursor-pointer flex-grow",
-                  selectedOptions.includes(option.value)
-                    ? "text-gray-900 font-medium"
-                    : "text-gray-600"
-                )}
-              >
-                {option.label}
-              </Label>
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id={option.value}
+                  checked={selectedOptions.includes(option.value)}
+                  onCheckedChange={() => handleOptionSelect(option.value)}
+                  className="h-5 w-5"
+                />
+                <Label
+                  htmlFor={option.value}
+                  className={cn(
+                    "text-base cursor-pointer flex-grow",
+                    selectedOptions.includes(option.value)
+                      ? "text-gray-900 font-medium"
+                      : "text-gray-600"
+                  )}
+                >
+                  {option.label}
+                </Label>
+              </div>
               {option.image_url && (
                 <img
                   src={option.image_url}
                   alt={option.label}
-                  className="mt-3 rounded-lg w-full h-32 object-cover"
+                  className="rounded-lg w-full h-32 object-cover"
                 />
               )}
             </div>
@@ -100,34 +107,36 @@ export const QuestionCard = ({
           <div
             key={option.value}
             className={cn(
-              "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
+              "flex flex-col space-y-3 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:bg-gray-50",
               selectedOptions[0] === option.value
                 ? "border-primary bg-primary/5 shadow-sm"
                 : "border-gray-200"
             )}
             onClick={() => handleOptionSelect(option.value)}
           >
-            <RadioGroupItem
-              value={option.value}
-              id={option.value}
-              className="h-5 w-5"
-            />
-            <Label
-              htmlFor={option.value}
-              className={cn(
-                "text-base cursor-pointer flex-grow",
-                selectedOptions[0] === option.value
-                  ? "text-gray-900 font-medium"
-                  : "text-gray-600"
-              )}
-            >
-              {option.label}
-            </Label>
+            <div className="flex items-center space-x-3">
+              <RadioGroupItem
+                value={option.value}
+                id={option.value}
+                className="h-5 w-5"
+              />
+              <Label
+                htmlFor={option.value}
+                className={cn(
+                  "text-base cursor-pointer flex-grow",
+                  selectedOptions[0] === option.value
+                    ? "text-gray-900 font-medium"
+                    : "text-gray-600"
+                )}
+              >
+                {option.label}
+              </Label>
+            </div>
             {option.image_url && (
               <img
                 src={option.image_url}
                 alt={option.label}
-                className="mt-3 rounded-lg w-full h-32 object-cover"
+                className="rounded-lg w-full h-32 object-cover"
               />
             )}
           </div>
