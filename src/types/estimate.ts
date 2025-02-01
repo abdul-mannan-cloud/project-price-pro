@@ -12,7 +12,6 @@ export interface Question {
   order: number;
   options: Option[];
   next?: string;
-  description?: string;
 }
 
 export interface CategoryQuestions {
