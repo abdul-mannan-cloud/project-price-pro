@@ -5,7 +5,6 @@ import { LoadingScreen } from "./LoadingScreen";
 import { Question, CategoryQuestions, Category } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { findNextQuestionId } from "@/utils/questionNavigation";
 
 interface QuestionManagerProps {
   categoryData: CategoryQuestions;
@@ -16,13 +15,13 @@ interface QuestionManagerProps {
   completedCategories: string[];
 }
 
-export const QuestionManager = ({ 
-  categoryData, 
+export const QuestionManager = ({
+  categoryData,
   onComplete,
   categories,
   currentCategory,
   onSelectAdditionalCategory,
-  completedCategories
+  completedCategories,
 }: QuestionManagerProps) => {
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
@@ -31,46 +30,6 @@ export const QuestionManager = ({
   const [selectedAdditionalCategory, setSelectedAdditionalCategory] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
-
-  const formatQuestions = (rawQuestions: any[]): Question[] => {
-    if (!Array.isArray(rawQuestions)) {
-      console.error('Invalid questions format:', rawQuestions);
-      return [];
-    }
-
-    return rawQuestions.map((q: any, index: number) => {
-      let options = [];
-      
-      if (q.type === 'yes_no') {
-        options = [
-          { label: 'Yes', value: 'yes', next: q.next_if_yes },
-          { label: 'No', value: 'no', next: q.next_if_no }
-        ];
-      } else {
-        // Check for options first, then fall back to selections
-        const rawOptions = Array.isArray(q.options) ? q.options : 
-                         Array.isArray(q.selections) ? q.selections : [];
-        
-        options = rawOptions.map((opt: any, optIndex: number) => ({
-          label: typeof opt === 'object' ? opt.label : opt,
-          value: typeof opt === 'object' ? 
-            opt.value || opt.label.toLowerCase().replace(/\s+/g, '_') : 
-            opt.toLowerCase().replace(/\s+/g, '_'),
-          next: typeof opt === 'object' ? opt.next : undefined,
-          image_url: q.image_urls?.[optIndex] || (typeof opt === 'object' ? opt.image_url : undefined)
-        }));
-      }
-
-      return {
-        id: q.id || `q-${index + 1}`,
-        order: q.order || index + 1,
-        question: q.question,
-        description: q.description || '',
-        type: q.type || 'single_choice',
-        options
-      };
-    });
-  };
 
   useEffect(() => {
     const loadQuestions = async () => {
@@ -81,15 +40,8 @@ export const QuestionManager = ({
         }
 
         console.log('Raw category data:', categoryData);
-        const formattedQuestions = formatQuestions(categoryData.questions);
-        console.log('Formatted questions:', formattedQuestions);
-        
-        if (formattedQuestions.length === 0) {
-          throw new Error('No questions available for this category');
-        }
-
-        setQuestionSequence(formattedQuestions);
-        setCurrentQuestionId(formattedQuestions[0].id);
+        setQuestionSequence(categoryData.questions);
+        setCurrentQuestionId(categoryData.questions[0].id);
         setAnswers({});
         setShowAdditionalServices(false);
         setIsProcessing(false);
@@ -110,46 +62,41 @@ export const QuestionManager = ({
     }
   }, [categoryData]);
 
+  const findNextQuestionId = (currentQuestion: Question, selectedValue: string): string | null => {
+    // First check if the selected option has a next question specified
+    const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValue);
+    if (selectedOption?.next) {
+      return selectedOption.next;
+    }
+
+    // If the current question has a next property, use that
+    if (currentQuestion.next) {
+      return currentQuestion.next;
+    }
+
+    // If no specific navigation is defined, move to the next question in order
+    const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
+    if (currentIndex < questionSequence.length - 1) {
+      return questionSequence[currentIndex + 1].id;
+    }
+
+    return null;
+  };
+
   const handleAnswer = async (questionId: string, selectedValues: string[]) => {
     const currentQuestion = questionSequence.find(q => q.id === questionId);
     if (!currentQuestion) return;
 
-    console.log('Processing answer:', {
-      questionId,
-      selectedValues,
-      currentQuestion
-    });
-
     setAnswers(prev => ({ ...prev, [questionId]: selectedValues }));
 
     if (currentQuestion.type !== 'multiple_choice') {
-      const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValues[0]);
-      const nextQuestionId = selectedOption?.next || 
-                           findNextQuestionId(questionSequence, currentQuestion, selectedValues[0]);
+      const nextQuestionId = findNextQuestionId(currentQuestion, selectedValues[0]);
       
-      if (!nextQuestionId) {
+      if (!nextQuestionId || nextQuestionId === 'END') {
         await handleComplete();
       } else {
         setCurrentQuestionId(nextQuestionId);
       }
-    }
-  };
-
-  const handleNext = async () => {
-    if (!currentQuestionId) return;
-    
-    const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
-    if (!currentQuestion) return;
-
-    const selectedValue = answers[currentQuestionId]?.[0];
-    const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValue);
-    const nextQuestionId = selectedOption?.next || 
-                         findNextQuestionId(questionSequence, currentQuestion, selectedValue);
-
-    if (!nextQuestionId) {
-      await handleComplete();
-    } else {
-      setCurrentQuestionId(nextQuestionId);
     }
   };
 
@@ -214,7 +161,7 @@ export const QuestionManager = ({
   if (showAdditionalServices) {
     return (
       <AdditionalServicesGrid
-        categories={categories.filter(cat => !completedCategories.includes(cat.id))}
+        categories={categories}
         selectedCategory={selectedAdditionalCategory}
         onSelect={handleAdditionalCategorySelect}
         onComplete={() => onComplete(answers)}
@@ -232,13 +179,17 @@ export const QuestionManager = ({
     );
   }
 
+  const isLastQuestion = !findNextQuestionId(currentQuestion, 'yes') || 
+                        currentQuestion.next === 'END' ||
+                        questionSequence.indexOf(currentQuestion) === questionSequence.length - 1;
+
   return (
     <QuestionCard
       question={currentQuestion}
       selectedOptions={answers[currentQuestion.id] || []}
       onSelect={handleAnswer}
-      onNext={handleNext}
-      isLastQuestion={currentQuestion.order === questionSequence.length}
+      onNext={handleComplete}
+      isLastQuestion={isLastQuestion}
       currentStage={currentQuestion.order}
       totalStages={questionSequence.length}
     />
