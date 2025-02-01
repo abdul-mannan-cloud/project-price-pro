@@ -159,7 +159,7 @@ export const QuestionManager = ({
       <AdditionalServicesGrid
         categories={categories}
         selectedCategory={selectedAdditionalCategory}
-        onSelectCategory={handleAdditionalCategorySelect}
+        selectedCategory={handleAdditionalCategorySelect}
         onComplete={() => onComplete(answers)}
         completedCategories={completedCategories}
       />

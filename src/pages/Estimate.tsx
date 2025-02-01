@@ -14,6 +14,7 @@ import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category } from "@/types/estimate";
 import { findBestMatchingCategory } from "@/utils/categoryMatcher";
+import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 
 const EstimatePage = () => {
   // Stage can be one of the following:
