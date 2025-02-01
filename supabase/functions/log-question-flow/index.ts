@@ -26,35 +26,40 @@ serve(async (req) => {
       questionId,
       questionOrder,
       question,
-      next_question,
-      next_if_no,
-      is_branching,
-      multi_choice,
-      category,
-      selectedOptions,
+      type,
+      selectedValue,
       selectedLabel,
-      nextQuestionIndex,
-      nextQuestionOrder
+      nextQuestionId,
+      category,
+      options,
+      selectedOption,
+      navigationSource
     } = body
 
+    // Log the question flow event with enhanced details
     console.log('Question Flow Event:', {
       timestamp: new Date().toISOString(),
       event,
+      category,
       question: {
         id: questionId,
         order: questionOrder,
         text: question,
-        next_question,
-        next_if_no,
-        is_branching,
-        multi_choice
+        type
       },
-      category,
-      selectedOptions,
-      selectedLabel,
+      selection: {
+        value: selectedValue,
+        label: selectedLabel,
+        option: selectedOption
+      },
       navigation: {
-        nextQuestionIndex,
-        nextQuestionOrder
+        nextQuestionId,
+        source: navigationSource, // 'option_next', 'question_next', or 'sequence_order'
+        availableOptions: options?.map((opt: any) => ({
+          label: opt.label,
+          value: opt.value,
+          next: opt.next
+        }))
       }
     })
 
