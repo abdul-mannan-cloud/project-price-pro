@@ -15,6 +15,7 @@ import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category, CategoryQuestions } from "@/types/estimate";
 import { findBestMatchingCategory } from "@/utils/categoryMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
+import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
@@ -31,6 +32,7 @@ const EstimatePage = () => {
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryQuestions | null>(null);
+  const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
@@ -325,52 +327,39 @@ const EstimatePage = () => {
 
   // Handle description submission and category matching.
   const handleDescriptionSubmit = async () => {
-    console.log('Processing description:', projectDescription);
+    setIsProcessing(true);
     try {
-      const match = await findBestMatchingCategory(projectDescription);
-      console.log('Category match result:', match);
-      if (match) {
-        console.log('Found matching category:', match);
-        setSelectedCategory(match.categoryId);
-        setStage('questions'); // Immediately move to questions stage when match is found
-        
-        const { data: optionsData, error: optionsError } = await supabase
-          .from('Options')
-          .select('*')
-          .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-          .single();
+      // Fetch all question sets
+      const { data: questionSets, error } = await supabase
+        .from('question_sets')
+        .select('*');
 
-        if (optionsError) {
-          console.error('Error fetching options:', optionsError);
-          throw optionsError;
-        }
+      if (error) throw error;
 
-        const categoryData = optionsData[match.categoryId];
-        if (!categoryData || !Array.isArray(categoryData.questions)) {
-          console.error('Invalid questions format:', categoryData);
-          throw new Error('Invalid questions format');
-        }
+      // Find matching question sets based on description
+      const matches = findMatchingQuestionSets(projectDescription, questionSets);
+      
+      // Consolidate to prevent question overload
+      const consolidatedSets = consolidateQuestionSets(matches);
 
-        console.log('Loaded questions for category:', {
-          category: match.categoryId,
-          questions: categoryData.questions
-        });
-
-        setCurrentQuestionIndex(0);
-        setAnswers({});
-        await loadCategoryQuestions();
-      } else {
-        console.log('No matching category found, showing category selection');
+      if (consolidatedSets.length === 0) {
         setStage('category');
+        return;
       }
+
+      // Set the matched question sets and move to questions stage
+      setMatchedQuestionSets(consolidatedSets);
+      setStage('questions');
     } catch (error) {
-      console.error('Error matching category:', error);
+      console.error('Error matching question sets:', error);
       toast({
         title: "Error",
-        description: "Failed to process your description. Please try again or select a category manually.",
+        description: "Failed to process your description. Please try again.",
         variant: "destructive",
       });
       setStage('category');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -669,7 +658,7 @@ const EstimatePage = () => {
 
         {selectedCategory && categoryData && (
           <QuestionManager
-            questionSets={[categoryData]} // Wrap categoryData in an array since it's already in CategoryQuestions format
+            questionSets={[categoryData]}
             onComplete={handleQuestionComplete}
           />
         )}
