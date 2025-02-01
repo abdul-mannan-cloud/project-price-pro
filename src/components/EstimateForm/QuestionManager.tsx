@@ -40,6 +40,7 @@ export const QuestionManager = ({
         }
 
         console.log('Raw category data:', categoryData);
+        // Sort questions by order property
         const sortedQuestions = [...categoryData.questions].sort((a, b) => a.order - b.order);
         setQuestionSequence(sortedQuestions);
         setCurrentQuestionId(sortedQuestions[0].id);
@@ -171,15 +172,21 @@ export const QuestionManager = ({
     );
   }
 
-  const currentQuestion = currentQuestionId ? questionSequence.find(q => q.id === currentQuestionId) : null;
+  const currentQuestion = currentQuestionId 
+    ? questionSequence.find(q => q.id === currentQuestionId) 
+    : null;
+
   if (!currentQuestion) {
     return (
       <div className="text-center p-8">
-        <p className="text-lg text-gray-600">No questions available. Please try selecting a different category.</p>
+        <p className="text-lg text-gray-600">
+          No questions available. Please try selecting a different category.
+        </p>
       </div>
     );
   }
 
+  // Determine if this is the last question based on next pointers
   const isLastQuestion = !findNextQuestionId(currentQuestion, currentQuestion.options[0].value);
 
   return (
