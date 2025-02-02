@@ -590,11 +590,11 @@ const EstimatePage = () => {
           <QuestionCard
             question={questions[currentQuestionIndex]}
             selectedOptions={
-              Array.isArray(answers[currentQuestionIndex])
-                ? answers[currentQuestionIndex] as string[]
-                : answers[currentQuestionIndex] 
-                  ? [answers[currentQuestionIndex] as string] 
-                  : []
+              answers[currentQuestionIndex] 
+                ? (Array.isArray(answers[currentQuestionIndex]) 
+                    ? answers[currentQuestionIndex] as string[]
+                    : [answers[currentQuestionIndex] as string])
+                : []
             }
             onSelect={(questionId, values, autoAdvance) => handleAnswerSubmit(questionId, values)}
             currentStage={currentQuestionIndex + 1}
