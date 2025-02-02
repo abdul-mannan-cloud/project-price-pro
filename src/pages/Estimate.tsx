@@ -15,10 +15,13 @@ import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category, CategoryQuestions } from "@/types/estimate";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
-// Define a type for the answers state
-type AnswersState = {
-  [key: number]: string[];
-};
+// Define types
+type AnswersState = Record<string, Record<string, string[]>>;
+
+interface CategoryData {
+  keywords: string[];
+  questions: Question[];
+}
 
 const calculateKitchenEstimate = (answers: Record<string, string[]>) => {
   let estimate = 0;
@@ -290,93 +293,87 @@ const EstimatePage = () => {
   const handleDescriptionSubmit = async () => {
     setIsProcessing(true);
     try {
+      console.log('Submitting description:', projectDescription);
+
+      // 1. Load Options data
       const { data: optionsData, error } = await supabase
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
 
-      if (error) throw error;
-      console.log('Loaded options data:', optionsData);
+      if (error) {
+        console.error('Supabase query error:', error);
+        throw error;
+      }
 
-      // Find best matching category based on keywords
-      let bestMatch: { category: string; score: number } | null = null;
+      console.log('Raw Options data:', optionsData);
+
+      if (!optionsData?.categories) {
+        console.error('No categories found in options data');
+        throw new Error('Invalid options data structure');
+      }
+
+      // 2. Find best matching category
+      let bestMatch: { category: string; score: number; matchedKeywords: string[] } | null = null;
       const description = projectDescription.toLowerCase();
       
-      Object.entries(optionsData).forEach(([category, data]) => {
-        if (category === 'Key Options') return;
-        
-        const categoryData = data as any;
-        if (!categoryData?.keywords) return;
-
-        let score = 0;
-        const isKitchenCategory = category.toLowerCase().includes('kitchen');
-        
-        // Common kitchen remodel terms with weights
-        const kitchenTerms = {
-          'kitchen': 3,
-          'cabinets': 2,
-          'countertop': 2,
-          'backsplash': 2,
-          'appliances': 2,
-          'sink': 1,
-          'tile': 1,
-          'demo': 1,
-          'remodel': 2
-        };
-
-        // Check for kitchen-specific terms if this is the Kitchen Remodel category
-        if (isKitchenCategory) {
-          Object.entries(kitchenTerms).forEach(([term, weight]) => {
-            if (description.includes(term)) {
-              score += weight;
-              console.log(`Matched kitchen term "${term}" with weight ${weight}`);
-            }
-          });
+      // Loop through categories in the options data
+      Object.entries(optionsData.categories).forEach(([categoryName, categoryData]) => {
+        const data = categoryData as CategoryData;
+        if (!data.keywords || !Array.isArray(data.keywords)) {
+          console.log(`Skipping category ${categoryName}: no keywords found`);
+          return;
         }
 
-        // Check category keywords
-        categoryData.keywords.forEach((keyword: string) => {
+        let score = 0;
+        const matchedKeywords: string[] = [];
+
+        data.keywords.forEach((keyword: string) => {
           const keywordLower = keyword.toLowerCase();
           if (description.includes(keywordLower)) {
-            // Higher score for keywords at start of description
+            // Calculate score based on keyword position and length
             const position = description.indexOf(keywordLower);
             const positionScore = 1 - (position / description.length);
-            const matchScore = 1 + positionScore;
-            score += matchScore;
-
-            console.log(`Matched keyword "${keyword}" with score ${matchScore}`);
+            const lengthScore = keyword.length / description.length;
+            const keywordScore = 1 + positionScore + lengthScore;
+            
+            score += keywordScore;
+            matchedKeywords.push(keyword);
+            
+            console.log(`Matched "${keyword}" with score ${keywordScore} (position: ${positionScore}, length: ${lengthScore})`);
           }
         });
 
-        // Bonus points for dimension mentions in kitchen projects
-        if (isKitchenCategory && 
-            (description.includes("'x") || description.includes('ft') || description.includes('feet'))) {
-          score += 2;
-          console.log('Added bonus points for dimension specifications');
-        }
-
         if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-          console.log(`New best match: ${category} with score ${score}`);
-          bestMatch = { category, score };
+          console.log(`New best match: ${categoryName} with score ${score}`);
+          bestMatch = { category: categoryName, score, matchedKeywords };
         }
       });
 
       if (bestMatch) {
-        console.log(`Selected category: ${bestMatch.category} with final score: ${bestMatch.score}`);
+        console.log('Best matching category:', bestMatch);
         
         // Get the matched category's questions
-        const categoryData = optionsData[bestMatch.category];
+        const categoryData = optionsData.categories[bestMatch.category];
+        console.log('Category data:', categoryData);
+
         if (categoryData?.questions) {
           const matchingCategory = categories.find(
             cat => cat.name.toLowerCase() === bestMatch!.category.toLowerCase()
           );
           
           if (matchingCategory) {
+            console.log('Setting questions:', categoryData.questions);
             setSelectedCategory(matchingCategory.id);
             setQuestions(categoryData.questions);
             setTotalStages(categoryData.questions.length);
             setStage('questions');
+            
+            toast({
+              title: "Category Matched",
+              description: `Matched "${bestMatch.category}" based on: ${bestMatch.matchedKeywords.join(', ')}`,
+            });
           } else {
             throw new Error('Category not found in available categories');
           }
@@ -384,8 +381,13 @@ const EstimatePage = () => {
           throw new Error('No questions found for category');
         }
       } else {
-        console.log('No strong category match found, showing category selection');
+        console.log('No matching category found, showing category selection');
         setStage('category');
+        toast({
+          title: "No Match Found",
+          description: "Please select a category manually",
+          variant: "default"
+        });
       }
 
     } catch (error) {
@@ -480,7 +482,7 @@ const EstimatePage = () => {
       setCompletedCategories(prev => [...prev, selectedCategory]);
       setAnswers(prev => ({
         ...prev,
-        [selectedCategory]: answers[selectedCategory] || {}
+        [selectedCategory]: answers[selectedCategory] || []
       }));
 
       const remainingCategories = categories.filter(
