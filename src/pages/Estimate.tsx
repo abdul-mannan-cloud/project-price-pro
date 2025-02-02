@@ -129,8 +129,8 @@ const EstimatePage = () => {
         throw new Error(`No valid data found for category: ${selectedCategory}`);
       }
 
-      // First cast to unknown, then to the expected type
-      const categoryData = {
+      // First cast to unknown, then to CategoryData
+      const categoryData: CategoryData = {
         keywords: Array.isArray((rawData as any).keywords) ? (rawData as any).keywords : [],
         questions: Array.isArray((rawData as any).questions) 
           ? (rawData as any).questions.map((q: any) => ({
@@ -142,7 +142,7 @@ const EstimatePage = () => {
               branch_id: q.branch_id || 'default'
             }))
           : []
-      } as unknown as CategoryData;
+      };
       
       return categoryData;
     },
