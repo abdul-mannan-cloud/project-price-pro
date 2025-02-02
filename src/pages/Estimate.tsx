@@ -15,39 +15,9 @@ import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category, CategoryQuestions } from "@/types/estimate";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
-const calculateKitchenEstimate = (answers: Record<string, string[]>) => {
-  let estimate = 0;
-  
-  // Cabinet costs
-  if (answers['cabinets']?.includes('yes')) {
-    if (answers['cabinet_type']?.includes('refinish')) {
-      estimate += 2500; // Base cost for refinishing
-      if (answers['cabinet_size']?.includes('large')) {
-        estimate += 1500;
-      }
-    } else if (answers['cabinet_type']?.includes('new')) {
-      estimate += 5000; // Base cost for new cabinets
-      if (answers['cabinet_size']?.includes('large')) {
-        estimate += 3000;
-      }
-    }
-  }
-
-  // Appliance costs
-  if (answers['appliances']?.includes('yes')) {
-    const applianceCosts: Record<string, number> = {
-      'refrigerator': 2000,
-      'dishwasher': 800,
-      'stove': 1200,
-      'microwave': 400
-    };
-
-    answers['appliance_types']?.forEach(appliance => {
-      estimate += applianceCosts[appliance] || 0;
-    });
-  }
-
-  return estimate;
+// Define a type for the answers state
+type AnswersState = {
+  [key: number]: string[];
 };
 
 const EstimatePage = () => {
@@ -58,7 +28,7 @@ const EstimatePage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, Record<string, string[]>>>({});
+  const [answers, setAnswers] = useState<AnswersState>({});
   const [estimate, setEstimate] = useState<any>(null);
   const [totalStages, setTotalStages] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -68,7 +38,6 @@ const EstimatePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
-  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch contractor data using react-query.
   const { data: contractor, isError: isContractorError } = useQuery({
@@ -425,7 +394,7 @@ const EstimatePage = () => {
       const formattedAnswers = Object.entries(answers).reduce((acc, [index, value]) => {
         const question = questions[parseInt(index)];
         if (question) {
-          acc[question.id] = Array.isArray(value) ? value : [value];
+          acc[question.id] = value;
         }
         return acc;
       }, {} as Record<string, string[]>);
@@ -452,47 +421,6 @@ const EstimatePage = () => {
       });
     } finally {
       setIsProcessing(false);
-    }
-  };
-
-  const handleContactSubmit = async (contactData: any) => {
-    try {
-      if (!contractorId) {
-        throw new Error("No contractor ID provided");
-      }
-
-      const { data: lead, error: leadError } = await supabase
-        .from('leads')
-        .insert({
-          contractor_id: contractorId,
-          project_title: `${selectedCategory || ''} Project`,
-          user_name: contactData.fullName,
-          user_email: contactData.email,
-          user_phone: contactData.phone,
-          project_address: contactData.address,
-          category: selectedCategory || '',
-          answers: answers,
-          estimate_data: estimate,
-          estimated_cost: estimate?.totalCost || 0,
-          status: 'new'
-        })
-        .select()
-        .single();
-
-      if (leadError) throw leadError;
-
-      setStage('estimate');
-      toast({
-        title: "Success",
-        description: "Your estimate has been saved!",
-      });
-    } catch (error) {
-      console.error('Error saving lead:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save your information. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -546,9 +474,7 @@ const EstimatePage = () => {
   }
 
   const getCurrentAnswers = (questionIndex: number): string[] => {
-    const answer = answers[questionIndex];
-    if (!answer) return [];
-    return Array.isArray(answer) ? answer : [answer];
+    return answers[questionIndex] || [];
   };
 
   return (
