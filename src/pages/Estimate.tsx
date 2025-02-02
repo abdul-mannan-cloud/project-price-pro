@@ -129,8 +129,8 @@ const EstimatePage = () => {
         throw new Error(`No valid data found for category: ${selectedCategory}`);
       }
 
-      // First cast to unknown, then to CategoryData
-      const categoryData: CategoryData = {
+      // Cast the raw data to CategoryData with proper type checking
+      const categoryData = {
         keywords: Array.isArray((rawData as any).keywords) ? (rawData as any).keywords : [],
         questions: Array.isArray((rawData as any).questions) 
           ? (rawData as any).questions.map((q: any) => ({
@@ -142,7 +142,7 @@ const EstimatePage = () => {
               branch_id: q.branch_id || 'default'
             }))
           : []
-      };
+      } as CategoryData;
       
       return categoryData;
     },
@@ -415,13 +415,15 @@ const EstimatePage = () => {
     const answerValue = Array.isArray(value) ? value : [value];
     
     if (selectedCategory) {
-      const newAnswers: CategoryAnswers = {
+      // Properly type the answers object
+      const newAnswers = {
         ...answers,
         [selectedCategory]: {
           ...(answers[selectedCategory] || {}),
           [questionId]: answerValue
         }
-      };
+      } as Record<string, Record<string, string[]>>;
+      
       setAnswers(newAnswers);
     }
 
