@@ -123,7 +123,7 @@ const EstimatePage = () => {
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
       if (error) throw error;
-      const categoryData = data[selectedCategory];
+      const categoryData = data[selectedCategory] as CategoryData;
       if (!categoryData) {
         throw new Error(`No questions found for category: ${selectedCategory}`);
       }
