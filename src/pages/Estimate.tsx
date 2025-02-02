@@ -15,7 +15,6 @@ import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category, CategoryQuestions } from "@/types/estimate";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
-// Define types for our state
 type Stage = 'photo' | 'description' | 'category' | 'questions' | 'contact' | 'estimate';
 type CategoryAnswers = Record<string, Record<string, string[]>>;
 
@@ -23,6 +22,42 @@ interface CategoryData {
   keywords: string[];
   questions: Question[];
 }
+
+// Utility function to calculate kitchen estimates
+const calculateKitchenEstimate = (answers: Record<string, string[]>) => {
+  let estimate = 0;
+  
+  // Cabinet costs
+  if (answers['cabinets']?.includes('yes')) {
+    if (answers['cabinet_type']?.includes('refinish')) {
+      estimate += 2500; // Base cost for refinishing
+      if (answers['cabinet_size']?.includes('large')) {
+        estimate += 1500;
+      }
+    } else if (answers['cabinet_type']?.includes('new')) {
+      estimate += 5000; // Base cost for new cabinets
+      if (answers['cabinet_size']?.includes('large')) {
+        estimate += 3000;
+      }
+    }
+  }
+
+  // Appliance costs
+  if (answers['appliances']?.includes('yes')) {
+    const applianceCosts: Record<string, number> = {
+      'refrigerator': 2000,
+      'dishwasher': 800,
+      'stove': 1200,
+      'microwave': 400
+    };
+
+    answers['appliance_types']?.forEach(appliance => {
+      estimate += applianceCosts[appliance] || 0;
+    });
+  }
+
+  return estimate;
+};
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<Stage>('photo');
@@ -44,7 +79,6 @@ const EstimatePage = () => {
   const { toast } = useToast();
   const { contractorId } = useParams();
 
-  // Fetch contractor data using react-query.
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
@@ -82,11 +116,13 @@ const EstimatePage = () => {
     queryKey: ["options", selectedCategory],
     queryFn: async () => {
       if (!selectedCategory) return null;
+      
       const { data, error } = await supabase
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
+        
       if (error) throw error;
       
       const rawData = data[selectedCategory];
@@ -94,8 +130,7 @@ const EstimatePage = () => {
         throw new Error(`No valid data found for category: ${selectedCategory}`);
       }
 
-      // Type assertion with validation
-      const categoryData: CategoryData = {
+      const categoryData = {
         keywords: Array.isArray((rawData as any).keywords) ? (rawData as any).keywords : [],
         questions: Array.isArray((rawData as any).questions) 
           ? (rawData as any).questions.map((q: any) => ({
@@ -107,7 +142,7 @@ const EstimatePage = () => {
               branch_id: q.branch_id || 'default'
             }))
           : []
-      };
+      } as CategoryData;
       
       return categoryData;
     },
@@ -291,11 +326,9 @@ const EstimatePage = () => {
 
       console.log('Raw Options data:', optionsData);
 
-      // Find best matching category from the Options table columns
       let bestMatch: { category: string; score: number; matchedKeywords: string[] } | null = null;
       const description = projectDescription.toLowerCase();
       
-      // Loop through all columns except 'Key Options'
       Object.entries(optionsData).forEach(([columnName, columnData]) => {
         if (columnName === 'Key Options') return;
         
@@ -489,7 +522,6 @@ const EstimatePage = () => {
     address: string;
   }) => {
     try {
-      // Save lead to database
       const { error: leadError } = await supabase.from('leads').insert({
         contractor_id: contractorId,
         category: selectedCategory,
