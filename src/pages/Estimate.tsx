@@ -24,41 +24,6 @@ interface CategoryData {
   questions: Question[];
 }
 
-const calculateKitchenEstimate = (answers: Record<string, string[]>) => {
-  let estimate = 0;
-  
-  // Cabinet costs
-  if (answers['cabinets']?.includes('yes')) {
-    if (answers['cabinet_type']?.includes('refinish')) {
-      estimate += 2500; // Base cost for refinishing
-      if (answers['cabinet_size']?.includes('large')) {
-        estimate += 1500;
-      }
-    } else if (answers['cabinet_type']?.includes('new')) {
-      estimate += 5000; // Base cost for new cabinets
-      if (answers['cabinet_size']?.includes('large')) {
-        estimate += 3000;
-      }
-    }
-  }
-
-  // Appliance costs
-  if (answers['appliances']?.includes('yes')) {
-    const applianceCosts: Record<string, number> = {
-      'refrigerator': 2000,
-      'dishwasher': 800,
-      'stove': 1200,
-      'microwave': 400
-    };
-
-    answers['appliance_types']?.forEach(appliance => {
-      estimate += applianceCosts[appliance] || 0;
-    });
-  }
-
-  return estimate;
-};
-
 const EstimatePage = () => {
   const [stage, setStage] = useState<Stage>('photo');
   const [projectDescription, setProjectDescription] = useState("");
@@ -123,14 +88,27 @@ const EstimatePage = () => {
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
       if (error) throw error;
+      
       const rawData = data[selectedCategory];
-      if (!rawData) {
-        throw new Error(`No questions found for category: ${selectedCategory}`);
+      if (!rawData || typeof rawData !== 'object') {
+        throw new Error(`No valid data found for category: ${selectedCategory}`);
       }
+
+      // Type assertion with validation
       const categoryData: CategoryData = {
         keywords: Array.isArray((rawData as any).keywords) ? (rawData as any).keywords : [],
-        questions: Array.isArray((rawData as any).questions) ? (rawData as any).questions : []
+        questions: Array.isArray((rawData as any).questions) 
+          ? (rawData as any).questions.map((q: any) => ({
+              id: q.id || `q-${Math.random()}`,
+              question: q.question || '',
+              type: q.type || 'single_choice',
+              order: q.order || 0,
+              options: Array.isArray(q.options) ? q.options : [],
+              branch_id: q.branch_id || 'default'
+            }))
+          : []
       };
+      
       return categoryData;
     },
     enabled: !!selectedCategory
@@ -399,12 +377,12 @@ const EstimatePage = () => {
     }
   };
 
-  const handleAnswerSubmit = async (questionId: string, value: string | string[]) => {
+  const handleAnswerSubmit = (questionId: string, value: string | string[]) => {
     const currentQuestion = questions[currentQuestionIndex];
     const answerValue = Array.isArray(value) ? value : [value];
     
     if (selectedCategory) {
-      setAnswers(prev => ({
+      setAnswers((prev: CategoryAnswers) => ({
         ...prev,
         [selectedCategory]: {
           ...(prev[selectedCategory] || {}),
@@ -418,7 +396,7 @@ const EstimatePage = () => {
         setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
       } else {
         setIsProcessing(true);
-        await generateEstimate();
+        generateEstimate();
       }
     }
   };
@@ -478,12 +456,12 @@ const EstimatePage = () => {
     setSelectedCategory(categoryId);
   };
 
-  const handleQuestionComplete = (answers: Record<string, Record<string, string[]>>) => {
+  const handleQuestionComplete = (categoryAnswers: CategoryAnswers) => {
     if (selectedCategory) {
       setCompletedCategories(prev => [...prev, selectedCategory]);
       setAnswers(prev => ({
         ...prev,
-        [selectedCategory]: answers[selectedCategory] || []
+        [selectedCategory]: categoryAnswers[selectedCategory] || {}
       }));
 
       const remainingCategories = categories.filter(
