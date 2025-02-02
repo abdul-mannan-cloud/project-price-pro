@@ -24,7 +24,7 @@ export const QuestionCard = ({
   const [showNextButton, setShowNextButton] = useState(false);
 
   useEffect(() => {
-    // Show next button for multiple choice only when at least one option is selected
+    // Only show next button for multiple choice when at least one option is selected
     if (question.type === 'multiple_choice') {
       setShowNextButton(selectedOptions.length > 0);
     } else {
@@ -34,22 +34,27 @@ export const QuestionCard = ({
 
   const handleOptionClick = (value: string) => {
     if (question.type === 'multiple_choice') {
-      // Toggle selection for multiple choice
+      // Toggle selection for multiple choice without auto-advancing
       const newSelection = selectedOptions.includes(value)
         ? selectedOptions.filter(v => v !== value)
         : [...selectedOptions, value];
       onSelect(question.id, newSelection, false);
     } else {
-      // For yes/no and single choice, immediately submit and move to next
+      // For yes/no and single choice, immediately submit and advance
       onSelect(question.id, [value], true);
     }
+  };
+
+  const handleContinue = () => {
+    // Submit multiple selections and advance
+    onSelect(question.id, selectedOptions, true);
   };
 
   const progress = (currentStage / totalStages) * 100;
 
   const shouldShowImage = (option: any) => {
     if (!option.image_url) return false;
-    if (option.image_url.includes('example')) return false; // Skip example URLs
+    if (option.image_url.includes('example.com')) return false; // Skip example URLs
     if (!isNaN(option.value)) return false; // Skip numeric values
     return true;
   };
@@ -101,7 +106,9 @@ export const QuestionCard = ({
               <span className={cn(
                 "text-lg",
                 !showImage && "text-left w-full"
-              )}>{option.label}</span>
+              )}>
+                {option.label}
+              </span>
               
               {isSelected && question.type === 'multiple_choice' && (
                 <div className="absolute top-2 right-2 bg-primary rounded-full p-1">
@@ -117,7 +124,7 @@ export const QuestionCard = ({
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
           <div className="container max-w-4xl mx-auto">
             <Button 
-              onClick={() => onSelect(question.id, selectedOptions, true)}
+              onClick={handleContinue}
               className="w-full"
             >
               Continue with {selectedOptions.length} Selected {selectedOptions.length === 1 ? 'Item' : 'Items'}
