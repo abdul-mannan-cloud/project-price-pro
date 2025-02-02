@@ -501,6 +501,45 @@ const EstimatePage = () => {
     setStage('questions');
   };
 
+  const handleContactSubmit = async (data: {
+    fullName: string;
+    email: string;
+    phone: string;
+    address: string;
+  }) => {
+    try {
+      // Save lead to database
+      const { error: leadError } = await supabase.from('leads').insert({
+        contractor_id: contractorId,
+        category: selectedCategory,
+        answers: answers,
+        estimate_data: estimate,
+        project_title: `${selectedCategory} Project`,
+        project_description: projectDescription,
+        project_address: data.address,
+        user_name: data.fullName,
+        user_email: data.email,
+        user_phone: data.phone,
+        estimated_cost: estimate.totalCost
+      });
+
+      if (leadError) throw leadError;
+
+      setStage('estimate');
+      toast({
+        title: "Success",
+        description: "Your estimate has been generated!",
+      });
+    } catch (error) {
+      console.error('Error saving lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save your information. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isProcessing) {
     return <LoadingScreen message="Processing your request..." />;
   }
