@@ -5,12 +5,6 @@ import { Question, CategoryQuestions, Category, QuestionFlow } from "@/types/est
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-interface TaskBranch {
-  value: string;
-  next: string;
-  completed?: boolean;
-}
-
 interface QuestionManagerProps {
   projectDescription: string;
   onComplete: (answers: Record<string, Record<string, string[]>>) => void;
@@ -30,8 +24,7 @@ export const QuestionManager = ({
 }: QuestionManagerProps) => {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [questionFlow, setQuestionFlow] = useState<QuestionFlow | null>(null);
-  const [taskBranches, setTaskBranches] = useState<TaskBranch[]>([]);
-  const [categoryKeywords, setCategoryKeywords] = useState<Record<string, string[]>>({});
+  const [taskBranches, setTaskBranches] = useState<any[]>([]);
 
   useEffect(() => {
     console.log('Loading questions with description:', projectDescription);
@@ -105,7 +98,7 @@ export const QuestionManager = ({
             score += matchScore;
             matchedKeywords.push(keyword);
 
-            console.log(`Matched keyword "${keyword}" in category ${categoryName} with score ${matchScore}`);
+            console.log(`Matched keyword "${keyword}" with score ${matchScore}`);
           }
         });
 
@@ -122,7 +115,6 @@ export const QuestionManager = ({
               matchedKeywords
             };
             console.log(`New best match: ${categoryName} (ID: ${matchingCategory.id}) with score ${score}`);
-            console.log('Matched keywords:', matchedKeywords);
           }
         }
       });
@@ -190,7 +182,7 @@ export const QuestionManager = ({
 
     // Handle task branching for multiple choice questions
     if (currentQuestion.type === 'multiple_choice' && autoAdvance) {
-      const newTaskBranches: TaskBranch[] = currentQuestion.options
+      const newTaskBranches = currentQuestion.options
         .filter(opt => selectedValues.includes(opt.value))
         .map(opt => ({
           value: opt.value,
@@ -219,12 +211,7 @@ export const QuestionManager = ({
     const nextQuestionId = selectedOption?.next || null;
 
     if (nextQuestionId === 'NEXT_BRANCH') {
-      const nextCategory = findNextCategory();
-      if (nextCategory) {
-        onSelectAdditionalCategory(nextCategory);
-      } else {
-        onComplete(newAnswers);
-      }
+      onComplete(newAnswers);
       return;
     }
 
@@ -257,34 +244,6 @@ export const QuestionManager = ({
       currentQuestionId: nextQuestionId,
       answers: newAnswers
     }));
-  };
-
-  const findNextCategory = () => {
-    const description = projectDescription.toLowerCase();
-    const availableCategories = categories.filter(
-      cat => !completedCategories.includes(cat.id)
-    );
-
-    let bestMatch = null;
-    let highestScore = 0;
-
-    for (const category of availableCategories) {
-      const keywords = categoryKeywords[category.id] || [];
-      let score = 0;
-
-      keywords.forEach(keyword => {
-        if (description.includes(keyword.toLowerCase())) {
-          score++;
-        }
-      });
-
-      if (score > highestScore) {
-        highestScore = score;
-        bestMatch = category.id;
-      }
-    }
-
-    return bestMatch;
   };
 
   if (isLoadingQuestions) {
