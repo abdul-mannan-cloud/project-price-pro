@@ -123,10 +123,14 @@ const EstimatePage = () => {
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
       if (error) throw error;
-      const categoryData = data[selectedCategory] as CategoryData;
-      if (!categoryData) {
+      const rawData = data[selectedCategory];
+      if (!rawData) {
         throw new Error(`No questions found for category: ${selectedCategory}`);
       }
+      const categoryData: CategoryData = {
+        keywords: Array.isArray((rawData as any).keywords) ? (rawData as any).keywords : [],
+        questions: Array.isArray((rawData as any).questions) ? (rawData as any).questions : []
+      };
       return categoryData;
     },
     enabled: !!selectedCategory
@@ -403,7 +407,7 @@ const EstimatePage = () => {
       setAnswers(prev => ({
         ...prev,
         [selectedCategory]: {
-          ...prev[selectedCategory],
+          ...(prev[selectedCategory] || {}),
           [questionId]: answerValue
         }
       }));
