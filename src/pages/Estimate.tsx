@@ -398,9 +398,11 @@ const EstimatePage = () => {
 
   const handleAnswerSubmit = async (questionId: string, value: string | string[]) => {
     const currentQuestion = questions[currentQuestionIndex];
+    const answerValue = Array.isArray(value) ? value : [value];
+    
     setAnswers(prev => ({ 
       ...prev, 
-      [currentQuestionIndex]: Array.isArray(value) ? value : [value]
+      [currentQuestionIndex]: answerValue
     }));
 
     if (currentQuestion.type !== 'multiple_choice') {
@@ -543,6 +545,12 @@ const EstimatePage = () => {
     return <LoadingScreen message="Loading questions..." />;
   }
 
+  const getCurrentAnswers = (questionIndex: number): string[] => {
+    const answer = answers[questionIndex];
+    if (!answer) return [];
+    return Array.isArray(answer) ? answer : [answer];
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Progress value={getProgressValue()} className="h-8 rounded-none" />
@@ -629,13 +637,7 @@ const EstimatePage = () => {
         {stage === 'questions' && questions.length > 0 && currentQuestionIndex < questions.length && (
           <QuestionCard
             question={questions[currentQuestionIndex]}
-            selectedOptions={
-              answers[currentQuestionIndex] 
-                ? (Array.isArray(answers[currentQuestionIndex]) 
-                    ? answers[currentQuestionIndex] as string[]
-                    : [answers[currentQuestionIndex] as string])
-                : []
-            }
+            selectedOptions={getCurrentAnswers(currentQuestionIndex)}
             onSelect={(questionId, values, autoAdvance) => handleAnswerSubmit(questionId, values)}
             currentStage={currentQuestionIndex + 1}
             totalStages={totalStages}
