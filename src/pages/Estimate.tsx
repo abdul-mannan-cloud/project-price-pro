@@ -130,6 +130,7 @@ const EstimatePage = () => {
         throw new Error(`No valid data found for category: ${selectedCategory}`);
       }
 
+      // Cast the raw data to unknown first, then to CategoryData
       const categoryData = {
         keywords: Array.isArray((rawData as any).keywords) ? (rawData as any).keywords : [],
         questions: Array.isArray((rawData as any).questions) 
@@ -142,7 +143,7 @@ const EstimatePage = () => {
               branch_id: q.branch_id || 'default'
             }))
           : []
-      } as CategoryData;
+      } as unknown as CategoryData;
       
       return categoryData;
     },
@@ -415,13 +416,14 @@ const EstimatePage = () => {
     const answerValue = Array.isArray(value) ? value : [value];
     
     if (selectedCategory) {
-      setAnswers((prev: CategoryAnswers) => ({
-        ...prev,
+      const newAnswers = {
+        ...answers,
         [selectedCategory]: {
-          ...(prev[selectedCategory] || {}),
+          ...(answers[selectedCategory] || {}),
           [questionId]: answerValue
         }
-      }));
+      };
+      setAnswers(newAnswers);
     }
 
     if (currentQuestion.type !== 'multiple_choice') {
