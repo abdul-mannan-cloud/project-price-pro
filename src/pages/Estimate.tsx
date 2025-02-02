@@ -20,6 +20,41 @@ type AnswersState = {
   [key: number]: string[];
 };
 
+const calculateKitchenEstimate = (answers: Record<string, string[]>) => {
+  let estimate = 0;
+  
+  // Cabinet costs
+  if (answers['cabinets']?.includes('yes')) {
+    if (answers['cabinet_type']?.includes('refinish')) {
+      estimate += 2500; // Base cost for refinishing
+      if (answers['cabinet_size']?.includes('large')) {
+        estimate += 1500;
+      }
+    } else if (answers['cabinet_type']?.includes('new')) {
+      estimate += 5000; // Base cost for new cabinets
+      if (answers['cabinet_size']?.includes('large')) {
+        estimate += 3000;
+      }
+    }
+  }
+
+  // Appliance costs
+  if (answers['appliances']?.includes('yes')) {
+    const applianceCosts: Record<string, number> = {
+      'refrigerator': 2000,
+      'dishwasher': 800,
+      'stove': 1200,
+      'microwave': 400
+    };
+
+    answers['appliance_types']?.forEach(appliance => {
+      estimate += applianceCosts[appliance] || 0;
+    });
+  }
+
+  return estimate;
+};
+
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'category' | 'questions' | 'contact' | 'estimate'>('photo');
   const [projectDescription, setProjectDescription] = useState("");
@@ -35,6 +70,7 @@ const EstimatePage = () => {
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryQuestions | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
