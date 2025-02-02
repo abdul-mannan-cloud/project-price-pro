@@ -15,8 +15,9 @@ import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category, CategoryQuestions } from "@/types/estimate";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
-// Define types
-type AnswersState = Record<string, Record<string, string[]>>;
+// Define types for our state
+type Stage = 'photo' | 'description' | 'category' | 'questions' | 'contact' | 'estimate';
+type CategoryAnswers = Record<string, Record<string, string[]>>;
 
 interface CategoryData {
   keywords: string[];
@@ -59,14 +60,14 @@ const calculateKitchenEstimate = (answers: Record<string, string[]>) => {
 };
 
 const EstimatePage = () => {
-  const [stage, setStage] = useState<'photo' | 'description' | 'category' | 'questions' | 'contact' | 'estimate'>('photo');
+  const [stage, setStage] = useState<Stage>('photo');
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<AnswersState>({});
+  const [answers, setAnswers] = useState<CategoryAnswers>({});
   const [estimate, setEstimate] = useState<any>(null);
   const [totalStages, setTotalStages] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -295,7 +296,6 @@ const EstimatePage = () => {
     try {
       console.log('Submitting description:', projectDescription);
 
-      // 1. Load Options data
       const { data: optionsData, error } = await supabase
         .from('Options')
         .select('*')
@@ -309,20 +309,17 @@ const EstimatePage = () => {
 
       console.log('Raw Options data:', optionsData);
 
-      if (!optionsData?.categories) {
-        console.error('No categories found in options data');
-        throw new Error('Invalid options data structure');
-      }
-
-      // 2. Find best matching category
+      // Find best matching category from the Options table columns
       let bestMatch: { category: string; score: number; matchedKeywords: string[] } | null = null;
       const description = projectDescription.toLowerCase();
       
-      // Loop through categories in the options data
-      Object.entries(optionsData.categories).forEach(([categoryName, categoryData]) => {
-        const data = categoryData as CategoryData;
-        if (!data.keywords || !Array.isArray(data.keywords)) {
-          console.log(`Skipping category ${categoryName}: no keywords found`);
+      // Loop through all columns except 'Key Options'
+      Object.entries(optionsData).forEach(([columnName, columnData]) => {
+        if (columnName === 'Key Options') return;
+        
+        const data = columnData as CategoryData;
+        if (!data?.keywords || !Array.isArray(data.keywords)) {
+          console.log(`Skipping category ${columnName}: no keywords found`);
           return;
         }
 
@@ -332,7 +329,6 @@ const EstimatePage = () => {
         data.keywords.forEach((keyword: string) => {
           const keywordLower = keyword.toLowerCase();
           if (description.includes(keywordLower)) {
-            // Calculate score based on keyword position and length
             const position = description.indexOf(keywordLower);
             const positionScore = 1 - (position / description.length);
             const lengthScore = keyword.length / description.length;
@@ -341,30 +337,27 @@ const EstimatePage = () => {
             score += keywordScore;
             matchedKeywords.push(keyword);
             
-            console.log(`Matched "${keyword}" with score ${keywordScore} (position: ${positionScore}, length: ${lengthScore})`);
+            console.log(`Matched "${keyword}" with score ${keywordScore}`);
           }
         });
 
         if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-          console.log(`New best match: ${categoryName} with score ${score}`);
-          bestMatch = { category: categoryName, score, matchedKeywords };
+          console.log(`New best match: ${columnName} with score ${score}`);
+          bestMatch = { category: columnName, score, matchedKeywords };
         }
       });
 
       if (bestMatch) {
         console.log('Best matching category:', bestMatch);
         
-        // Get the matched category's questions
-        const categoryData = optionsData.categories[bestMatch.category];
-        console.log('Category data:', categoryData);
-
+        const categoryData = optionsData[bestMatch.category] as CategoryData;
+        
         if (categoryData?.questions) {
           const matchingCategory = categories.find(
-            cat => cat.name.toLowerCase() === bestMatch!.category.toLowerCase()
+            cat => cat.name === bestMatch!.category
           );
           
           if (matchingCategory) {
-            console.log('Setting questions:', categoryData.questions);
             setSelectedCategory(matchingCategory.id);
             setQuestions(categoryData.questions);
             setTotalStages(categoryData.questions.length);
@@ -381,7 +374,6 @@ const EstimatePage = () => {
           throw new Error('No questions found for category');
         }
       } else {
-        console.log('No matching category found, showing category selection');
         setStage('category');
         toast({
           title: "No Match Found",
@@ -407,10 +399,15 @@ const EstimatePage = () => {
     const currentQuestion = questions[currentQuestionIndex];
     const answerValue = Array.isArray(value) ? value : [value];
     
-    setAnswers(prev => ({ 
-      ...prev, 
-      [currentQuestionIndex]: answerValue
-    }));
+    if (selectedCategory) {
+      setAnswers(prev => ({
+        ...prev,
+        [selectedCategory]: {
+          ...prev[selectedCategory],
+          [questionId]: answerValue
+        }
+      }));
+    }
 
     if (currentQuestion.type !== 'multiple_choice') {
       if (currentQuestionIndex < questions.length - 1) {
@@ -551,7 +548,7 @@ const EstimatePage = () => {
   }
 
   const getCurrentAnswers = (questionIndex: number): string[] => {
-    return answers[questionIndex] || [];
+    return answers[selectedCategory]?.[questions[questionIndex].id] || [];
   };
 
   return (
@@ -641,7 +638,7 @@ const EstimatePage = () => {
           <QuestionCard
             question={questions[currentQuestionIndex]}
             selectedOptions={getCurrentAnswers(currentQuestionIndex)}
-            onSelect={(questionId, values, autoAdvance) => handleAnswerSubmit(questionId, values)}
+            onSelect={(questionId, values) => handleAnswerSubmit(questionId, values)}
             currentStage={currentQuestionIndex + 1}
             totalStages={totalStages}
           />
