@@ -129,11 +129,13 @@ const EstimatePage = () => {
         throw new Error(`No valid data found for category: ${selectedCategory}`);
       }
 
-      // Cast the raw data to CategoryData with proper type checking
+      // First cast to unknown, then to CategoryData to satisfy TypeScript
+      const rawDataObj = rawData as { keywords?: unknown; questions?: unknown };
+      
       const categoryData = {
-        keywords: Array.isArray((rawData as any).keywords) ? (rawData as any).keywords : [],
-        questions: Array.isArray((rawData as any).questions) 
-          ? (rawData as any).questions.map((q: any) => ({
+        keywords: Array.isArray(rawDataObj.keywords) ? rawDataObj.keywords : [],
+        questions: Array.isArray(rawDataObj.questions) 
+          ? rawDataObj.questions.map((q: any) => ({
               id: q.id || `q-${Math.random()}`,
               question: q.question || '',
               type: q.type || 'single_choice',
@@ -142,7 +144,7 @@ const EstimatePage = () => {
               branch_id: q.branch_id || 'default'
             }))
           : []
-      } as CategoryData;
+      } as unknown as CategoryData;
       
       return categoryData;
     },
@@ -415,14 +417,14 @@ const EstimatePage = () => {
     const answerValue = Array.isArray(value) ? value : [value];
     
     if (selectedCategory) {
-      // Properly type the answers object
-      const newAnswers = {
+      // Properly type the answers object with nested structure
+      const newAnswers: Record<string, Record<string, string[]>> = {
         ...answers,
         [selectedCategory]: {
           ...(answers[selectedCategory] || {}),
           [questionId]: answerValue
         }
-      } as Record<string, Record<string, string[]>>;
+      };
       
       setAnswers(newAnswers);
     }
