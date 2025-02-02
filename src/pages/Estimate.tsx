@@ -13,7 +13,6 @@ import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category, CategoryQuestions } from "@/types/estimate";
-import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
 const calculateKitchenEstimate = (answers: Record<string, string[]>) => {
@@ -59,7 +58,7 @@ const EstimatePage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string[]>>({});
+  const [answers, setAnswers] = useState<Record<string, Record<string, string[]>>>({});
   const [estimate, setEstimate] = useState<any>(null);
   const [totalStages, setTotalStages] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -70,7 +69,6 @@ const EstimatePage = () => {
   const { toast } = useToast();
   const { contractorId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
-  const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
 
   // Fetch contractor data using react-query.
   const { data: contractor, isError: isContractorError } = useQuery({
@@ -284,116 +282,6 @@ const EstimatePage = () => {
     }
   };
 
-  const formatQuestions = (rawQuestions: any[]): Question[] => {
-    if (!Array.isArray(rawQuestions)) {
-      console.error('Invalid questions format:', rawQuestions);
-      return [];
-    }
-    return rawQuestions.map((q: any, index: number) => {
-      const selectionData = q.selections || q.options || [];
-      return {
-        id: q.id || `q-${q.order}`,
-        order: q.order || 0,
-        question: q.question,
-        type: q.type || (q.multi_choice
-                  ? 'multiple_choice'
-                  : (selectionData.length === 2 && selectionData[0] === 'Yes' && selectionData[1] === 'No'
-                      ? 'yes_no'
-                      : 'single_choice')),
-        options: Array.isArray(selectionData)
-          ? selectionData.map((opt: any, optIndex: number) => ({
-              label: typeof opt === 'string' ? opt : opt.label,
-              value: typeof opt === 'string' ? opt.toLowerCase() : opt.value,
-              image_url: (q.image_urls && q.image_urls[optIndex]) || ""
-            }))
-          : [],
-        next: q.next,
-        branch_id: q.branch_id || `default-branch`,
-        keywords: q.keywords || [],
-        is_branch_start: q.is_branch_start || false,
-        skip_branch_on_no: q.skip_branch_on_no || false,
-        priority: q.priority || index
-      };
-    });
-  };
-
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000; // 1 second
-
-  const loadCategoryQuestions = async (retryCount = 0) => {
-    if (!selectedCategory) {
-      console.error('No category selected');
-      return;
-    }
-    
-    setIsProcessing(true);
-    try {
-      console.log(`Attempting to load questions for category: ${selectedCategory} (attempt ${retryCount + 1})`);
-      const { data, error } = await supabase
-        .from('Options')
-        .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .single();
-
-      if (error) {
-        console.error('Error fetching options:', error);
-        throw error;
-      }
-
-      if (!data || !data[selectedCategory]) {
-        console.error('No data found for category:', selectedCategory);
-        if (retryCount < MAX_RETRIES) {
-          console.log(`Retrying in ${RETRY_DELAY}ms... (${retryCount + 1}/${MAX_RETRIES})`);
-          setTimeout(() => loadCategoryQuestions(retryCount + 1), RETRY_DELAY);
-          return;
-        }
-        throw new Error(`No questions found for category: ${selectedCategory}`);
-      }
-
-      const categoryData = data[selectedCategory];
-      console.log('Raw category data:', categoryData);
-
-      if (!categoryData || typeof categoryData !== 'object' || !Array.isArray(categoryData.questions)) {
-        console.error('Invalid questions format:', categoryData);
-        if (retryCount < MAX_RETRIES) {
-          console.log(`Invalid data format, retrying in ${RETRY_DELAY}ms... (${retryCount + 1}/${MAX_RETRIES})`);
-          setTimeout(() => loadCategoryQuestions(retryCount + 1), RETRY_DELAY);
-          return;
-        }
-        throw new Error('Invalid questions format');
-      }
-
-      const formattedQuestions = formatQuestions(categoryData.questions);
-      console.log('Final formatted questions:', formattedQuestions);
-      
-      if (formattedQuestions.length === 0) {
-        toast({
-          title: "No questions available",
-          description: "Unable to load questions for this category.",
-          variant: "destructive",
-        });
-        setStage('category');
-        return;
-      }
-
-      setQuestions(formattedQuestions);
-      setTotalStages(formattedQuestions.length);
-      setStage('questions');
-    } catch (error) {
-      console.error('Error loading questions:', error);
-      if (retryCount >= MAX_RETRIES) {
-        toast({
-          title: "Error",
-          description: "Failed to load questions. Please try again.",
-          variant: "destructive",
-        });
-        setStage('category');
-      }
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const handleDescriptionSubmit = async () => {
     setIsProcessing(true);
     try {
@@ -413,7 +301,7 @@ const EstimatePage = () => {
         if (category === 'Key Options') return;
         
         const categoryData = data as any;
-        if (!categoryData.keywords) return;
+        if (!categoryData?.keywords) return;
 
         let score = 0;
         categoryData.keywords.forEach((keyword: string) => {
@@ -428,37 +316,35 @@ const EstimatePage = () => {
             if (description.includes(` ${keywordLower} `)) {
               score += 0.5;
             }
+
+            // Extra bonus for kitchen-specific terms
+            if (category.toLowerCase().includes('kitchen') && 
+                ['kitchen', 'remodel', 'cabinets', 'countertop'].includes(keywordLower)) {
+              score += 2;
+            }
           }
         });
 
         if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-          bestMatch = { category, score };
+          const matchingCategory = categories.find(
+            cat => cat.name.toLowerCase() === category.toLowerCase()
+          );
+          
+          if (matchingCategory) {
+            bestMatch = { category: matchingCategory.id, score };
+          }
         }
       });
 
       if (bestMatch) {
-        // Find matching category in our categories list
-        const matchingCategory = categories.find(
-          cat => cat.name.toLowerCase() === bestMatch!.category.toLowerCase()
-        );
-        
-        if (matchingCategory) {
-          setSelectedCategory(matchingCategory.id);
-          setStage('questions');
-        } else {
-          setStage('category');
-        }
+        setSelectedCategory(bestMatch.category);
+        setStage('questions');
       } else {
-        toast({
-          title: "No matching categories found",
-          description: "Please select a category manually.",
-          variant: "destructive",
-        });
         setStage('category');
       }
 
     } catch (error) {
-      console.error('Error matching categories:', error);
+      console.error('Error matching category:', error);
       toast({
         title: "Error",
         description: "Failed to process your description. Please try again.",
@@ -470,11 +356,11 @@ const EstimatePage = () => {
     }
   };
 
-  const handleAnswerSubmit = async (questionId: string, value: string[]) => {
+  const handleAnswerSubmit = async (questionId: string, value: string | string[]) => {
     const currentQuestion = questions[currentQuestionIndex];
     setAnswers(prev => ({ 
       ...prev, 
-      [currentQuestionIndex]: value
+      [currentQuestionIndex]: Array.isArray(value) ? value : [value]
     }));
 
     if (currentQuestion.type !== 'multiple_choice') {
@@ -591,7 +477,6 @@ const EstimatePage = () => {
         [selectedCategory]: answers[selectedCategory] || {}
       }));
 
-      // Check for remaining categories based on keywords
       const remainingCategories = categories.filter(
         cat => !completedCategories.includes(cat.id)
       );
@@ -611,15 +496,7 @@ const EstimatePage = () => {
   };
 
   if (isProcessing) {
-    return (
-      <LoadingScreen
-        message={
-          stage === 'questions' && currentQuestionIndex === questions.length - 1
-            ? "Generating your estimate..."
-            : "Processing your request..."
-        }
-      />
-    );
+    return <LoadingScreen message="Processing your request..." />;
   }
 
   if (isLoadingOptions && stage === 'questions') {
@@ -695,19 +572,14 @@ const EstimatePage = () => {
               <Textarea
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
-                placeholder="Describe what you need help with (minimum 30 characters)..."
+                placeholder="Describe what you need help with..."
                 className="min-h-[150px]"
               />
-              {projectDescription.length > 0 && projectDescription.length < 30 && (
-                <p className="text-sm text-destructive">
-                  Please enter at least {30 - projectDescription.length} more characters
-                </p>
-              )}
             </div>
             <Button 
               className="w-full mt-6"
               onClick={handleDescriptionSubmit}
-              disabled={projectDescription.trim().length < 30}
+              disabled={projectDescription.length < 10}
             >
               Continue
             </Button>
@@ -717,8 +589,14 @@ const EstimatePage = () => {
         {stage === 'questions' && questions.length > 0 && currentQuestionIndex < questions.length && (
           <QuestionCard
             question={questions[currentQuestionIndex]}
-            selectedOptions={answers[currentQuestionIndex] || []}
-            onSelect={handleAnswerSubmit}
+            selectedOptions={
+              Array.isArray(answers[currentQuestionIndex])
+                ? answers[currentQuestionIndex] as string[]
+                : answers[currentQuestionIndex] 
+                  ? [answers[currentQuestionIndex] as string] 
+                  : []
+            }
+            onSelect={(questionId, values, autoAdvance) => handleAnswerSubmit(questionId, values)}
             currentStage={currentQuestionIndex + 1}
             totalStages={totalStages}
           />
