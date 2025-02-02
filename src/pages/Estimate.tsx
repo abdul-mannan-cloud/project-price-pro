@@ -23,7 +23,6 @@ interface CategoryData {
   questions: Question[];
 }
 
-// Utility function to calculate kitchen estimates
 const calculateKitchenEstimate = (answers: Record<string, string[]>) => {
   let estimate = 0;
   
@@ -130,7 +129,7 @@ const EstimatePage = () => {
         throw new Error(`No valid data found for category: ${selectedCategory}`);
       }
 
-      // Cast the raw data to unknown first, then to CategoryData
+      // First cast to unknown, then to the expected type
       const categoryData = {
         keywords: Array.isArray((rawData as any).keywords) ? (rawData as any).keywords : [],
         questions: Array.isArray((rawData as any).questions) 
@@ -416,7 +415,7 @@ const EstimatePage = () => {
     const answerValue = Array.isArray(value) ? value : [value];
     
     if (selectedCategory) {
-      const newAnswers = {
+      const newAnswers: CategoryAnswers = {
         ...answers,
         [selectedCategory]: {
           ...(answers[selectedCategory] || {}),
