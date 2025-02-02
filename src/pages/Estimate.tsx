@@ -292,6 +292,7 @@ const EstimatePage = () => {
         .single();
 
       if (error) throw error;
+      console.log('Loaded options data:', optionsData);
 
       // Find best matching category based on keywords
       let bestMatch: { category: string; score: number } | null = null;
@@ -304,47 +305,86 @@ const EstimatePage = () => {
         if (!categoryData?.keywords) return;
 
         let score = 0;
+        const isKitchenCategory = category.toLowerCase().includes('kitchen');
+        
+        // Common kitchen remodel terms with weights
+        const kitchenTerms = {
+          'kitchen': 3,
+          'cabinets': 2,
+          'countertop': 2,
+          'backsplash': 2,
+          'appliances': 2,
+          'sink': 1,
+          'tile': 1,
+          'demo': 1,
+          'remodel': 2
+        };
+
+        // Check for kitchen-specific terms if this is the Kitchen Remodel category
+        if (isKitchenCategory) {
+          Object.entries(kitchenTerms).forEach(([term, weight]) => {
+            if (description.includes(term)) {
+              score += weight;
+              console.log(`Matched kitchen term "${term}" with weight ${weight}`);
+            }
+          });
+        }
+
+        // Check category keywords
         categoryData.keywords.forEach((keyword: string) => {
           const keywordLower = keyword.toLowerCase();
           if (description.includes(keywordLower)) {
             // Higher score for keywords at start of description
             const position = description.indexOf(keywordLower);
             const positionScore = 1 - (position / description.length);
-            score += 1 + positionScore;
+            const matchScore = 1 + positionScore;
+            score += matchScore;
 
-            // Bonus for exact matches
-            if (description.includes(` ${keywordLower} `)) {
-              score += 0.5;
-            }
-
-            // Extra bonus for kitchen-specific terms
-            if (category.toLowerCase().includes('kitchen') && 
-                ['kitchen', 'remodel', 'cabinets', 'countertop'].includes(keywordLower)) {
-              score += 2;
-            }
+            console.log(`Matched keyword "${keyword}" with score ${matchScore}`);
           }
         });
 
+        // Bonus points for dimension mentions in kitchen projects
+        if (isKitchenCategory && 
+            (description.includes("'x") || description.includes('ft') || description.includes('feet'))) {
+          score += 2;
+          console.log('Added bonus points for dimension specifications');
+        }
+
         if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-          const matchingCategory = categories.find(
-            cat => cat.name.toLowerCase() === category.toLowerCase()
-          );
-          
-          if (matchingCategory) {
-            bestMatch = { category: matchingCategory.id, score };
-          }
+          console.log(`New best match: ${category} with score ${score}`);
+          bestMatch = { category, score };
         }
       });
 
       if (bestMatch) {
-        setSelectedCategory(bestMatch.category);
-        setStage('questions');
+        console.log(`Selected category: ${bestMatch.category} with final score: ${bestMatch.score}`);
+        
+        // Get the matched category's questions
+        const categoryData = optionsData[bestMatch.category];
+        if (categoryData?.questions) {
+          const matchingCategory = categories.find(
+            cat => cat.name.toLowerCase() === bestMatch!.category.toLowerCase()
+          );
+          
+          if (matchingCategory) {
+            setSelectedCategory(matchingCategory.id);
+            setQuestions(categoryData.questions);
+            setTotalStages(categoryData.questions.length);
+            setStage('questions');
+          } else {
+            throw new Error('Category not found in available categories');
+          }
+        } else {
+          throw new Error('No questions found for category');
+        }
       } else {
+        console.log('No strong category match found, showing category selection');
         setStage('category');
       }
 
     } catch (error) {
-      console.error('Error matching category:', error);
+      console.error('Error processing description:', error);
       toast({
         title: "Error",
         description: "Failed to process your description. Please try again.",
