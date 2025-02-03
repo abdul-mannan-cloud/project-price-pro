@@ -75,7 +75,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/30">
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center">
       <div className="w-full max-w-md mx-auto bg-background rounded-xl p-6 shadow-lg animate-fadeIn">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="text-center mb-8 pt-4">

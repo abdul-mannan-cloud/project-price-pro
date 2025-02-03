@@ -706,22 +706,22 @@ const EstimatePage = () => {
               isBlurred={true}
               contractor={contractor || undefined}
             />
-            <div className="mt-8">
-              <ContactForm 
-                onSubmit={handleContactSubmit} 
-                leadId={currentLeadId || undefined}
-                contractorId={contractorId}
-              />
-            </div>
+            <ContactForm 
+              onSubmit={handleContactSubmit} 
+              leadId={currentLeadId || undefined}
+              contractorId={contractorId}
+            />
           </div>
         )}
 
         {stage === 'estimate' && estimate && (
-          <EstimateDisplay 
-            groups={estimate.groups} 
-            totalCost={estimate.totalCost}
-            contractor={contractor || undefined}
-          />
+          <div className="animate-fadeIn">
+            <EstimateDisplay 
+              groups={estimate.groups} 
+              totalCost={estimate.totalCost}
+              contractor={contractor || undefined}
+            />
+          </div>
         )}
 
         {stage === 'questions' && (
@@ -740,4 +740,3 @@ const EstimatePage = () => {
 };
 
 export default EstimatePage;
-
