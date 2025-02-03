@@ -489,10 +489,26 @@ const EstimatePage = () => {
       case 'category':
         return 45;
       case 'questions':
-        // Use a fixed increment per question instead of calculating based on total length
+        // Calculate progress based on matched question sets and current progress
         const baseProgress = 45;
-        const progressPerQuestion = 2; // Each question adds 2% to progress
-        return Math.min(85, baseProgress + (currentQuestionIndex * progressPerQuestion));
+        const maxProgress = 85;
+        const progressRange = maxProgress - baseProgress;
+        
+        if (matchedQuestionSets.length === 0) return baseProgress;
+        
+        // Calculate total questions across all sets
+        const totalQuestions = matchedQuestionSets.reduce((acc, set) => 
+          acc + (Array.isArray(set.questions) ? set.questions.length : 0), 0);
+        
+        // Calculate completed questions
+        const completedQuestions = Object.keys(answers).length;
+        
+        // Calculate progress percentage
+        const progressPercentage = totalQuestions > 0 
+          ? (completedQuestions / totalQuestions) 
+          : 0;
+        
+        return baseProgress + (progressRange * progressPercentage);
       case 'contact':
         return 90;
       case 'estimate':
