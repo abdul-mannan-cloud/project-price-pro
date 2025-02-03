@@ -13,9 +13,8 @@ import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category, CategoryQuestions } from "@/types/estimate";
-import { findBestMatchingCategory } from "@/utils/categoryMatcher";
-import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
+import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
@@ -114,11 +113,15 @@ const EstimatePage = () => {
       // Transform Options data into Category format
       const transformedCategories: Category[] = Object.keys(optionsData)
         .filter(key => key !== 'Key Options')
-        .map(key => ({
-          id: key,
-          name: key.replace(/_/g, ' '),
-          description: `Get an estimate for your ${key.toLowerCase()} project`
-        }));
+        .map(key => {
+          const catData = optionsData[key] as Record<string, any>;
+          return {
+            id: key,
+            name: catData.name || key.replace(/_/g, ' '),
+            description: catData.description || `Get an estimate for your ${key.toLowerCase()} project`,
+            icon: catData.icon
+          };
+        });
 
       setCategories(transformedCategories);
     } catch (error) {
@@ -143,14 +146,21 @@ const EstimatePage = () => {
 
       if (optionsError) throw optionsError;
 
-      const categoryData = optionsData[categoryId];
-      if (!categoryData) throw new Error('Category data not found');
+      const rawCategoryData = optionsData[categoryId] as Record<string, any>;
+      if (!rawCategoryData) throw new Error('Category data not found');
 
-      // Transform the data into CategoryQuestions format
+      // Transform the data into CategoryQuestions format with proper type checking
       const questionSet: CategoryQuestions = {
         category: categoryId,
-        keywords: categoryData.keywords || [],
-        questions: categoryData.questions || []
+        keywords: Array.isArray(rawCategoryData.keywords) ? rawCategoryData.keywords : [],
+        questions: Array.isArray(rawCategoryData.questions) ? rawCategoryData.questions.map((q: any) => ({
+          id: q.id || `q-${q.order}`,
+          question: q.question,
+          type: q.type || 'single_choice',
+          order: q.order || 0,
+          options: Array.isArray(q.options) ? q.options : [],
+          next: q.next
+        })) : []
       };
 
       setCategoryData(questionSet);
@@ -498,6 +508,7 @@ const EstimatePage = () => {
     }
     setSelectedCategory(null);
     setCategoryData(null);
+    setStage('category');
   };
 
   const handleAdditionalCategorySelect = (categoryId: string) => {
@@ -608,30 +619,6 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'questions' && questions.length > 0 && currentQuestionIndex < questions.length && (
-          <QuestionCard
-            question={questions[currentQuestionIndex]}
-            selectedOptions={
-              Array.isArray(answers[currentQuestionIndex])
-                ? answers[currentQuestionIndex] as string[]
-                : answers[currentQuestionIndex] 
-                  ? [answers[currentQuestionIndex] as string] 
-                  : []
-            }
-            onSelect={handleAnswerSubmit}
-            onNext={() => {
-              if (currentQuestionIndex < questions.length - 1) {
-                setCurrentQuestionIndex(prev => prev + 1);
-              } else {
-                generateEstimate();
-              }
-            }}
-            isLastQuestion={currentQuestionIndex === questions.length - 1}
-            currentStage={currentQuestionIndex + 1}
-            totalStages={totalStages}
-          />
-        )}
-
         {stage === 'category' && (
           <div className="animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
@@ -666,11 +653,15 @@ const EstimatePage = () => {
           />
         )}
 
-        {selectedCategory && categoryData && (
-          <QuestionManager
-            questionSets={[categoryData]}
-            onComplete={handleQuestionComplete}
-          />
+        {stage === 'questions' && (
+          matchedQuestionSets.length > 0 ? (
+            <QuestionManager
+              questionSets={matchedQuestionSets}
+              onComplete={handleQuestionComplete}
+            />
+          ) : (
+            <LoadingScreen message="Loading your questions..." />
+          )
         )}
       </div>
     </div>
