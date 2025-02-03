@@ -523,17 +523,31 @@ const EstimatePage = () => {
     loadQuestionSet(categoryId);
   };
 
-  const handleQuestionComplete = (answers: Record<string, Record<string, string[]>>) => {
-    if (selectedCategory) {
-      setCompletedCategories(prev => [...prev, selectedCategory]);
-    }
-    setSelectedCategory(null);
-    setCategoryData(null);
-    setStage('category');
-  };
+  const handleQuestionComplete = async (answers: Record<string, Record<string, string[]>>) => {
+    setIsProcessing(true);
+    try {
+      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          projectDescription, 
+          imageUrl: uploadedImageUrl, 
+          answers,
+          contractorId
+        }
+      });
 
-  const handleAdditionalCategorySelect = (categoryId: string) => {
-    setSelectedCategory(categoryId);
+      if (error) throw error;
+      setEstimate(estimateData);
+      setStage('contact');
+    } catch (error) {
+      console.error('Error generating estimate:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate estimate. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (isProcessing) {
