@@ -48,10 +48,16 @@ serve(async (req) => {
 
     const systemPrompt = `You are an AI assistant that generates detailed cost estimates for construction projects.
     Generate accurate line items grouped by category based on the customer's answers.
-    Provide detailed descriptions for each line item.
+    Each estimate must include:
+    1. A title summarizing the project
+    2. An overview description of the work
+    3. Multiple groups of related items
+    4. Detailed line items with specific quantities and measurements
     
     Return a JSON object with this exact structure:
     {
+      "title": "string",
+      "description": "string",
       "groups": [
         {
           "name": "string",
@@ -94,7 +100,8 @@ serve(async (req) => {
             - Tax Rate: ${contractor?.contractor_settings?.tax_rate || 8.5}
             
             Generate at least 3 groups with multiple line items in each group.
-            Be specific with quantities and measurements.`
+            Be specific with quantities and measurements.
+            Include a clear title and overview description of the project.`
           },
           imageUrl ? {
             type: "image_url",
@@ -150,7 +157,8 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error generating estimate:', error);
     return new Response(JSON.stringify({
-      error: error.message,
+      title: "Basic Project Estimate",
+      description: "Initial assessment and basic cost estimate for your project",
       groups: [
         {
           name: "Labor",
