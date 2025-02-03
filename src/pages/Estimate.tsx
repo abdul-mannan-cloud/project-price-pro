@@ -18,7 +18,7 @@ import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/quest
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
 const EstimatePage = () => {
-  const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
+  const [stage, setStage] = useState<'verification' | 'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('verification');
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -41,7 +41,9 @@ const EstimatePage = () => {
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
 
   const handleCaptchaVerify = () => {
+    console.log("Captcha verified successfully");
     setIsCaptchaVerified(true);
+    setStage('photo');
   };
 
   // Fetch contractor data using react-query.
@@ -538,6 +540,8 @@ const EstimatePage = () => {
   // Calculate the progress bar value.
   const getProgressValue = () => {
     switch (stage) {
+      case 'verification':
+        return 0;
       case 'photo':
         return 15;
       case 'description':
@@ -586,7 +590,7 @@ const EstimatePage = () => {
         <div className="max-w-4xl mx-auto px-4 py-12">
           <div className="card p-8 animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Verifying...</h2>
-            <p className="text-muted-foreground">Please wait while we verify your session.</p>
+            <p className="text-muted-foreground mb-8">Please wait while we verify your session.</p>
             <CaptchaVerification onVerify={handleCaptchaVerify} />
           </div>
         </div>

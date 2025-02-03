@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import type { TurnstileProps } from "@marsidev/react-turnstile";
 import { useToast } from "@/hooks/use-toast";
@@ -28,18 +28,14 @@ export const CaptchaVerification = ({ onVerify }: CaptchaVerificationProps) => {
     });
   };
 
-  if (isVerified) {
-    return null;
-  }
-
   return (
     <Turnstile
       siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || ""}
       onSuccess={handleVerify}
       onError={handleError}
       options={{
-        theme: "invisible" as TurnstileProps["options"]["theme"],
-        size: "invisible",
+        theme: "light" as TurnstileProps["options"]["theme"],
+        size: "normal",
         appearance: "always",
         retry: "auto",
       }}
