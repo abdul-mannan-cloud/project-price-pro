@@ -481,14 +481,26 @@ const EstimatePage = () => {
 
   // Calculate the progress bar value.
   const getProgressValue = () => {
-    if (stage === 'photo') return 20;
-    if (stage === 'description') return 40;
-    if (stage === 'questions') {
-      return 40 + ((currentQuestionIndex + 1) / questions.length) * 30;
+    switch (stage) {
+      case 'photo':
+        return 15;
+      case 'description':
+        return 30;
+      case 'category':
+        return 45;
+      case 'questions':
+        // Calculate progress based on current question index and total questions
+        const baseProgress = 45; // Starting progress for questions stage
+        const maxQuestionProgress = 35; // Maximum additional progress for questions
+        if (questions.length === 0) return baseProgress;
+        return baseProgress + (currentQuestionIndex / questions.length) * maxQuestionProgress;
+      case 'contact':
+        return 90;
+      case 'estimate':
+        return 100;
+      default:
+        return 0;
     }
-    if (stage === 'contact') return 90;
-    if (stage === 'estimate') return 100;
-    return 0;
   };
 
   const handleCategorySelect = (categoryId: string) => {
@@ -527,7 +539,10 @@ const EstimatePage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Progress value={getProgressValue()} className="h-8 rounded-none" />
+      <Progress 
+        value={getProgressValue()} 
+        className="h-8 rounded-none transition-all duration-500 ease-in-out"
+      />
       
       {contractor && (
         <button 
