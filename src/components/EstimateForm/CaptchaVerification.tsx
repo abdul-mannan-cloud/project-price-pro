@@ -23,7 +23,7 @@ export const CaptchaVerification = ({ onVerify }: CaptchaVerificationProps) => {
       siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || ""}
       onSuccess={handleVerify}
       options={{
-        theme: "invisible" as const,
+        theme: "invisible" as TurnstileProps["options"]["theme"],
         size: "invisible",
         appearance: "always",
       }}
