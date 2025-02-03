@@ -9,10 +9,6 @@ interface RequestBody {
   contractorId?: string;
   leadId?: string;
   category?: string;
-  userLocation?: {
-    city: string;
-    state: string;
-  };
 }
 
 interface LocationData {
@@ -37,15 +33,21 @@ async function getLocationData(ip: string): Promise<LocationData | null> {
 function adjustPriceForLocation(basePrice: number, location: LocationData | null, settings: any): number {
   if (!location) return basePrice;
 
-  // Default regional price adjustments (can be expanded)
+  // Regional price adjustments based on state
   const regionalFactors: Record<string, number> = {
     'CA': 1.4,  // California
     'NY': 1.35, // New York
     'TX': 0.9,  // Texas
-    // Add more states as needed
+    'FL': 1.1,  // Florida
+    'IL': 1.2,  // Illinois
+    'WA': 1.25, // Washington
+    'MA': 1.3,  // Massachusetts
+    'OR': 1.2,  // Oregon
+    'CO': 1.15, // Colorado
+    'AZ': 1.0,  // Arizona
   };
 
-  // Get regional adjustment factor
+  // Get regional adjustment factor, default to 1 if state not found
   const regionFactor = regionalFactors[location.region] || 1;
 
   // Apply contractor's custom pricing if available
@@ -57,67 +59,70 @@ function adjustPriceForLocation(basePrice: number, location: LocationData | null
   return basePrice * regionFactor;
 }
 
-function generateLineItems(answers: Record<string, any>, location: LocationData | null, settings: any) {
+function generateEstimateGroups(answers: Record<string, any>, location: LocationData | null, settings: any) {
   const groups: any[] = [];
   let totalCost = 0;
 
   // Process each category of answers
   Object.entries(answers).forEach(([category, categoryAnswers]) => {
-    const laborGroup = {
-      name: "Labor",
-      description: "Professional labor and service costs",
+    const categoryGroup = {
+      name: category.charAt(0).toUpperCase() + category.slice(1),
+      description: `Detailed breakdown for ${category} work`,
       items: [] as any[]
     };
 
-    const materialsGroup = {
-      name: "Materials",
-      description: "Required materials and supplies",
-      items: [] as any[]
-    };
-
-    // Process each question's answer
+    // Process each question's answer within the category
     Object.entries(categoryAnswers).forEach(([_, answer]: [string, any]) => {
       const { question, answers: selectedAnswers, options } = answer;
 
-      // Generate labor items based on the answer
-      const laborItem = {
-        title: `Professional ${category} Service`,
-        description: `Expert labor for: ${question}`,
-        quantity: 1,
-        unit: "hours",
-        unitAmount: adjustPriceForLocation(125, location, settings),
-        totalPrice: 0
-      };
-      laborItem.totalPrice = laborItem.quantity * laborItem.unitAmount;
-      laborGroup.items.push(laborItem);
-
-      // Generate materials items based on selected answers
+      // Generate items based on selected answers
       selectedAnswers.forEach((selected: string) => {
         const option = options.find((opt: any) => opt.value === selected);
         if (option) {
-          const materialItem = {
-            title: option.label,
-            description: `Materials for: ${option.label}`,
+          // Generate labor item
+          const laborCost = adjustPriceForLocation(125, location, settings);
+          const laborItem = {
+            title: `Professional Installation - ${option.label}`,
+            description: `Expert labor for ${option.label} installation and setup`,
             quantity: 1,
-            unit: "unit",
-            unitAmount: adjustPriceForLocation(250, location, settings),
-            totalPrice: 0
+            unitAmount: laborCost,
+            totalPrice: laborCost
           };
-          materialItem.totalPrice = materialItem.quantity * materialItem.unitAmount;
-          materialsGroup.items.push(materialItem);
+          categoryGroup.items.push(laborItem);
+
+          // Generate materials item
+          const materialsCost = adjustPriceForLocation(250, location, settings);
+          const materialsItem = {
+            title: `Materials - ${option.label}`,
+            description: `High-quality materials for ${option.label}`,
+            quantity: 1,
+            unitAmount: materialsCost,
+            totalPrice: materialsCost
+          };
+          categoryGroup.items.push(materialsItem);
+
+          // Add any additional items based on specific options
+          if (option.value.includes('custom')) {
+            const customWorkCost = adjustPriceForLocation(200, location, settings);
+            const customItem = {
+              title: `Custom Work - ${option.label}`,
+              description: `Specialized custom work for ${option.label}`,
+              quantity: 1,
+              unitAmount: customWorkCost,
+              totalPrice: customWorkCost
+            };
+            categoryGroup.items.push(customItem);
+          }
         }
       });
     });
 
-    if (laborGroup.items.length > 0) groups.push(laborGroup);
-    if (materialsGroup.items.length > 0) groups.push(materialsGroup);
-
-    // Calculate totals
-    groups.forEach(group => {
-      group.items.forEach((item: any) => {
+    if (categoryGroup.items.length > 0) {
+      groups.push(categoryGroup);
+      categoryGroup.items.forEach(item => {
         totalCost += item.totalPrice;
       });
-    });
+    }
   });
 
   return { groups, totalCost };
@@ -129,8 +134,7 @@ serve(async (req) => {
   }
 
   try {
-    const { projectDescription, answers, contractorId, category } = await req.json() as RequestBody
-
+    const { projectDescription, answers, contractorId, category } = await req.json() as RequestBody;
     console.log('Generating estimate for:', { projectDescription, category, contractorId });
 
     // Get client IP and location data
@@ -180,10 +184,10 @@ serve(async (req) => {
     // Create a detailed project overview
     const projectOverview = `Detailed estimate for ${projectDescription}. 
     ${locationData ? `Location: ${locationData.city}, ${locationData.region}` : ''}
-    This estimate includes both labor and materials needed to complete the project according to the specifications provided.`;
+    This estimate includes all necessary labor and materials to complete the project according to the specifications provided.`;
 
     // Generate detailed line items based on answers
-    const { groups, totalCost } = generateLineItems(answers, locationData, settings);
+    const { groups, totalCost } = generateEstimateGroups(answers, locationData, settings);
 
     // Apply contractor settings if available
     const markupPercentage = settings?.markup_percentage || 20;
