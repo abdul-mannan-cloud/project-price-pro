@@ -32,21 +32,31 @@ async function getLocationData(ip: string): Promise<LocationData | null> {
 
 function generateProjectSummary(projectDescription: string, answers: Record<string, any>, category?: string): string {
   const categoryText = category ? `${category} project` : 'home improvement project';
-  const scope = Object.values(answers).reduce((acc: string[], categoryAnswers: any) => {
-    Object.values(categoryAnswers).forEach((answer: any) => {
+  const details = Object.entries(answers).map(([category, categoryAnswers]) => {
+    const selections = Object.values(categoryAnswers).map((answer: any) => {
       if (answer.answers && answer.answers.length > 0) {
-        acc.push(answer.answers.join(', '));
+        const selectedOptions = answer.options
+          .filter((opt: any) => answer.answers.includes(opt.value))
+          .map((opt: any) => opt.label);
+        return `${answer.question}: ${selectedOptions.join(', ')}`;
       }
-    });
-    return acc;
-  }, []).join('; ');
+      return null;
+    }).filter(Boolean);
+    return `${category}: ${selections.join('; ')}`;
+  }).join('. ');
 
-  return `This ${categoryText} includes ${scope}. ${projectDescription}`;
+  return `This ${categoryText} involves ${details}. ${projectDescription}`;
 }
 
 function adjustPriceForLocation(basePrice: number, location: LocationData | null, settings: any): number {
   if (!location) return basePrice;
 
+  // Use contractor settings if available
+  if (settings?.regional_pricing?.[location.region]) {
+    return basePrice * settings.regional_pricing[location.region];
+  }
+
+  // Default regional factors
   const regionalFactors: Record<string, number> = {
     'CA': 1.4,  // California
     'NY': 1.35, // New York
@@ -60,10 +70,57 @@ function adjustPriceForLocation(basePrice: number, location: LocationData | null
     'AZ': 1.0,  // Arizona
   };
 
-  const regionFactor = regionalFactors[location.region] || 1;
-  const contractorPricing = settings?.regional_pricing?.[location.region];
-  
-  return contractorPricing ? basePrice * contractorPricing : basePrice * regionFactor;
+  return basePrice * (regionalFactors[location.region] || 1);
+}
+
+function generateLineItems(answer: any, location: LocationData | null, settings: any) {
+  const items: any[] = [];
+  const { question, answers: selectedAnswers, options } = answer;
+
+  selectedAnswers.forEach((selected: string) => {
+    const option = options.find((opt: any) => opt.value === selected);
+    if (!option) return;
+
+    // Labor costs
+    const baseLaborCost = 125;
+    const laborCost = adjustPriceForLocation(baseLaborCost, location, settings);
+    items.push({
+      title: `Professional Installation - ${option.label}`,
+      description: `Expert labor for ${option.label} installation and setup`,
+      quantity: 1,
+      unit: 'hours',
+      unitAmount: laborCost,
+      totalPrice: laborCost
+    });
+
+    // Materials costs
+    const baseMaterialCost = 250;
+    const materialsCost = adjustPriceForLocation(baseMaterialCost, location, settings);
+    items.push({
+      title: `Materials - ${option.label}`,
+      description: `High-quality materials for ${option.label}`,
+      quantity: 1,
+      unit: 'set',
+      unitAmount: materialsCost,
+      totalPrice: materialsCost
+    });
+
+    // Additional costs for custom work
+    if (option.value.includes('custom')) {
+      const baseCustomCost = 200;
+      const customWorkCost = adjustPriceForLocation(baseCustomCost, location, settings);
+      items.push({
+        title: `Custom Work - ${option.label}`,
+        description: `Specialized custom work for ${option.label}`,
+        quantity: 1,
+        unit: 'service',
+        unitAmount: customWorkCost,
+        totalPrice: customWorkCost
+      });
+    }
+  });
+
+  return items;
 }
 
 function generateEstimateGroups(answers: Record<string, any>, location: LocationData | null, settings: any) {
@@ -71,57 +128,34 @@ function generateEstimateGroups(answers: Record<string, any>, location: Location
   let totalCost = 0;
 
   Object.entries(answers).forEach(([category, categoryAnswers]) => {
+    const subgroups: Record<string, any[]> = {};
+    
+    Object.entries(categoryAnswers).forEach(([_, answer]: [string, any]) => {
+      const items = generateLineItems(answer, location, settings);
+      const subgroupKey = answer.question;
+      
+      if (!subgroups[subgroupKey]) {
+        subgroups[subgroupKey] = [];
+      }
+      subgroups[subgroupKey].push(...items);
+    });
+
+    // Create main category group with subgroups
     const categoryGroup = {
       name: category.charAt(0).toUpperCase() + category.slice(1),
       description: `Detailed breakdown for ${category} work`,
-      items: [] as any[]
+      subgroups: Object.entries(subgroups).map(([name, items]) => ({
+        name,
+        items
+      }))
     };
 
-    Object.entries(categoryAnswers).forEach(([_, answer]: [string, any]) => {
-      const { question, answers: selectedAnswers, options } = answer;
-
-      selectedAnswers.forEach((selected: string) => {
-        const option = options.find((opt: any) => opt.value === selected);
-        if (option) {
-          const laborCost = adjustPriceForLocation(125, location, settings);
-          const laborItem = {
-            title: `Professional Installation - ${option.label}`,
-            description: `Expert labor for ${option.label} installation and setup`,
-            quantity: 1,
-            unitAmount: laborCost,
-            totalPrice: laborCost
-          };
-          categoryGroup.items.push(laborItem);
-
-          const materialsCost = adjustPriceForLocation(250, location, settings);
-          const materialsItem = {
-            title: `Materials - ${option.label}`,
-            description: `High-quality materials for ${option.label}`,
-            quantity: 1,
-            unitAmount: materialsCost,
-            totalPrice: materialsCost
-          };
-          categoryGroup.items.push(materialsItem);
-
-          if (option.value.includes('custom')) {
-            const customWorkCost = adjustPriceForLocation(200, location, settings);
-            const customItem = {
-              title: `Custom Work - ${option.label}`,
-              description: `Specialized custom work for ${option.label}`,
-              quantity: 1,
-              unitAmount: customWorkCost,
-              totalPrice: customWorkCost
-            };
-            categoryGroup.items.push(customItem);
-          }
-        }
-      });
-    });
-
-    if (categoryGroup.items.length > 0) {
+    if (Object.keys(subgroups).length > 0) {
       groups.push(categoryGroup);
-      categoryGroup.items.forEach(item => {
-        totalCost += item.totalPrice;
+      Object.values(subgroups).forEach(items => {
+        items.forEach(item => {
+          totalCost += item.totalPrice;
+        });
       });
     }
   });
@@ -142,37 +176,27 @@ serve(async (req) => {
     const locationData = await getLocationData(clientIP);
     console.log('Location data:', locationData);
 
-    let contractor = null;
     let settings = null;
-
     if (contractorId) {
-      try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-        
-        if (!supabaseUrl || !supabaseKey) {
-          throw new Error('Missing Supabase environment variables')
-        }
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Missing Supabase environment variables');
+      }
 
-        const supabase = createClient(supabaseUrl, supabaseKey)
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const { data: contractor } = await supabase
+        .from('contractors')
+        .select(`
+          *,
+          contractor_settings(*)
+        `)
+        .eq('id', contractorId)
+        .single();
 
-        const { data, error } = await supabase
-          .from('contractors')
-          .select(`
-            *,
-            contractor_settings(*)
-          `)
-          .eq('id', contractorId)
-          .single()
-
-        if (error) {
-          console.error('Error fetching contractor:', error)
-        } else {
-          contractor = data
-          settings = data.contractor_settings
-        }
-      } catch (error) {
-        console.error('Error in contractor fetch:', error)
+      if (contractor) {
+        settings = contractor.contractor_settings;
       }
     }
 
@@ -198,8 +222,7 @@ serve(async (req) => {
         "Final costs may vary based on site conditions and specific requirements.",
         "Prices are adjusted based on your location and market rates.",
         "Please contact us for a detailed on-site assessment."
-      ],
-      contractor
+      ]
     };
 
     return new Response(
@@ -210,9 +233,9 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         } 
       }
-    )
+    );
   } catch (error) {
-    console.error('Error generating estimate:', error)
+    console.error('Error generating estimate:', error);
     
     return new Response(
       JSON.stringify({ 
@@ -226,6 +249,6 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         } 
       }
-    )
+    );
   }
-})
+});
