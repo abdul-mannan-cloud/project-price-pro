@@ -489,11 +489,10 @@ const EstimatePage = () => {
       case 'category':
         return 45;
       case 'questions':
-        // Calculate progress based on current question index and total questions
-        const baseProgress = 45; // Starting progress for questions stage
-        const maxQuestionProgress = 35; // Maximum additional progress for questions
-        if (questions.length === 0) return baseProgress;
-        return baseProgress + (currentQuestionIndex / questions.length) * maxQuestionProgress;
+        // Use a fixed increment per question instead of calculating based on total length
+        const baseProgress = 45;
+        const progressPerQuestion = 2; // Each question adds 2% to progress
+        return Math.min(85, baseProgress + (currentQuestionIndex * progressPerQuestion));
       case 'contact':
         return 90;
       case 'estimate':
