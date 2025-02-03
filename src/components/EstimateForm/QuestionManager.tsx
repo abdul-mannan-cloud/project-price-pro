@@ -3,7 +3,6 @@ import { QuestionCard } from "./QuestionCard";
 import { LoadingScreen } from "./LoadingScreen";
 import { Question, CategoryQuestions } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
-import { Progress } from "@/components/ui/progress";
 
 interface QuestionManagerProps {
   questionSets: CategoryQuestions[];
@@ -20,15 +19,6 @@ export const QuestionManager = ({
   const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [queuedNextQuestions, setQueuedNextQuestions] = useState<string[]>([]);
-  const [totalQuestions, setTotalQuestions] = useState(0);
-  const [answeredQuestions, setAnsweredQuestions] = useState(0);
-
-  useEffect(() => {
-    // Calculate total questions across all sets
-    const total = questionSets.reduce((acc, set) => 
-      acc + (set.questions?.length || 0), 0);
-    setTotalQuestions(total);
-  }, [questionSets]);
 
   useEffect(() => {
     loadCurrentQuestionSet();
@@ -117,9 +107,6 @@ export const QuestionManager = ({
       }
     }));
 
-    // Update progress
-    setAnsweredQuestions(prev => prev + 1);
-
     if (currentQuestion.type !== 'multiple_choice') {
       const nextQuestionId = findNextQuestionId(currentQuestion, selectedValues[0]);
       console.log(`handleAnswer: For question ${questionId}, selected value ${selectedValues[0]}, nextQuestionId: ${nextQuestionId}`);
@@ -193,31 +180,17 @@ export const QuestionManager = ({
 
   const currentSet = questionSets[currentSetIndex];
   const currentSetAnswers = answers[currentSet.category] || {};
-  const progress = (answeredQuestions / totalQuestions) * 100;
 
   return (
-    <div className="space-y-6">
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-sm border-b">
-        <div className="container max-w-4xl mx-auto py-4">
-          <Progress value={progress} className="h-2" />
-          <p className="text-sm text-muted-foreground mt-2">
-            Question {answeredQuestions + 1} of {totalQuestions}
-          </p>
-        </div>
-      </div>
-
-      <div className="pt-20">
-        <QuestionCard
-          question={currentQuestion}
-          selectedOptions={currentSetAnswers[currentQuestion.id] || []}
-          onSelect={handleAnswer}
-          onNext={currentQuestion.type === 'multiple_choice' ? handleMultipleChoiceNext : undefined}
-          isLastQuestion={currentSetIndex === questionSets.length - 1}
-          currentStage={currentSetIndex + 1}
-          totalStages={questionSets.length}
-        />
-      </div>
-    </div>
+    <QuestionCard
+      question={currentQuestion}
+      selectedOptions={currentSetAnswers[currentQuestion.id] || []}
+      onSelect={handleAnswer}
+      onNext={currentQuestion.type === 'multiple_choice' ? handleMultipleChoiceNext : undefined}
+      isLastQuestion={currentSetIndex === questionSets.length - 1}
+      currentStage={currentSetIndex + 1}
+      totalStages={questionSets.length}
+    />
   );
 };
 
