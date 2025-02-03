@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
 import { LoadingScreen } from "./LoadingScreen";
-import { Question, CategoryQuestions } from "@/types/estimate";
+import { Question, CategoryQuestions, AnswersState, QuestionAnswer } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface QuestionManagerProps {
   questionSets: CategoryQuestions[];
-  onComplete: (answers: Record<string, Record<string, string[]>>) => void;
+  onComplete: (answers: AnswersState) => void;
 }
 
 export const QuestionManager = ({
@@ -16,7 +16,7 @@ export const QuestionManager = ({
 }: QuestionManagerProps) => {
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<Record<string, Record<string, string[]>>>({});
+  const [answers, setAnswers] = useState<AnswersState>({});
   const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [queuedNextQuestions, setQueuedNextQuestions] = useState<string[]>([]);
@@ -101,23 +101,26 @@ export const QuestionManager = ({
 
     const currentSet = questionSets[currentSetIndex];
     
-    // Store both question and answer data
+    // Create the answer object with both question and answer data
+    const questionAnswer: QuestionAnswer = {
+      question: currentQuestion.question,
+      type: currentQuestion.type,
+      answers: selectedValues,
+      options: currentQuestion.options
+        .filter(opt => selectedValues.includes(opt.value))
+        .map(opt => ({
+          label: opt.label,
+          value: opt.value,
+          next: opt.next
+        }))
+    };
+    
+    // Update the answers state with the new format
     setAnswers(prev => ({
       ...prev,
       [currentSet.category]: {
         ...prev[currentSet.category],
-        [questionId]: {
-          question: currentQuestion.question,
-          type: currentQuestion.type,
-          answers: selectedValues,
-          options: currentQuestion.options
-            .filter(opt => selectedValues.includes(opt.value))
-            .map(opt => ({
-              label: opt.label,
-              value: opt.value,
-              next: opt.next
-            }))
-        }
+        [questionId]: questionAnswer
       }
     }));
 
@@ -170,7 +173,7 @@ export const QuestionManager = ({
 
     const currentSet = questionSets[currentSetIndex];
     const currentSetAnswers = answers[currentSet.category] || {};
-    const selectedValues = currentSetAnswers[currentQuestion.id] || [];
+    const selectedValues = currentSetAnswers[currentQuestion.id]?.answers || [];
     if (selectedValues.length === 0) return;
 
     let nextIDs: string[] = [];

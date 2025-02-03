@@ -14,6 +14,25 @@ export interface Question {
   next?: string;
 }
 
+export interface QuestionAnswer {
+  question: string;
+  type: 'yes_no' | 'single_choice' | 'multiple_choice';
+  answers: string[];
+  options: {
+    label: string;
+    value: string;
+    next?: string;
+  }[];
+}
+
+export interface CategoryAnswers {
+  [questionId: string]: QuestionAnswer;
+}
+
+export interface AnswersState {
+  [category: string]: CategoryAnswers;
+}
+
 export interface CategoryQuestions {
   category: string;
   keywords: string[];
@@ -31,7 +50,7 @@ export interface Category {
 
 export interface EstimateFormState {
   currentQuestionId: string | null;
-  answers: Record<string, string[]>;
+  answers: AnswersState;
   isComplete: boolean;
 }
 
