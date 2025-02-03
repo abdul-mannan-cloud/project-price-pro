@@ -29,16 +29,18 @@ export const CaptchaVerification = ({ onVerify }: CaptchaVerificationProps) => {
   };
 
   return (
-    <Turnstile
-      siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || ""}
-      onSuccess={handleVerify}
-      onError={handleError}
-      options={{
-        theme: "light" as TurnstileProps["options"]["theme"],
-        size: "normal",
-        appearance: "always",
-        retry: "auto",
-      }}
-    />
+    <div className="flex justify-center items-center">
+      <Turnstile
+        siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || ""}
+        onSuccess={handleVerify}
+        onError={handleError}
+        options={{
+          theme: "light",
+          size: "normal",
+          appearance: "always",
+          retry: "auto",
+        }}
+      />
+    </div>
   );
 };

@@ -589,8 +589,8 @@ const EstimatePage = () => {
         <Progress value={0} className="h-8 rounded-none" />
         <div className="max-w-4xl mx-auto px-4 py-12">
           <div className="card p-8 animate-fadeIn">
-            <h2 className="text-2xl font-semibold mb-6">Verifying...</h2>
-            <p className="text-muted-foreground mb-8">Please wait while we verify your session.</p>
+            <h2 className="text-2xl font-semibold mb-6">Please Verify</h2>
+            <p className="text-muted-foreground mb-8">Complete the verification below to continue.</p>
             <CaptchaVerification onVerify={handleCaptchaVerify} />
           </div>
         </div>
