@@ -31,6 +31,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
 
     try {
       if (!leadId || !contractorId) {
+        console.error('Missing IDs:', { leadId, contractorId });
         throw new Error("Missing required IDs");
       }
 
@@ -42,8 +43,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
           user_email: formData.email,
           user_phone: formData.phone,
           project_address: formData.address,
-          status: 'new',
-          contractor_id: contractorId
+          status: 'new'
         })
         .eq('id', leadId);
 
@@ -69,64 +69,74 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/30">
       <div className="w-full max-w-md mx-auto bg-background rounded-xl p-6 shadow-lg animate-fadeIn">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold mb-2">Almost There!</h2>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="text-center mb-8 pt-4">
+            <h2 className="text-2xl font-semibold mb-3">Almost There!</h2>
             <p className="text-muted-foreground">
               Enter your contact details below to view your personalized project estimate. 
               We've analyzed your requirements and prepared a detailed breakdown just for you.
             </p>
           </div>
           
-          <div className="form-group">
-            <Input
-              placeholder="Full Name"
-              value={formData.fullName}
-              onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-              required
-              className="form-input"
-            />
-            <label className="form-label">Full Name</label>
-          </div>
-          
-          <div className="form-group">
-            <Input
-              type="email"
-              placeholder="Email"
-              value={formData.email}
-              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              required
-              className="form-input"
-            />
-            <label className="form-label">Email</label>
-          </div>
-          
-          <div className="form-group">
-            <Input
-              type="tel"
-              placeholder="Phone Number"
-              value={formData.phone}
-              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-              required
-              className="form-input"
-            />
-            <label className="form-label">Phone Number</label>
-          </div>
-          
-          <div className="form-group">
-            <Input
-              placeholder="Project Address"
-              value={formData.address}
-              onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-              required
-              className="form-input"
-            />
-            <label className="form-label">Project Address</label>
+          <div className="space-y-5">
+            <div className="form-group relative">
+              <Input
+                placeholder="Full Name"
+                value={formData.fullName}
+                onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                required
+                className="h-12 px-4"
+              />
+              <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
+                Full Name
+              </label>
+            </div>
+            
+            <div className="form-group relative">
+              <Input
+                type="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                required
+                className="h-12 px-4"
+              />
+              <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
+                Email
+              </label>
+            </div>
+            
+            <div className="form-group relative">
+              <Input
+                type="tel"
+                placeholder="Phone Number"
+                value={formData.phone}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                required
+                className="h-12 px-4"
+              />
+              <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
+                Phone Number
+              </label>
+            </div>
+            
+            <div className="form-group relative">
+              <Input
+                placeholder="Project Address"
+                value={formData.address}
+                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                required
+                className="h-12 px-4"
+              />
+              <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
+                Project Address
+              </label>
+            </div>
           </div>
           
           <Button 
             type="submit" 
-            className="w-full" 
+            className="w-full mt-6" 
             disabled={isSubmitting}
           >
             {isSubmitting ? "Saving..." : "View Your Custom Estimate"}
