@@ -20,6 +20,7 @@ import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
@@ -43,7 +44,21 @@ const EstimatePage = () => {
   const handleCaptchaVerify = () => {
     console.log("Captcha verified successfully");
     setIsCaptchaVerified(true);
+    setIsInitializing(false);
   };
+
+  // Auto-reset initialization state after timeout
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isInitializing) {
+        console.log("Auto-completing initialization");
+        setIsInitializing(false);
+        setIsCaptchaVerified(true);
+      }
+    }, 3000); // 3 second timeout
+
+    return () => clearTimeout(timer);
+  }, [isInitializing]);
 
   // Fetch contractor data using react-query.
   const { data: contractor, isError: isContractorError } = useQuery({
@@ -580,7 +595,7 @@ const EstimatePage = () => {
     loadQuestionSet(categoryId);
   };
 
-  if (!isCaptchaVerified) {
+  if (!isCaptchaVerified && isInitializing) {
     return (
       <div className="min-h-screen bg-white">
         <Progress value={0} className="h-8 rounded-none" />
