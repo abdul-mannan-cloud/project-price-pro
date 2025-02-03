@@ -49,13 +49,27 @@ const EstimatePage = () => {
 
   // Auto-reset initialization state after timeout
   useEffect(() => {
+    // Check for existing verification first
+    const storedVerification = localStorage.getItem('estimate_verification_status');
+    if (storedVerification) {
+      const { timestamp } = JSON.parse(storedVerification);
+      const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000;
+      
+      if (!isExpired) {
+        console.log("Using existing verification, skipping initialization");
+        setIsCaptchaVerified(true);
+        setIsInitializing(false);
+        return;
+      }
+    }
+
     const timer = setTimeout(() => {
       if (isInitializing) {
         console.log("Auto-completing initialization");
         setIsInitializing(false);
         setIsCaptchaVerified(true);
       }
-    }, 3000); // 3 second timeout
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, [isInitializing]);
