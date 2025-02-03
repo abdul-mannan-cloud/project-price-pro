@@ -12,15 +12,12 @@ import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
-import { CaptchaVerification } from "@/components/EstimateForm/CaptchaVerification";
 import { Question, Category, CategoryQuestions, AnswersState } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
-  const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
@@ -41,28 +38,6 @@ const EstimatePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
 
-  const handleCaptchaVerify = () => {
-    console.log("Captcha verification completed");
-    setIsCaptchaVerified(true);
-    setIsInitializing(false);
-  };
-
-  // Check verification status on mount
-  useEffect(() => {
-    const storedVerification = localStorage.getItem('estimate_verification_status');
-    if (storedVerification) {
-      const { timestamp } = JSON.parse(storedVerification);
-      const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000;
-      
-      if (!isExpired) {
-        console.log("Using existing verification, skipping initialization");
-        setIsCaptchaVerified(true);
-        setIsInitializing(false);
-      }
-    }
-  }, []);
-
-  // Fetch contractor data using react-query.
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
@@ -95,25 +70,6 @@ const EstimatePage = () => {
       });
     }
   }, [isContractorError, toast]);
-
-  const { data: optionsData, isLoading: isLoadingOptions } = useQuery({
-    queryKey: ["options", selectedCategory],
-    queryFn: async () => {
-      if (!selectedCategory) return null;
-      const { data, error } = await supabase
-        .from('Options')
-        .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .single();
-      if (error) throw error;
-      const categoryData = data[selectedCategory];
-      if (!categoryData) {
-        throw new Error(`No questions found for category: ${selectedCategory}`);
-      }
-      return categoryData;
-    },
-    enabled: !!selectedCategory
-  });
 
   useEffect(() => {
     loadCategories();
@@ -596,18 +552,6 @@ const EstimatePage = () => {
     setSelectedCategory(categoryId);
     loadQuestionSet(categoryId);
   };
-
-  if (!isCaptchaVerified && isInitializing) {
-    return (
-      <div className="min-h-screen bg-white">
-        <Progress value={0} className="h-8 rounded-none" />
-        <div className="max-w-4xl mx-auto px-4 py-12">
-          <LoadingScreen message="Initializing..." />
-          <CaptchaVerification onVerify={handleCaptchaVerify} />
-        </div>
-      </div>
-    );
-  }
 
   if (isProcessing) {
     return (
