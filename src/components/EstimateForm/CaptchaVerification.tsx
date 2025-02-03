@@ -42,7 +42,9 @@ export const CaptchaVerification = ({ onVerified }: CaptchaVerificationProps) =>
           siteKey={siteKey}
           onSuccess={handleVerification}
           className="mx-auto"
-          theme="invisible"
+          options={{
+            theme: 'invisible'
+          }}
         />
       </div>
     </div>
