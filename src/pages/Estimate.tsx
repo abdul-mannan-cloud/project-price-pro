@@ -12,14 +12,12 @@ import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
-import { CaptchaVerification } from "@/components/EstimateForm/CaptchaVerification";
 import { Question, Category, CategoryQuestions, AnswersState } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
 const EstimatePage = () => {
-  const [stage, setStage] = useState<'verify' | 'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('verify');
-  const [isVerified, setIsVerified] = useState(false);
+  const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
@@ -534,8 +532,6 @@ const EstimatePage = () => {
   // Calculate the progress bar value.
   const getProgressValue = () => {
     switch (stage) {
-      case 'verify':
-        return 5;
       case 'photo':
         return 15;
       case 'description':
@@ -577,22 +573,20 @@ const EstimatePage = () => {
     loadQuestionSet(categoryId);
   };
 
-  useEffect(() => {
-    // Check if user is already verified
-    const verified = localStorage.getItem('estimator_verified');
-    if (verified === 'true') {
-      setIsVerified(true);
-      setStage('photo');
-    }
-  }, []);
-
-  const handleVerification = () => {
-    setIsVerified(true);
-    setStage('photo');
-  };
-
   if (isProcessing) {
-    return <LoadingScreen message="Processing your request..." />;
+    return (
+      <LoadingScreen
+        message={
+          stage === 'questions' && currentQuestionIndex === questions.length - 1
+            ? "Generating your estimate..."
+            : "Processing your request..."
+        }
+      />
+    );
+  }
+
+  if (isLoadingOptions && stage === 'questions') {
+    return <LoadingScreen message="Loading questions..." />;
   }
 
   return (
@@ -613,10 +607,6 @@ const EstimatePage = () => {
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-12">
-        {!isVerified && stage === 'verify' && (
-          <CaptchaVerification onVerified={handleVerification} />
-        )}
-
         {stage === 'photo' && (
           <div className="card p-8 animate-fadeIn">
             <div className="flex items-start justify-between mb-6">
