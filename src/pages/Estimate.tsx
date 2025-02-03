@@ -42,14 +42,13 @@ const EstimatePage = () => {
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
 
   const handleCaptchaVerify = () => {
-    console.log("Captcha verified successfully");
+    console.log("Captcha verification completed");
     setIsCaptchaVerified(true);
     setIsInitializing(false);
   };
 
-  // Auto-reset initialization state after timeout
+  // Check verification status on mount
   useEffect(() => {
-    // Check for existing verification first
     const storedVerification = localStorage.getItem('estimate_verification_status');
     if (storedVerification) {
       const { timestamp } = JSON.parse(storedVerification);
@@ -59,20 +58,9 @@ const EstimatePage = () => {
         console.log("Using existing verification, skipping initialization");
         setIsCaptchaVerified(true);
         setIsInitializing(false);
-        return;
       }
     }
-
-    const timer = setTimeout(() => {
-      if (isInitializing) {
-        console.log("Auto-completing initialization");
-        setIsInitializing(false);
-        setIsCaptchaVerified(true);
-      }
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [isInitializing]);
+  }, []);
 
   // Fetch contractor data using react-query.
   const { data: contractor, isError: isContractorError } = useQuery({
