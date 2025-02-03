@@ -82,21 +82,11 @@ export const LeadMagnetPreview = () => {
     }
   };
 
-  const handleOptionSelect = (questionId: string, values: string[]) => {
+  const handleOptionSelect = (value: string) => {
     setSelectedOptions(prev => ({
       ...prev,
-      [currentStep - 1]: values[0]
+      [currentStep - 1]: value
     }));
-
-    // Auto-advance for non-multiple choice questions
-    const currentQuestion = questions[currentStep - 1];
-    if (currentQuestion?.type !== 'multiple_choice') {
-      setTimeout(() => {
-        if (currentStep < questions.length) {
-          setCurrentStep(prev => prev + 1);
-        }
-      }, 300);
-    }
   };
 
   const handleNext = () => {
@@ -166,7 +156,9 @@ export const LeadMagnetPreview = () => {
         <QuestionCard
           question={questions[currentStep - 1]}
           selectedOptions={selectedOptions[currentStep - 1] ? [selectedOptions[currentStep - 1]] : []}
-          onSelect={handleOptionSelect}
+          onSelect={(questionId, value) => handleOptionSelect(value[0])}
+          onNext={handleNext}
+          isLastQuestion={currentStep === questions.length}
           currentStage={currentStep}
           totalStages={questions.length}
         />

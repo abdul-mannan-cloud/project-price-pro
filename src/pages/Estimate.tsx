@@ -13,71 +13,32 @@ import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category, CategoryQuestions } from "@/types/estimate";
+import { findBestMatchingCategory } from "@/utils/categoryMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
-
-type Stage = 'photo' | 'description' | 'category' | 'questions' | 'contact' | 'estimate';
-type CategoryAnswers = Record<string, Record<string, string[]>>;
-
-interface CategoryData {
-  keywords: string[];
-  questions: Question[];
-}
-
-const calculateKitchenEstimate = (answers: Record<string, string[]>) => {
-  let estimate = 0;
-  
-  // Cabinet costs
-  if (answers['cabinets']?.includes('yes')) {
-    if (answers['cabinet_type']?.includes('refinish')) {
-      estimate += 2500; // Base cost for refinishing
-      if (answers['cabinet_size']?.includes('large')) {
-        estimate += 1500;
-      }
-    } else if (answers['cabinet_type']?.includes('new')) {
-      estimate += 5000; // Base cost for new cabinets
-      if (answers['cabinet_size']?.includes('large')) {
-        estimate += 3000;
-      }
-    }
-  }
-
-  // Appliance costs
-  if (answers['appliances']?.includes('yes')) {
-    const applianceCosts: Record<string, number> = {
-      'refrigerator': 2000,
-      'dishwasher': 800,
-      'stove': 1200,
-      'microwave': 400
-    };
-
-    answers['appliance_types']?.forEach(appliance => {
-      estimate += applianceCosts[appliance] || 0;
-    });
-  }
-
-  return estimate;
-};
+import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 
 const EstimatePage = () => {
-  const [stage, setStage] = useState<Stage>('photo');
+  const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<CategoryAnswers>({});
+  const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
   const [estimate, setEstimate] = useState<any>(null);
   const [totalStages, setTotalStages] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryQuestions | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch contractor data using react-query.
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
@@ -115,37 +76,16 @@ const EstimatePage = () => {
     queryKey: ["options", selectedCategory],
     queryFn: async () => {
       if (!selectedCategory) return null;
-      
       const { data, error } = await supabase
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
-        
       if (error) throw error;
-      
-      const rawData = data[selectedCategory];
-      if (!rawData || typeof rawData !== 'object') {
-        throw new Error(`No valid data found for category: ${selectedCategory}`);
+      const categoryData = data[selectedCategory];
+      if (!categoryData) {
+        throw new Error(`No questions found for category: ${selectedCategory}`);
       }
-
-      // First cast to unknown, then to CategoryData to satisfy TypeScript
-      const rawDataObj = rawData as { keywords?: unknown; questions?: unknown };
-      
-      const categoryData = {
-        keywords: Array.isArray(rawDataObj.keywords) ? rawDataObj.keywords : [],
-        questions: Array.isArray(rawDataObj.questions) 
-          ? rawDataObj.questions.map((q: any) => ({
-              id: q.id || `q-${Math.random()}`,
-              question: q.question || '',
-              type: q.type || 'single_choice',
-              order: q.order || 0,
-              options: Array.isArray(q.options) ? q.options : [],
-              branch_id: q.branch_id || 'default'
-            }))
-          : []
-      } as unknown as CategoryData;
-      
       return categoryData;
     },
     enabled: !!selectedCategory
@@ -163,13 +103,24 @@ const EstimatePage = () => {
 
   const loadCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('categories')
+      const { data: optionsData, error: optionsError } = await supabase
+        .from('Options')
         .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      setCategories(data || []);
+        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .single();
+
+      if (optionsError) throw optionsError;
+
+      // Transform Options data into Category format
+      const transformedCategories: Category[] = Object.keys(optionsData)
+        .filter(key => key !== 'Key Options')
+        .map(key => ({
+          id: key,
+          name: key.replace(/_/g, ' '),
+          description: `Get an estimate for your ${key.toLowerCase()} project`
+        }));
+
+      setCategories(transformedCategories);
     } catch (error) {
       console.error('Error loading categories:', error);
       toast({
@@ -182,81 +133,38 @@ const EstimatePage = () => {
     }
   };
 
-  const loadQuestionSet = async (categoryName: string) => {
+  const loadQuestionSet = async (categoryId: string) => {
     try {
-      console.log('Loading questions for category:', categoryName);
-      
       const { data: optionsData, error: optionsError } = await supabase
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
 
-      if (optionsError) {
-        console.error('Error fetching options:', optionsError);
-        throw optionsError;
-      }
+      if (optionsError) throw optionsError;
 
-      if (!optionsData || !optionsData[categoryName]) {
-        console.error('No data found for category:', categoryName);
-        toast({
-          title: "No questions available",
-          description: `No questions found for ${categoryName}`,
-          variant: "destructive",
-        });
-        return;
-      }
+      const categoryData = optionsData[categoryId];
+      if (!categoryData) throw new Error('Category data not found');
 
-      const rawData = optionsData[categoryName] as Record<string, any>;
-      const parsedData: CategoryQuestions = {
-        category: categoryName,
-        keywords: Array.isArray(rawData.keywords) ? rawData.keywords : [],
-        questions: Array.isArray(rawData.questions) 
-          ? rawData.questions.map((q: any, index: number) => ({
-              id: q.id || `q-${index}`,
-              order: q.order || index,
-              question: q.question,
-              type: q.type || 'single_choice',
-              options: Array.isArray(q.options) 
-                ? q.options.map((opt: any) => ({
-                    label: opt.label,
-                    value: opt.value,
-                    image_url: opt.image_url || "",
-                    next: opt.next
-                  }))
-                : [],
-              branch_id: q.branch_id || 'default-branch',
-              keywords: Array.isArray(q.keywords) ? rawData.keywords : [],
-              is_branch_start: q.is_branch_start || false,
-              skip_branch_on_no: q.skip_branch_on_no || false,
-              priority: q.priority || index,
-              next: q.next
-            }))
-          : []
+      // Transform the data into CategoryQuestions format
+      const questionSet: CategoryQuestions = {
+        category: categoryId,
+        keywords: categoryData.keywords || [],
+        questions: categoryData.questions || []
       };
 
-      console.log('Parsed question set:', parsedData);
-      
-      if (!Array.isArray(parsedData.questions) || parsedData.questions.length === 0) {
-        toast({
-          title: "No questions available",
-          description: `No valid questions found for ${categoryName}`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setCategoryData(parsedData);
+      setCategoryData(questionSet);
     } catch (error) {
       console.error('Error loading question set:', error);
       toast({
         title: "Error",
-        description: "Failed to load questions. Please try again.",
+        description: "Failed to load questions",
         variant: "destructive",
       });
     }
   };
 
+  // Handle file upload and image processing.
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -310,97 +218,150 @@ const EstimatePage = () => {
     }
   };
 
-  const handleDescriptionSubmit = async () => {
+  // Format raw questions data into the expected Question[] format.
+  const formatQuestions = (rawQuestions: any[]): Question[] => {
+    if (!Array.isArray(rawQuestions)) {
+      console.error('Invalid questions format:', rawQuestions);
+      return [];
+    }
+    return rawQuestions.map((q: any) => {
+      const selectionData = q.selections || q.options || [];
+      return {
+        id: q.id || `q-${q.order}`,
+        order: q.order || 0,
+        question: q.question,
+        type: q.type || (q.multi_choice
+                  ? 'multiple_choice'
+                  : (selectionData.length === 2 && selectionData[0] === 'Yes' && selectionData[1] === 'No'
+                      ? 'yes_no'
+                      : 'single_choice')),
+        options: Array.isArray(selectionData)
+          ? selectionData.map((opt: any, optIndex: number) => ({
+              label: typeof opt === 'string' ? opt : opt.label,
+              value: typeof opt === 'string' ? opt.toLowerCase() : opt.value,
+              image_url: (q.image_urls && q.image_urls[optIndex]) || ""
+            }))
+          : [],
+        next: q.next_question
+      };
+    });
+  };
+
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 1000; // 1 second
+
+  // Load category questions from Supabase with retry logic.
+  const loadCategoryQuestions = async (retryCount = 0) => {
+    if (!selectedCategory) {
+      console.error('No category selected');
+      return;
+    }
+    
     setIsProcessing(true);
     try {
-      console.log('Submitting description:', projectDescription);
-
-      const { data: optionsData, error } = await supabase
+      console.log(`Attempting to load questions for category: ${selectedCategory} (attempt ${retryCount + 1})`);
+      const { data, error } = await supabase
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
         .single();
 
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Error fetching options:', error);
         throw error;
       }
 
-      console.log('Raw Options data:', optionsData);
-
-      let bestMatch: { category: string; score: number; matchedKeywords: string[] } | null = null;
-      const description = projectDescription.toLowerCase();
-      
-      Object.entries(optionsData).forEach(([columnName, columnData]) => {
-        if (columnName === 'Key Options') return;
-        
-        const data = columnData as CategoryData;
-        if (!data?.keywords || !Array.isArray(data.keywords)) {
-          console.log(`Skipping category ${columnName}: no keywords found`);
+      if (!data || !data[selectedCategory]) {
+        console.error('No data found for category:', selectedCategory);
+        if (retryCount < MAX_RETRIES) {
+          console.log(`Retrying in ${RETRY_DELAY}ms... (${retryCount + 1}/${MAX_RETRIES})`);
+          setTimeout(() => loadCategoryQuestions(retryCount + 1), RETRY_DELAY);
           return;
         }
-
-        let score = 0;
-        const matchedKeywords: string[] = [];
-
-        data.keywords.forEach((keyword: string) => {
-          const keywordLower = keyword.toLowerCase();
-          if (description.includes(keywordLower)) {
-            const position = description.indexOf(keywordLower);
-            const positionScore = 1 - (position / description.length);
-            const lengthScore = keyword.length / description.length;
-            const keywordScore = 1 + positionScore + lengthScore;
-            
-            score += keywordScore;
-            matchedKeywords.push(keyword);
-            
-            console.log(`Matched "${keyword}" with score ${keywordScore}`);
-          }
-        });
-
-        if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-          console.log(`New best match: ${columnName} with score ${score}`);
-          bestMatch = { category: columnName, score, matchedKeywords };
-        }
-      });
-
-      if (bestMatch) {
-        console.log('Best matching category:', bestMatch);
-        
-        const categoryData = optionsData[bestMatch.category] as CategoryData;
-        
-        if (categoryData?.questions) {
-          const matchingCategory = categories.find(
-            cat => cat.name === bestMatch!.category
-          );
-          
-          if (matchingCategory) {
-            setSelectedCategory(matchingCategory.id);
-            setQuestions(categoryData.questions);
-            setTotalStages(categoryData.questions.length);
-            setStage('questions');
-            
-            toast({
-              title: "Category Matched",
-              description: `Matched "${bestMatch.category}" based on: ${bestMatch.matchedKeywords.join(', ')}`,
-            });
-          } else {
-            throw new Error('Category not found in available categories');
-          }
-        } else {
-          throw new Error('No questions found for category');
-        }
-      } else {
-        setStage('category');
-        toast({
-          title: "No Match Found",
-          description: "Please select a category manually",
-          variant: "default"
-        });
+        throw new Error(`No questions found for category: ${selectedCategory}`);
       }
 
+      const categoryData = data[selectedCategory];
+      console.log('Raw category data:', categoryData);
+
+      if (!categoryData || typeof categoryData !== 'object' || !Array.isArray(categoryData.questions)) {
+        console.error('Invalid questions format:', categoryData);
+        if (retryCount < MAX_RETRIES) {
+          console.log(`Invalid data format, retrying in ${RETRY_DELAY}ms... (${retryCount + 1}/${MAX_RETRIES})`);
+          setTimeout(() => loadCategoryQuestions(retryCount + 1), RETRY_DELAY);
+          return;
+        }
+        throw new Error('Invalid questions format');
+      }
+
+      const formattedQuestions = formatQuestions(categoryData.questions);
+      console.log('Final formatted questions:', formattedQuestions);
+      
+      if (formattedQuestions.length === 0) {
+        toast({
+          title: "No questions available",
+          description: "Unable to load questions for this category.",
+          variant: "destructive",
+        });
+        setStage('category');
+        return;
+      }
+
+      setQuestions(formattedQuestions);
+      setTotalStages(formattedQuestions.length);
+      setStage('questions');
     } catch (error) {
-      console.error('Error processing description:', error);
+      console.error('Error loading questions:', error);
+      if (retryCount >= MAX_RETRIES) {
+        toast({
+          title: "Error",
+          description: "Failed to load questions. Please try again.",
+          variant: "destructive",
+        });
+        setStage('category');
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle description submission and category matching.
+  const handleDescriptionSubmit = async () => {
+    setIsProcessing(true);
+    try {
+      // Fetch all question sets
+      const { data: questionSetsData, error } = await supabase
+        .from('question_sets')
+        .select('*, categories(name)');
+
+      if (error) throw error;
+
+      // Transform the data to match CategoryQuestions type with proper type checking
+      const transformedQuestionSets: CategoryQuestions[] = questionSetsData.map(qs => {
+        const data = typeof qs.data === 'string' ? JSON.parse(qs.data) : qs.data;
+        return {
+          category: qs.categories?.name || qs.category,
+          keywords: Array.isArray(data?.keywords) ? data.keywords : [],
+          questions: Array.isArray(data?.questions) ? data.questions : []
+        };
+      });
+
+      // Find matching question sets based on description
+      const matches = findMatchingQuestionSets(projectDescription, transformedQuestionSets);
+      
+      // Consolidate to prevent question overload
+      const consolidatedSets = consolidateQuestionSets(matches);
+
+      if (consolidatedSets.length === 0) {
+        setStage('category');
+        return;
+      }
+
+      // Set the matched question sets and move to questions stage
+      setMatchedQuestionSets(consolidatedSets);
+      setStage('questions');
+    } catch (error) {
+      console.error('Error matching question sets:', error);
       toast({
         title: "Error",
         description: "Failed to process your description. Please try again.",
@@ -412,29 +373,20 @@ const EstimatePage = () => {
     }
   };
 
-  const handleAnswerSubmit = (questionId: string, value: string | string[]) => {
+  // Handle answer selection and submission.
+  const handleAnswerSubmit = async (questionId: string, value: string | string[]) => {
     const currentQuestion = questions[currentQuestionIndex];
-    const answerValue = Array.isArray(value) ? value : [value];
-    
-    if (selectedCategory) {
-      // Properly type the answers object with nested structure
-      const newAnswers: Record<string, Record<string, string[]>> = {
-        ...answers,
-        [selectedCategory]: {
-          ...(answers[selectedCategory] || {}),
-          [questionId]: answerValue
-        }
-      };
-      
-      setAnswers(newAnswers);
-    }
+    setAnswers(prev => ({ 
+      ...prev, 
+      [currentQuestionIndex]: Array.isArray(value) ? value : [value]
+    }));
 
     if (currentQuestion.type !== 'multiple_choice') {
       if (currentQuestionIndex < questions.length - 1) {
         setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
       } else {
         setIsProcessing(true);
-        generateEstimate();
+        await generateEstimate();
       }
     }
   };
@@ -444,23 +396,25 @@ const EstimatePage = () => {
     setStage('category');
   };
 
+  // Generate the estimate based on the answers.
   const generateEstimate = async () => {
     try {
-      const formattedAnswers = Object.entries(answers).reduce((acc, [index, value]) => {
+      const formattedAnswers = Object.entries(answers).map(([index, value]) => {
         const question = questions[parseInt(index)];
-        if (question) {
-          acc[question.id] = value;
-        }
-        return acc;
-      }, {} as Record<string, string[]>);
+        return {
+          question: question.question,
+          answer: Array.isArray(value) 
+            ? value.map(v => question.options.find(opt => opt.value === v)?.label || v)
+            : question.options.find(opt => opt.value === value)?.label || value
+        };
+      });
 
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           projectDescription, 
           imageUrl: uploadedImageUrl, 
           answers: formattedAnswers,
-          contractorId,
-          baseEstimate: selectedCategory === 'Kitchen Remodel' ? calculateKitchenEstimate(formattedAnswers) : 0
+          contractorId
         }
       });
 
@@ -479,6 +433,49 @@ const EstimatePage = () => {
     }
   };
 
+  // Handle contact form submission.
+  const handleContactSubmit = async (contactData: any) => {
+    try {
+      if (!contractorId) {
+        throw new Error("No contractor ID provided");
+      }
+
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .insert({
+          contractor_id: contractorId,
+          project_title: `${selectedCategory || ''} Project`,
+          user_name: contactData.fullName,
+          user_email: contactData.email,
+          user_phone: contactData.phone,
+          project_address: contactData.address,
+          category: selectedCategory || '',
+          answers: answers,
+          estimate_data: estimate,
+          estimated_cost: estimate?.totalCost || 0,
+          status: 'new'
+        })
+        .select()
+        .single();
+
+      if (leadError) throw leadError;
+
+      setStage('estimate');
+      toast({
+        title: "Success",
+        description: "Your estimate has been saved!",
+      });
+    } catch (error) {
+      console.error('Error saving lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save your information. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Calculate the progress bar value.
   const getProgressValue = () => {
     if (stage === 'photo') return 20;
     if (stage === 'description') return 40;
@@ -492,83 +489,36 @@ const EstimatePage = () => {
 
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
+    loadQuestionSet(categoryId);
   };
 
-  const handleQuestionComplete = (categoryAnswers: CategoryAnswers) => {
+  const handleQuestionComplete = (answers: Record<string, Record<string, string[]>>) => {
     if (selectedCategory) {
       setCompletedCategories(prev => [...prev, selectedCategory]);
-      setAnswers(prev => ({
-        ...prev,
-        [selectedCategory]: categoryAnswers[selectedCategory] || {}
-      }));
-
-      const remainingCategories = categories.filter(
-        cat => !completedCategories.includes(cat.id)
-      );
-
-      if (remainingCategories.length > 0) {
-        setStage('category');
-        setSelectedCategory(null);
-      } else {
-        generateEstimate();
-      }
     }
+    setSelectedCategory(null);
+    setCategoryData(null);
   };
 
   const handleAdditionalCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
-    setStage('questions');
-  };
-
-  const handleContactSubmit = async (data: {
-    fullName: string;
-    email: string;
-    phone: string;
-    address: string;
-  }) => {
-    try {
-      const { error: leadError } = await supabase.from('leads').insert({
-        contractor_id: contractorId,
-        category: selectedCategory,
-        answers: answers,
-        estimate_data: estimate,
-        project_title: `${selectedCategory} Project`,
-        project_description: projectDescription,
-        project_address: data.address,
-        user_name: data.fullName,
-        user_email: data.email,
-        user_phone: data.phone,
-        estimated_cost: estimate.totalCost
-      });
-
-      if (leadError) throw leadError;
-
-      setStage('estimate');
-      toast({
-        title: "Success",
-        description: "Your estimate has been generated!",
-      });
-    } catch (error) {
-      console.error('Error saving lead:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save your information. Please try again.",
-        variant: "destructive",
-      });
-    }
   };
 
   if (isProcessing) {
-    return <LoadingScreen message="Processing your request..." />;
+    return (
+      <LoadingScreen
+        message={
+          stage === 'questions' && currentQuestionIndex === questions.length - 1
+            ? "Generating your estimate..."
+            : "Processing your request..."
+        }
+      />
+    );
   }
 
   if (isLoadingOptions && stage === 'questions') {
     return <LoadingScreen message="Loading questions..." />;
   }
-
-  const getCurrentAnswers = (questionIndex: number): string[] => {
-    return answers[selectedCategory]?.[questions[questionIndex].id] || [];
-  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -632,21 +582,26 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'description' && (
+        {stage === 'description' && !selectedCategory && (
           <div className="card p-8 animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
             <div className="space-y-2">
               <Textarea
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
-                placeholder="Describe what you need help with..."
+                placeholder="Describe what you need help with (minimum 30 characters)..."
                 className="min-h-[150px]"
               />
+              {projectDescription.length > 0 && projectDescription.length < 30 && (
+                <p className="text-sm text-destructive">
+                  Please enter at least {30 - projectDescription.length} more characters
+                </p>
+              )}
             </div>
             <Button 
               className="w-full mt-6"
               onClick={handleDescriptionSubmit}
-              disabled={projectDescription.length < 10}
+              disabled={projectDescription.trim().length < 30}
             >
               Continue
             </Button>
@@ -656,8 +611,22 @@ const EstimatePage = () => {
         {stage === 'questions' && questions.length > 0 && currentQuestionIndex < questions.length && (
           <QuestionCard
             question={questions[currentQuestionIndex]}
-            selectedOptions={getCurrentAnswers(currentQuestionIndex)}
-            onSelect={(questionId, values) => handleAnswerSubmit(questionId, values)}
+            selectedOptions={
+              Array.isArray(answers[currentQuestionIndex])
+                ? answers[currentQuestionIndex] as string[]
+                : answers[currentQuestionIndex] 
+                  ? [answers[currentQuestionIndex] as string] 
+                  : []
+            }
+            onSelect={handleAnswerSubmit}
+            onNext={() => {
+              if (currentQuestionIndex < questions.length - 1) {
+                setCurrentQuestionIndex(prev => prev + 1);
+              } else {
+                generateEstimate();
+              }
+            }}
+            isLastQuestion={currentQuestionIndex === questions.length - 1}
             currentStage={currentQuestionIndex + 1}
             totalStages={totalStages}
           />
@@ -668,9 +637,9 @@ const EstimatePage = () => {
             <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
             <CategoryGrid 
               categories={categories}
+              selectedCategory={selectedCategory || undefined}
               onSelectCategory={handleCategorySelect}
               completedCategories={completedCategories}
-              selectedCategory={selectedCategory || undefined}
             />
           </div>
         )}
@@ -697,14 +666,10 @@ const EstimatePage = () => {
           />
         )}
 
-        {stage === 'questions' && selectedCategory && (
+        {selectedCategory && categoryData && (
           <QuestionManager
-            projectDescription={projectDescription}
+            questionSets={[categoryData]}
             onComplete={handleQuestionComplete}
-            categories={categories}
-            currentCategory={selectedCategory}
-            onSelectAdditionalCategory={handleAdditionalCategorySelect}
-            completedCategories={completedCategories}
           />
         )}
       </div>

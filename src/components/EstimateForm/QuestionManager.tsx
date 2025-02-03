@@ -1,280 +1,149 @@
 import { useState, useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
 import { LoadingScreen } from "./LoadingScreen";
-import { Question, CategoryQuestions, Category, QuestionFlow } from "@/types/estimate";
+import { Question, CategoryQuestions } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface QuestionManagerProps {
-  projectDescription: string;
+  questionSets: CategoryQuestions[];
   onComplete: (answers: Record<string, Record<string, string[]>>) => void;
-  categories: Category[];
-  currentCategory: string;
-  onSelectAdditionalCategory: (categoryId: string) => void;
-  completedCategories: string[];
 }
 
 export const QuestionManager = ({
-  projectDescription,
+  questionSets,
   onComplete,
-  categories,
-  currentCategory,
-  onSelectAdditionalCategory,
-  completedCategories,
 }: QuestionManagerProps) => {
+  const [currentSetIndex, setCurrentSetIndex] = useState(0);
+  const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, Record<string, string[]>>>({});
+  const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
-  const [questionFlow, setQuestionFlow] = useState<QuestionFlow | null>(null);
-  const [taskBranches, setTaskBranches] = useState<any[]>([]);
 
   useEffect(() => {
-    console.log('Loading questions with description:', projectDescription);
-    findMatchingCategory();
-  }, [projectDescription]);
+    loadCurrentQuestionSet();
+  }, [currentSetIndex, questionSets]);
 
-  const findMatchingCategory = async () => {
+  const loadCurrentQuestionSet = () => {
+    if (!questionSets[currentSetIndex]) {
+      onComplete(answers);
+      return;
+    }
+
     try {
-      setIsLoadingQuestions(true);
-      console.log('Starting category matching with description:', projectDescription);
-      
-      const { data: optionsData, error: optionsError } = await supabase
-        .from('Options')
-        .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .maybeSingle();
-
-      if (optionsError) {
-        console.error('Error fetching options:', optionsError);
-        throw optionsError;
+      const currentSet = questionSets[currentSetIndex];
+      if (!currentSet?.questions?.length) {
+        throw new Error('No questions available for this category');
       }
 
-      if (!optionsData) {
-        console.error('No options data found');
-        throw new Error('No options data found');
-      }
-
-      console.log('Raw Options data:', optionsData);
-
-      // Process each category's keywords to find matches
-      let bestMatch: { category: string; score: number; matchedKeywords: string[] } | null = null;
-      const description = projectDescription.toLowerCase();
-      
-      // Loop through each category in the options data
-      Object.entries(optionsData).forEach(([categoryName, categoryData]) => {
-        if (categoryName === 'Key Options') return;
-        
-        const data = categoryData as any;
-        if (!data?.keywords || !Array.isArray(data.keywords)) {
-          console.log(`Skipping category ${categoryName}: no keywords found`);
-          return;
-        }
-
-        console.log(`Processing category ${categoryName} with keywords:`, data.keywords);
-
-        let score = 0;
-        const matchedKeywords: string[] = [];
-
-        // Common kitchen remodel terms
-        const kitchenTerms = ['kitchen', 'remodel', 'cabinets', 'countertop', 'backsplash', 'sink'];
-        const isKitchenCategory = categoryName.toLowerCase().includes('kitchen');
-        
-        // Boost score for kitchen-specific terms if this is the Kitchen Remodel category
-        if (isKitchenCategory) {
-          kitchenTerms.forEach(term => {
-            if (description.includes(term)) {
-              score += 2;
-              matchedKeywords.push(term);
-              console.log(`Matched kitchen term "${term}" with bonus score`);
-            }
-          });
-        }
-
-        data.keywords.forEach((keyword: string) => {
-          const keywordLower = keyword.toLowerCase();
-          if (description.includes(keywordLower)) {
-            // Higher score for keywords at start of description
-            const position = description.indexOf(keywordLower);
-            const positionScore = 1 - (position / description.length);
-            const matchScore = 1 + positionScore;
-            score += matchScore;
-            matchedKeywords.push(keyword);
-
-            console.log(`Matched keyword "${keyword}" with score ${matchScore}`);
-          }
-        });
-
-        if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-          // Find the corresponding category ID
-          const matchingCategory = categories.find(
-            cat => cat.name.toLowerCase() === categoryName.toLowerCase()
-          );
-
-          if (matchingCategory) {
-            bestMatch = { 
-              category: matchingCategory.id, 
-              score,
-              matchedKeywords
-            };
-            console.log(`New best match: ${categoryName} (ID: ${matchingCategory.id}) with score ${score}`);
-          }
-        }
-      });
-
-      if (bestMatch) {
-        console.log('Final best matching category:', bestMatch.category);
-        console.log('Final score:', bestMatch.score);
-        console.log('Final matched keywords:', bestMatch.matchedKeywords);
-        
-        // Get the category name for the matched ID
-        const matchedCategory = categories.find(cat => cat.id === bestMatch.category);
-        const categoryData = optionsData[matchedCategory?.name || ''];
-        
-        if (categoryData?.questions) {
-          const flow: QuestionFlow = {
-            category: bestMatch.category,
-            questions: categoryData.questions,
-            currentQuestionId: categoryData.questions[0]?.id || null,
-            answers: {},
-            taskBranches: []
-          };
-
-          setQuestionFlow(flow);
-          // Call onSelectAdditionalCategory to set the current category
-          onSelectAdditionalCategory(bestMatch.category);
-        } else {
-          console.error('No questions found for category:', matchedCategory?.name);
-          throw new Error('No questions found for matched category');
-        }
-      } else {
-        console.log('No matching category found');
-        toast({
-          title: "No matching category found",
-          description: "Please select a category manually.",
-          variant: "destructive",
-        });
-      }
-
+      const sortedQuestions = currentSet.questions.sort((a, b) => a.order - b.order);
+      setQuestionSequence(sortedQuestions);
+      setCurrentQuestionId(sortedQuestions[0].id);
+      setIsLoadingQuestions(false);
     } catch (error) {
-      console.error('Error matching category:', error);
+      console.error('Error loading question set:', error);
       toast({
         title: "Error",
-        description: "Failed to process your description. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to load questions",
         variant: "destructive",
       });
-    } finally {
-      setIsLoadingQuestions(false);
+      moveToNextQuestionSet();
     }
   };
 
-  const handleAnswer = (questionId: string, selectedValues: string[], autoAdvance: boolean) => {
-    if (!questionFlow) return;
+  const findNextQuestionId = (currentQuestion: Question, selectedValue: string): string | null => {
+    const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValue);
+    
+    if (selectedOption?.next) {
+      if (selectedOption.next === 'END') {
+        return null;
+      }
+      if (selectedOption.next === 'NEXT_BRANCH') {
+        moveToNextQuestionSet();
+        return null;
+      }
+      return selectedOption.next;
+    }
 
-    const currentQuestion = questionFlow.questions.find(q => q.id === questionId);
+    if (currentQuestion.next === 'END') {
+      return null;
+    }
+    if (currentQuestion.next === 'NEXT_BRANCH') {
+      moveToNextQuestionSet();
+      return null;
+    }
+
+    const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
+    return currentIndex < questionSequence.length - 1 ? questionSequence[currentIndex + 1].id : null;
+  };
+
+  const moveToNextQuestionSet = () => {
+    if (currentSetIndex < questionSets.length - 1) {
+      setCurrentSetIndex(prev => prev + 1);
+    } else {
+      onComplete(answers);
+    }
+  };
+
+  const handleAnswer = async (questionId: string, selectedValues: string[]) => {
+    const currentQuestion = questionSequence.find(q => q.id === questionId);
     if (!currentQuestion) return;
 
-    // Update answers
-    const newAnswers = {
-      ...questionFlow.answers,
-      [currentCategory]: {
-        ...questionFlow.answers[currentCategory],
+    const currentSet = questionSets[currentSetIndex];
+    
+    setAnswers(prev => ({
+      ...prev,
+      [currentSet.category]: {
+        ...prev[currentSet.category],
         [questionId]: selectedValues
       }
-    };
-
-    // Handle task branching for multiple choice questions
-    if (currentQuestion.type === 'multiple_choice' && autoAdvance) {
-      const newTaskBranches = currentQuestion.options
-        .filter(opt => selectedValues.includes(opt.value))
-        .map(opt => ({
-          value: opt.value,
-          next: opt.next || '',
-          completed: false
-        }));
-
-      if (newTaskBranches.length > 0) {
-        setTaskBranches(newTaskBranches);
-        const firstBranch = newTaskBranches[0];
-        setQuestionFlow(prev => ({
-          ...prev!,
-          currentQuestionId: firstBranch.next,
-          answers: newAnswers,
-          taskBranches: newTaskBranches
-        }));
-        return;
-      }
-    }
-
-    // Handle navigation for single choice questions
-    const selectedOption = currentQuestion.options.find(
-      opt => selectedValues.includes(opt.value)
-    );
-
-    const nextQuestionId = selectedOption?.next || null;
-
-    if (nextQuestionId === 'NEXT_BRANCH') {
-      onComplete(newAnswers);
-      return;
-    }
-
-    if (!nextQuestionId || nextQuestionId === 'END') {
-      // Check for remaining task branches
-      const currentTaskIndex = taskBranches.findIndex(t => !t.completed);
-      if (currentTaskIndex >= 0) {
-        const updatedBranches = taskBranches.map((branch, index) => 
-          index === currentTaskIndex ? { ...branch, completed: true } : branch
-        );
-        
-        const nextTask = updatedBranches.find((t, i) => i > currentTaskIndex && !t.completed);
-        if (nextTask) {
-          setTaskBranches(updatedBranches);
-          setQuestionFlow(prev => ({
-            ...prev!,
-            currentQuestionId: nextTask.next,
-            answers: newAnswers
-          }));
-          return;
-        }
-      }
-      
-      onComplete(newAnswers);
-      return;
-    }
-
-    setQuestionFlow(prev => ({
-      ...prev!,
-      currentQuestionId: nextQuestionId,
-      answers: newAnswers
     }));
+
+    if (currentQuestion.type !== 'multiple_choice') {
+      const nextQuestionId = findNextQuestionId(currentQuestion, selectedValues[0]);
+      
+      if (!nextQuestionId) {
+        if (selectedValues[0] === 'no' && currentQuestion.type === 'yes_no') {
+          moveToNextQuestionSet();
+        } else {
+          await handleComplete();
+        }
+      } else {
+        setCurrentQuestionId(nextQuestionId);
+      }
+    }
+  };
+
+  const handleComplete = async () => {
+    moveToNextQuestionSet();
   };
 
   if (isLoadingQuestions) {
     return <LoadingScreen message="Loading questions..." />;
   }
 
-  if (!questionFlow?.currentQuestionId) {
+  const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
+  if (!currentQuestion) {
     return (
       <div className="text-center p-8">
-        <p className="text-lg text-muted-foreground">
-          No questions available. Please select a category manually.
+        <p className="text-lg text-gray-600">
+          No questions available. Moving to next category...
         </p>
       </div>
     );
   }
 
-  const currentQuestion = questionFlow.questions.find(
-    q => q.id === questionFlow.currentQuestionId
-  );
-
-  if (!currentQuestion) return null;
-
-  const currentAnswers = questionFlow.answers[currentCategory]?.[currentQuestion.id] || [];
+  const currentSet = questionSets[currentSetIndex];
+  const currentSetAnswers = answers[currentSet.category] || {};
 
   return (
     <QuestionCard
       question={currentQuestion}
-      selectedOptions={currentAnswers}
+      selectedOptions={currentSetAnswers[currentQuestion.id] || []}
       onSelect={handleAnswer}
-      currentStage={currentQuestion.order || 1}
-      totalStages={questionFlow.questions.length}
+      onNext={handleComplete}
+      isLastQuestion={currentSetIndex === questionSets.length - 1}
+      currentStage={currentSetIndex + 1}
+      totalStages={questionSets.length}
     />
   );
 };
