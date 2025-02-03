@@ -40,7 +40,7 @@ export const CaptchaVerification = ({ onVerified }: CaptchaVerificationProps) =>
       <div className="flex flex-col items-center justify-center gap-4">
         <Turnstile
           siteKey={siteKey}
-          onVerify={handleVerification}
+          onSuccess={handleVerification}
           className="mx-auto"
         />
       </div>
