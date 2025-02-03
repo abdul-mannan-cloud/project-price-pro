@@ -12,7 +12,7 @@ import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
-import { Question, Category, CategoryQuestions } from "@/types/estimate";
+import { Question, Category, CategoryQuestions, AnswersState } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
@@ -461,7 +461,7 @@ const EstimatePage = () => {
     }
   };
 
-  const handleQuestionComplete = async (answers: Record<string, Record<string, string[]>>) => {
+  const handleQuestionComplete = async (answers: AnswersState) => {
     setIsProcessing(true);
     try {
       // First create a lead with the question answers
