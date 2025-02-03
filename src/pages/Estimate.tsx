@@ -120,8 +120,8 @@ const EstimatePage = () => {
             name: catData.name || key.replace(/_/g, ' '),
             description: catData.description || `Get an estimate for your ${key.toLowerCase()} project`,
             icon: catData.icon,
-            keywords: catData.keywords || [], // Add default empty array for keywords
-            questions: catData.questions || [] // Add default empty array for questions
+            keywords: Array.isArray(catData.keywords) ? catData.keywords : [],
+            questions: Array.isArray(catData.questions) ? catData.questions : []
           };
         });
 
