@@ -110,7 +110,7 @@ const EstimatePage = () => {
 
       if (optionsError) throw optionsError;
 
-      // Transform Options data into Category format
+      // Transform Options data into Category format with required keywords
       const transformedCategories: Category[] = Object.keys(optionsData)
         .filter(key => key !== 'Key Options')
         .map(key => {
@@ -119,7 +119,9 @@ const EstimatePage = () => {
             id: key,
             name: catData.name || key.replace(/_/g, ' '),
             description: catData.description || `Get an estimate for your ${key.toLowerCase()} project`,
-            icon: catData.icon
+            icon: catData.icon,
+            keywords: catData.keywords || [], // Add default empty array for keywords
+            questions: catData.questions || [] // Add default empty array for questions
           };
         });
 
@@ -339,35 +341,24 @@ const EstimatePage = () => {
   const handleDescriptionSubmit = async () => {
     setIsProcessing(true);
     try {
-      // Fetch all question sets
-      const { data: questionSetsData, error } = await supabase
-        .from('question_sets')
-        .select('*, categories(name)');
-
-      if (error) throw error;
-
-      // Transform the data to match CategoryQuestions type with proper type checking
-      const transformedQuestionSets: CategoryQuestions[] = questionSetsData.map(qs => {
-        const data = typeof qs.data === 'string' ? JSON.parse(qs.data) : qs.data;
-        return {
-          category: qs.categories?.name || qs.category,
-          keywords: Array.isArray(data?.keywords) ? data.keywords : [],
-          questions: Array.isArray(data?.questions) ? data.questions : []
-        };
-      });
+      // Convert categories to CategoryQuestions format before finding matches
+      const categoryQuestions = categories.map(category => ({
+        category: category.id,
+        keywords: category.keywords,
+        questions: category.questions || []
+      }));
 
       // Find matching question sets based on description
-      const matches = findMatchingQuestionSets(projectDescription, transformedQuestionSets);
+      const matches = await findMatchingQuestionSets(projectDescription, categoryQuestions);
       
       // Consolidate to prevent question overload
-      const consolidatedSets = consolidateQuestionSets(matches);
+      const consolidatedSets = consolidateQuestionSets(matches, projectDescription);
 
       if (consolidatedSets.length === 0) {
         setStage('category');
         return;
       }
 
-      // Set the matched question sets and move to questions stage
       setMatchedQuestionSets(consolidatedSets);
       setStage('questions');
     } catch (error) {
