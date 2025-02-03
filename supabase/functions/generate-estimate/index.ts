@@ -12,6 +12,7 @@ interface RequestBody {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -19,39 +20,45 @@ serve(async (req) => {
   try {
     const { projectDescription, answers, contractorId, category } = await req.json() as RequestBody
 
+    console.log('Generating estimate for:', { projectDescription, category, contractorId });
+
     let contractor = null;
     let settings = null;
 
     if (contractorId) {
-      // Create a Supabase client
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Missing Supabase environment variables')
-      }
+      try {
+        // Create a Supabase client
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+        
+        if (!supabaseUrl || !supabaseKey) {
+          throw new Error('Missing Supabase environment variables')
+        }
 
-      const supabase = createClient(supabaseUrl, supabaseKey)
+        const supabase = createClient(supabaseUrl, supabaseKey)
 
-      // Fetch contractor and settings if contractorId is provided
-      const { data, error } = await supabase
-        .from('contractors')
-        .select(`
-          *,
-          contractor_settings(*)
-        `)
-        .eq('id', contractorId)
-        .single()
+        // Fetch contractor and settings
+        const { data, error } = await supabase
+          .from('contractors')
+          .select(`
+            *,
+            contractor_settings(*)
+          `)
+          .eq('id', contractorId)
+          .single()
 
-      if (error) {
-        console.error('Error fetching contractor:', error)
-      } else {
-        contractor = data
-        settings = data.contractor_settings
+        if (error) {
+          console.error('Error fetching contractor:', error)
+        } else {
+          contractor = data
+          settings = data.contractor_settings
+        }
+      } catch (error) {
+        console.error('Error in contractor fetch:', error)
       }
     }
 
-    // Generate estimate title and description based on category and answers
+    // Generate estimate title and description
     const estimateTitle = category 
       ? `${category.charAt(0).toUpperCase() + category.slice(1)} Project Estimate`
       : 'Project Estimate';
@@ -128,26 +135,33 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Error generating estimate:', error)
+    
+    // Return a fallback estimate with all required fields
+    const fallbackEstimate = {
+      title: "Basic Project Estimate",
+      description: "Standard estimate based on provided information",
+      groups: [{
+        name: "Labor",
+        description: "Basic labor estimate",
+        items: [{
+          title: "Initial Assessment",
+          description: "Basic project evaluation",
+          quantity: 1,
+          unit: "hour",
+          unitAmount: 150,
+          totalPrice: 150
+        }]
+      }],
+      subtotal: 150,
+      markup: 30, // 20% markup
+      tax: 12.75, // 8.5% tax
+      totalCost: 192.75,
+      notes: ["This is a basic estimate. Please contact us for a more detailed assessment."],
+      contractor: null
+    };
+
     return new Response(
-      JSON.stringify({
-        title: "Basic Project Estimate",
-        description: "Standard estimate based on provided information",
-        groups: [{
-          name: "Labor",
-          description: "Basic labor estimate",
-          items: [{
-            title: "Initial Assessment",
-            description: "Basic project evaluation",
-            quantity: 1,
-            unit: "hour",
-            unitAmount: 150,
-            totalPrice: 150
-          }]
-        }],
-        totalCost: 150,
-        notes: ["This is a basic estimate. Please contact us for a more detailed assessment."],
-        contractor: null
-      }),
+      JSON.stringify(fallbackEstimate),
       { 
         headers: { 
           ...corsHeaders,
