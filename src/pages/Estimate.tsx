@@ -341,15 +341,18 @@ const EstimatePage = () => {
   const handleDescriptionSubmit = async () => {
     setIsProcessing(true);
     try {
-      // Convert categories to CategoryQuestions format before finding matches
-      const categoryQuestions = categories.map(category => ({
-        category: category.id,
-        keywords: category.keywords,
+      // Transform categories to the correct format before finding matches
+      const categoriesForMatching: Category[] = categories.map(category => ({
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        icon: category.icon,
+        keywords: category.keywords || [],
         questions: category.questions || []
       }));
 
       // Find matching question sets based on description
-      const matches = await findMatchingQuestionSets(projectDescription, categoryQuestions);
+      const matches = await findMatchingQuestionSets(projectDescription, categoriesForMatching);
       
       // Consolidate to prevent question overload
       const consolidatedSets = consolidateQuestionSets(matches, projectDescription);

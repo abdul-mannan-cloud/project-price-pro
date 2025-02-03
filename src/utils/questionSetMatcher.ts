@@ -1,14 +1,10 @@
-import { Category, CategoryQuestions, Question, isCategoryWithQuestions, categoryToQuestionSet } from "@/types/estimate";
+import { Category, CategoryQuestions, Question } from "@/types/estimate";
 
 interface MatchedQuestionSet {
   priority: number;
   questionSet: CategoryQuestions;
 }
 
-/**
- * Finds all matching question sets based on the given description.
- * Uses keyword matching with priority scoring based on match frequency.
- */
 export async function findMatchingQuestionSets(
   description: string,
   categories: Category[]
@@ -18,7 +14,7 @@ export async function findMatchingQuestionSets(
   console.log("findMatchingQuestionSets: description =", lowerDesc);
 
   categories.forEach((category) => {
-    if (!category.keywords) {
+    if (!category.keywords || category.keywords.length === 0) {
       console.log(`Skipping category ${category.id}: no keywords array`);
       return;
     }
@@ -35,9 +31,7 @@ export async function findMatchingQuestionSets(
       const questionSet: CategoryQuestions = {
         category: category.id,
         keywords: category.keywords,
-        questions: isCategoryWithQuestions(category) 
-          ? category.questions 
-          : getDefaultQuestionsForCategory(category.id)
+        questions: category.questions || getDefaultQuestionsForCategory(category.id)
       };
 
       matches.push({
@@ -57,9 +51,6 @@ export async function findMatchingQuestionSets(
   return sortedMatches;
 }
 
-/**
- * Consolidates multiple matched question sets to prevent overlapping or redundant questions.
- */
 export function consolidateQuestionSets(
   matches: CategoryQuestions[],
   description: string
@@ -75,20 +66,6 @@ export function consolidateQuestionSets(
   return Array.from(uniqueCategories.values());
 }
 
-/**
- * Gets the best matching category based on keyword matches.
- */
-export const getBestMatchingCategory = async (
-  description: string,
-  categories: Category[]
-): Promise<CategoryQuestions | null> => {
-  const matches = await findMatchingQuestionSets(description, categories);
-  return matches.length > 0 ? matches[0] : null;
-};
-
-/**
- * Provides default questions for common categories.
- */
 function getDefaultQuestionsForCategory(categoryId: string): Question[] {
   const id = categoryId.toLowerCase();
   
@@ -100,11 +77,10 @@ function getDefaultQuestionsForCategory(categoryId: string): Question[] {
         question: "What type of kitchen project are you planning?",
         type: "single_choice",
         options: [
-          { label: "Full Remodel", value: "full_remodel", next: "Q2" },
-          { label: "Partial Update", value: "partial_update", next: "Q3" },
-          { label: "Appliance Installation", value: "appliance", next: "NEXT_BRANCH" }
-        ],
-        next: ""
+          { label: "Full Remodel", value: "full_remodel" },
+          { label: "Partial Update", value: "partial_update" },
+          { label: "Appliance Installation", value: "appliance" }
+        ]
       }
     ];
   }
@@ -120,8 +96,7 @@ function getDefaultQuestionsForCategory(categoryId: string): Question[] {
         { label: "Small Repair", value: "small" },
         { label: "Medium Project", value: "medium" },
         { label: "Large Project", value: "large" }
-      ],
-      next: "END"
+      ]
     }
   ];
 }
