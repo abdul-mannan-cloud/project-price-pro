@@ -31,9 +31,11 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
 
     try {
       if (!leadId) {
-        console.error('Missing leadId');
-        throw new Error("Missing lead ID");
+        console.error('Missing leadId in ContactForm');
+        throw new Error("Unable to save contact information - missing lead reference");
       }
+
+      console.log('Submitting contact form with:', { leadId, contractorId, formData });
 
       // Update the lead with contact information
       const { error: updateError } = await supabase
@@ -43,7 +45,8 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
           user_email: formData.email,
           user_phone: formData.phone,
           project_address: formData.address,
-          status: 'new'
+          status: 'new',
+          contractor_id: contractorId || null // Make contractor_id explicitly optional
         })
         .eq('id', leadId);
 
@@ -54,11 +57,16 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
 
       // Call the onSubmit callback with the form data
       onSubmit(formData);
+      
+      toast({
+        title: "Success",
+        description: "Your information has been saved successfully.",
+      });
     } catch (error) {
-      console.error('Error updating lead:', error);
+      console.error('Error saving contact information:', error);
       toast({
         title: "Error",
-        description: "Failed to save your information. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save your information. Please try again.",
         variant: "destructive",
       });
     } finally {
