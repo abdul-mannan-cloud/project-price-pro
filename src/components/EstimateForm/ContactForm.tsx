@@ -46,7 +46,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
           user_phone: formData.phone,
           project_address: formData.address,
           status: 'new',
-          contractor_id: contractorId || null // Make contractor_id explicitly optional
+          contractor_id: contractorId || null
         })
         .eq('id', leadId);
 
@@ -57,11 +57,6 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
 
       // Call the onSubmit callback with the form data
       onSubmit(formData);
-      
-      toast({
-        title: "Success",
-        description: "Your information has been saved successfully.",
-      });
     } catch (error) {
       console.error('Error saving contact information:', error);
       toast({
@@ -75,7 +70,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center">
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="w-full max-w-md mx-auto bg-background rounded-xl p-6 shadow-lg animate-fadeIn">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="text-center mb-8 pt-4">

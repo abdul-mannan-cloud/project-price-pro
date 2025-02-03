@@ -444,13 +444,7 @@ const EstimatePage = () => {
       if (!contractorId || !currentLeadId) {
         throw new Error("Missing contractor ID or lead ID");
       }
-
-      // The contact form component now handles the lead update
       setStage('estimate');
-      toast({
-        title: "Success",
-        description: "Your estimate has been saved!",
-      });
     } catch (error) {
       console.error('Error saving lead:', error);
       toast({
