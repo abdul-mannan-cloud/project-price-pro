@@ -37,6 +37,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
 
       console.log('Submitting contact form with:', { leadId, contractorId, formData });
 
+      // Only update the lead if we have a valid leadId
       const { error: updateError } = await supabase
         .from('leads')
         .update({
@@ -45,7 +46,8 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
           user_phone: formData.phone,
           project_address: formData.address,
           status: 'new',
-          contractor_id: contractorId || null
+          // Only include contractor_id if it exists
+          ...(contractorId ? { contractor_id: contractorId } : {})
         })
         .eq('id', leadId);
 
