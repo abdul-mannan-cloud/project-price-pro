@@ -61,15 +61,14 @@ export const CaptchaVerification = ({ onVerify }: CaptchaVerificationProps) => {
   }
 
   return (
-    <div className="absolute opacity-0 pointer-events-none">
+    <div className="flex justify-center items-center min-h-[100px]">
       <Turnstile
         siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || ""}
         onSuccess={handleVerify}
         onError={handleError}
         options={{
           theme: "light",
-          size: "normal",
-          appearance: "interaction-only",
+          appearance: "always",
           retry: "auto",
           refreshExpired: "auto"
         }}
