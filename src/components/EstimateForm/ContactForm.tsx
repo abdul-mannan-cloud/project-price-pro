@@ -48,6 +48,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
         .eq('id', leadId);
 
       if (updateError) {
+        console.error('Supabase update error:', updateError);
         throw updateError;
       }
 
@@ -69,40 +70,66 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
     <div className="fixed inset-0 flex items-center justify-center bg-black/30">
       <div className="w-full max-w-md mx-auto bg-background rounded-xl p-6 shadow-lg animate-fadeIn">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <h2 className="text-2xl font-semibold mb-6">Enter Your Contact Details</h2>
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-semibold mb-2">Almost There!</h2>
+            <p className="text-muted-foreground">
+              Enter your contact details below to view your personalized project estimate. 
+              We've analyzed your requirements and prepared a detailed breakdown just for you.
+            </p>
+          </div>
           
-          <Input
-            placeholder="Full Name"
-            value={formData.fullName}
-            onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-            required
-          />
+          <div className="form-group">
+            <Input
+              placeholder="Full Name"
+              value={formData.fullName}
+              onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+              required
+              className="form-input"
+            />
+            <label className="form-label">Full Name</label>
+          </div>
           
-          <Input
-            type="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-            required
-          />
+          <div className="form-group">
+            <Input
+              type="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              required
+              className="form-input"
+            />
+            <label className="form-label">Email</label>
+          </div>
           
-          <Input
-            type="tel"
-            placeholder="Phone Number"
-            value={formData.phone}
-            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-            required
-          />
+          <div className="form-group">
+            <Input
+              type="tel"
+              placeholder="Phone Number"
+              value={formData.phone}
+              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+              required
+              className="form-input"
+            />
+            <label className="form-label">Phone Number</label>
+          </div>
           
-          <Input
-            placeholder="Project Address"
-            value={formData.address}
-            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-            required
-          />
+          <div className="form-group">
+            <Input
+              placeholder="Project Address"
+              value={formData.address}
+              onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+              required
+              className="form-input"
+            />
+            <label className="form-label">Project Address</label>
+          </div>
           
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "View Estimate"}
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Saving..." : "View Your Custom Estimate"}
           </Button>
         </form>
       </div>
