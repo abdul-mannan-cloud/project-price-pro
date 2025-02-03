@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { Label } from "@/components/ui/label";
 
 interface ContactFormProps {
   onSubmit: (data: {
@@ -30,35 +31,47 @@ export const ContactForm = ({ onSubmit }: ContactFormProps) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <h2 className="text-2xl font-semibold mb-6">Enter Your Contact Details</h2>
           
-          <Input
-            label="Full Name"
-            value={formData.fullName}
-            onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-            required
-          />
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Full Name</Label>
+            <Input
+              id="fullName"
+              value={formData.fullName}
+              onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+              required
+            />
+          </div>
           
-          <Input
-            type="email"
-            label="Email"
-            value={formData.email}
-            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-            required
-          />
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              required
+            />
+          </div>
           
-          <Input
-            type="tel"
-            label="Phone Number"
-            value={formData.phone}
-            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-            required
-          />
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+              required
+            />
+          </div>
           
-          <Input
-            label="Project Address"
-            value={formData.address}
-            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-            required
-          />
+          <div className="space-y-2">
+            <Label htmlFor="address">Project Address</Label>
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+              required
+            />
+          </div>
           
           <Button type="submit" className="w-full">
             View Estimate
