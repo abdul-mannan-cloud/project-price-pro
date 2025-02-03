@@ -91,7 +91,6 @@ const EstimatePage = () => {
 
       if (optionsError) throw optionsError;
 
-      // Transform Options data into Category format with required keywords
       const transformedCategories: Category[] = Object.keys(optionsData)
         .filter(key => key !== 'Key Options')
         .map(key => {
@@ -132,7 +131,6 @@ const EstimatePage = () => {
       const rawCategoryData = optionsData[categoryId] as Record<string, any>;
       if (!rawCategoryData) throw new Error('Category data not found');
 
-      // Transform the data into CategoryQuestions format with proper type checking
       const questionSet: CategoryQuestions = {
         category: categoryId,
         keywords: Array.isArray(rawCategoryData.keywords) ? rawCategoryData.keywords : [],
@@ -157,7 +155,6 @@ const EstimatePage = () => {
     }
   };
 
-  // Handle file upload and image processing.
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -211,7 +208,6 @@ const EstimatePage = () => {
     }
   };
 
-  // Format raw questions data into the expected Question[] format.
   const formatQuestions = (rawQuestions: any[]): Question[] => {
     if (!Array.isArray(rawQuestions)) {
       console.error('Invalid questions format:', rawQuestions);
@@ -243,7 +239,6 @@ const EstimatePage = () => {
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 1000; // 1 second
 
-  // Load category questions from Supabase with retry logic.
   const loadCategoryQuestions = async (retryCount = 0) => {
     if (!selectedCategory) {
       console.error('No category selected');
@@ -318,11 +313,9 @@ const EstimatePage = () => {
     }
   };
 
-  // Handle description submission and category matching.
   const handleDescriptionSubmit = async () => {
     setIsProcessing(true);
     try {
-      // Transform categories to the correct format before finding matches
       const categoriesForMatching: Category[] = categories.map(category => ({
         id: category.id,
         name: category.name,
@@ -332,10 +325,8 @@ const EstimatePage = () => {
         questions: category.questions || []
       }));
 
-      // Find matching question sets based on description
       const matches = await findMatchingQuestionSets(projectDescription, categoriesForMatching);
       
-      // Consolidate to prevent question overload
       const consolidatedSets = consolidateQuestionSets(matches, projectDescription);
 
       if (consolidatedSets.length === 0) {
@@ -358,7 +349,6 @@ const EstimatePage = () => {
     }
   };
 
-  // Handle answer selection and submission.
   const handleAnswerSubmit = async (questionId: string, value: string | string[]) => {
     const currentQuestion = questions[currentQuestionIndex];
     setAnswers(prev => ({ 
@@ -381,7 +371,6 @@ const EstimatePage = () => {
     setStage('category');
   };
 
-  // Generate the estimate based on the answers.
   const generateEstimate = async () => {
     try {
       const formattedAnswers = Object.entries(answers).map(([index, value]) => {
@@ -418,7 +407,6 @@ const EstimatePage = () => {
     }
   };
 
-  // Handle contact form submission.
   const handleContactSubmit = async (contactData: any) => {
     try {
       if (!contractorId || !currentLeadId) {
@@ -438,7 +426,6 @@ const EstimatePage = () => {
   const handleQuestionComplete = async (answers: AnswersState) => {
     setIsProcessing(true);
     try {
-      // Convert AnswersState to a format compatible with Supabase's Json type
       const answersForSupabase = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
         acc[category] = Object.entries(categoryAnswers).reduce((catAcc, [questionId, answer]) => {
           catAcc[questionId] = {
@@ -452,7 +439,6 @@ const EstimatePage = () => {
         return acc;
       }, {} as Record<string, any>);
 
-      // First create a lead with the question answers
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert({
@@ -470,7 +456,6 @@ const EstimatePage = () => {
 
       setCurrentLeadId(lead.id);
 
-      // Then generate the estimate
       const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           projectDescription, 
@@ -484,7 +469,6 @@ const EstimatePage = () => {
 
       if (error) throw error;
       
-      // Update the lead with the estimate data
       const { error: updateError } = await supabase
         .from('leads')
         .update({ 
@@ -509,7 +493,6 @@ const EstimatePage = () => {
     }
   };
 
-  // Calculate the progress bar value.
   const getProgressValue = () => {
     switch (stage) {
       case 'photo':
@@ -519,21 +502,17 @@ const EstimatePage = () => {
       case 'category':
         return 45;
       case 'questions':
-        // Calculate progress based on matched question sets and current progress
         const baseProgress = 45;
         const maxProgress = 85;
         const progressRange = maxProgress - baseProgress;
         
         if (matchedQuestionSets.length === 0) return baseProgress;
         
-        // Calculate total questions across all sets
         const totalQuestions = matchedQuestionSets.reduce((acc, set) => 
           acc + (Array.isArray(set.questions) ? set.questions.length : 0), 0);
         
-        // Calculate completed questions
         const completedQuestions = Object.keys(answers).length;
         
-        // Calculate progress percentage
         const progressPercentage = totalQuestions > 0 
           ? (completedQuestions / totalQuestions) 
           : 0;
@@ -565,7 +544,7 @@ const EstimatePage = () => {
     );
   }
 
-  if (isLoadingOptions && stage === 'questions') {
+  if (isLoading && stage === 'questions') {
     return <LoadingScreen message="Loading questions..." />;
   }
 
