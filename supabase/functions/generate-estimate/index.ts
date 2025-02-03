@@ -79,55 +79,86 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
   const items: any[] = [];
   const { question, answers: selectedAnswers, options, type } = answer;
 
-  // Base costs per type of work
+  // Base costs per type of work (hourly rates)
   const baseCosts: Record<string, { labor: number; materials: number }> = {
     'installation': { labor: 85, materials: 150 },
     'repair': { labor: 95, materials: 100 },
     'renovation': { labor: 125, materials: 250 },
+    'maintenance': { labor: 75, materials: 50 },
     'custom': { labor: 150, materials: 300 },
+  };
+
+  // Cost multipliers based on complexity
+  const complexityMultipliers: Record<string, number> = {
+    'simple': 0.8,
+    'standard': 1.0,
+    'complex': 1.5,
+    'custom': 2.0
   };
 
   selectedAnswers.forEach((selected: string) => {
     const option = options.find((opt: any) => opt.value === selected);
     if (!option) return;
 
+    // Determine work type and complexity from the answer
     const workType = option.value.includes('custom') ? 'custom' : 
                     option.value.includes('install') ? 'installation' :
-                    option.value.includes('repair') ? 'repair' : 'renovation';
+                    option.value.includes('repair') ? 'repair' :
+                    option.value.includes('maintenance') ? 'maintenance' : 'renovation';
+
+    const complexity = option.value.includes('complex') ? 'complex' :
+                      option.value.includes('custom') ? 'custom' :
+                      option.value.includes('simple') ? 'simple' : 'standard';
 
     const { labor: baseLaborCost, materials: baseMaterialCost } = baseCosts[workType];
+    const complexityMultiplier = complexityMultipliers[complexity];
 
-    // Labor costs
-    const laborCost = adjustPriceForLocation(baseLaborCost, location, settings);
-    const laborHours = Math.ceil(Math.random() * 3) + 2;
+    // Adjust costs based on location and contractor settings
+    const adjustedLaborCost = adjustPriceForLocation(
+      baseLaborCost * complexityMultiplier,
+      location,
+      settings
+    );
+
+    const adjustedMaterialCost = adjustPriceForLocation(
+      baseMaterialCost * complexityMultiplier,
+      location,
+      settings
+    );
+
+    // Calculate labor hours based on complexity and type
+    const laborHours = Math.max(2, Math.ceil(complexityMultiplier * 3));
+    
+    // Add labor line item
     items.push({
       title: `${option.label} Labor (HR)`,
-      description: `Expert labor for ${option.label.toLowerCase()}`,
+      description: `Professional ${workType} labor for ${option.label.toLowerCase()}`,
       quantity: laborHours,
       unit: 'HR',
-      unitAmount: laborCost,
-      totalPrice: laborCost * laborHours
+      unitAmount: adjustedLaborCost,
+      totalPrice: adjustedLaborCost * laborHours
     });
 
-    // Materials costs
-    const materialsCost = adjustPriceForLocation(baseMaterialCost, location, settings);
-    const materialQuantity = Math.ceil(Math.random() * 2) + 1;
+    // Calculate material quantity based on the answer context
+    const materialQuantity = Math.max(1, Math.ceil(complexityMultiplier * 2));
+    
+    // Add materials line item
     items.push({
       title: `${option.label} Materials (EA)`,
-      description: `High-quality materials and supplies`,
+      description: `Quality materials for ${option.label.toLowerCase()}`,
       quantity: materialQuantity,
       unit: 'EA',
-      unitAmount: materialsCost,
-      totalPrice: materialsCost * materialQuantity
+      unitAmount: adjustedMaterialCost,
+      totalPrice: adjustedMaterialCost * materialQuantity
     });
 
-    // Additional costs for custom work
+    // Add specialized items for custom work
     if (workType === 'custom') {
-      const baseCustomCost = 200;
+      const baseCustomCost = 200 * complexityMultiplier;
       const customWorkCost = adjustPriceForLocation(baseCustomCost, location, settings);
       items.push({
-        title: `${option.label} Design (EA)`,
-        description: `Specialized design and planning`,
+        title: `${option.label} Design & Planning (EA)`,
+        description: `Custom design and planning services`,
         quantity: 1,
         unit: 'EA',
         unitAmount: customWorkCost,
