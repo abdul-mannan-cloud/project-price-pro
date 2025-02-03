@@ -99,24 +99,24 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
 
     // Labor costs
     const laborCost = adjustPriceForLocation(baseLaborCost, location, settings);
-    const laborHours = Math.ceil(Math.random() * 3) + 2; // Estimate between 3-5 hours
+    const laborHours = Math.ceil(Math.random() * 3) + 2;
     items.push({
-      title: `Professional Labor - ${option.label}`,
-      description: `Expert labor for ${option.label.toLowerCase()} including setup and finishing`,
+      title: `${option.label} Labor (HR)`,
+      description: `Expert labor for ${option.label.toLowerCase()}`,
       quantity: laborHours,
-      unit: 'hours',
+      unit: 'HR',
       unitAmount: laborCost,
       totalPrice: laborCost * laborHours
     });
 
     // Materials costs
     const materialsCost = adjustPriceForLocation(baseMaterialCost, location, settings);
-    const materialQuantity = Math.ceil(Math.random() * 2) + 1; // 1-3 units
+    const materialQuantity = Math.ceil(Math.random() * 2) + 1;
     items.push({
-      title: `Materials - ${option.label}`,
-      description: `High-quality materials and supplies for ${option.label.toLowerCase()}`,
+      title: `${option.label} Materials (EA)`,
+      description: `High-quality materials and supplies`,
       quantity: materialQuantity,
-      unit: 'unit',
+      unit: 'EA',
       unitAmount: materialsCost,
       totalPrice: materialsCost * materialQuantity
     });
@@ -126,10 +126,10 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
       const baseCustomCost = 200;
       const customWorkCost = adjustPriceForLocation(baseCustomCost, location, settings);
       items.push({
-        title: `Custom Design - ${option.label}`,
-        description: `Specialized design and planning for custom ${option.label.toLowerCase()}`,
+        title: `${option.label} Design (EA)`,
+        description: `Specialized design and planning`,
         quantity: 1,
-        unit: 'service',
+        unit: 'EA',
         unitAmount: customWorkCost,
         totalPrice: customWorkCost
       });
@@ -144,31 +144,76 @@ function generateEstimateGroups(answers: Record<string, any>, location: Location
   let totalCost = 0;
 
   Object.entries(answers).forEach(([category, categoryAnswers]) => {
-    const subgroups: any[] = [];
+    const subgroups = new Map<string, any>();
     
     Object.entries(categoryAnswers).forEach(([questionId, answer]: [string, any]) => {
       const items = generateLineItems(answer, location, settings);
       if (items.length > 0) {
-        const subgroupTotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-        subgroups.push({
-          name: answer.question,
-          items,
-          subtotal: subgroupTotal
-        });
-        totalCost += subgroupTotal;
+        // Determine subcategory based on the question or selected options
+        const subcategory = determineSubcategory(answer);
+        
+        if (!subgroups.has(subcategory)) {
+          subgroups.set(subcategory, {
+            name: subcategory,
+            items: [],
+            subtotal: 0
+          });
+        }
+
+        const group = subgroups.get(subcategory);
+        group.items.push(...items);
+        group.subtotal = group.items.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
       }
     });
 
-    if (subgroups.length > 0) {
+    if (subgroups.size > 0) {
+      const groupSubtotal = Array.from(subgroups.values()).reduce((sum, group) => sum + group.subtotal, 0);
+      totalCost += groupSubtotal;
+
       groups.push({
         name: category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' '),
         description: `Complete breakdown for ${category.toLowerCase().replace(/_/g, ' ')} services`,
-        subgroups
+        subgroups: Array.from(subgroups.values())
       });
     }
   });
 
   return { groups, totalCost };
+}
+
+function determineSubcategory(answer: any): string {
+  // Extract keywords from the question and answers to determine appropriate subcategory
+  const questionText = answer.question.toLowerCase();
+  const selectedOptions = answer.options
+    .filter((opt: any) => answer.answers.includes(opt.value))
+    .map((opt: any) => opt.label.toLowerCase());
+
+  // Define subcategory mapping based on keywords
+  const subcategoryKeywords: Record<string, string[]> = {
+    'Electrical': ['electrical', 'wiring', 'lighting', 'outlet'],
+    'Plumbing': ['plumbing', 'water', 'pipe', 'drain'],
+    'Cabinets': ['cabinet', 'storage', 'drawer'],
+    'Countertops': ['countertop', 'surface', 'granite', 'quartz'],
+    'Flooring': ['floor', 'tile', 'hardwood', 'carpet'],
+    'Walls': ['wall', 'drywall', 'paint', 'texture'],
+    'Appliances': ['appliance', 'refrigerator', 'dishwasher', 'oven'],
+    'HVAC': ['hvac', 'heating', 'cooling', 'ventilation'],
+    'Demolition': ['demolition', 'remove', 'tear out'],
+    'Finishing': ['finish', 'trim', 'molding', 'detail']
+  };
+
+  // Check question and answers against keywords
+  for (const [subcategory, keywords] of Object.entries(subcategoryKeywords)) {
+    if (keywords.some(keyword => 
+      questionText.includes(keyword) || 
+      selectedOptions.some(option => option.includes(keyword))
+    )) {
+      return subcategory;
+    }
+  }
+
+  // Default to General if no specific subcategory is found
+  return 'General';
 }
 
 serve(async (req) => {

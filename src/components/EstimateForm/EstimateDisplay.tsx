@@ -48,6 +48,11 @@ export const EstimateDisplay = ({
 
   const companyInfo = contractor || defaultCompany;
 
+  const formatItemTitle = (title: string, unit?: string) => {
+    if (!unit) return title;
+    return `${title} (${unit})`;
+  };
+
   return (
     <Card className={cn(
       "p-8 max-w-4xl mx-auto transition-all duration-500",
@@ -98,7 +103,7 @@ export const EstimateDisplay = ({
             <div className="space-y-6">
               {group.subgroups.map((subgroup, subIndex) => (
                 <div key={subIndex} className="bg-white p-4 rounded-md shadow-sm">
-                  <h4 className="font-medium mb-3">{subgroup.name}</h4>
+                  <h4 className="font-medium mb-3 text-primary">{subgroup.name}</h4>
                   
                   {/* Line Items Table */}
                   <div className="overflow-x-auto">
@@ -115,9 +120,9 @@ export const EstimateDisplay = ({
                       <tbody>
                         {subgroup.items.map((item, itemIndex) => (
                           <tr key={itemIndex} className="border-b border-gray-100">
-                            <td className="py-3 px-4 font-medium">{item.title}</td>
+                            <td className="py-3 px-4 font-medium">{formatItemTitle(item.title, item.unit)}</td>
                             <td className="py-3 px-4 text-sm text-muted-foreground">{item.description}</td>
-                            <td className="py-3 px-4 text-right">{item.quantity} {item.unit}</td>
+                            <td className="py-3 px-4 text-right">{item.quantity}</td>
                             <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
                             <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
                           </tr>
