@@ -16,6 +16,7 @@ interface QuestionCardProps {
   isLastQuestion?: boolean;
   currentStage: number;
   totalStages: number;
+  hasFollowUpQuestion?: boolean;
 }
 
 export const QuestionCard = ({
@@ -26,6 +27,7 @@ export const QuestionCard = ({
   isLastQuestion,
   currentStage,
   totalStages,
+  hasFollowUpQuestion = true,
 }: QuestionCardProps) => {
   const [showNextButton, setShowNextButton] = useState(false);
 
@@ -59,10 +61,10 @@ export const QuestionCard = ({
   const options = Array.isArray(question?.options) ? question.options : [];
 
   return (
-    <Card className="w-full max-w-4xl mx-auto p-6">
+    <Card className="w-full max-w-4xl mx-auto p-6 relative pb-24">
       <h2 className="text-2xl font-semibold mb-6">{question?.question}</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-20">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {options.map((option) => {
           const isSelected = selectedOptions.includes(option.value);
           const showImage = shouldShowImage(option);
@@ -105,16 +107,14 @@ export const QuestionCard = ({
       </div>
 
       {question.type === 'multiple_choice' && showNextButton && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
-          <div className="container max-w-4xl mx-auto">
-            <Button 
-              onClick={onNext}
-              disabled={!showNextButton}
-              className="w-full"
-            >
-              {isLastQuestion ? 'Complete' : 'Next'}
-            </Button>
-          </div>
+        <div className="absolute bottom-6 left-6 right-6">
+          <Button 
+            onClick={onNext}
+            disabled={!showNextButton}
+            className="w-full"
+          >
+            {hasFollowUpQuestion ? 'Continue' : 'Complete'}
+          </Button>
         </div>
       )}
     </Card>
