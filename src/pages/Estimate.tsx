@@ -464,12 +464,26 @@ const EstimatePage = () => {
   const handleQuestionComplete = async (answers: AnswersState) => {
     setIsProcessing(true);
     try {
+      // Convert AnswersState to a format compatible with Supabase's Json type
+      const answersForSupabase = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
+        acc[category] = Object.entries(categoryAnswers).reduce((catAcc, [questionId, answer]) => {
+          catAcc[questionId] = {
+            question: answer.question,
+            type: answer.type,
+            answers: answer.answers,
+            options: answer.options
+          };
+          return catAcc;
+        }, {} as Record<string, any>);
+        return acc;
+      }, {} as Record<string, any>);
+
       // First create a lead with the question answers
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert({
           category: selectedCategory,
-          answers: answers,
+          answers: answersForSupabase,
           project_title: `${selectedCategory || ''} Project`,
           project_description: projectDescription,
           contractor_id: contractorId,
@@ -487,7 +501,7 @@ const EstimatePage = () => {
         body: { 
           projectDescription, 
           imageUrl: uploadedImageUrl, 
-          answers,
+          answers: answersForSupabase,
           contractorId,
           leadId: lead.id,
           category: selectedCategory
@@ -726,3 +740,4 @@ const EstimatePage = () => {
 };
 
 export default EstimatePage;
+
