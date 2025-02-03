@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ContactFormProps {
   onSubmit: (data: {
@@ -9,19 +10,45 @@ interface ContactFormProps {
     phone: string;
     address: string;
   }) => void;
+  leadId?: string;
 }
 
-export const ContactForm = ({ onSubmit }: ContactFormProps) => {
+export const ContactForm = ({ onSubmit, leadId }: ContactFormProps) => {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     phone: "",
     address: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    setIsSubmitting(true);
+
+    try {
+      // If we have a leadId, update the existing lead with contact information
+      if (leadId) {
+        const { error: updateError } = await supabase
+          .from('leads')
+          .update({
+            user_name: formData.fullName,
+            user_email: formData.email,
+            user_phone: formData.phone,
+            project_address: formData.address,
+            status: 'new'
+          })
+          .eq('id', leadId);
+
+        if (updateError) throw updateError;
+      }
+
+      onSubmit(formData);
+    } catch (error) {
+      console.error('Error updating lead:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -60,8 +87,8 @@ export const ContactForm = ({ onSubmit }: ContactFormProps) => {
             required
           />
           
-          <Button type="submit" className="w-full">
-            View Estimate
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "View Estimate"}
           </Button>
         </form>
       </div>
