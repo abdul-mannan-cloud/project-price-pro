@@ -420,7 +420,8 @@ const EstimatePage = () => {
           imageUrl: uploadedImageUrl, 
           answers: formattedAnswers,
           contractorId,
-          leadId: currentLeadId
+          leadId: currentLeadId,
+          category: selectedCategory
         }
       });
 
@@ -488,7 +489,8 @@ const EstimatePage = () => {
           imageUrl: uploadedImageUrl, 
           answers,
           contractorId,
-          leadId: lead.id
+          leadId: lead.id,
+          category: selectedCategory
         }
       });
 
@@ -694,6 +696,7 @@ const EstimatePage = () => {
               <ContactForm 
                 onSubmit={handleContactSubmit} 
                 leadId={currentLeadId || undefined}
+                contractorId={contractorId}
               />
             </div>
           </div>

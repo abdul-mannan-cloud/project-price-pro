@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface ContactFormProps {
   onSubmit: (data: {
@@ -11,9 +12,10 @@ interface ContactFormProps {
     address: string;
   }) => void;
   leadId?: string;
+  contractorId?: string;
 }
 
-export const ContactForm = ({ onSubmit, leadId }: ContactFormProps) => {
+export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps) => {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -21,31 +23,43 @@ export const ContactForm = ({ onSubmit, leadId }: ContactFormProps) => {
     address: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // If we have a leadId, update the existing lead with contact information
-      if (leadId) {
-        const { error: updateError } = await supabase
-          .from('leads')
-          .update({
-            user_name: formData.fullName,
-            user_email: formData.email,
-            user_phone: formData.phone,
-            project_address: formData.address,
-            status: 'new'
-          })
-          .eq('id', leadId);
-
-        if (updateError) throw updateError;
+      if (!leadId || !contractorId) {
+        throw new Error("Missing required IDs");
       }
 
+      // Update the lead with contact information
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update({
+          user_name: formData.fullName,
+          user_email: formData.email,
+          user_phone: formData.phone,
+          project_address: formData.address,
+          status: 'new',
+          contractor_id: contractorId
+        })
+        .eq('id', leadId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Call the onSubmit callback with the form data
       onSubmit(formData);
     } catch (error) {
       console.error('Error updating lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save your information. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
