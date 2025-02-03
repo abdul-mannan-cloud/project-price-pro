@@ -36,6 +36,7 @@ const EstimatePage = () => {
   const { toast } = useToast();
   const { contractorId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
+  const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
 
   // Fetch contractor data using react-query.
   const { data: contractor, isError: isContractorError } = useQuery({
@@ -418,7 +419,8 @@ const EstimatePage = () => {
           projectDescription, 
           imageUrl: uploadedImageUrl, 
           answers: formattedAnswers,
-          contractorId
+          contractorId,
+          leadId: currentLeadId
         }
       });
 
@@ -438,26 +440,11 @@ const EstimatePage = () => {
   // Handle contact form submission.
   const handleContactSubmit = async (contactData: any) => {
     try {
-      if (!contractorId) {
-        throw new Error("No contractor ID provided");
+      if (!contractorId || !currentLeadId) {
+        throw new Error("Missing contractor ID or lead ID");
       }
 
-      // Update the existing lead with contact information
-      const { error: updateError } = await supabase
-        .from('leads')
-        .update({
-          user_name: contactData.fullName,
-          user_email: contactData.email,
-          user_phone: contactData.phone,
-          project_address: contactData.address,
-          status: 'new'
-        })
-        .eq('category', selectedCategory)
-        .eq('contractor_id', contractorId)
-        .is('user_email', null); // Only update the most recent lead without contact info
-
-      if (updateError) throw updateError;
-
+      // The contact form component now handles the lead update
       setStage('estimate');
       toast({
         title: "Success",
@@ -491,6 +478,8 @@ const EstimatePage = () => {
         .single();
 
       if (leadError) throw leadError;
+
+      setCurrentLeadId(lead.id);
 
       // Then generate the estimate
       const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
@@ -702,7 +691,10 @@ const EstimatePage = () => {
               contractor={contractor || undefined}
             />
             <div className="mt-8">
-              <ContactForm onSubmit={handleContactSubmit} />
+              <ContactForm 
+                onSubmit={handleContactSubmit} 
+                leadId={currentLeadId || undefined}
+              />
             </div>
           </div>
         )}
