@@ -32,29 +32,35 @@ export const EstimateDisplay = ({
   isBlurred = false,
   contractor 
 }: EstimateDisplayProps) => {
+  // Default company information when no contractor is provided
+  const defaultCompany = {
+    business_name: "Example Company",
+    contact_email: "contact@example.com",
+    contact_phone: "(555) 123-4567"
+  };
+
+  // Use contractor info if available, otherwise use defaults
+  const companyInfo = contractor || defaultCompany;
+
   return (
     <Card className={cn(
       "p-8 max-w-4xl mx-auto transition-all duration-500",
       isBlurred && "blur-md pointer-events-none"
     )}>
-      {/* Contractor Header */}
+      {/* Company Header */}
       <div className="flex items-start justify-between mb-8 pb-6 border-b">
         <div className="flex items-center space-x-4">
           {contractor?.business_logo_url && (
             <img 
               src={contractor.business_logo_url} 
-              alt={`${contractor?.business_name || 'Business'} logo`}
+              alt={`${companyInfo.business_name} logo`}
               className="w-16 h-16 object-contain"
             />
           )}
           <div>
-            <h1 className="text-2xl font-bold">{contractor?.business_name || 'Project Estimate'}</h1>
-            {contractor?.contact_email && (
-              <p className="text-sm text-muted-foreground">{contractor.contact_email}</p>
-            )}
-            {contractor?.contact_phone && (
-              <p className="text-sm text-muted-foreground">{contractor.contact_phone}</p>
-            )}
+            <h1 className="text-2xl font-bold">{companyInfo.business_name}</h1>
+            <p className="text-sm text-muted-foreground">{companyInfo.contact_email}</p>
+            <p className="text-sm text-muted-foreground">{companyInfo.contact_phone}</p>
           </div>
         </div>
         <div className="text-right">
