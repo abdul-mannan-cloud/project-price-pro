@@ -3,6 +3,7 @@ import { QuestionCard } from "./QuestionCard";
 import { LoadingScreen } from "./LoadingScreen";
 import { Question, CategoryQuestions } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuestionManagerProps {
   questionSets: CategoryQuestions[];
@@ -19,6 +20,7 @@ export const QuestionManager = ({
   const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [queuedNextQuestions, setQueuedNextQuestions] = useState<string[]>([]);
+  const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
 
   useEffect(() => {
     loadCurrentQuestionSet();
@@ -130,7 +132,24 @@ export const QuestionManager = ({
     if (currentSetIndex < questionSets.length - 1) {
       moveToNextQuestionSet();
     } else {
-      onComplete(answers);
+      setIsGeneratingEstimate(true);
+      try {
+        const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
+          body: { answers }
+        });
+
+        if (error) throw error;
+        onComplete(answers);
+      } catch (error) {
+        console.error('Error generating estimate:', error);
+        toast({
+          title: "Error",
+          description: "Failed to generate estimate. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsGeneratingEstimate(false);
+      }
     }
   };
 
@@ -173,6 +192,10 @@ export const QuestionManager = ({
     return <LoadingScreen message="Loading questions..." />;
   }
 
+  if (isGeneratingEstimate) {
+    return <LoadingScreen message="Generating your estimate..." />;
+  }
+
   const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
   if (!currentQuestion) {
     return <LoadingScreen message="Loading questions..." />;
@@ -180,6 +203,8 @@ export const QuestionManager = ({
 
   const currentSet = questionSets[currentSetIndex];
   const currentSetAnswers = answers[currentSet.category] || {};
+  const hasFollowUpQuestion = currentSetIndex < questionSets.length - 1 || 
+    (currentQuestion.type === 'multiple_choice' && currentQuestion.options.some(opt => opt.next));
 
   return (
     <QuestionCard
@@ -190,6 +215,7 @@ export const QuestionManager = ({
       isLastQuestion={currentSetIndex === questionSets.length - 1}
       currentStage={currentSetIndex + 1}
       totalStages={questionSets.length}
+      hasFollowUpQuestion={hasFollowUpQuestion}
     />
   );
 };
