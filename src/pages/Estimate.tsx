@@ -12,12 +12,14 @@ import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
+import { CaptchaVerification } from "@/components/EstimateForm/CaptchaVerification";
 import { Question, Category, CategoryQuestions, AnswersState } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
+  const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
@@ -37,6 +39,10 @@ const EstimatePage = () => {
   const { contractorId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
+
+  const handleCaptchaVerify = () => {
+    setIsCaptchaVerified(true);
+  };
 
   // Fetch contractor data using react-query.
   const { data: contractor, isError: isContractorError } = useQuery({
@@ -572,6 +578,21 @@ const EstimatePage = () => {
     setSelectedCategory(categoryId);
     loadQuestionSet(categoryId);
   };
+
+  if (!isCaptchaVerified) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Progress value={0} className="h-8 rounded-none" />
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          <div className="card p-8 animate-fadeIn">
+            <h2 className="text-2xl font-semibold mb-6">Verifying...</h2>
+            <p className="text-muted-foreground">Please wait while we verify your session.</p>
+            <CaptchaVerification onVerify={handleCaptchaVerify} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isProcessing) {
     return (
