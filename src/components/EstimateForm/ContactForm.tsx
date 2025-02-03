@@ -30,9 +30,9 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
     setIsSubmitting(true);
 
     try {
-      if (!leadId || !contractorId) {
-        console.error('Missing IDs:', { leadId, contractorId });
-        throw new Error("Missing required IDs");
+      if (!leadId) {
+        console.error('Missing leadId');
+        throw new Error("Missing lead ID");
       }
 
       // Update the lead with contact information
@@ -85,7 +85,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
                 value={formData.fullName}
                 onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
                 required
-                className="h-12 px-4"
+                className="h-12 px-4 pt-2"
               />
               <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
                 Full Name
@@ -99,7 +99,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 required
-                className="h-12 px-4"
+                className="h-12 px-4 pt-2"
               />
               <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
                 Email
@@ -113,7 +113,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
                 value={formData.phone}
                 onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                 required
-                className="h-12 px-4"
+                className="h-12 px-4 pt-2"
               />
               <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
                 Phone Number
@@ -126,7 +126,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
                 value={formData.address}
                 onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                 required
-                className="h-12 px-4"
+                className="h-12 px-4 pt-2"
               />
               <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
                 Project Address

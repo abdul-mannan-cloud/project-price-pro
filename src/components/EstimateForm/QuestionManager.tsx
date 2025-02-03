@@ -91,7 +91,7 @@ export const QuestionManager = ({
     if (currentSetIndex < questionSets.length - 1) {
       setCurrentSetIndex(prev => prev + 1);
     } else {
-      onComplete(answers);
+      handleComplete();
     }
   };
 
@@ -101,17 +101,28 @@ export const QuestionManager = ({
 
     const currentSet = questionSets[currentSetIndex];
     
+    // Store both question and answer data
     setAnswers(prev => ({
       ...prev,
       [currentSet.category]: {
         ...prev[currentSet.category],
-        [questionId]: selectedValues
+        [questionId]: {
+          question: currentQuestion.question,
+          type: currentQuestion.type,
+          answers: selectedValues,
+          options: currentQuestion.options
+            .filter(opt => selectedValues.includes(opt.value))
+            .map(opt => ({
+              label: opt.label,
+              value: opt.value,
+              next: opt.next
+            }))
+        }
       }
     }));
 
     if (currentQuestion.type !== 'multiple_choice') {
       const nextQuestionId = findNextQuestionId(currentQuestion, selectedValues[0]);
-      console.log(`handleAnswer: For question ${questionId}, selected value ${selectedValues[0]}, nextQuestionId: ${nextQuestionId}`);
       
       if (nextQuestionId === 'NEXT_BRANCH') {
         if (queuedNextQuestions.length > 0) {
@@ -209,7 +220,7 @@ export const QuestionManager = ({
   return (
     <QuestionCard
       question={currentQuestion}
-      selectedOptions={currentSetAnswers[currentQuestion.id] || []}
+      selectedOptions={currentSetAnswers[currentQuestion.id]?.answers || []}
       onSelect={handleAnswer}
       onNext={currentQuestion.type === 'multiple_choice' ? handleMultipleChoiceNext : undefined}
       isLastQuestion={currentSetIndex === questionSets.length - 1}
