@@ -18,7 +18,7 @@ import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/quest
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 
 const EstimatePage = () => {
-  const [stage, setStage] = useState<'verification' | 'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('verification');
+  const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -43,7 +43,6 @@ const EstimatePage = () => {
   const handleCaptchaVerify = () => {
     console.log("Captcha verified successfully");
     setIsCaptchaVerified(true);
-    setStage('photo');
   };
 
   // Fetch contractor data using react-query.
@@ -540,8 +539,6 @@ const EstimatePage = () => {
   // Calculate the progress bar value.
   const getProgressValue = () => {
     switch (stage) {
-      case 'verification':
-        return 0;
       case 'photo':
         return 15;
       case 'description':
@@ -588,11 +585,8 @@ const EstimatePage = () => {
       <div className="min-h-screen bg-white">
         <Progress value={0} className="h-8 rounded-none" />
         <div className="max-w-4xl mx-auto px-4 py-12">
-          <div className="card p-8 animate-fadeIn">
-            <h2 className="text-2xl font-semibold mb-6">Please Verify</h2>
-            <p className="text-muted-foreground mb-8">Complete the verification below to continue.</p>
-            <CaptchaVerification onVerify={handleCaptchaVerify} />
-          </div>
+          <LoadingScreen message="Initializing..." />
+          <CaptchaVerification onVerify={handleCaptchaVerify} />
         </div>
       </div>
     );

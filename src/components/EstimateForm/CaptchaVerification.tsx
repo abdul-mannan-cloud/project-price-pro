@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
-import type { TurnstileProps } from "@marsidev/react-turnstile";
 import { useToast } from "@/hooks/use-toast";
 
 interface CaptchaVerificationProps {
@@ -29,7 +28,7 @@ export const CaptchaVerification = ({ onVerify }: CaptchaVerificationProps) => {
   };
 
   return (
-    <div className="flex justify-center items-center">
+    <div className="absolute opacity-0 pointer-events-none">
       <Turnstile
         siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || ""}
         onSuccess={handleVerify}
@@ -37,7 +36,7 @@ export const CaptchaVerification = ({ onVerify }: CaptchaVerificationProps) => {
         options={{
           theme: "light",
           size: "normal",
-          appearance: "always",
+          appearance: "interaction-only",
           retry: "auto",
         }}
       />
