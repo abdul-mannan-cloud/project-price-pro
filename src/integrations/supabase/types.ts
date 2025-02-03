@@ -180,7 +180,6 @@ export type Database = {
       }
       Options: {
         Row: {
-          Appliances: Json | null
           Carpenter: Json | null
           Concrete: Json | null
           "Deck & porch": Json | null
@@ -201,7 +200,6 @@ export type Database = {
           Repairs: Json | null
         }
         Insert: {
-          Appliances?: Json | null
           Carpenter?: Json | null
           Concrete?: Json | null
           "Deck & porch"?: Json | null
@@ -222,7 +220,6 @@ export type Database = {
           Repairs?: Json | null
         }
         Update: {
-          Appliances?: Json | null
           Carpenter?: Json | null
           Concrete?: Json | null
           "Deck & porch"?: Json | null
