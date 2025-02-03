@@ -15,27 +15,40 @@ serve(async (req) => {
     const { projectDescription, imageUrl, answers, contractorId } = await req.json();
     console.log('Generating estimate for:', { projectDescription, imageUrl, answers, contractorId });
 
-    // Fetch options from the database for context
-    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env;
-    const optionsResponse = await fetch(`${SUPABASE_URL}/rest/v1/Options`, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-      },
+    // Format answers for the AI prompt
+    const formattedAnswers = Object.entries(answers).map(([category, categoryAnswers]) => {
+      return {
+        category,
+        responses: Object.entries(categoryAnswers).map(([questionId, data]) => ({
+          question: data.question,
+          answers: data.answers,
+          selectedOptions: data.options.map(opt => opt.label)
+        }))
+      };
     });
 
-    if (!optionsResponse.ok) {
-      throw new Error('Failed to fetch options from database');
+    // Fetch contractor details if available
+    let contractor = null;
+    if (contractorId) {
+      const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env;
+      const contractorResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/contractors?id=eq.${contractorId}&select=*,contractor_settings(*)`,
+        {
+          headers: {
+            'apikey': SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        }
+      );
+
+      if (contractorResponse.ok) {
+        [contractor] = await contractorResponse.json();
+      }
     }
 
-    const options = await optionsResponse.json();
-
     const systemPrompt = `You are an AI assistant that generates detailed cost estimates for construction projects.
-    Use the provided knowledge base and customer answers to generate accurate line items grouped by category.
-    Make sure to provide detailed descriptions for each line item.
-    
-    Knowledge Base:
-    ${JSON.stringify(options, null, 2)}
+    Generate accurate line items grouped by category based on the customer's answers.
+    Provide detailed descriptions for each line item.
     
     Return a JSON object with this exact structure:
     {
@@ -64,21 +77,6 @@ serve(async (req) => {
       throw new Error('LLAMA_API_KEY is not set');
     }
 
-    // Fetch contractor details
-    const contractorResponse = await fetch(`${SUPABASE_URL}/rest/v1/contractors?id=eq.${contractorId}&select=*,contractor_settings(*)`, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-      },
-    });
-
-    if (!contractorResponse.ok) {
-      throw new Error('Failed to fetch contractor details');
-    }
-
-    const [contractor] = await contractorResponse.json();
-    console.log('Contractor details:', contractor);
-
     const messages = [
       { role: "system", content: systemPrompt },
       {
@@ -88,10 +86,9 @@ serve(async (req) => {
             type: "text",
             text: `Generate a detailed estimate for this project:
             Description: ${projectDescription}
-            Customer Responses: ${JSON.stringify(answers, null, 2)}
+            Customer Responses: ${JSON.stringify(formattedAnswers, null, 2)}
             
-            Use the knowledge base to inform pricing and line items.
-            Consider these contractor settings:
+            Consider these settings:
             - Minimum Project Cost: ${contractor?.contractor_settings?.minimum_project_cost || 1000}
             - Markup Percentage: ${contractor?.contractor_settings?.markup_percentage || 20}
             - Tax Rate: ${contractor?.contractor_settings?.tax_rate || 8.5}
@@ -136,20 +133,15 @@ serve(async (req) => {
     const estimateData = JSON.parse(data.choices[0].message.content);
     console.log('Parsed estimate:', estimateData);
 
-    // Validate minimum requirements
-    if (!estimateData.groups || estimateData.groups.length < 3) {
-      throw new Error('Not enough groups generated');
-    }
-
     // Add contractor information to the response
     const responseData = {
       ...estimateData,
-      contractor: {
+      contractor: contractor ? {
         businessName: contractor.business_name,
         logoUrl: contractor.business_logo_url,
         contactEmail: contractor.contact_email,
         contactPhone: contractor.contact_phone
-      }
+      } : null
     };
 
     return new Response(JSON.stringify(responseData), {
