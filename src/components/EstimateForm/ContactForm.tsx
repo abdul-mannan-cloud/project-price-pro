@@ -31,7 +31,7 @@ export const ContactForm = ({ onSubmit }: ContactFormProps) => {
           <h2 className="text-2xl font-semibold mb-6">Enter Your Contact Details</h2>
           
           <Input
-            label="Full Name"
+            placeholder="Full Name"
             value={formData.fullName}
             onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
             required
@@ -39,7 +39,7 @@ export const ContactForm = ({ onSubmit }: ContactFormProps) => {
           
           <Input
             type="email"
-            label="Email"
+            placeholder="Email"
             value={formData.email}
             onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
             required
@@ -47,14 +47,14 @@ export const ContactForm = ({ onSubmit }: ContactFormProps) => {
           
           <Input
             type="tel"
-            label="Phone Number"
+            placeholder="Phone Number"
             value={formData.phone}
             onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
             required
           />
           
           <Input
-            label="Project Address"
+            placeholder="Project Address"
             value={formData.address}
             onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
             required
