@@ -14,6 +14,7 @@ interface LineItem {
 interface SubGroup {
   name: string;
   items: LineItem[];
+  subtotal: number;
 }
 
 interface ItemGroup {
@@ -96,7 +97,7 @@ export const EstimateDisplay = ({
             {/* Subgroups */}
             <div className="space-y-6">
               {group.subgroups.map((subgroup, subIndex) => (
-                <div key={subIndex} className="bg-white p-4 rounded-md">
+                <div key={subIndex} className="bg-white p-4 rounded-md shadow-sm">
                   <h4 className="font-medium mb-3">{subgroup.name}</h4>
                   
                   {/* Line Items Table */}
@@ -114,7 +115,7 @@ export const EstimateDisplay = ({
                       <tbody>
                         {subgroup.items.map((item, itemIndex) => (
                           <tr key={itemIndex} className="border-b border-gray-100">
-                            <td className="py-3 px-4">{item.title}</td>
+                            <td className="py-3 px-4 font-medium">{item.title}</td>
                             <td className="py-3 px-4 text-sm text-muted-foreground">{item.description}</td>
                             <td className="py-3 px-4 text-right">{item.quantity} {item.unit}</td>
                             <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
@@ -128,9 +129,7 @@ export const EstimateDisplay = ({
                   {/* Subgroup Subtotal */}
                   <div className="mt-4 pt-4 border-t flex justify-between items-center">
                     <p className="font-medium">Subtotal for {subgroup.name}</p>
-                    <p className="font-semibold">
-                      ${subgroup.items.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2)}
-                    </p>
+                    <p className="font-semibold">${subgroup.subtotal.toFixed(2)}</p>
                   </div>
                 </div>
               ))}
@@ -140,10 +139,7 @@ export const EstimateDisplay = ({
             <div className="mt-6 pt-4 border-t flex justify-between items-center">
               <p className="font-medium">Subtotal for {group.name}</p>
               <p className="font-semibold">
-                ${group.subgroups.reduce((sum, subgroup) => 
-                  sum + subgroup.items.reduce((itemSum, item) => itemSum + item.totalPrice, 0), 
-                  0
-                ).toFixed(2)}
+                ${group.subgroups.reduce((sum, subgroup) => sum + subgroup.subtotal, 0).toFixed(2)}
               </p>
             </div>
           </div>
@@ -151,8 +147,20 @@ export const EstimateDisplay = ({
       </div>
       
       {/* Total */}
-      <div className="mt-8 pt-6 border-t">
-        <div className="flex justify-between items-center">
+      <div className="mt-8 pt-6 border-t space-y-4">
+        <div className="flex justify-between items-center text-muted-foreground">
+          <p>Subtotal</p>
+          <p>${(totalCost * 0.8).toFixed(2)}</p>
+        </div>
+        <div className="flex justify-between items-center text-muted-foreground">
+          <p>Tax (8.5%)</p>
+          <p>${(totalCost * 0.085).toFixed(2)}</p>
+        </div>
+        <div className="flex justify-between items-center text-muted-foreground">
+          <p>Service Fee (20%)</p>
+          <p>${(totalCost * 0.2).toFixed(2)}</p>
+        </div>
+        <div className="flex justify-between items-center pt-4 border-t">
           <p className="text-xl font-semibold">Total Estimate</p>
           <p className="text-2xl font-bold">${totalCost.toFixed(2)}</p>
         </div>
