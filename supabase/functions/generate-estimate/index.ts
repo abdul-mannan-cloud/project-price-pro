@@ -30,10 +30,23 @@ async function getLocationData(ip: string): Promise<LocationData | null> {
   }
 }
 
+function generateProjectSummary(projectDescription: string, answers: Record<string, any>, category?: string): string {
+  const categoryText = category ? `${category} project` : 'home improvement project';
+  const scope = Object.values(answers).reduce((acc: string[], categoryAnswers: any) => {
+    Object.values(categoryAnswers).forEach((answer: any) => {
+      if (answer.answers && answer.answers.length > 0) {
+        acc.push(answer.answers.join(', '));
+      }
+    });
+    return acc;
+  }, []).join('; ');
+
+  return `This ${categoryText} includes ${scope}. ${projectDescription}`;
+}
+
 function adjustPriceForLocation(basePrice: number, location: LocationData | null, settings: any): number {
   if (!location) return basePrice;
 
-  // Regional price adjustments based on state
   const regionalFactors: Record<string, number> = {
     'CA': 1.4,  // California
     'NY': 1.35, // New York
@@ -47,23 +60,16 @@ function adjustPriceForLocation(basePrice: number, location: LocationData | null
     'AZ': 1.0,  // Arizona
   };
 
-  // Get regional adjustment factor, default to 1 if state not found
   const regionFactor = regionalFactors[location.region] || 1;
-
-  // Apply contractor's custom pricing if available
   const contractorPricing = settings?.regional_pricing?.[location.region];
-  if (contractorPricing) {
-    return basePrice * contractorPricing;
-  }
-
-  return basePrice * regionFactor;
+  
+  return contractorPricing ? basePrice * contractorPricing : basePrice * regionFactor;
 }
 
 function generateEstimateGroups(answers: Record<string, any>, location: LocationData | null, settings: any) {
   const groups: any[] = [];
   let totalCost = 0;
 
-  // Process each category of answers
   Object.entries(answers).forEach(([category, categoryAnswers]) => {
     const categoryGroup = {
       name: category.charAt(0).toUpperCase() + category.slice(1),
@@ -71,15 +77,12 @@ function generateEstimateGroups(answers: Record<string, any>, location: Location
       items: [] as any[]
     };
 
-    // Process each question's answer within the category
     Object.entries(categoryAnswers).forEach(([_, answer]: [string, any]) => {
       const { question, answers: selectedAnswers, options } = answer;
 
-      // Generate items based on selected answers
       selectedAnswers.forEach((selected: string) => {
         const option = options.find((opt: any) => opt.value === selected);
         if (option) {
-          // Generate labor item
           const laborCost = adjustPriceForLocation(125, location, settings);
           const laborItem = {
             title: `Professional Installation - ${option.label}`,
@@ -90,7 +93,6 @@ function generateEstimateGroups(answers: Record<string, any>, location: Location
           };
           categoryGroup.items.push(laborItem);
 
-          // Generate materials item
           const materialsCost = adjustPriceForLocation(250, location, settings);
           const materialsItem = {
             title: `Materials - ${option.label}`,
@@ -101,7 +103,6 @@ function generateEstimateGroups(answers: Record<string, any>, location: Location
           };
           categoryGroup.items.push(materialsItem);
 
-          // Add any additional items based on specific options
           if (option.value.includes('custom')) {
             const customWorkCost = adjustPriceForLocation(200, location, settings);
             const customItem = {
@@ -137,7 +138,6 @@ serve(async (req) => {
     const { projectDescription, answers, contractorId, category } = await req.json() as RequestBody;
     console.log('Generating estimate for:', { projectDescription, category, contractorId });
 
-    // Get client IP and location data
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
     const locationData = await getLocationData(clientIP);
     console.log('Location data:', locationData);
@@ -176,20 +176,9 @@ serve(async (req) => {
       }
     }
 
-    // Generate estimate title and description
-    const estimateTitle = category 
-      ? `${category.charAt(0).toUpperCase() + category.slice(1)} Project Estimate`
-      : 'Project Estimate';
-
-    // Create a detailed project overview
-    const projectOverview = `Detailed estimate for ${projectDescription}. 
-    ${locationData ? `Location: ${locationData.city}, ${locationData.region}` : ''}
-    This estimate includes all necessary labor and materials to complete the project according to the specifications provided.`;
-
-    // Generate detailed line items based on answers
+    const projectSummary = generateProjectSummary(projectDescription, answers, category);
     const { groups, totalCost } = generateEstimateGroups(answers, locationData, settings);
 
-    // Apply contractor settings if available
     const markupPercentage = settings?.markup_percentage || 20;
     const taxRate = settings?.tax_rate || 8.5;
     const markup = totalCost * (markupPercentage / 100);
@@ -197,8 +186,7 @@ serve(async (req) => {
     const finalTotal = totalCost + markup + tax;
 
     const estimate = {
-      title: estimateTitle,
-      description: projectOverview,
+      projectSummary,
       groups,
       subtotal: totalCost,
       markup,
