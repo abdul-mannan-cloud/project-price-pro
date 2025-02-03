@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Turnstile, TurnstileOptions } from "@marsidev/react-turnstile";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { useToast } from "@/hooks/use-toast";
 
 interface CaptchaVerificationProps {
@@ -24,10 +24,6 @@ export const CaptchaVerification = ({ onVerified }: CaptchaVerificationProps) =>
     }
   };
 
-  const turnstileOptions: TurnstileOptions = {
-    theme: 'invisible' as const
-  };
-
   return (
     <div className="card p-8 animate-fadeIn">
       <div className="flex items-start justify-between mb-6">
@@ -46,7 +42,9 @@ export const CaptchaVerification = ({ onVerified }: CaptchaVerificationProps) =>
           siteKey={siteKey}
           onSuccess={handleVerification}
           className="mx-auto"
-          options={turnstileOptions}
+          options={{
+            theme: 'invisible'
+          }}
         />
       </div>
     </div>
