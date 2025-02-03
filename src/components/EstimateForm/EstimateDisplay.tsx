@@ -11,10 +11,15 @@ interface LineItem {
   totalPrice: number;
 }
 
+interface SubGroup {
+  name: string;
+  items: LineItem[];
+}
+
 interface ItemGroup {
   name: string;
   description?: string;
-  items: LineItem[];
+  subgroups: SubGroup[];
 }
 
 interface EstimateDisplayProps {
@@ -34,14 +39,12 @@ export const EstimateDisplay = ({
   contractor,
   projectSummary
 }: EstimateDisplayProps) => {
-  // Default company information when no contractor is provided
   const defaultCompany = {
     business_name: "Example Company",
     contact_email: "contact@example.com",
     contact_phone: "(555) 123-4567"
   };
 
-  // Use contractor info if available, otherwise use defaults
   const companyInfo = contractor || defaultCompany;
 
   return (
@@ -90,37 +93,57 @@ export const EstimateDisplay = ({
               )}
             </div>
 
-            {/* Line Items Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Item</th>
-                    <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Description</th>
-                    <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Qty</th>
-                    <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Unit Price</th>
-                    <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {group.items.map((item, itemIndex) => (
-                    <tr key={itemIndex} className="border-b border-gray-100">
-                      <td className="py-3 px-4">{item.title}</td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground">{item.description}</td>
-                      <td className="py-3 px-4 text-right">{item.quantity} {item.unit}</td>
-                      <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Subgroups */}
+            <div className="space-y-6">
+              {group.subgroups.map((subgroup, subIndex) => (
+                <div key={subIndex} className="bg-white p-4 rounded-md">
+                  <h4 className="font-medium mb-3">{subgroup.name}</h4>
+                  
+                  {/* Line Items Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Item</th>
+                          <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Description</th>
+                          <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Qty</th>
+                          <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Unit Price</th>
+                          <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subgroup.items.map((item, itemIndex) => (
+                          <tr key={itemIndex} className="border-b border-gray-100">
+                            <td className="py-3 px-4">{item.title}</td>
+                            <td className="py-3 px-4 text-sm text-muted-foreground">{item.description}</td>
+                            <td className="py-3 px-4 text-right">{item.quantity} {item.unit}</td>
+                            <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
+                            <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Subgroup Subtotal */}
+                  <div className="mt-4 pt-4 border-t flex justify-between items-center">
+                    <p className="font-medium">Subtotal for {subgroup.name}</p>
+                    <p className="font-semibold">
+                      ${subgroup.items.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Group Subtotal */}
-            <div className="mt-4 pt-4 border-t flex justify-between items-center">
+            <div className="mt-6 pt-4 border-t flex justify-between items-center">
               <p className="font-medium">Subtotal for {group.name}</p>
               <p className="font-semibold">
-                ${group.items.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2)}
+                ${group.subgroups.reduce((sum, subgroup) => 
+                  sum + subgroup.items.reduce((itemSum, item) => itemSum + item.totalPrice, 0), 
+                  0
+                ).toFixed(2)}
               </p>
             </div>
           </div>
