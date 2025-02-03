@@ -198,6 +198,7 @@ export type Database = {
           Painting: Json | null
           Plumber: Json | null
           Repairs: Json | null
+          "Security System": Json | null
         }
         Insert: {
           Carpenter?: Json | null
@@ -218,6 +219,7 @@ export type Database = {
           Painting?: Json | null
           Plumber?: Json | null
           Repairs?: Json | null
+          "Security System"?: Json | null
         }
         Update: {
           Carpenter?: Json | null
@@ -238,6 +240,7 @@ export type Database = {
           Painting?: Json | null
           Plumber?: Json | null
           Repairs?: Json | null
+          "Security System"?: Json | null
         }
         Relationships: []
       }
