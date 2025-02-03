@@ -432,8 +432,6 @@ const EstimatePage = () => {
         description: "Failed to generate estimate. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -444,25 +442,21 @@ const EstimatePage = () => {
         throw new Error("No contractor ID provided");
       }
 
-      const { data: lead, error: leadError } = await supabase
+      // Update the existing lead with contact information
+      const { error: updateError } = await supabase
         .from('leads')
-        .insert({
-          contractor_id: contractorId,
-          project_title: `${selectedCategory || ''} Project`,
+        .update({
           user_name: contactData.fullName,
           user_email: contactData.email,
           user_phone: contactData.phone,
           project_address: contactData.address,
-          category: selectedCategory || '',
-          answers: answers,
-          estimate_data: estimate,
-          estimated_cost: estimate?.totalCost || 0,
           status: 'new'
         })
-        .select()
-        .single();
+        .eq('category', selectedCategory)
+        .eq('contractor_id', contractorId)
+        .is('user_email', null); // Only update the most recent lead without contact info
 
-      if (leadError) throw leadError;
+      if (updateError) throw updateError;
 
       setStage('estimate');
       toast({
@@ -476,6 +470,63 @@ const EstimatePage = () => {
         description: "Failed to save your information. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleQuestionComplete = async (answers: Record<string, Record<string, string[]>>) => {
+    setIsProcessing(true);
+    try {
+      // First create a lead with the question answers
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .insert({
+          category: selectedCategory,
+          answers: answers,
+          project_title: `${selectedCategory || ''} Project`,
+          project_description: projectDescription,
+          contractor_id: contractorId,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (leadError) throw leadError;
+
+      // Then generate the estimate
+      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          projectDescription, 
+          imageUrl: uploadedImageUrl, 
+          answers,
+          contractorId,
+          leadId: lead.id
+        }
+      });
+
+      if (error) throw error;
+      
+      // Update the lead with the estimate data
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update({ 
+          estimate_data: estimateData,
+          estimated_cost: estimateData.totalCost || 0
+        })
+        .eq('id', lead.id);
+
+      if (updateError) throw updateError;
+
+      setEstimate(estimateData);
+      setStage('contact');
+    } catch (error) {
+      console.error('Error generating estimate:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate estimate. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -521,33 +572,6 @@ const EstimatePage = () => {
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
     loadQuestionSet(categoryId);
-  };
-
-  const handleQuestionComplete = async (answers: Record<string, Record<string, string[]>>) => {
-    setIsProcessing(true);
-    try {
-      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          projectDescription, 
-          imageUrl: uploadedImageUrl, 
-          answers,
-          contractorId
-        }
-      });
-
-      if (error) throw error;
-      setEstimate(estimateData);
-      setStage('contact');
-    } catch (error) {
-      console.error('Error generating estimate:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate estimate. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   if (isProcessing) {
