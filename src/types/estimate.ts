@@ -25,10 +25,31 @@ export interface Category {
   name: string;
   description?: string;
   icon?: string;
+  questions?: Question[];
+  keywords: string[];
 }
 
 export interface EstimateFormState {
   currentQuestionId: string | null;
   answers: Record<string, string[]>;
   isComplete: boolean;
+}
+
+// Helper type for matching categories with questions
+export interface CategoryWithQuestions extends Category {
+  questions: Question[];
+}
+
+// Helper function to check if a category has questions
+export function isCategoryWithQuestions(category: Category): category is CategoryWithQuestions {
+  return Array.isArray(category.questions) && category.questions.length > 0;
+}
+
+// Helper function to convert Category to CategoryQuestions
+export function categoryToQuestionSet(category: CategoryWithQuestions): CategoryQuestions {
+  return {
+    category: category.id,
+    keywords: category.keywords,
+    questions: category.questions
+  };
 }
