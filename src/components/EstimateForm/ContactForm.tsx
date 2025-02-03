@@ -32,12 +32,11 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
     try {
       if (!leadId) {
         console.error('Missing leadId in ContactForm');
-        throw new Error("Unable to save contact information - missing lead reference");
+        throw new Error("Unable to process your request at this time");
       }
 
       console.log('Submitting contact form with:', { leadId, contractorId, formData });
 
-      // Update the lead with contact information
       const { error: updateError } = await supabase
         .from('leads')
         .update({
@@ -55,13 +54,12 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
         throw updateError;
       }
 
-      // Call the onSubmit callback with the form data
       onSubmit(formData);
     } catch (error) {
-      console.error('Error saving contact information:', error);
+      console.error('Error processing form:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save your information. Please try again.",
+        description: "Unable to process your request. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -142,7 +140,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
             className="w-full mt-6" 
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Saving..." : "View Your Custom Estimate"}
+            {isSubmitting ? "Processing..." : "View Your Custom Estimate"}
           </Button>
         </form>
       </div>
