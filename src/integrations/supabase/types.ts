@@ -184,7 +184,7 @@ export type Database = {
           Concrete: Json | null
           "Deck & porch": Json | null
           Demolition: Json | null
-          "Door & Window": Json | null
+          Door: Json | null
           Drywall: Json | null
           Electrician: Json | null
           "Fence Installation": Json | null
@@ -204,7 +204,7 @@ export type Database = {
           Concrete?: Json | null
           "Deck & porch"?: Json | null
           Demolition?: Json | null
-          "Door & Window"?: Json | null
+          Door?: Json | null
           Drywall?: Json | null
           Electrician?: Json | null
           "Fence Installation"?: Json | null
@@ -224,7 +224,7 @@ export type Database = {
           Concrete?: Json | null
           "Deck & porch"?: Json | null
           Demolition?: Json | null
-          "Door & Window"?: Json | null
+          Door?: Json | null
           Drywall?: Json | null
           Electrician?: Json | null
           "Fence Installation"?: Json | null
