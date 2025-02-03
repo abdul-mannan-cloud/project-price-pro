@@ -18,10 +18,22 @@ export const QuestionManager = ({
   const [answers, setAnswers] = useState<Record<string, Record<string, string[]>>>({});
   const [questionSequence, setQuestionSequence] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
+  const [queuedNextQuestions, setQueuedNextQuestions] = useState<string[]>([]);
 
   useEffect(() => {
     loadCurrentQuestionSet();
   }, [currentSetIndex, questionSets]);
+
+  useEffect(() => {
+    if (!isLoadingQuestions && !questionSequence.find(q => q.id === currentQuestionId)) {
+      if (queuedNextQuestions.length > 0) {
+        setCurrentQuestionId(queuedNextQuestions[0]);
+        setQueuedNextQuestions(queuedNextQuestions.slice(1));
+      } else {
+        handleComplete();
+      }
+    }
+  }, [currentQuestionId, isLoadingQuestions, questionSequence, queuedNextQuestions]);
 
   const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {
@@ -50,30 +62,27 @@ export const QuestionManager = ({
     }
   };
 
-  const findNextQuestionId = (currentQuestion: Question, selectedValue: string): string | null => {
-    const selectedOption = currentQuestion.options.find(opt => opt.value === selectedValue);
+  const findNextQuestionId = (
+    currentQuestion: Question,
+    selectedValue: string
+  ): string | null | 'NEXT_BRANCH' => {
+    const selectedOption = currentQuestion.options.find(
+      (opt) => opt.value.toLowerCase() === selectedValue.toLowerCase()
+    );
     
     if (selectedOption?.next) {
-      if (selectedOption.next === 'END') {
-        return null;
-      }
-      if (selectedOption.next === 'NEXT_BRANCH') {
-        moveToNextQuestionSet();
-        return null;
-      }
+      if (selectedOption.next === 'NEXT_BRANCH') return 'NEXT_BRANCH';
+      if (selectedOption.next === 'END') return null;
       return selectedOption.next;
     }
 
-    if (currentQuestion.next === 'END') {
-      return null;
-    }
-    if (currentQuestion.next === 'NEXT_BRANCH') {
-      moveToNextQuestionSet();
-      return null;
-    }
+    if (currentQuestion.next === 'NEXT_BRANCH') return 'NEXT_BRANCH';
+    if (currentQuestion.next === 'END' || !currentQuestion.next) return null;
 
     const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
-    return currentIndex < questionSequence.length - 1 ? questionSequence[currentIndex + 1].id : null;
+    return currentIndex < questionSequence.length - 1
+      ? questionSequence[currentIndex + 1].id
+      : null;
   };
 
   const moveToNextQuestionSet = () => {
@@ -100,13 +109,17 @@ export const QuestionManager = ({
 
     if (currentQuestion.type !== 'multiple_choice') {
       const nextQuestionId = findNextQuestionId(currentQuestion, selectedValues[0]);
+      console.log(`handleAnswer: For question ${questionId}, selected value ${selectedValues[0]}, nextQuestionId: ${nextQuestionId}`);
       
-      if (!nextQuestionId) {
-        if (selectedValues[0] === 'no' && currentQuestion.type === 'yes_no') {
-          moveToNextQuestionSet();
+      if (nextQuestionId === 'NEXT_BRANCH') {
+        if (queuedNextQuestions.length > 0) {
+          setCurrentQuestionId(queuedNextQuestions[0]);
+          setQueuedNextQuestions(queuedNextQuestions.slice(1));
         } else {
-          await handleComplete();
+          moveToNextQuestionSet();
         }
+      } else if (!nextQuestionId) {
+        await handleComplete();
       } else {
         setCurrentQuestionId(nextQuestionId);
       }
@@ -114,7 +127,46 @@ export const QuestionManager = ({
   };
 
   const handleComplete = async () => {
-    moveToNextQuestionSet();
+    if (currentSetIndex < questionSets.length - 1) {
+      moveToNextQuestionSet();
+    } else {
+      onComplete(answers);
+    }
+  };
+
+  const handleMultipleChoiceNext = async () => {
+    const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
+    if (!currentQuestion) return;
+
+    const currentSet = questionSets[currentSetIndex];
+    const currentSetAnswers = answers[currentSet.category] || {};
+    const selectedValues = currentSetAnswers[currentQuestion.id] || [];
+    if (selectedValues.length === 0) return;
+
+    let nextIDs: string[] = [];
+    for (const option of currentQuestion.options) {
+      if (selectedValues.includes(option.value)) {
+        if (option.next && option.next !== 'END') {
+          nextIDs.push(option.next);
+        }
+      }
+    }
+
+    nextIDs = nextIDs.filter((item, index) => nextIDs.indexOf(item) === index);
+    const validNextIDs = nextIDs.filter(id => id !== 'NEXT_BRANCH');
+    
+    if (validNextIDs.length > 0) {
+      nextIDs = validNextIDs;
+    }
+
+    if (nextIDs.length > 0) {
+      setCurrentQuestionId(nextIDs[0]);
+      if (nextIDs.length > 1) {
+        setQueuedNextQuestions(nextIDs.slice(1));
+      }
+    } else {
+      moveToNextQuestionSet();
+    }
   };
 
   if (isLoadingQuestions) {
@@ -123,13 +175,7 @@ export const QuestionManager = ({
 
   const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
   if (!currentQuestion) {
-    return (
-      <div className="text-center p-8">
-        <p className="text-lg text-gray-600">
-          No questions available. Moving to next category...
-        </p>
-      </div>
-    );
+    return <LoadingScreen message="Loading questions..." />;
   }
 
   const currentSet = questionSets[currentSetIndex];
@@ -140,7 +186,7 @@ export const QuestionManager = ({
       question={currentQuestion}
       selectedOptions={currentSetAnswers[currentQuestion.id] || []}
       onSelect={handleAnswer}
-      onNext={handleComplete}
+      onNext={currentQuestion.type === 'multiple_choice' ? handleMultipleChoiceNext : undefined}
       isLastQuestion={currentSetIndex === questionSets.length - 1}
       currentStage={currentSetIndex + 1}
       totalStages={questionSets.length}
