@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Question } from "@/types/estimate";
 import { Card } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, Square } from "lucide-react";
 
 interface QuestionCardProps {
   question: Question;
@@ -61,10 +61,10 @@ export const QuestionCard = ({
 
   return (
     <>
-      <Card className="w-full max-w-4xl mx-auto p-6 relative pb-24 md:pb-6">
+      <Card className="w-full max-w-4xl mx-auto p-6 relative">
         <h2 className="text-2xl font-semibold mb-6">{question?.question}</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-20 md:mb-24">
           {options.map((option) => {
             const isSelected = selectedOptions.includes(option.value);
             const showImage = shouldShowImage(option);
@@ -96,9 +96,13 @@ export const QuestionCard = ({
                   !showImage && "text-left w-full"
                 )}>{option.label}</span>
                 
-                {isSelected && question.type === 'multiple_choice' && (
-                  <div className="absolute top-2 right-2 bg-primary rounded-full p-1">
-                    <Check className="w-4 h-4 text-white" />
+                {question.type === 'multiple_choice' && (
+                  <div className={cn(
+                    "absolute top-2 right-2 w-5 h-5 rounded border",
+                    isSelected ? "bg-primary border-primary" : "border-gray-300",
+                    "flex items-center justify-center"
+                  )}>
+                    {isSelected && <Check className="w-3 h-3 text-white" />}
                   </div>
                 )}
               </Button>
