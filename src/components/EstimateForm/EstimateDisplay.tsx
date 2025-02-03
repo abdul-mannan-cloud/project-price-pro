@@ -24,13 +24,15 @@ interface EstimateDisplayProps {
   contractor?: Database['public']['Tables']['contractors']['Row'] & {
     contractor_settings: Database['public']['Tables']['contractor_settings']['Row'] | null;
   };
+  projectSummary?: string;
 }
 
 export const EstimateDisplay = ({ 
   groups, 
   totalCost, 
   isBlurred = false,
-  contractor 
+  contractor,
+  projectSummary
 }: EstimateDisplayProps) => {
   // Default company information when no contractor is provided
   const defaultCompany = {
@@ -68,6 +70,14 @@ export const EstimateDisplay = ({
           <p className="font-medium">{new Date().toLocaleDateString()}</p>
         </div>
       </div>
+
+      {/* Project Summary */}
+      {projectSummary && (
+        <div className="mb-8 bg-muted/50 p-4 rounded-lg">
+          <h2 className="text-lg font-semibold mb-2">Project Overview</h2>
+          <p className="text-sm text-muted-foreground">{projectSummary}</p>
+        </div>
+      )}
 
       {/* Estimate Groups */}
       <div className="space-y-8">
