@@ -4,8 +4,7 @@ import { cn } from '@/lib/utils';
 import { IconLoader2, TablerIcon } from '@tabler/icons-react';
 import { motion, MotionProps } from 'framer-motion';
 
-const ICON_SIZE = 14;
-
+const TABLER_ICON_STYLE = 14;
 const buttonVariants = cva(
   'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 gap-2 border',
   {
@@ -70,8 +69,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) => {
-    const SupportIcon = supportIcon;
-    const LeadingIcon = leadingIcon;
+    const SupportIconRender = supportIcon ?? React.Fragment;
+    const LeadingIconRender = leadingIcon ?? React.Fragment;
     return (
       <motion.button
         className={cn(
@@ -80,16 +79,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         ref={ref}
         {...props}>
-        {isLoading && (
-          <IconLoader2 size={ICON_SIZE} className="animate-spin" />
+        {isLoading ? (
+          <IconLoader2 {...TABLER_ICON_STYLE} className="animate-spin" />
+        ) : (
+          <></>
         )}
-        {!isLoading && supportIcon && SupportIcon && (
-          <SupportIcon size={ICON_SIZE} />
+        {!isLoading && supportIcon && (
+          <SupportIconRender {...TABLER_ICON_STYLE} />
         )}
         {children}
-        {leadingIcon && LeadingIcon && (
-          <LeadingIcon size={ICON_SIZE} />
-        )}
+        {leadingIcon && <LeadingIconRender {...TABLER_ICON_STYLE} />}
       </motion.button>
     );
   },
