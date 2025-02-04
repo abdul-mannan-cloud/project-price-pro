@@ -1,7 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Info, DollarSign, Settings } from "lucide-react";
+import { Info, DollarSign, Plus } from "lucide-react";
 import { useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface AIRate {
   title: string;
@@ -18,21 +27,25 @@ interface AIRateFormProps {
 
 export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
   const [aiRates, setAiRates] = useState<AIRate[]>(rates);
+  const [isAddingRate, setIsAddingRate] = useState(false);
+  const [newRate, setNewRate] = useState<AIRate>({
+    title: "",
+    rate: "",
+    unit: "",
+    type: "hourly",
+    instructions: ""
+  });
 
   const addRate = () => {
-    setAiRates([...aiRates, {
+    setAiRates([...aiRates, newRate]);
+    setIsAddingRate(false);
+    setNewRate({
       title: "",
       rate: "",
       unit: "",
       type: "hourly",
       instructions: ""
-    }]);
-  };
-
-  const updateRate = (index: number, field: keyof AIRate, value: string) => {
-    const updatedRates = [...aiRates];
-    updatedRates[index] = { ...updatedRates[index], [field]: value };
-    setAiRates(updatedRates);
+    });
   };
 
   const removeRate = (index: number) => {
@@ -51,63 +64,82 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
           <h3 className="text-lg font-medium">AI Rates</h3>
         </div>
         <Button
-          variant="outline"
+          onClick={() => setIsAddingRate(true)}
           size="sm"
-          onClick={addRate}
         >
+          <Plus className="h-4 w-4 mr-2" />
           Add Rate
         </Button>
       </div>
 
-      <div className="space-y-4">
-        {aiRates.map((rate, index) => (
-          <div key={index} className="border rounded-lg p-4 space-y-4">
-            <div className="flex justify-between">
-              <div className="flex items-center gap-2">
-                <Settings className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Rate Configuration {index + 1}</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeRate(index)}
-                className="text-destructive hover:text-destructive"
-              >
-                Remove
-              </Button>
-            </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Title</TableHead>
+            <TableHead>Rate</TableHead>
+            <TableHead>Unit</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Instructions</TableHead>
+            <TableHead></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {aiRates.map((rate, index) => (
+            <TableRow key={index}>
+              <TableCell>{rate.title}</TableCell>
+              <TableCell>{rate.rate}</TableCell>
+              <TableCell>{rate.unit}</TableCell>
+              <TableCell>{rate.type}</TableCell>
+              <TableCell className="max-w-[200px] truncate">{rate.instructions}</TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeRate(index)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  Remove
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Title"
-                value={rate.title}
-                onChange={(e) => updateRate(index, "title", e.target.value)}
-                placeholder="e.g., Standard Labor Rate"
-              />
-              <Input
-                label="Rate"
-                type="number"
-                value={rate.rate}
-                onChange={(e) => updateRate(index, "rate", e.target.value)}
-                placeholder="e.g., 75"
-              />
-              <Input
-                label="Unit"
-                value={rate.unit}
-                onChange={(e) => updateRate(index, "unit", e.target.value)}
-                placeholder="e.g., HR, SF"
-              />
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                value={rate.type}
-                onChange={(e) => updateRate(index, "type", e.target.value)}
-              >
-                <option value="hourly">Hourly</option>
-                <option value="fixed">Fixed</option>
-                <option value="square_foot">Square Foot</option>
-              </select>
-            </div>
-
+      <Dialog open={isAddingRate} onOpenChange={setIsAddingRate}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Rate</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              label="Title"
+              value={newRate.title}
+              onChange={(e) => setNewRate({ ...newRate, title: e.target.value })}
+              placeholder="e.g., Standard Labor Rate"
+            />
+            <Input
+              label="Rate"
+              type="number"
+              value={newRate.rate}
+              onChange={(e) => setNewRate({ ...newRate, rate: e.target.value })}
+              placeholder="e.g., 75"
+            />
+            <Input
+              label="Unit"
+              value={newRate.unit}
+              onChange={(e) => setNewRate({ ...newRate, unit: e.target.value })}
+              placeholder="e.g., HR, SF"
+            />
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+              value={newRate.type}
+              onChange={(e) => setNewRate({ ...newRate, type: e.target.value })}
+            >
+              <option value="hourly">Hourly</option>
+              <option value="fixed">Fixed</option>
+              <option value="square_foot">Square Foot</option>
+            </select>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Info className="h-4 w-4 text-muted-foreground" />
@@ -115,14 +147,17 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
               </div>
               <textarea
                 className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                value={rate.instructions}
-                onChange={(e) => updateRate(index, "instructions", e.target.value)}
+                value={newRate.instructions}
+                onChange={(e) => setNewRate({ ...newRate, instructions: e.target.value })}
                 placeholder="Tell AI how to use this rate..."
               />
             </div>
+            <Button onClick={addRate} className="w-full">
+              Add Rate
+            </Button>
           </div>
-        ))}
-      </div>
+        </DialogContent>
+      </Dialog>
 
       {aiRates.length > 0 && (
         <Button onClick={handleSave} className="w-full">

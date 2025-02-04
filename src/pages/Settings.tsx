@@ -6,27 +6,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { Settings as SettingsIcon, Users, LayoutDashboard, Building2, Palette, Calculator, Webhook, Bot, ListChecks } from "lucide-react";
+import { Settings as SettingsIcon, Users, LayoutDashboard, Building2, Palette, Calculator, Webhook, Bot, ListChecks, LogOut } from "lucide-react";
 import { useState } from "react";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
-import { Json } from "@/integrations/supabase/types";
 import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
 import { AIRateForm } from "@/components/settings/AIRateForm";
-
-interface AIPreferences {
-  rate: string;
-  type: string;
-  instructions: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  description: string | null;
-  icon: string | null;
-}
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -38,19 +24,6 @@ const Settings = () => {
     { name: "Leads", url: "/leads", icon: Users },
     { name: "Settings", url: "/settings", icon: SettingsIcon }
   ];
-
-  // Fetch categories data with proper typing
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("*");
-      
-      if (error) throw error;
-      return data || [];
-    }
-  });
 
   // Fetch contractor data
   const { data: contractor, isLoading: contractorLoading } = useQuery({
@@ -69,6 +42,19 @@ const Settings = () => {
       return data;
     },
   });
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      navigate("/");
+    }
+  };
 
   const updateSettings = useMutation({
     mutationFn: async (formData: any) => {
@@ -148,7 +134,7 @@ const Settings = () => {
     });
   };
 
-  if (contractorLoading || categoriesLoading) {
+  if (contractorLoading) {
     return (
       <div className="min-h-screen bg-secondary">
         <NavBar items={navItems} />
@@ -161,49 +147,21 @@ const Settings = () => {
     );
   }
 
-  const defaultColors = {
-    primary: "#007AFF",
-    secondary: "#F5F5F7"
-  };
-
-  const brandingColors = 
-    contractor?.branding_colors && 
-    typeof contractor.branding_colors === 'object' && 
-    !Array.isArray(contractor.branding_colors) && 
-    contractor.branding_colors as { [key: string]: any } &&
-    'primary' in contractor.branding_colors && 
-    'secondary' in contractor.branding_colors
-      ? {
-          primary: String(contractor.branding_colors.primary),
-          secondary: String(contractor.branding_colors.secondary)
-        }
-      : defaultColors;
-
-  const defaultAIPreferences: AIPreferences = {
-    rate: "HR",
-    type: "material_labor",
-    instructions: ""
-  };
-
-  const aiPreferences = contractor?.contractor_settings?.ai_preferences && 
-    typeof contractor.contractor_settings.ai_preferences === 'object' && 
-    !Array.isArray(contractor.contractor_settings.ai_preferences) &&
-    contractor.contractor_settings.ai_preferences as { [key: string]: Json } &&
-    'rate' in contractor.contractor_settings.ai_preferences &&
-    'type' in contractor.contractor_settings.ai_preferences &&
-    'instructions' in contractor.contractor_settings.ai_preferences
-      ? {
-          rate: String(contractor.contractor_settings.ai_preferences.rate),
-          type: String(contractor.contractor_settings.ai_preferences.type),
-          instructions: String(contractor.contractor_settings.ai_preferences.instructions)
-        }
-      : defaultAIPreferences;
-
   return (
     <div className="min-h-screen bg-secondary">
       <NavBar items={navItems} />
       <div className="container mx-auto py-8">
-        <h1 className="text-2xl font-semibold mb-6">Settings</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold">Settings</h1>
+          <Button 
+            variant="ghost" 
+            onClick={handleLogout}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Log out
+          </Button>
+        </div>
         
         <div className="space-y-4">
           <SettingsMenuItem
@@ -391,60 +349,16 @@ const Settings = () => {
           isOpen={activeDialog === "ai"}
           onClose={() => setActiveDialog(null)}
         >
-          <div className="space-y-6">
-            <AIRateForm
-              rates={[
-                {
-                  title: "Default Labor Rate",
-                  rate: "75",
-                  unit: "HR",
-                  type: "hourly",
-                  instructions: "Use this rate for standard labor calculations"
+          <AIRateForm
+            rates={contractor?.contractor_settings?.ai_preferences?.rates || []}
+            onSave={(rates) => {
+              updateSettings.mutate({
+                aiPreferences: {
+                  rates
                 }
-              ]}
-              onSave={(rates) => {
-                // Handle saving the rates to your backend
-                updateSettings.mutate({
-                  aiPreferences: {
-                    ...aiPreferences,
-                    rates
-                  }
-                });
-              }}
-            />
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Estimate Type</label>
-                <select
-                  name="aiType"
-                  className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
-                  defaultValue={aiPreferences.type}
-                >
-                  <option value="material_labor">Material & Labor</option>
-                  <option value="labor_only">Labor Only</option>
-                  <option value="material_only">Material Only</option>
-                </select>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium">Additional Instructions</label>
-                </div>
-                <textarea
-                  name="aiInstructions"
-                  className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
-                  rows={4}
-                  defaultValue={aiPreferences.instructions}
-                  placeholder="Add specific instructions for AI estimate generation..."
-                />
-              </div>
-            </div>
-            
-            <Button type="submit" disabled={updateSettings.isPending}>
-              {updateSettings.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
+              });
+            }}
+          />
         </SettingsDialog>
 
         {/* Service Categories Dialog */}
@@ -476,4 +390,3 @@ const Settings = () => {
 };
 
 export default Settings;
-
