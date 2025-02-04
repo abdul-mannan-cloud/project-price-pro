@@ -15,6 +15,7 @@ import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category, CategoryQuestions, AnswersState } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
+import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
 
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
@@ -598,24 +599,26 @@ const EstimatePage = () => {
         {stage === 'photo' && (
           <div className="card p-8 animate-fadeIn">
             <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
                 {contractor?.business_logo_url && (
                   <img 
                     src={contractor.business_logo_url}
                     alt={`${contractor?.business_name || 'Business'} logo`}
-                    className="w-16 h-16 object-contain rounded-lg"
+                    className="w-24 h-24 object-contain rounded-lg"
                   />
                 )}
                 <div>
                   <h2 className="text-2xl font-semibold mb-2">
                     🛠 {contractor?.business_name || "Project"} Estimator
                   </h2>
-                  <p className="text-muted-foreground">
+                  <p className="text-muted-foreground mb-4">
                     Take or upload a photo of what you want to repair or modify
                   </p>
+                  <EstimateAnimation />
                 </div>
               </div>
             </div>
+            
             <div className="space-y-4">
               <label className="relative">
                 <input
