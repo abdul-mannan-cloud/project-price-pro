@@ -38,6 +38,13 @@ export default {
         secondary: {
           DEFAULT: "var(--secondary)",
           foreground: "var(--secondary-foreground)",
+          100: "var(--secondary-100)",
+          200: "var(--secondary-200)",
+          300: "var(--secondary-300)",
+          400: "var(--secondary-400)",
+          500: "var(--secondary-500)",
+          600: "var(--secondary-600)",
+          700: "var(--secondary-700)",
         },
         destructive: {
           DEFAULT: "var(--destructive)",
