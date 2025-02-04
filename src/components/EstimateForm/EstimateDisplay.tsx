@@ -34,8 +34,8 @@ interface EstimateDisplayProps {
 }
 
 export const EstimateDisplay = ({ 
-  groups, 
-  totalCost, 
+  groups = [], // Add default empty array
+  totalCost = 0, // Add default value
   isBlurred = false,
   contractor,
   projectSummary
@@ -52,6 +52,14 @@ export const EstimateDisplay = ({
     if (!unit) return title;
     return `${title} (${unit})`;
   };
+
+  if (!Array.isArray(groups)) {
+    return (
+      <Card className="p-8 max-w-4xl mx-auto">
+        <p>No estimate data available</p>
+      </Card>
+    );
+  }
 
   return (
     <Card className={cn(
@@ -101,7 +109,7 @@ export const EstimateDisplay = ({
 
             {/* Subgroups */}
             <div className="space-y-6">
-              {group.subgroups.map((subgroup, subIndex) => (
+              {(group.subgroups || []).map((subgroup, subIndex) => (
                 <div key={subIndex} className="bg-white p-4 rounded-md shadow-sm">
                   <h4 className="font-medium mb-3 text-primary">{subgroup.name}</h4>
                   
@@ -118,7 +126,7 @@ export const EstimateDisplay = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {subgroup.items.map((item, itemIndex) => (
+                        {(subgroup.items || []).map((item, itemIndex) => (
                           <tr key={itemIndex} className="border-b border-gray-100">
                             <td className="py-3 px-4 font-medium">{formatItemTitle(item.title, item.unit)}</td>
                             <td className="py-3 px-4 text-sm text-muted-foreground">{item.description}</td>
@@ -144,7 +152,7 @@ export const EstimateDisplay = ({
             <div className="mt-6 pt-4 border-t flex justify-between items-center">
               <p className="font-medium">Subtotal for {group.name}</p>
               <p className="font-semibold">
-                ${group.subgroups.reduce((sum, subgroup) => sum + subgroup.subtotal, 0).toFixed(2)}
+                ${(group.subgroups || []).reduce((sum, subgroup) => sum + subgroup.subtotal, 0).toFixed(2)}
               </p>
             </div>
           </div>
