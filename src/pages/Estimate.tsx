@@ -598,13 +598,22 @@ const EstimatePage = () => {
         {stage === 'photo' && (
           <div className="card p-8 animate-fadeIn">
             <div className="flex items-start justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-semibold mb-2">
-                  🛠 {contractor?.business_name || "Project"} Estimator
-                </h2>
-                <p className="text-muted-foreground">
-                  Take or upload a photo of what you want to repair or modify
-                </p>
+              <div className="flex items-center gap-4">
+                {contractor?.business_logo_url && (
+                  <img 
+                    src={contractor.business_logo_url}
+                    alt={`${contractor?.business_name || 'Business'} logo`}
+                    className="w-16 h-16 object-contain rounded-lg"
+                  />
+                )}
+                <div>
+                  <h2 className="text-2xl font-semibold mb-2">
+                    🛠 {contractor?.business_name || "Project"} Estimator
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Take or upload a photo of what you want to repair or modify
+                  </p>
+                </div>
               </div>
             </div>
             <div className="space-y-4">
