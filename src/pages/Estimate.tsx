@@ -439,6 +439,9 @@ const EstimatePage = () => {
         return acc;
       }, {} as Record<string, any>);
 
+      // Ensure we have a valid contractor ID
+      const effectiveContractorId = contractorId || '098bcb69-99c6-445b-bf02-94dc7ef8c938';
+
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert({
@@ -446,7 +449,7 @@ const EstimatePage = () => {
           answers: answersForSupabase,
           project_title: `${selectedCategory || ''} Project`,
           project_description: projectDescription,
-          contractor_id: contractorId,
+          contractor_id: effectiveContractorId,
           status: 'pending'
         })
         .select()
@@ -461,7 +464,7 @@ const EstimatePage = () => {
           projectDescription, 
           imageUrl: uploadedImageUrl, 
           answers: answersForSupabase,
-          contractorId,
+          contractorId: effectiveContractorId,
           leadId: lead.id,
           category: selectedCategory
         }
@@ -473,7 +476,8 @@ const EstimatePage = () => {
         .from('leads')
         .update({ 
           estimate_data: estimateData,
-          estimated_cost: estimateData.totalCost || 0
+          estimated_cost: estimateData.totalCost || 0,
+          contractor_id: effectiveContractorId // Ensure contractor_id is set in the update as well
         })
         .eq('id', lead.id);
 
