@@ -28,6 +28,8 @@ type ContractorWithSettings = Database["public"]["Tables"]["contractors"]["Row"]
   contractor_settings: Database["public"]["Tables"]["contractor_settings"]["Row"];
 };
 
+const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
+
 const PublicEstimate = () => {
   const { id } = useParams();
 
@@ -57,7 +59,41 @@ const PublicEstimate = () => {
         .eq("id", id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // If no lead is found, try to get the default contractor information
+        if (error.code === 'PGRST116') {
+          const { data: defaultContractor, error: contractorError } = await supabase
+            .from("contractors")
+            .select(`
+              id,
+              business_name,
+              business_logo_url,
+              contact_email,
+              contact_phone,
+              business_address,
+              website,
+              license_number,
+              subscription_status,
+              branding_colors,
+              created_at,
+              updated_at,
+              contractor_settings (*)
+            `)
+            .eq("id", DEFAULT_CONTRACTOR_ID)
+            .single();
+
+          if (contractorError) throw contractorError;
+          
+          return {
+            id: id,
+            contractor_id: DEFAULT_CONTRACTOR_ID,
+            estimate_data: { groups: [] },
+            estimated_cost: 0,
+            contractors: defaultContractor
+          };
+        }
+        throw error;
+      }
       return data;
     },
   });
