@@ -43,54 +43,67 @@ const EstimatePage = () => {
 
   // Extract contractor ID from URL params or use default
   const effectiveContractorId = urlContractorId || DEFAULT_CONTRACTOR_ID;
+  console.log('Effective Contractor ID:', effectiveContractorId);
 
   // Fetch contractor data using React Query for better caching and performance
-  const { data: contractor, isError: isContractorError } = useQuery({
+  const { data: contractor, isLoading: isContractorLoading, error: contractorError } = useQuery({
     queryKey: ["contractor", effectiveContractorId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contractors")
-        .select(`
-          *,
-          contractor_settings(*)
-        `)
-        .eq("id", effectiveContractorId)
-        .single();
+      console.log('Fetching contractor data for ID:', effectiveContractorId);
+      try {
+        const { data, error } = await supabase
+          .from("contractors")
+          .select(`
+            *,
+            contractor_settings(*)
+          `)
+          .eq("id", effectiveContractorId)
+          .single();
 
-      if (error) {
-        console.error("Error fetching contractor:", error);
-        // If the specified contractor is not found, try to fetch the default contractor
-        if (effectiveContractorId !== DEFAULT_CONTRACTOR_ID) {
-          const { data: defaultData, error: defaultError } = await supabase
-            .from("contractors")
-            .select(`
-              *,
-              contractor_settings(*)
-            `)
-            .eq("id", DEFAULT_CONTRACTOR_ID)
-            .single();
+        if (error) {
+          console.error("Error fetching contractor:", error);
+          // If the specified contractor is not found, try to fetch the default contractor
+          if (effectiveContractorId !== DEFAULT_CONTRACTOR_ID) {
+            console.log('Falling back to default contractor');
+            const { data: defaultData, error: defaultError } = await supabase
+              .from("contractors")
+              .select(`
+                *,
+                contractor_settings(*)
+              `)
+              .eq("id", DEFAULT_CONTRACTOR_ID)
+              .single();
 
-          if (defaultError) throw defaultError;
-          return defaultData;
+            if (defaultError) {
+              console.error("Error fetching default contractor:", defaultError);
+              throw defaultError;
+            }
+            return defaultData;
+          }
+          throw error;
         }
+
+        console.log('Successfully fetched contractor:', data);
+        return data;
+      } catch (error) {
+        console.error('Error in contractor fetch:', error);
         throw error;
       }
-
-      return data;
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    retry: 1
+    retry: 1,
+    staleTime: 5 * 60 * 1000 // Cache for 5 minutes
   });
 
   useEffect(() => {
-    if (isContractorError) {
+    if (contractorError) {
+      console.error('Contractor fetch error:', contractorError);
       toast({
         title: "Error",
         description: "Unable to load contractor information. Please try again later.",
         variant: "destructive",
       });
     }
-  }, [isContractorError, toast]);
+  }, [contractorError, toast]);
 
   useEffect(() => {
     loadCategories();
