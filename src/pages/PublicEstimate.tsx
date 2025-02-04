@@ -89,6 +89,19 @@ const PublicEstimate = () => {
             contractor_id: DEFAULT_CONTRACTOR_ID,
             estimate_data: { groups: [] },
             estimated_cost: 0,
+            project_title: "New Estimate",
+            project_description: "",
+            project_address: "",
+            user_name: "",
+            user_email: "",
+            user_phone: "",
+            category: "",
+            answers: { answers: {}, questions: [] },
+            preview_data: {},
+            is_test_estimate: false,
+            status: "pending",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
             contractors: defaultContractor
           };
         }
