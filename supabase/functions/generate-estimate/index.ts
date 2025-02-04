@@ -19,6 +19,65 @@ interface LocationData {
   longitude: number;
 }
 
+async function fetchAISettings(supabase: any, contractorId: string) {
+  // Fetch AI instructions
+  const { data: instructions, error: instructionsError } = await supabase
+    .from('ai_instructions')
+    .select('*')
+    .eq('contractor_id', contractorId);
+
+  if (instructionsError) {
+    console.error('Error fetching AI instructions:', instructionsError);
+  }
+
+  // Fetch AI rates
+  const { data: rates, error: ratesError } = await supabase
+    .from('ai_rates')
+    .select('*')
+    .eq('contractor_id', contractorId);
+
+  if (ratesError) {
+    console.error('Error fetching AI rates:', ratesError);
+  }
+
+  return {
+    instructions: instructions || [],
+    rates: rates || []
+  };
+}
+
+function applyAIInstructions(estimate: any, instructions: any[]) {
+  instructions.forEach(instruction => {
+    // Apply each instruction based on its type or category
+    if (instruction.instructions) {
+      console.log(`Applying instruction: ${instruction.title}`);
+      // Add instruction-specific logic here
+      // For example, adjusting costs, adding line items, etc.
+    }
+  });
+  return estimate;
+}
+
+function applyAIRates(lineItems: any[], rates: any[]) {
+  return lineItems.map(item => {
+    const matchingRate = rates.find(rate => {
+      // Match rate based on type and unit
+      return rate.type === item.type && rate.unit === item.unit;
+    });
+
+    if (matchingRate) {
+      console.log(`Applying rate: ${matchingRate.title} (${matchingRate.rate} per ${matchingRate.unit})`);
+      return {
+        ...item,
+        unitAmount: matchingRate.rate,
+        totalPrice: matchingRate.rate * item.quantity
+      };
+    }
+
+    return item;
+  });
+}
+
 async function getLocationData(ip: string): Promise<LocationData | null> {
   try {
     const response = await fetch(`https://ipapi.co/${ip}/json/?key=AzZ4jUj0F5eFNjhgWgLpikGJxYdf5IzcsfB`);
@@ -75,11 +134,11 @@ function adjustPriceForLocation(basePrice: number, location: LocationData | null
   return basePrice * factor;
 }
 
-function generateLineItems(answer: any, location: LocationData | null, settings: any) {
+function generateLineItems(answer: any, location: LocationData | null, settings: any, aiRates: any[]) {
   const items: any[] = [];
   const { question, answers: selectedAnswers, options, type } = answer;
 
-  // Base costs per type of work (hourly rates)
+  // Base costs per type of work (now using AI rates if available)
   const baseCosts: Record<string, { labor: number; materials: number }> = {
     'installation': { labor: 85, materials: 150 },
     'repair': { labor: 95, materials: 100 },
@@ -88,7 +147,6 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
     'custom': { labor: 150, materials: 300 },
   };
 
-  // Cost multipliers based on complexity
   const complexityMultipliers: Record<string, number> = {
     'simple': 0.8,
     'standard': 1.0,
@@ -100,7 +158,6 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
     const option = options.find((opt: any) => opt.value === selected);
     if (!option) return;
 
-    // Determine work type and complexity from the answer
     const workType = option.value.includes('custom') ? 'custom' : 
                     option.value.includes('install') ? 'installation' :
                     option.value.includes('repair') ? 'repair' :
@@ -113,7 +170,6 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
     const { labor: baseLaborCost, materials: baseMaterialCost } = baseCosts[workType];
     const complexityMultiplier = complexityMultipliers[complexity];
 
-    // Adjust costs based on location and contractor settings
     const adjustedLaborCost = adjustPriceForLocation(
       baseLaborCost * complexityMultiplier,
       location,
@@ -126,41 +182,48 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
       settings
     );
 
-    // Calculate labor hours based on complexity and type
     const laborHours = Math.max(2, Math.ceil(complexityMultiplier * 3));
+    const materialQuantity = Math.max(1, Math.ceil(complexityMultiplier * 2));
+
+    // Generate initial items
+    const generatedItems = [];
     
     // Add labor line item
-    items.push({
-      title: `${option.label} Labor (HR)`,
+    generatedItems.push({
+      title: `${option.label} Labor`,
       description: `Professional ${workType} labor for ${option.label.toLowerCase()}`,
       quantity: laborHours,
       unit: 'HR',
+      type: 'labor',
       unitAmount: adjustedLaborCost,
       totalPrice: adjustedLaborCost * laborHours
     });
 
-    // Calculate material quantity based on the answer context
-    const materialQuantity = Math.max(1, Math.ceil(complexityMultiplier * 2));
-    
     // Add materials line item
-    items.push({
-      title: `${option.label} Materials (EA)`,
+    generatedItems.push({
+      title: `${option.label} Materials`,
       description: `Quality materials for ${option.label.toLowerCase()}`,
       quantity: materialQuantity,
       unit: 'EA',
+      type: 'material',
       unitAmount: adjustedMaterialCost,
       totalPrice: adjustedMaterialCost * materialQuantity
     });
+
+    // Apply AI rates to the generated items
+    const itemsWithRates = applyAIRates(generatedItems, aiRates);
+    items.push(...itemsWithRates);
 
     // Add specialized items for custom work
     if (workType === 'custom') {
       const baseCustomCost = 200 * complexityMultiplier;
       const customWorkCost = adjustPriceForLocation(baseCustomCost, location, settings);
       items.push({
-        title: `${option.label} Design & Planning (EA)`,
+        title: `${option.label} Design & Planning`,
         description: `Custom design and planning services`,
         quantity: 1,
         unit: 'EA',
+        type: 'labor',
         unitAmount: customWorkCost,
         totalPrice: customWorkCost
       });
@@ -170,7 +233,7 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
   return items;
 }
 
-function generateEstimateGroups(answers: Record<string, any>, location: LocationData | null, settings: any) {
+function generateEstimateGroups(answers: Record<string, any>, location: LocationData | null, settings: any, aiRates: any[]) {
   const groups: any[] = [];
   let totalCost = 0;
 
@@ -178,9 +241,8 @@ function generateEstimateGroups(answers: Record<string, any>, location: Location
     const subgroups = new Map<string, any>();
     
     Object.entries(categoryAnswers).forEach(([questionId, answer]: [string, any]) => {
-      const items = generateLineItems(answer, location, settings);
+      const items = generateLineItems(answer, location, settings, aiRates);
       if (items.length > 0) {
-        // Determine subcategory based on the question or selected options
         const subcategory = determineSubcategory(answer);
         
         if (!subgroups.has(subcategory)) {
@@ -213,13 +275,11 @@ function generateEstimateGroups(answers: Record<string, any>, location: Location
 }
 
 function determineSubcategory(answer: any): string {
-  // Extract keywords from the question and answers to determine appropriate subcategory
   const questionText = answer.question.toLowerCase();
   const selectedOptions = answer.options
     .filter((opt: any) => answer.answers.includes(opt.value))
     .map((opt: any) => opt.label.toLowerCase());
 
-  // Define subcategory mapping based on keywords
   const subcategoryKeywords: Record<string, string[]> = {
     'Electrical': ['electrical', 'wiring', 'lighting', 'outlet'],
     'Plumbing': ['plumbing', 'water', 'pipe', 'drain'],
@@ -233,7 +293,6 @@ function determineSubcategory(answer: any): string {
     'Finishing': ['finish', 'trim', 'molding', 'detail']
   };
 
-  // Check question and answers against keywords
   for (const [subcategory, keywords] of Object.entries(subcategoryKeywords)) {
     if (keywords.some(keyword => 
       questionText.includes(keyword) || 
@@ -243,7 +302,6 @@ function determineSubcategory(answer: any): string {
     }
   }
 
-  // Default to General if no specific subcategory is found
   return 'General';
 }
 
@@ -261,6 +319,8 @@ serve(async (req) => {
     console.log('Location data:', locationData);
 
     let settings = null;
+    let aiSettings = { instructions: [], rates: [] };
+
     if (contractorId) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -270,23 +330,43 @@ serve(async (req) => {
       }
 
       const supabase = createClient(supabaseUrl, supabaseKey);
-      const { data: contractor } = await supabase
-        .from('contractors')
-        .select(`
-          *,
-          contractor_settings(*)
-        `)
-        .eq('id', contractorId)
-        .single();
+      
+      // Fetch contractor settings and AI settings
+      const [
+        { data: contractor },
+        aiSettingsData
+      ] = await Promise.all([
+        supabase
+          .from('contractors')
+          .select(`
+            *,
+            contractor_settings(*)
+          `)
+          .eq('id', contractorId)
+          .single(),
+        fetchAISettings(supabase, contractorId)
+      ]);
 
       if (contractor) {
         settings = contractor.contractor_settings;
+        aiSettings = aiSettingsData;
         console.log('Contractor settings:', settings);
+        console.log('AI settings:', aiSettings);
       }
     }
 
     const projectSummary = generateProjectSummary(projectDescription, answers, category);
-    const { groups, totalCost } = generateEstimateGroups(answers, locationData, settings);
+    let { groups, totalCost } = generateEstimateGroups(answers, locationData, settings, aiSettings.rates);
+
+    // Apply AI instructions to modify the estimate
+    const estimateWithInstructions = applyAIInstructions({ 
+      groups, 
+      totalCost,
+      projectSummary 
+    }, aiSettings.instructions);
+
+    groups = estimateWithInstructions.groups;
+    totalCost = estimateWithInstructions.totalCost;
 
     // Apply contractor markup and tax if available
     const markupPercentage = settings?.markup_percentage || 20;
