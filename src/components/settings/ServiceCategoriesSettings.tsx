@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
 
 type CategoryFromDB = Database["public"]["Tables"]["categories"]["Row"];
+type ContractorSettings = Database["public"]["Tables"]["contractor_settings"]["Row"];
 
 export const ServiceCategoriesSettings = () => {
   const { toast } = useToast();
@@ -38,7 +39,7 @@ export const ServiceCategoriesSettings = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as ContractorSettings;
     }
   });
 
