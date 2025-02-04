@@ -13,24 +13,24 @@ export const LeadViewToggle = ({ view, onViewChange }: LeadViewToggleProps) => {
         type="single" 
         value={view} 
         onValueChange={(v) => onViewChange(v as "estimate" | "questions")}
-        className="relative w-full max-w-[400px] mx-auto bg-muted p-1 rounded-lg"
+        className="relative w-full max-w-[600px] mx-auto bg-muted p-1 rounded-xl"
       >
         <ToggleGroupItem 
           value="estimate" 
-          className="flex-1 flex items-center justify-center gap-2 data-[state=on]:bg-background data-[state=on]:shadow-sm transition-all rounded-md py-2"
+          className="flex-1 flex items-center justify-center gap-2 transition-all rounded-lg py-3 text-foreground data-[state=on]:bg-transparent"
         >
           <FileText className="h-4 w-4" />
           Estimate
         </ToggleGroupItem>
         <ToggleGroupItem 
           value="questions" 
-          className="flex-1 flex items-center justify-center gap-2 data-[state=on]:bg-background data-[state=on]:shadow-sm transition-all rounded-md py-2"
+          className="flex-1 flex items-center justify-center gap-2 transition-all rounded-lg py-3 text-foreground data-[state=on]:bg-transparent"
         >
           <MessageSquare className="h-4 w-4" />
           Questions
         </ToggleGroupItem>
         <div 
-          className="absolute bottom-0 left-0 h-0.5 bg-primary transition-all duration-300"
+          className="absolute bottom-0 left-0 h-1 bg-primary transition-all duration-300 rounded-full"
           style={{
             width: "50%",
             transform: `translateX(${view === "estimate" ? "0%" : "100%"})`
