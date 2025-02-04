@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { Phone, MessageSquare, Download, FileSpreadsheet, Mail, X, Edit, MoreVertical, Link } from "lucide-react";
 import type { Lead } from "./LeadsTable";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { LeadViewToggle } from "./LeadViewToggle";
 import { LeadQuestionsView } from "./LeadQuestionsView";
@@ -37,8 +37,14 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   const [isEditing, setIsEditing] = useState(false);
   const [editedEstimate, setEditedEstimate] = useState(lead?.estimate_data);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
-  const [emailRecipient, setEmailRecipient] = useState(lead?.user_email || '');
+  const [emailRecipient, setEmailRecipient] = useState('');
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (lead?.user_email) {
+      setEmailRecipient(lead.user_email);
+    }
+  }, [lead?.user_email]);
 
   const handleSaveEstimate = async () => {
     if (!lead) return;
@@ -76,18 +82,17 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
     }
 
     try {
-      const response = await fetch('/api/send-estimate-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const estimateUrl = `${window.location.origin}/estimate/${lead?.id}`;
+      const response = await supabase.functions.invoke('send-estimate-email', {
+        body: {
           name: lead?.user_name,
           email: emailRecipient,
           estimateData: lead?.estimate_data,
-          estimateUrl: `${window.location.origin}/estimate/${lead?.id}`,
-        }),
+          estimateUrl,
+        },
       });
 
-      if (!response.ok) throw new Error('Failed to send email');
+      if (response.error) throw response.error;
 
       toast({
         title: "Email sent",
@@ -112,8 +117,6 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
       });
     });
   };
-
-  if (!lead) return null;
 
   const renderActionButtons = () => {
     if (isEditing) {
@@ -142,7 +145,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
                 <Link className="h-4 w-4 mr-2" />
                 Copy Link
               </DropdownMenuItem>
-              {lead.user_phone && (
+              {lead?.user_phone && (
                 <>
                   <DropdownMenuItem>
                     <Phone className="h-4 w-4 mr-2" />
@@ -207,9 +210,9 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
                     {renderActionButtons()}
                     <div className="mt-4">
                       <EstimateDisplay 
-                        groups={lead.estimate_data?.groups || []}
-                        totalCost={lead.estimated_cost || 0}
-                        projectSummary={lead.project_description}
+                        groups={lead?.estimate_data?.groups || []}
+                        totalCost={lead?.estimated_cost || 0}
+                        projectSummary={lead?.project_description}
                         isEditable={isEditing}
                         onEstimateChange={setEditedEstimate}
                       />
