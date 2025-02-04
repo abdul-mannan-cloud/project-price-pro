@@ -76,7 +76,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
     }
 
     try {
-      const estimateUrl = `${window.location.origin}/estimate/${lead?.id}`;
+      const estimateUrl = `${window.location.origin}/e/${lead?.id}`;
       const response = await supabase.functions.invoke('send-estimate-email', {
         body: {
           name: lead?.user_name,
@@ -103,7 +103,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   };
 
   const handleCopyLink = () => {
-    const estimateUrl = `${window.location.origin}/estimate/${lead?.id}`;
+    const estimateUrl = `${window.location.origin}/e/${lead?.id}`;
     navigator.clipboard.writeText(estimateUrl).then(() => {
       toast({
         title: "Link copied",
