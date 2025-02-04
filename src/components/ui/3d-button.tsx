@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
-import { IconLoader2 } from '@tabler/icons-react';
+import { IconLoader2, TablerIcon } from '@tabler/icons-react';
 import { motion, MotionProps } from 'framer-motion';
 
+const TABLER_ICON_STYLE = 14;
 const buttonVariants = cva(
   'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 gap-2 border',
   {
@@ -46,8 +47,8 @@ type MotionButtonPropsType = React.ButtonHTMLAttributes<HTMLButtonElement> &
 
 export interface ButtonProps extends MotionButtonPropsType {
   asChild?: boolean;
-  supportIcon?: React.ElementType;
-  leadingIcon?: React.ElementType;
+  supportIcon?: TablerIcon;
+  leadingIcon?: TablerIcon;
   isLoading?: boolean;
   stretch?: boolean;
 }
@@ -60,14 +61,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       size,
       children,
       stretch = false,
-      supportIcon: SupportIcon,
-      leadingIcon: LeadingIcon,
+      supportIcon = undefined,
+      leadingIcon = undefined,
       isLoading = false,
       asChild = false,
       ...props
     },
     ref,
   ) => {
+    const SupportIconRender = supportIcon ?? React.Fragment;
+    const LeadingIconRender = leadingIcon ?? React.Fragment;
     return (
       <motion.button
         className={cn(
@@ -77,17 +80,40 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         {...props}>
         {isLoading ? (
-          <IconLoader2 className="animate-spin" size={14} />
-        ) : null}
-        {!isLoading && SupportIcon ? (
-          <SupportIcon size={14} />
-        ) : null}
+          <IconLoader2 {...TABLER_ICON_STYLE} className="animate-spin" />
+        ) : (
+          <></>
+        )}
+        {!isLoading && supportIcon && (
+          <SupportIconRender {...TABLER_ICON_STYLE} />
+        )}
         {children}
-        {LeadingIcon ? <LeadingIcon size={14} /> : null}
+        {leadingIcon && <LeadingIconRender {...TABLER_ICON_STYLE} />}
       </motion.button>
     );
   },
 );
 Button.displayName = 'Button';
+
+export interface ButtonGroupProps
+  extends React.HTMLAttributes<HTMLDivElement> {}
+
+export const ButtonGroup = React.forwardRef<HTMLDivElement, ButtonGroupProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          'button-group flex flex-row overflow-hidden rounded-lg border w-fit divide-x',
+          '*:rounded-none *:border-none',
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
+);
+
+ButtonGroup.displayName = 'ButtonGroup';
 
 export { Button, buttonVariants };
