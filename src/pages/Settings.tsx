@@ -119,6 +119,9 @@ const Settings = () => {
       minimumProjectCost: formData.get("minimumProjectCost"),
       markupPercentage: formData.get("markupPercentage"),
       taxRate: formData.get("taxRate"),
+      aiRate: formData.get("aiRate"),
+      aiType: formData.get("aiType"),
+      aiInstructions: formData.get("aiInstructions"),
     });
   };
 
@@ -153,11 +156,18 @@ const Settings = () => {
   const aiPreferences = contractor?.contractor_settings?.ai_preferences && 
     typeof contractor.contractor_settings.ai_preferences === 'object' && 
     !Array.isArray(contractor.contractor_settings.ai_preferences) &&
+    contractor.contractor_settings.ai_preferences as { [key: string]: Json } &&
     'rate' in contractor.contractor_settings.ai_preferences &&
     'type' in contractor.contractor_settings.ai_preferences &&
     'instructions' in contractor.contractor_settings.ai_preferences
-      ? contractor.contractor_settings.ai_preferences as AIPreferences
+      ? {
+          rate: String(contractor.contractor_settings.ai_preferences.rate),
+          type: String(contractor.contractor_settings.ai_preferences.type),
+          instructions: String(contractor.contractor_settings.ai_preferences.instructions)
+        }
       : defaultAIPreferences;
+
+  // ... keep existing code (JSX for the settings page)
 
   return (
     <div className="min-h-screen bg-secondary">
