@@ -140,6 +140,45 @@ const Settings = () => {
     },
   });
 
+  const [brandingColors, setBrandingColors] = useState({
+    primary: contractor?.branding_colors?.primary || "#6366F1",
+    secondary: contractor?.branding_colors?.secondary || "#4F46E5"
+  });
+
+  const updateBrandingColors = useMutation({
+    mutationFn: async (colors: { primary: string; secondary: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { error } = await supabase
+        .from("contractors")
+        .update({
+          branding_colors: colors
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+      
+      document.documentElement.style.setProperty('--primary', colors.primary);
+      document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
+      document.documentElement.style.setProperty('--secondary', colors.secondary);
+      document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
+    },
+    onSuccess: () => {
+      toast({
+        title: "Branding colors updated",
+        description: "Your brand colors have been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to update branding colors. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -193,13 +232,6 @@ const Settings = () => {
       </div>
     );
   }
-
-  const brandingColors = contractor?.branding_colors 
-    ? (contractor.branding_colors as unknown as { primary: string; secondary: string }) 
-    : {
-        primary: "#6366F1",
-        secondary: "#4F46E5"
-      };
 
   const settingsMenuItems = [
     {
@@ -341,7 +373,7 @@ const Settings = () => {
           isOpen={activeDialog === "branding"}
           onClose={() => setActiveDialog(null)}
         >
-          <form onSubmit={handleFormSubmit} className="space-y-6">
+          <div className="space-y-6">
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-2 block">
                 Primary Color
@@ -349,11 +381,9 @@ const Settings = () => {
               <ColorPicker
                 color={brandingColors.primary}
                 onChange={(color) => {
-                  document.documentElement.style.setProperty('--primary', color);
-                  document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
+                  setBrandingColors(prev => ({ ...prev, primary: color }));
                 }}
               />
-              <input type="hidden" name="primaryColor" value={brandingColors.primary} />
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-2 block">
@@ -362,16 +392,17 @@ const Settings = () => {
               <ColorPicker
                 color={brandingColors.secondary}
                 onChange={(color) => {
-                  document.documentElement.style.setProperty('--secondary', color);
-                  document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
+                  setBrandingColors(prev => ({ ...prev, secondary: color }));
                 }}
               />
-              <input type="hidden" name="secondaryColor" value={brandingColors.secondary} />
             </div>
-            <Button type="submit" disabled={updateSettings.isPending}>
-              {updateSettings.isPending ? "Saving..." : "Save Changes"}
+            <Button 
+              onClick={() => updateBrandingColors.mutate(brandingColors)}
+              disabled={updateBrandingColors.isPending}
+            >
+              {updateBrandingColors.isPending ? "Saving..." : "Save Changes"}
             </Button>
-          </form>
+          </div>
         </SettingsDialog>
 
         <SettingsDialog
