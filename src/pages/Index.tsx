@@ -51,7 +51,6 @@ const Index = () => {
   return (
     <div className="index-page min-h-screen bg-[#F1F1F1] relative overflow-hidden font-['Open Sans']">
       <Header1 />
-      <Footerdemo />
       <div className="relative z-10 flex items-center justify-center min-h-screen">
         <div className="container max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
           <div className="text-center space-y-8 sm:space-y-10 bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg sm:p-12">
@@ -134,6 +133,8 @@ const Index = () => {
           Sign In
         </Button>
       </div>
+
+      <Footerdemo />
     </div>
   );
 };
