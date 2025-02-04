@@ -18,6 +18,9 @@ import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
 import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
 import { PaintbrushAnimation } from "@/components/EstimateForm/PaintbrushAnimation";
+import type { Database } from "@/integrations/supabase/types";
+
+type Json = Database['public']['Tables']['contractors']['Row']['branding_colors'];
 
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
@@ -84,12 +87,12 @@ const EstimatePage = () => {
             branding_colors: {
               primary: "#6366F1",
               secondary: "#4F46E5"
-            },
+            } as Json,
             business_address: null,
             website: null,
             license_number: null,
             contractor_settings: {
-              id: effectiveContractorId, // Add this line to fix the TypeScript error
+              id: effectiveContractorId,
               markup_percentage: 20,
               tax_rate: 8.5,
               minimum_project_cost: 1000,
