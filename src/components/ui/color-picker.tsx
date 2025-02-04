@@ -77,7 +77,7 @@ interface ColorPickerProps {
   onChange: (color: string) => void;
 }
 
-const ColorPicker = ({ color, onChange }: ColorPickerProps) => {
+export function ColorPicker({ color, onChange }: ColorPickerProps) {
   const [hsl, setHsl] = useState<[number, number, number]>([0, 0, 0])
   const [colorInput, setColorInput] = useState(color)
   const [tempColor, setTempColor] = useState(color)
