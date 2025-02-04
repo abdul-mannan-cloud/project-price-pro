@@ -30,6 +30,19 @@ const Settings = () => {
     { name: "Settings", url: "/settings", icon: SettingsIcon }
   ];
 
+  // Fetch categories data
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*");
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   // Fetch contractor data
   const { data: contractor, isLoading } = useQuery({
     queryKey: ["contractor"],
@@ -168,167 +181,6 @@ const Settings = () => {
         }
       : defaultAIPreferences;
 
-  {/* AI Preferences Dialog */}
-  <SettingsDialog
-    title="AI Preferences"
-    isOpen={activeDialog === "ai"}
-    onClose={() => setActiveDialog(null)}
-  >
-    <form onSubmit={handleSave} className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <label className="text-sm font-medium">Rate Type</label>
-          <div className="flex gap-4 mt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                // Add rate logic
-              }}
-            >
-              Add Rate
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Add custom rates for different units of measurement (e.g., HR - Hour, SF - Square Foot)
-          </p>
-        </div>
-        
-        <div>
-          <label className="text-sm font-medium">Estimate Type</label>
-          <select
-            name="aiType"
-            className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
-            defaultValue={aiPreferences.type}
-          >
-            <option value="material_labor">Material & Labor</option>
-            <option value="labor_only">Labor Only</option>
-            <option value="material_only">Material Only</option>
-          </select>
-        </div>
-
-        <div>
-          <div className="flex justify-between items-center">
-            <label className="text-sm font-medium">Additional Instructions</label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                // Add instruction logic
-              }}
-            >
-              Add Instruction
-            </Button>
-          </div>
-          <textarea
-            name="aiInstructions"
-            className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
-            rows={4}
-            defaultValue={aiPreferences.instructions}
-            placeholder="Add specific instructions for AI estimate generation..."
-          />
-        </div>
-      </div>
-      <Button type="submit" disabled={updateSettings.isPending}>
-        {updateSettings.isPending ? "Saving..." : "Save Changes"}
-      </Button>
-    </form>
-  </SettingsDialog>
-
-  {/* Estimate Settings Dialog */}
-  <SettingsDialog
-    title="Estimate Settings"
-    isOpen={activeDialog === "estimate"}
-    onClose={() => setActiveDialog(null)}
-  >
-    <form onSubmit={handleSave} className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <label className="text-sm font-medium">Minimum Project Cost ($)</label>
-          <Input
-            name="minimumProjectCost"
-            type="number"
-            defaultValue={contractor?.contractor_settings?.minimum_project_cost}
-          />
-          <p className="text-sm text-muted-foreground mt-1">
-            The minimum cost you're willing to take on for any project
-          </p>
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Markup Percentage (%)</label>
-          <Input
-            name="markupPercentage"
-            type="number"
-            defaultValue={contractor?.contractor_settings?.markup_percentage}
-          />
-          <p className="text-sm text-muted-foreground mt-1">
-            This markup is applied in the background and is not visible to customers. 
-            It helps cover overhead costs and maintain profit margins.
-          </p>
-        </div>
-
-        <div>
-          <label className="text-sm font-medium">Tax Rate (%)</label>
-          <Input
-            name="taxRate"
-            type="number"
-            defaultValue={contractor?.contractor_settings?.tax_rate}
-          />
-          <p className="text-sm text-muted-foreground mt-1">
-            Local tax rate applied to estimates
-          </p>
-        </div>
-      </div>
-      <Button type="submit" disabled={updateSettings.isPending}>
-        {updateSettings.isPending ? "Saving..." : "Save Changes"}
-      </Button>
-    </form>
-  </SettingsDialog>
-
-  {/* Service Categories Dialog */}
-  <SettingsDialog
-    title="Service Categories"
-    isOpen={activeDialog === "categories"}
-    onClose={() => setActiveDialog(null)}
-  >
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Select which service categories you want to offer to your customers
-      </p>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {categories?.map((category) => (
-          <div key={category.id} className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id={category.id}
-              checked={!contractor?.contractor_settings?.excluded_categories?.includes(category.id)}
-              onChange={(e) => {
-                const excluded = contractor?.contractor_settings?.excluded_categories || [];
-                if (e.target.checked) {
-                  // Remove from excluded
-                  updateSettings.mutate({
-                    excluded_categories: excluded.filter((id) => id !== category.id)
-                  });
-                } else {
-                  // Add to excluded
-                  updateSettings.mutate({
-                    excluded_categories: [...excluded, category.id]
-                  });
-                }
-              }}
-            />
-            <label htmlFor={category.id} className="text-sm">
-              {category.name}
-            </label>
-          </div>
-        ))}
-      </div>
-    </div>
-  </SettingsDialog>
-
   return (
     <div className="min-h-screen bg-secondary">
       <NavBar items={navItems} />
@@ -466,24 +318,42 @@ const Settings = () => {
           onClose={() => setActiveDialog(null)}
         >
           <form onSubmit={handleSave} className="space-y-4">
-            <Input
-              label="Minimum Project Cost ($)"
-              name="minimumProjectCost"
-              type="number"
-              defaultValue={contractor?.contractor_settings?.minimum_project_cost}
-            />
-            <Input
-              label="Markup Percentage (%)"
-              name="markupPercentage"
-              type="number"
-              defaultValue={contractor?.contractor_settings?.markup_percentage}
-            />
-            <Input
-              label="Tax Rate (%)"
-              name="taxRate"
-              type="number"
-              defaultValue={contractor?.contractor_settings?.tax_rate}
-            />
+            <div>
+              <label className="text-sm font-medium">Minimum Project Cost ($)</label>
+              <Input
+                name="minimumProjectCost"
+                type="number"
+                defaultValue={contractor?.contractor_settings?.minimum_project_cost}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                The minimum cost you're willing to take on for any project
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Markup Percentage (%)</label>
+              <Input
+                name="markupPercentage"
+                type="number"
+                defaultValue={contractor?.contractor_settings?.markup_percentage}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                This markup is applied in the background and is not visible to customers. 
+                It helps cover overhead costs and maintain profit margins.
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Tax Rate (%)</label>
+              <Input
+                name="taxRate"
+                type="number"
+                defaultValue={contractor?.contractor_settings?.tax_rate}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Local tax rate applied to estimates
+              </p>
+            </div>
             <Button type="submit" disabled={updateSettings.isPending}>
               {updateSettings.isPending ? "Saving..." : "Save Changes"}
             </Button>
@@ -556,6 +426,48 @@ const Settings = () => {
               {updateSettings.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </form>
+        </SettingsDialog>
+
+        {/* Service Categories Dialog */}
+        <SettingsDialog
+          title="Service Categories"
+          isOpen={activeDialog === "categories"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select which service categories you want to offer to your customers
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {categories?.map((category) => (
+                <div key={category.id} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={category.id}
+                    checked={!contractor?.contractor_settings?.excluded_categories?.includes(category.id)}
+                    onChange={(e) => {
+                      const excluded = contractor?.contractor_settings?.excluded_categories || [];
+                      if (e.target.checked) {
+                        // Remove from excluded
+                        updateSettings.mutate({
+                          excluded_categories: excluded.filter((id) => id !== category.id)
+                        });
+                      } else {
+                        // Add to excluded
+                        updateSettings.mutate({
+                          excluded_categories: [...excluded, category.id]
+                        });
+                      }
+                    }}
+                  />
+                  <label htmlFor={category.id} className="text-sm">
+                    {category.name}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
         </SettingsDialog>
 
         {/* Webhooks Dialog */}
