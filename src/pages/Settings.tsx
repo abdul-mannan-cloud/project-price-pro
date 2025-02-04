@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { LogOut, LayoutDashboard, Users as Users2, Settings as SettingsIcon } from "lucide-react";
+import { LogOut, LayoutDashboard as LayoutDashboardIcon, Users as Users2, Settings as SettingsIcon } from "lucide-react";
 import { useState } from "react";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
@@ -25,7 +25,7 @@ const Settings = () => {
   const [activeDialog, setActiveDialog] = useState<string | null>(null);
 
   const navItems = [
-    { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { name: "Dashboard", url: "/dashboard", icon: LayoutDashboardIcon },
     { name: "Leads", url: "/leads", icon: Users2 },
     { name: "Settings", url: "/settings", icon: SettingsIcon }
   ];
@@ -151,10 +151,12 @@ const Settings = () => {
     );
   }
 
-  const brandingColors = (contractor?.branding_colors as BrandingColors) || {
-    primary: "#6366F1",
-    secondary: "#4F46E5"
-  };
+  const brandingColors: BrandingColors = contractor?.branding_colors 
+    ? (contractor.branding_colors as unknown as BrandingColors) 
+    : {
+        primary: "#6366F1",
+        secondary: "#4F46E5"
+      };
 
   return (
     <div className="min-h-screen bg-secondary">
