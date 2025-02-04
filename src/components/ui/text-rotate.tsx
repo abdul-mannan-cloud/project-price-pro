@@ -17,10 +17,10 @@ import {
 } from "motion/react"
 import { cn } from "@/lib/utils"
 
-// Updated type declaration for Intl.Segmenter
+// Properly declare Intl.Segmenter types
 declare global {
   interface Intl {
-    Segmenter?: {
+    Segmenter: {
       new (locale: string, options?: { granularity?: "grapheme" | "word" | "sentence" }): {
         segment: (input: string) => {
           [Symbol.iterator](): Iterator<{
@@ -92,9 +92,8 @@ const TextRotate = forwardRef<TextRotateRef, TextRotateProps>(
   ) => {
     const [currentTextIndex, setCurrentTextIndex] = useState(0)
 
-    // Updated splitIntoCharacters function with better fallback handling
     const splitIntoCharacters = (text: string): string[] => {
-      if (typeof window !== "undefined" && "Intl" in window && "Segmenter" in Intl) {
+      if (typeof window !== "undefined") {
         try {
           const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" })
           return Array.from(segmenter.segment(text), ({ segment }) => segment)
