@@ -31,14 +31,18 @@ interface EstimateDisplayProps {
     contractor_settings: Database['public']['Tables']['contractor_settings']['Row'] | null;
   };
   projectSummary?: string;
+  isEditable?: boolean;
+  onEstimateChange?: (newEstimate: any) => void;
 }
 
 export const EstimateDisplay = ({ 
-  groups = [], // Add default empty array
-  totalCost = 0, // Add default value
+  groups = [],
+  totalCost = 0,
   isBlurred = false,
   contractor,
-  projectSummary
+  projectSummary,
+  isEditable = false,
+  onEstimateChange
 }: EstimateDisplayProps) => {
   const defaultCompany = {
     business_name: "Example Company",
@@ -48,22 +52,64 @@ export const EstimateDisplay = ({
 
   const companyInfo = contractor || defaultCompany;
 
+  const handleItemChange = (
+    groupIndex: number,
+    subgroupIndex: number,
+    itemIndex: number,
+    field: keyof LineItem,
+    value: any
+  ) => {
+    if (!isEditable || !onEstimateChange) return;
+
+    const newGroups = [...groups];
+    const item = newGroups[groupIndex].subgroups[subgroupIndex].items[itemIndex];
+    
+    (item[field] as any) = value;
+
+    // Recalculate total price if quantity or unit amount changes
+    if (field === 'quantity' || field === 'unitAmount') {
+      item.totalPrice = item.quantity * item.unitAmount;
+    }
+
+    // Recalculate subgroup subtotal
+    newGroups[groupIndex].subgroups[subgroupIndex].subtotal = 
+      newGroups[groupIndex].subgroups[subgroupIndex].items.reduce(
+        (sum, item) => sum + item.totalPrice, 
+        0
+      );
+
+    onEstimateChange({ groups: newGroups });
+  };
+
+  const handleTextEdit = (
+    groupIndex: number,
+    subgroupIndex: number,
+    itemIndex: number,
+    field: keyof LineItem,
+    value: string
+  ) => {
+    handleItemChange(groupIndex, subgroupIndex, itemIndex, field, value);
+  };
+
+  const handleNumberEdit = (
+    groupIndex: number,
+    subgroupIndex: number,
+    itemIndex: number,
+    field: 'quantity' | 'unitAmount',
+    value: string
+  ) => {
+    const numValue = parseFloat(value) || 0;
+    handleItemChange(groupIndex, subgroupIndex, itemIndex, field, numValue);
+  };
+
   const formatItemTitle = (title: string, unit?: string) => {
     if (!unit) return title;
     return `${title} (${unit})`;
   };
 
-  if (!Array.isArray(groups)) {
-    return (
-      <Card className="p-8 max-w-4xl mx-auto">
-        <p>No estimate data available</p>
-      </Card>
-    );
-  }
-
   return (
     <Card className={cn(
-      "p-8 max-w-4xl mx-auto transition-all duration-500",
+      "p-8 max-w-6xl mx-auto transition-all duration-500",
       isBlurred && "blur-md pointer-events-none"
     )}>
       {/* Company Header */}
@@ -101,7 +147,20 @@ export const EstimateDisplay = ({
         {groups.map((group, index) => (
           <div key={index} className="bg-gray-50 p-6 rounded-lg">
             <div className="mb-4">
-              <h3 className="text-lg font-semibold">{group.name}</h3>
+              {isEditable ? (
+                <input
+                  type="text"
+                  value={group.name}
+                  onChange={(e) => {
+                    const newGroups = [...groups];
+                    newGroups[index].name = e.target.value;
+                    onEstimateChange?.({ groups: newGroups });
+                  }}
+                  className="text-lg font-semibold bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
+                />
+              ) : (
+                <h3 className="text-lg font-semibold">{group.name}</h3>
+              )}
               {group.description && (
                 <p className="text-sm text-muted-foreground mt-1">{group.description}</p>
               )}
@@ -109,9 +168,22 @@ export const EstimateDisplay = ({
 
             {/* Subgroups */}
             <div className="space-y-6">
-              {(group.subgroups || []).map((subgroup, subIndex) => (
+              {group.subgroups.map((subgroup, subIndex) => (
                 <div key={subIndex} className="bg-white p-4 rounded-md shadow-sm">
-                  <h4 className="font-medium mb-3 text-primary">{subgroup.name}</h4>
+                  {isEditable ? (
+                    <input
+                      type="text"
+                      value={subgroup.name}
+                      onChange={(e) => {
+                        const newGroups = [...groups];
+                        newGroups[index].subgroups[subIndex].name = e.target.value;
+                        onEstimateChange?.({ groups: newGroups });
+                      }}
+                      className="font-medium text-primary mb-3 bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
+                    />
+                  ) : (
+                    <h4 className="font-medium mb-3 text-primary">{subgroup.name}</h4>
+                  )}
                   
                   {/* Line Items Table */}
                   <div className="overflow-x-auto">
@@ -126,13 +198,59 @@ export const EstimateDisplay = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {(subgroup.items || []).map((item, itemIndex) => (
+                        {subgroup.items.map((item, itemIndex) => (
                           <tr key={itemIndex} className="border-b border-gray-100">
-                            <td className="py-3 px-4 font-medium">{formatItemTitle(item.title, item.unit)}</td>
-                            <td className="py-3 px-4 text-sm text-muted-foreground">{item.description}</td>
-                            <td className="py-3 px-4 text-right">{item.quantity}</td>
-                            <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
-                            <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
+                            <td className="py-3 px-4">
+                              {isEditable ? (
+                                <input
+                                  type="text"
+                                  value={item.title}
+                                  onChange={(e) => handleTextEdit(index, subIndex, itemIndex, 'title', e.target.value)}
+                                  className="font-medium bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
+                                />
+                              ) : (
+                                <span className="font-medium">{formatItemTitle(item.title, item.unit)}</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4">
+                              {isEditable ? (
+                                <input
+                                  type="text"
+                                  value={item.description || ''}
+                                  onChange={(e) => handleTextEdit(index, subIndex, itemIndex, 'description', e.target.value)}
+                                  className="text-sm text-muted-foreground bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
+                                />
+                              ) : (
+                                <span className="text-sm text-muted-foreground">{item.description}</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              {isEditable ? (
+                                <input
+                                  type="number"
+                                  value={item.quantity}
+                                  onChange={(e) => handleNumberEdit(index, subIndex, itemIndex, 'quantity', e.target.value)}
+                                  className="w-20 text-right bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
+                                />
+                              ) : (
+                                item.quantity
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              {isEditable ? (
+                                <input
+                                  type="number"
+                                  value={item.unitAmount}
+                                  onChange={(e) => handleNumberEdit(index, subIndex, itemIndex, 'unitAmount', e.target.value)}
+                                  className="w-24 text-right bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
+                                />
+                              ) : (
+                                `$${item.unitAmount.toFixed(2)}`
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right font-medium">
+                              ${item.totalPrice.toFixed(2)}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -152,7 +270,7 @@ export const EstimateDisplay = ({
             <div className="mt-6 pt-4 border-t flex justify-between items-center">
               <p className="font-medium">Subtotal for {group.name}</p>
               <p className="font-semibold">
-                ${(group.subgroups || []).reduce((sum, subgroup) => sum + subgroup.subtotal, 0).toFixed(2)}
+                ${group.subgroups.reduce((sum, subgroup) => sum + subgroup.subtotal, 0).toFixed(2)}
               </p>
             </div>
           </div>
