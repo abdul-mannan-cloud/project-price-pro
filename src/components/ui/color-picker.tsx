@@ -101,6 +101,12 @@ const ColorPicker = ({ color, onChange }: ColorPickerProps) => {
       [h, s, l] = normalizedColor.match(/\d+(\.\d+)?/g)?.map(Number) || [0, 0, 0]
     }
     setHsl([h, s, l])
+
+    // Update CSS variables when color changes
+    document.documentElement.style.setProperty(
+      '--primary-opacity-90',
+      `${normalizedColor}e6` // e6 is hex for 90% opacity
+    )
   }
 
   const handleSave = (e: React.MouseEvent) => {
@@ -148,7 +154,7 @@ const ColorPicker = ({ color, onChange }: ColorPickerProps) => {
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-full justify-start text-left font-normal bg-white"
+          className="w-full justify-start text-left font-normal"
           onClick={(e) => {
             e.stopPropagation()
             setIsOpen(true)
@@ -163,7 +169,7 @@ const ColorPicker = ({ color, onChange }: ColorPickerProps) => {
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[280px] p-3 bg-white"
+        className="w-[280px] p-3"
         onClick={(e) => e.stopPropagation()}
       >
         <motion.div
