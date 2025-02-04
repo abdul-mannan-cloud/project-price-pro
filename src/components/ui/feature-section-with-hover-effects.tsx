@@ -1,22 +1,17 @@
 import { cn } from "@/lib/utils";
 import {
   Building2,
+  Users,
+  CreditCard,
   Palette,
   Calculator,
   Bot,
-  ListChecks,
+  Grid,
   Webhook,
   MessageSquare,
   HelpCircle,
+  LogOut,
 } from "lucide-react";
-
-interface FeatureProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  index: number;
-  onClick?: () => void;
-}
 
 interface FeaturesSectionProps {
   setActiveDialog: (dialog: string | null) => void;
@@ -31,6 +26,18 @@ export function FeaturesSectionWithHoverEffects({ setActiveDialog }: FeaturesSec
       onClick: () => setActiveDialog("business"),
     },
     {
+      title: "Team Members",
+      description: "Manage your team members and their access",
+      icon: <Users className="h-6 w-6" />,
+      onClick: () => setActiveDialog("team"),
+    },
+    {
+      title: "Subscription",
+      description: "Manage your subscription and billing",
+      icon: <CreditCard className="h-6 w-6" />,
+      onClick: () => setActiveDialog("subscription"),
+    },
+    {
       title: "Branding",
       description: "Customize your brand colors and appearance",
       icon: <Palette className="h-6 w-6" />,
@@ -38,25 +45,25 @@ export function FeaturesSectionWithHoverEffects({ setActiveDialog }: FeaturesSec
     },
     {
       title: "Estimate Settings",
-      description: "Configure estimate calculations and pricing",
+      description: "Configure your pricing and cost calculations",
       icon: <Calculator className="h-6 w-6" />,
       onClick: () => setActiveDialog("estimate"),
     },
     {
       title: "AI Preferences",
-      description: "Configure AI settings for estimate generation",
+      description: "Configure how AI generates estimates and manages rates",
       icon: <Bot className="h-6 w-6" />,
       onClick: () => setActiveDialog("ai"),
     },
     {
       title: "Service Categories",
-      description: "Choose which services you want to offer to your customers",
-      icon: <ListChecks className="h-6 w-6" />,
+      description: "Select which services you offer and customize your estimate workflow",
+      icon: <Grid className="h-6 w-6" />,
       onClick: () => setActiveDialog("categories"),
     },
     {
       title: "Webhooks",
-      description: "Manage webhook integrations for lead notifications",
+      description: "Configure external integrations and automation",
       icon: <Webhook className="h-6 w-6" />,
       onClick: () => setActiveDialog("webhooks"),
     },
@@ -71,6 +78,12 @@ export function FeaturesSectionWithHoverEffects({ setActiveDialog }: FeaturesSec
       description: "Find answers to common questions",
       icon: <HelpCircle className="h-6 w-6" />,
       onClick: () => setActiveDialog("faq"),
+    },
+    {
+      title: "Log Out",
+      description: "Sign out of your account",
+      icon: <LogOut className="h-6 w-6" />,
+      onClick: () => setActiveDialog("logout"),
     },
   ];
 
@@ -89,13 +102,19 @@ const Feature = ({
   icon,
   index,
   onClick,
-}: FeatureProps) => {
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  index: number;
+  onClick?: () => void;
+}) => {
   return (
     <div
       onClick={onClick}
       className={cn(
         "flex flex-col lg:border-r py-10 relative group/feature dark:border-neutral-800 cursor-pointer",
-        (index === 0 || index === 4) && "lg:border-l dark:border-neutral-800",
+        (index === 0 || index === 4 || index === 8) && "lg:border-l dark:border-neutral-800",
         index < 4 && "lg:border-b dark:border-neutral-800"
       )}
     >
