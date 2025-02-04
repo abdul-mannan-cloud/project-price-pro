@@ -16,11 +16,10 @@ import { Question, Category, CategoryQuestions, AnswersState } from "@/types/est
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
-import { Json } from "@/integrations/supabase/types";
 
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
-export default function Estimate() {
+const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -43,9 +42,11 @@ export default function Estimate() {
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
+  // Extract contractor ID from URL params or use default
   const effectiveContractorId = urlContractorId || DEFAULT_CONTRACTOR_ID;
   console.log('Effective Contractor ID:', effectiveContractorId);
 
+  // Fetch contractor data using React Query for better caching and performance
   const { data: contractor, isLoading: isContractorLoading, error: contractorError } = useQuery({
     queryKey: ["contractor", effectiveContractorId],
     queryFn: async () => {
@@ -58,51 +59,29 @@ export default function Estimate() {
             contractor_settings(*)
           `)
           .eq("id", effectiveContractorId)
-          .maybeSingle();
+          .single();
 
         if (error) {
           console.error("Error fetching contractor:", error);
-          throw error;
-        }
+          // If the specified contractor is not found, try to fetch the default contractor
+          if (effectiveContractorId !== DEFAULT_CONTRACTOR_ID) {
+            console.log('Falling back to default contractor');
+            const { data: defaultData, error: defaultError } = await supabase
+              .from("contractors")
+              .select(`
+                *,
+                contractor_settings(*)
+              `)
+              .eq("id", DEFAULT_CONTRACTOR_ID)
+              .single();
 
-        if (!data) {
-          console.log('No contractor found, using default values');
-          const timestamp = new Date().toISOString();
-          const defaultAiPreferences: Json = {
-            rate: "HR",
-            type: "material_labor",
-            instructions: ""
-          };
-          
-          return {
-            id: effectiveContractorId,
-            business_name: "Example Company",
-            business_logo_url: null,
-            contact_email: "contact@example.com",
-            contact_phone: "(555) 123-4567",
-            subscription_status: "trial" as const,
-            branding_colors: {
-              primary: "#6366F1",
-              secondary: "#4F46E5"
-            } as Json,
-            business_address: null,
-            website: null,
-            license_number: null,
-            created_at: timestamp,
-            updated_at: timestamp,
-            contractor_settings: {
-              id: effectiveContractorId,
-              minimum_project_cost: 1000,
-              markup_percentage: 20,
-              tax_rate: 8.5,
-              ai_prompt_template: null,
-              ai_preferences: defaultAiPreferences,
-              excluded_categories: [],
-              ai_instructions: "",
-              created_at: timestamp,
-              updated_at: timestamp
+            if (defaultError) {
+              console.error("Error fetching default contractor:", defaultError);
+              throw defaultError;
             }
-          };
+            return defaultData;
+          }
+          throw error;
         }
 
         console.log('Successfully fetched contractor:', data);
@@ -113,7 +92,7 @@ export default function Estimate() {
       }
     },
     retry: 1,
-    staleTime: 5 * 60 * 1000
+    staleTime: 5 * 60 * 1000 // Cache for 5 minutes
   });
 
   useEffect(() => {
@@ -136,19 +115,10 @@ export default function Estimate() {
       const { data: optionsData, error: optionsError } = await supabase
         .from('Options')
         .select('*')
-        .eq('Key Options', '42e64c9b-53b2-49bd-ad77-995ecb3106c6')
-        .maybeSingle();
+        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .single();
 
-      if (optionsError) {
-        console.error('Error fetching options:', optionsError);
-        throw optionsError;
-      }
-
-      if (!optionsData) {
-        console.log('No options data found');
-        setCategories([]);
-        return;
-      }
+      if (optionsError) throw optionsError;
 
       const transformedCategories: Category[] = Object.keys(optionsData)
         .filter(key => key !== 'Key Options')
@@ -182,8 +152,8 @@ export default function Estimate() {
       const { data: optionsData, error: optionsError } = await supabase
         .from('Options')
         .select('*')
-        .eq('Key Options', '42e64c9b-53b2-49bd-ad77-995ecb3106c6')
-        .maybeSingle();
+        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .single();
 
       if (optionsError) throw optionsError;
 
@@ -296,7 +266,7 @@ export default function Estimate() {
   };
 
   const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000;
+  const RETRY_DELAY = 1000; // 1 second
 
   const loadCategoryQuestions = async (retryCount = 0) => {
     if (!selectedCategory) {
@@ -310,8 +280,8 @@ export default function Estimate() {
       const { data, error } = await supabase
         .from('Options')
         .select('*')
-        .eq('Key Options', '42e64c9b-53b2-49bd-ad77-995ecb3106c6')
-        .maybeSingle();
+        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .single();
 
       if (error) {
         console.error('Error fetching options:', error);
@@ -761,4 +731,6 @@ export default function Estimate() {
       </div>
     </div>
   );
-}
+};
+
+export default EstimatePage;
