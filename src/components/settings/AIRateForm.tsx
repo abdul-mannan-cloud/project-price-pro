@@ -11,6 +11,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AIRate {
   title: string;
@@ -24,6 +31,28 @@ interface AIRateFormProps {
   rates: AIRate[];
   onSave: (rates: AIRate[]) => void;
 }
+
+const UNIT_OPTIONS = [
+  { value: "CF", label: "Cubic Feet (CF)" },
+  { value: "CY", label: "Cubic Yards (CY)" },
+  { value: "DY", label: "Day (DY)" },
+  { value: "EA", label: "Each (EA)" },
+  { value: "GAL", label: "Gallon (GAL)" },
+  { value: "HR", label: "Hour (HR)" },
+  { value: "IN", label: "Inch (IN)" },
+  { value: "LBS", label: "Pounds (LBS)" },
+  { value: "LF", label: "Linear Foot (LF)" },
+  { value: "LS", label: "Lump Sum (LS)" },
+  { value: "MO", label: "Month (MO)" },
+  { value: "SF", label: "Square Foot (SF)" },
+  { value: "SHT", label: "Sheet (SHT)" },
+  { value: "SQ", label: "Square (SQ)" },
+  { value: "SY", label: "Square Yards (SY)" },
+  { value: "TONS", label: "Tons (TONS)" },
+  { value: "WK", label: "Week (WK)" },
+  { value: "WY", label: "Week (WY)" },
+  { value: "YD", label: "Yard (YD)" },
+];
 
 export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
   const [aiRates, setAiRates] = useState<AIRate[]>(rates);
@@ -125,12 +154,24 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
               onChange={(e) => setNewRate({ ...newRate, rate: e.target.value })}
               placeholder="e.g., 75"
             />
-            <Input
-              label="Unit"
-              value={newRate.unit}
-              onChange={(e) => setNewRate({ ...newRate, unit: e.target.value })}
-              placeholder="e.g., HR, SF"
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Unit</label>
+              <Select
+                value={newRate.unit}
+                onValueChange={(value) => setNewRate({ ...newRate, unit: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {UNIT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               value={newRate.type}
