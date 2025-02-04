@@ -1,39 +1,33 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Estimate from "./pages/Estimate";
-import Login from "./pages/Login";
-import NotFound from "./pages/NotFound";
-import Onboarding from "./pages/Onboarding";
-import Dashboard from "./pages/Dashboard";
-import Settings from "./pages/Settings";
-import Leads from "./pages/Leads";
+import { Toaster } from "@/components/ui/toaster";
+import Index from "@/pages/Index";
+import Login from "@/pages/Login";
+import Dashboard from "@/pages/Dashboard";
+import Leads from "@/pages/Leads";
+import Settings from "@/pages/Settings";
+import Estimate from "@/pages/Estimate";
+import PublicEstimate from "@/pages/PublicEstimate";
+import NotFound from "@/pages/NotFound";
+import Onboarding from "@/pages/Onboarding";
+import "./App.css";
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/leads" element={<Leads />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/estimate/:contractorId" element={<Estimate />} />
+        <Route path="/e/:id" element={<PublicEstimate />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
       <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/estimate" element={<Estimate />} />
-          <Route path="/estimate/:contractorId" element={<Estimate />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </BrowserRouter>
+  );
+}
 
 export default App;
