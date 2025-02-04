@@ -87,11 +87,11 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-full h-screen p-0 m-0">
-        <div className="h-full flex flex-col">
+        <div className="flex flex-col h-full">
           {/* Top Toggle Bar */}
           <LeadViewToggle view={view} onViewChange={setView} />
 
-          {/* Content */}
+          {/* Content Area - Make it fill available space and scroll */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-6xl mx-auto">
               {view === "estimate" ? (
@@ -108,8 +108,8 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
             </div>
           </div>
 
-          {/* Sticky Bottom Actions */}
-          <div className="border-t bg-background p-4 sticky bottom-0">
+          {/* Bottom Actions - Now properly sticky */}
+          <div className="border-t bg-background p-4 w-full">
             <div className="max-w-6xl mx-auto flex justify-between items-center">
               <div className="flex gap-2">
                 {lead.user_phone && (
