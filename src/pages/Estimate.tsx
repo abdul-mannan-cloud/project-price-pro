@@ -565,9 +565,9 @@ const EstimatePage = () => {
         </button>
       )}
 
-      <div className="max-w-4xl mx-auto px-4 py-12">
+      <div className="w-full px-4 py-12">
         {stage === 'photo' && (
-          <div className="card p-8 animate-fadeIn">
+          <div className="card p-8 max-w-4xl mx-auto animate-fadeIn">
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-semibold mb-2">
@@ -614,7 +614,7 @@ const EstimatePage = () => {
         )}
 
         {stage === 'description' && !selectedCategory && (
-          <div className="card p-8 animate-fadeIn">
+          <div className="card p-8 max-w-4xl mx-auto animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
             <div className="space-y-2">
               <Textarea
@@ -640,8 +640,8 @@ const EstimatePage = () => {
         )}
 
         {stage === 'category' && (
-          <div className="animate-fadeIn">
-            <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
+          <div className="w-full animate-fadeIn">
+            <h2 className="text-2xl font-semibold mb-6 text-center">Select Service Category</h2>
             <CategoryGrid 
               categories={categories}
               selectedCategory={selectedCategory || undefined}
@@ -652,7 +652,7 @@ const EstimatePage = () => {
         )}
 
         {stage === 'contact' && estimate && (
-          <div className="animate-fadeIn">
+          <div className="w-full animate-fadeIn">
             <EstimateDisplay 
               groups={estimate.groups} 
               totalCost={estimate.totalCost} 
@@ -670,7 +670,7 @@ const EstimatePage = () => {
         )}
 
         {stage === 'estimate' && estimate && (
-          <div className="animate-fadeIn">
+          <div className="w-full animate-fadeIn">
             <EstimateDisplay 
               groups={estimate.groups} 
               totalCost={estimate.totalCost}
