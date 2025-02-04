@@ -15,6 +15,11 @@ import { FeedbackForm } from "@/components/settings/FeedbackForm";
 import { FAQ } from "@/components/settings/FAQ";
 import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
 
+interface BrandingColors {
+  primary: string;
+  secondary: string;
+}
+
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -81,6 +86,12 @@ const Settings = () => {
     } else {
       navigate("/");
     }
+  };
+
+  // Parse branding colors from contractor data
+  const brandingColors: BrandingColors = contractor?.branding_colors as BrandingColors || {
+    primary: "#6366F1",
+    secondary: "#4F46E5"
   };
 
   if (contractorLoading) {
