@@ -39,6 +39,7 @@ const EstimatePage = () => {
   const { contractorId: urlContractorId } = useParams();
   const location = useLocation();
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Extract contractor ID from URL params or use default
   const effectiveContractorId = urlContractorId || DEFAULT_CONTRACTOR_ID;
@@ -128,7 +129,7 @@ const EstimatePage = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsLoadingData(false);
     }
   };
 
@@ -423,7 +424,7 @@ const EstimatePage = () => {
 
   const handleContactSubmit = async (contactData: any) => {
     try {
-      if (!contractorId || !currentLeadId) {
+      if (!effectiveContractorId || !currentLeadId) {
         throw new Error("Missing contractor ID or lead ID");
       }
       setStage('estimate');
@@ -559,7 +560,7 @@ const EstimatePage = () => {
     );
   }
 
-  if (isLoading && stage === 'questions') {
+  if (isLoadingData && stage === 'questions') {
     return <LoadingScreen message="Loading questions..." />;
   }
 
