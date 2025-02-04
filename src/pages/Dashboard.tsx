@@ -88,24 +88,6 @@ const Dashboard = () => {
 
   const features = [
     {
-      Icon: FileText,
-      name: "Total Leads",
-      description: `You have ${totalLeads} leads in your pipeline`,
-      href: "/leads",
-      cta: "View all leads",
-      background: <div className="absolute -right-20 -top-20 opacity-60" />,
-      className: "lg:col-span-1 hover:scale-[1.02] transition-transform",
-    },
-    {
-      Icon: LineChart,
-      name: "Total Value",
-      description: `Total estimated value: $${totalEstimatedValue.toLocaleString()}`,
-      href: "/leads",
-      cta: "View details",
-      background: <div className="absolute -right-20 -top-20 opacity-60" />,
-      className: "lg:col-span-1 hover:scale-[1.02] transition-transform",
-    },
-    {
       Icon: Copy,
       name: "Preview Estimator",
       description: "Preview your estimator or copy the link to share",
@@ -136,13 +118,31 @@ const Dashboard = () => {
       ),
     },
     {
+      Icon: FileText,
+      name: "Total Leads",
+      description: `You have ${totalLeads} leads in your pipeline`,
+      href: "/leads",
+      cta: "View all leads",
+      background: <div className="absolute -right-20 -top-20 opacity-60" />,
+      className: "lg:col-span-1 hover:scale-[1.02] transition-transform",
+    },
+    {
+      Icon: LineChart,
+      name: "Total Value",
+      description: `Total estimated value: $${totalEstimatedValue.toLocaleString()}`,
+      href: "/leads",
+      cta: "View details",
+      background: <div className="absolute -right-20 -top-20 opacity-60" />,
+      className: "lg:col-span-1 hover:scale-[1.02] transition-transform",
+    },
+    {
       Icon: History,
       name: "Recent Activity",
       description: "Latest updates and notifications",
       href: "/leads",
       cta: "View all",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
-      className: "lg:col-span-3 hover:scale-[1.02] transition-transform",
+      className: "lg:col-span-1 hover:scale-[1.02] transition-transform",
       content: (
         <div className="mt-4 space-y-3">
           {leads.slice(0, 3).map((lead) => (
@@ -164,7 +164,7 @@ const Dashboard = () => {
           <h1 className="text-2xl font-semibold">Welcome, {contractor.business_name}</h1>
         </div>
 
-        <BentoGrid className="grid-cols-1 md:grid-cols-2 gap-4">
+        <BentoGrid className="grid-cols-1 md:grid-cols-3 gap-4">
           {features.map((feature) => (
             <BentoCard key={feature.name} {...feature} />
           ))}
