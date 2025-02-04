@@ -13,6 +13,7 @@ import { WebhookSettings } from "@/components/settings/WebhookSettings";
 import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
 import { AIRateForm } from "@/components/settings/AIRateForm";
 import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface BrandingColors {
   primary: string;
@@ -372,27 +373,56 @@ const Settings = () => {
           isOpen={activeDialog === "faq"}
           onClose={() => setActiveDialog(null)}
         >
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <h3 className="font-medium">How do I update my business information?</h3>
-              <p className="text-muted-foreground">
-                Click on the "Business Information" card to update your business details, including name, contact information, and address.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-medium">How do I customize my brand colors?</h3>
-              <p className="text-muted-foreground">
-                Navigate to the "Branding" section where you can select your primary and secondary brand colors using our color picker.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-medium">How do webhook notifications work?</h3>
-              <p className="text-muted-foreground">
-                Webhooks allow you to receive real-time notifications when new leads are created. Configure your webhook endpoints in the "Webhooks" section.
-              </p>
-            </div>
+          <div className="space-y-4">
+            <Accordion type="single" collapsible className="w-full space-y-2">
+              <AccordionItem value="1" className="rounded-lg border bg-background px-4 py-1">
+                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
+                  How do I update my business information?
+                </AccordionTrigger>
+                <AccordionContent className="pb-2 ps-7 text-muted-foreground">
+                  Navigate to the Business Information section in Settings. Here you can update your business name, contact details, address, website, and license number. Click "Save Changes" after making your updates.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="2" className="rounded-lg border bg-background px-4 py-1">
+                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
+                  How do I customize my brand colors?
+                </AccordionTrigger>
+                <AccordionContent className="pb-2 ps-7 text-muted-foreground">
+                  Go to the Branding section where you can select your primary and secondary brand colors using our color picker. These colors will be applied throughout your customer-facing interfaces.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="3" className="rounded-lg border bg-background px-4 py-1">
+                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
+                  How do estimate calculations work?
+                </AccordionTrigger>
+                <AccordionContent className="pb-2 ps-7 text-muted-foreground">
+                  Estimates are calculated based on your configured settings including minimum project cost, markup percentage, and tax rate. You can adjust these in the Estimate Settings section to match your business needs.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="4" className="rounded-lg border bg-background px-4 py-1">
+                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
+                  What are webhooks and how do I use them?
+                </AccordionTrigger>
+                <AccordionContent className="pb-2 ps-7 text-muted-foreground">
+                  Webhooks allow you to receive real-time notifications when new leads are created. Configure webhook endpoints in the Webhooks section to integrate with your CRM or other business tools.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="5" className="rounded-lg border bg-background px-4 py-1">
+                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
+                  How do I manage service categories?
+                </AccordionTrigger>
+                <AccordionContent className="pb-2 ps-7 text-muted-foreground">
+                  In the Service Categories section, you can enable or disable specific service categories, customize their descriptions, and manage the questions associated with each service type.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         </SettingsDialog>
+
       </div>
     </div>
   );
