@@ -1,10 +1,9 @@
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
-import { IconLoader2, TablerIcon } from '@tabler/icons-react';
+import { IconLoader2 } from '@tabler/icons-react';
 import { motion, MotionProps } from 'framer-motion';
 
-const TABLER_ICON_STYLE = { size: 14 };
 const buttonVariants = cva(
   'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 gap-2 border',
   {
@@ -47,8 +46,8 @@ type MotionButtonPropsType = React.ButtonHTMLAttributes<HTMLButtonElement> &
 
 export interface ButtonProps extends MotionButtonPropsType {
   asChild?: boolean;
-  supportIcon?: TablerIcon;
-  leadingIcon?: TablerIcon;
+  supportIcon?: React.ElementType;
+  leadingIcon?: React.ElementType;
   isLoading?: boolean;
   stretch?: boolean;
 }
@@ -61,16 +60,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       size,
       children,
       stretch = false,
-      supportIcon = undefined,
-      leadingIcon = undefined,
+      supportIcon: SupportIcon,
+      leadingIcon: LeadingIcon,
       isLoading = false,
       asChild = false,
       ...props
     },
     ref,
   ) => {
-    const SupportIconRender = supportIcon ?? React.Fragment;
-    const LeadingIconRender = leadingIcon ?? React.Fragment;
     return (
       <motion.button
         className={cn(
@@ -80,15 +77,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         {...props}>
         {isLoading ? (
-          <IconLoader2 size={14} className="animate-spin" />
-        ) : (
-          <></>
-        )}
-        {!isLoading && supportIcon && (
-          <SupportIconRender size={14} />
-        )}
+          <IconLoader2 className="animate-spin" size={14} />
+        ) : null}
+        {!isLoading && SupportIcon ? (
+          <SupportIcon size={14} />
+        ) : null}
         {children}
-        {leadingIcon && <LeadingIconRender size={14} />}
+        {LeadingIcon ? <LeadingIcon size={14} /> : null}
       </motion.button>
     );
   },
