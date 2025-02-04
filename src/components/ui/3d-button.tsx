@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
-import { IconLoader2 } from '@tabler/icons-react';
+import { IconLoader2, TablerIcon } from '@tabler/icons-react';
 import { motion, MotionProps } from 'framer-motion';
 
 const buttonVariants = cva(
@@ -11,7 +11,7 @@ const buttonVariants = cva(
       variant: {
         ai: 'bg-indigo-500 text-white hover:bg-indigo-600 border-indigo-700 border-b-4 border-b-indigo-600 shadow-md',
         default:
-          'bg-blue-500 text-primary-foreground hover:bg-blue-600 border-blue-700 border-b-4 border-b-blue-600 shadow-md',
+          'bg-primary text-primary-foreground hover:bg-primary/90 border-primary-700 border-b-4 border-b-primary-600 shadow-md',
         destructive:
           'bg-red-500 text-destructive-foreground hover:bg-red-600 border-red-700 border-b-4 border-red-600 shadow-md',
         outline:
@@ -77,17 +77,38 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         {...props}>
         {isLoading ? (
-          <IconLoader2 className="animate-spin" size={14} />
+          <IconLoader2 size={14} className="animate-spin" />
         ) : null}
-        {!isLoading && SupportIcon ? (
+        {!isLoading && SupportIcon && (
           <SupportIcon size={14} />
-        ) : null}
+        )}
         {children}
-        {LeadingIcon ? <LeadingIcon size={14} /> : null}
+        {LeadingIcon && <LeadingIcon size={14} />}
       </motion.button>
     );
   },
 );
 Button.displayName = 'Button';
+
+export interface ButtonGroupProps
+  extends React.HTMLAttributes<HTMLDivElement> {}
+
+export const ButtonGroup = React.forwardRef<HTMLDivElement, ButtonGroupProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          'button-group flex flex-row overflow-hidden rounded-lg border w-fit divide-x',
+          '*:rounded-none *:border-none',
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
+);
+
+ButtonGroup.displayName = 'ButtonGroup';
 
 export { Button, buttonVariants };
