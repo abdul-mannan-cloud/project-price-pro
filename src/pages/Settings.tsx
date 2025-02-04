@@ -53,11 +53,11 @@ const Settings = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [editingEstimateIndex, setEditingEstimateIndex] = useState<number | null>(null);
   const [editingInstructionIndex, setEditingInstructionIndex] = useState<number | null>(null);
-  const [aiEstimateRows, setAiEstimateRows] = useState([{ title: "", rate: "HR", type: "material_labor" }]);
+  const [aiEstimateRows, setAiEstimateRows] = useState([{ title: "", rate: "HR", type: "material_labor", instructions: "" }]);
   const [aiInstructionRows, setAiInstructionRows] = useState([{ instruction: "" }]);
   const [isEstimateDialogOpen, setIsEstimateDialogOpen] = useState(false);
   const [isInstructionDialogOpen, setIsInstructionDialogOpen] = useState(false);
-  const [currentEstimate, setCurrentEstimate] = useState({ title: "", rate: "HR", type: "material_labor" });
+  const [currentEstimate, setCurrentEstimate] = useState({ title: "", rate: "HR", type: "material_labor", instructions: "" });
   const [currentInstruction, setCurrentInstruction] = useState({ instruction: "" });
 
   const navItems = [
@@ -131,7 +131,7 @@ const Settings = () => {
           ai_preferences: {
             rate: currentEstimate.rate,
             type: currentEstimate.type,
-            instructions: currentInstruction.instruction
+            instructions: currentEstimate.instructions
           }
         })
         .eq("id", user.id);
@@ -195,7 +195,7 @@ const Settings = () => {
     }
     setIsEstimateDialogOpen(false);
     setEditingEstimateIndex(null);
-    setCurrentEstimate({ title: "", rate: "HR", type: "material_labor" });
+    setCurrentEstimate({ title: "", rate: "HR", type: "material_labor", instructions: "" });
   };
 
   const handleSaveInstruction = () => {
@@ -415,7 +415,10 @@ const Settings = () => {
                     <div>
                       <p className="font-medium">{row.title || 'Untitled Estimate'}</p>
                       <p className="text-sm text-muted-foreground">
-                        Rate: {row.rate} | Type: {row.type}
+                        Rate: {row.rate}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Type: {row.type}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -441,7 +444,7 @@ const Settings = () => {
                   variant="outline"
                   onClick={() => {
                     setEditingEstimateIndex(null);
-                    setCurrentEstimate({ title: "", rate: "HR", type: "material_labor" });
+                    setCurrentEstimate({ title: "", rate: "HR", type: "material_labor", instructions: "" });
                     setIsEstimateDialogOpen(true);
                   }}
                   className="w-full"
@@ -475,6 +478,12 @@ const Settings = () => {
                       value={currentEstimate.type}
                       onValueChange={(value) => setCurrentEstimate({ ...currentEstimate, type: value })}
                       options={typeOptions}
+                    />
+                    <Textarea
+                      placeholder="Tell AI how to use this rate (optional)"
+                      value={currentEstimate.instructions || ''}
+                      onChange={(e) => setCurrentEstimate({ ...currentEstimate, instructions: e.target.value })}
+                      className="min-h-[100px]"
                     />
                     <Button type="button" onClick={handleSaveEstimate} className="w-full">
                       Save
