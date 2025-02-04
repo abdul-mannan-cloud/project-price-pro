@@ -15,12 +15,6 @@ interface EmailRequest {
   email: string;
   estimateData: any;
   estimateUrl: string;
-  contractor: {
-    business_name: string;
-    contact_email: string;
-    contact_phone: string;
-    business_logo_url?: string;
-  };
 }
 
 serve(async (req) => {
@@ -29,7 +23,7 @@ serve(async (req) => {
   }
 
   try {
-    const { name, email, estimateData, estimateUrl, contractor }: EmailRequest = await req.json();
+    const { name, email, estimateData, estimateUrl }: EmailRequest = await req.json();
 
     // Generate PDF using Puppeteer
     const browser = await puppeteer.launch();
@@ -39,9 +33,9 @@ serve(async (req) => {
     await browser.close();
 
     const emailResponse = await resend.emails.send({
-      from: `${contractor.business_name} <onboarding@resend.dev>`,
+      from: "Estimate <onboarding@resend.dev>",
       to: [email],
-      subject: `Your Estimate from ${contractor.business_name}`,
+      subject: "Your Estimate",
       attachments: [
         {
           filename: 'estimate.pdf',
@@ -50,26 +44,16 @@ serve(async (req) => {
       ],
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          ${contractor.business_logo_url ? `
-            <img src="${contractor.business_logo_url}" alt="${contractor.business_name} logo" style="max-width: 200px; margin-bottom: 20px;">
-          ` : ''}
+          <p>Hello ${name},</p>
           
-          <p>Hello, ${name}</p>
-          
-          <p>Thank you for trying out our Quick Quote tool! Attached is a PDF of the estimate.</p>
-          
-          <p>At ${contractor.business_name}, we take great pride in delivering top-quality work to help you achieve your construction goals.</p>
-          
-          <p>We'd love the opportunity to turn this quote into a real project for you. Feel free to contact us, and we can start discussing your vision and how we can bring it to life.</p>
+          <p>Thank you for your interest! Attached is a PDF of your estimate.</p>
           
           <p>You can also view your estimate online at: <a href="${estimateUrl}">${estimateUrl}</a></p>
           
-          <p>Looking forward to connecting with you!</p>
+          <p>Please let us know if you have any questions!</p>
           
           <p>Best regards,<br>
-          ${contractor.business_name}<br>
-          📞 ${contractor.contact_phone}<br>
-          ✉️ ${contractor.contact_email}</p>
+          The Team</p>
         </div>
       `,
     });
