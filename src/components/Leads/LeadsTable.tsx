@@ -15,6 +15,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { formatDistanceToNow, format } from "date-fns";
 import { MapPin, ArrowUp, ArrowDown, Search, Download, Trash2, Filter, Phone, Mail, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Json } from "@/integrations/supabase/types";
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -38,12 +39,12 @@ interface Lead {
   user_name: string | null;
   user_email: string | null;
   user_phone: string | null;
-  estimate_data?: {
-    groups?: Array<{
-      name: string;
-      description?: string;
-    }>;
-  };
+  estimate_data: Json;
+  answers: Json;
+  category: string | null;
+  contractor_id: string | null;
+  project_description: string | null;
+  updated_at: string | null;
 }
 
 interface LeadsTableProps {

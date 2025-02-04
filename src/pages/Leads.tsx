@@ -8,6 +8,17 @@ import { toast } from "@/hooks/use-toast";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { LeadsTable } from "@/components/Leads/LeadsTable";
 import { LayoutDashboard, Users, Settings } from "lucide-react";
+import { Json } from "@/integrations/supabase/types";
+
+interface EstimateGroup {
+  name: string;
+  description?: string;
+}
+
+interface EstimateData {
+  groups?: EstimateGroup[];
+  projectSummary?: string;
+}
 
 const Leads = () => {
   const [selectedLead, setSelectedLead] = useState<any>(null);
