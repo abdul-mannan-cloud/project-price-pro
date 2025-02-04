@@ -8,36 +8,24 @@ import { Footerdemo } from "@/components/ui/footer-section";
 
 const constructionImages = [
   {
-    url: "https://images.unsplash.com/photo-1504307651254-35680f356dfd",
-    title: "Modern Construction",
+    url: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e",
+    title: "Electrician",
   },
   {
-    url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e",
-    title: "Architecture Design",
+    url: "https://images.unsplash.com/photo-1603796846097-bee99e4a601f",
+    title: "Plumber",
   },
   {
-    url: "https://images.unsplash.com/photo-1621274147744-cfb5694bb233",
-    title: "Interior Work",
+    url: "https://images.unsplash.com/photo-1484154218962-a197022b5858",
+    title: "Home Remodel",
   },
   {
-    url: "https://images.unsplash.com/photo-1581094288338-2314dddb7ece",
-    title: "Home Improvement",
+    url: "https://images.unsplash.com/photo-1581578731548-c64695cc6952",
+    title: "Handyman",
   },
   {
-    url: "https://images.unsplash.com/photo-1504615755583-2916b52192a3",
-    title: "Custom Building",
-  },
-  {
-    url: "https://images.unsplash.com/photo-1541976590-713941681591",
-    title: "Professional Tools",
-  },
-  {
-    url: "https://images.unsplash.com/photo-1582653291997-079a1c04e5a1",
-    title: "Quality Work",
-  },
-  {
-    url: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f",
-    title: "Construction Site",
+    url: "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d",
+    title: "Floor Installer",
   },
 ];
 
@@ -107,14 +95,11 @@ const Index = () => {
             key={index}
             depth={(index % 3) + 1}
             className={`
-              ${index === 0 ? "top-[15%] left-[11%]" : ""}
-              ${index === 1 ? "top-[18%] left-[32%]" : ""}
-              ${index === 2 ? "top-[12%] left-[53%]" : ""}
-              ${index === 3 ? "top-[10%] left-[83%]" : ""}
-              ${index === 4 ? "top-[45%] left-[2%]" : ""}
-              ${index === 5 ? "top-[70%] left-[77%]" : ""}
-              ${index === 6 ? "top-[73%] left-[15%]" : ""}
-              ${index === 7 ? "top-[80%] left-[50%]" : ""}
+              ${index === 0 ? "top-[5%] left-[5%]" : ""} // Top left
+              ${index === 1 ? "top-[5%] right-[5%]" : ""} // Top right
+              ${index === 2 ? "bottom-[5%] right-[5%]" : ""} // Bottom right
+              ${index === 3 ? "bottom-[5%] left-[5%]" : ""} // Bottom left
+              ${index === 4 ? "bottom-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2" : ""} // Center
             `}
           >
             <motion.img
@@ -123,7 +108,7 @@ const Index = () => {
               transition={{ duration: 0.5, delay: index * 0.15 }}
               src={image.url}
               alt={image.title}
-              className="w-32 h-32 md:w-48 md:h-48 object-cover rounded-2xl shadow-lg hover:scale-110 hover:opacity-100 duration-300 cursor-pointer transition-all border-4 border-white/10"
+              className="w-48 h-48 md:w-64 md:h-64 object-cover rounded-2xl shadow-lg hover:scale-110 hover:opacity-100 duration-300 cursor-pointer transition-all border-4 border-white/10"
             />
           </FloatingElement>
         ))}
