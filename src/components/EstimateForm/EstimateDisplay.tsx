@@ -206,51 +206,53 @@ export const EstimateDisplay = ({
                       {/* Line Items */}
                       <div className="overflow-x-auto">
                         {/* Desktop Table View */}
-                        <div className="hidden md:block overflow-x-auto">
-                          <table className="w-full">
-                            <thead>
-                              <tr className="border-b border-gray-200">
-                                <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Item</th>
-                                <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Description</th>
-                                <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Qty</th>
-                                <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Unit Price</th>
-                                <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Total</th>
-                                {isEditable && <th className="w-16"></th>}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {subgroup.items.map((item, itemIndex) => (
-                                <tr key={itemIndex} className="border-b border-gray-100">
-                                  <td className="py-3 px-4">
-                                    <span className="font-medium">{formatItemTitle(item.title, item.unit)}</span>
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <span className="text-sm text-muted-foreground">{item.description}</span>
-                                  </td>
-                                  <td className="py-3 px-4 text-right">{item.quantity}</td>
-                                  <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
-                                  <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
-                                  {isEditable && (
-                                    <td className="py-3 px-4">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => setSelectedItem({
-                                          groupIndex,
-                                          subgroupIndex: subIndex,
-                                          itemIndex,
-                                          item
-                                        })}
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                    </td>
-                                  )}
+                        <div className="hidden md:block">
+                          <div className="max-h-[400px] overflow-y-auto">
+                            <table className="w-full">
+                              <thead className="sticky top-0 bg-white z-10">
+                                <tr className="border-b border-gray-200">
+                                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Item</th>
+                                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Description</th>
+                                  <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Qty</th>
+                                  <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Unit Price</th>
+                                  <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Total</th>
+                                  {isEditable && <th className="w-16"></th>}
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {subgroup.items.map((item, itemIndex) => (
+                                  <tr key={itemIndex} className="border-b border-gray-100">
+                                    <td className="py-3 px-4">
+                                      <span className="font-medium">{formatItemTitle(item.title, item.unit)}</span>
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <span className="text-sm text-muted-foreground">{item.description}</span>
+                                    </td>
+                                    <td className="py-3 px-4 text-right">{item.quantity}</td>
+                                    <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
+                                    <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
+                                    {isEditable && (
+                                      <td className="py-3 px-4">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => setSelectedItem({
+                                            groupIndex,
+                                            subgroupIndex: subIndex,
+                                            itemIndex,
+                                            item
+                                          })}
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                      </td>
+                                    )}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
 
                         {/* Mobile View */}
