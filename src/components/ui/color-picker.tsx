@@ -84,7 +84,6 @@ const ColorPicker = ({
 }) => {
   const [hsl, setHsl] = useState<[number, number, number]>([0, 0, 0])
   const [colorInput, setColorInput] = useState(color)
-  const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
     handleColorChange(color)
@@ -145,11 +144,11 @@ const ColorPicker = ({
   ]
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-full justify-start text-left font-normal"
+          className="w-full justify-start text-left font-normal bg-white"
         >
           <div
             className="w-6 h-6 rounded-full mr-2 shadow-sm"
@@ -159,7 +158,7 @@ const ColorPicker = ({
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-3">
+      <PopoverContent className="w-[280px] p-3 bg-white">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
