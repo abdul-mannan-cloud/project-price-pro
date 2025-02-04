@@ -127,7 +127,7 @@ const Dashboard = () => {
       actions: (
         <div className="flex gap-2 mt-2">
           <Button 
-            variant="secondary"
+            variant="ghost"
             size="sm"
             onClick={(e) => {
               e.preventDefault();
@@ -138,7 +138,7 @@ const Dashboard = () => {
                 description: "The estimator link has been copied to your clipboard.",
               });
             }}
-            className="text-white hover:text-primary"
+            className="text-white hover:text-white/80"
           >
             <Copy className="w-4 h-4 mr-2" />
             Copy Link
