@@ -13,7 +13,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-// Helper functions for color conversion
 const hslToHex = (h: number, s: number, l: number) => {
   l /= 100
   const a = (s * Math.min(l, 1 - l)) / 100
@@ -134,25 +133,15 @@ const ColorPicker = ({
     setColorInput(newColor)
     if (
       /^#[0-9A-Fa-f]{6}$/.test(newColor) ||
-      /^hsl$$\d+,\s*\d+%,\s*\d+%$$$/.test(newColor)
+      /^hsl\(\d+,\s*\d+%,\s*\d+%\)$/.test(newColor)
     ) {
       handleColorChange(newColor)
     }
   }
 
   const colorPresets = [
-    "#FF3B30",
-    "#FF9500",
-    "#FFCC00",
-    "#4CD964",
-    "#5AC8FA",
-    "#007AFF",
-    "#5856D6",
-    "#FF2D55",
-    "#8E8E93",
-    "#EFEFF4",
-    "#E5E5EA",
-    "#D1D1D6",
+    "#FF3B30", "#FF9500", "#FFCC00", "#4CD964", "#5AC8FA", "#007AFF",
+    "#5856D6", "#FF2D55", "#8E8E93", "#EFEFF4", "#E5E5EA", "#D1D1D6"
   ]
 
   return (
@@ -263,7 +252,7 @@ const ColorPicker = ({
         </motion.div>
       </PopoverContent>
     </Popover>
-  )
-}
+  );
+};
 
 export { ColorPicker }
