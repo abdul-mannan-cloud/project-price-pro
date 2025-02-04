@@ -17,20 +17,23 @@ import {
 } from "motion/react"
 import { cn } from "@/lib/utils"
 
-// Define Segmenter as a property that might not exist on Intl
+// Define Segmenter interface
+interface Segmenter {
+  segment(input: string): {
+    [Symbol.iterator](): Iterator<{
+      segment: string
+      index: number
+      input: string
+    }>
+  }
+}
+
+// Extend the Intl namespace
 declare global {
   interface Intl {
     Segmenter?: {
-      new (locale: string, options?: { granularity?: "grapheme" | "word" | "sentence" }): {
-        segment: (input: string) => {
-          [Symbol.iterator](): Iterator<{
-            segment: string;
-            index: number;
-            input: string;
-          }>;
-        };
-      };
-    };
+      new (locale: string, options?: { granularity?: "grapheme" | "word" | "sentence" }): Segmenter
+    }
   }
 }
 
