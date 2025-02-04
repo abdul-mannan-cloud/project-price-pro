@@ -56,19 +56,6 @@ const Settings = () => {
     },
   });
 
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to log out. Please try again.",
-        variant: "destructive",
-      });
-    } else {
-      navigate("/");
-    }
-  };
-
   const updateSettings = useMutation({
     mutationFn: async (formData: any) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -132,6 +119,38 @@ const Settings = () => {
     updateSettings.mutate(data);
   };
 
+  const parsedInstructions = (): AIInstruction[] => {
+    try {
+      if (!contractor?.contractor_settings?.ai_instructions) return [];
+      
+      // If it's already an array, validate its structure
+      if (Array.isArray(contractor.contractor_settings.ai_instructions)) {
+        return contractor.contractor_settings.ai_instructions.map(instruction => ({
+          title: String(instruction.title || ''),
+          description: String(instruction.description || ''),
+          instructions: String(instruction.instructions || '')
+        }));
+      }
+      
+      // If it's a string, try to parse it
+      if (typeof contractor.contractor_settings.ai_instructions === 'string') {
+        const parsed = JSON.parse(contractor.contractor_settings.ai_instructions);
+        if (Array.isArray(parsed)) {
+          return parsed.map(instruction => ({
+            title: String(instruction.title || ''),
+            description: String(instruction.description || ''),
+            instructions: String(instruction.instructions || '')
+          }));
+        }
+      }
+      
+      return [];
+    } catch (e) {
+      console.error('Error parsing AI instructions:', e);
+      return [];
+    }
+  };
+
   if (contractorLoading) {
     return (
       <div className="min-h-screen bg-secondary">
@@ -151,22 +170,6 @@ const Settings = () => {
         primary: "#6366F1",
         secondary: "#4F46E5"
       };
-
-  const parsedInstructions = (): AIInstruction[] => {
-    try {
-      if (!contractor?.contractor_settings?.ai_instructions) return [];
-      if (typeof contractor.contractor_settings.ai_instructions === 'string') {
-        const parsed = JSON.parse(contractor.contractor_settings.ai_instructions);
-        return Array.isArray(parsed) ? parsed : [];
-      }
-      return Array.isArray(contractor.contractor_settings.ai_instructions) 
-        ? contractor.contractor_settings.ai_instructions 
-        : [];
-    } catch (e) {
-      console.error('Error parsing AI instructions:', e);
-      return [];
-    }
-  };
 
   return (
     <div className="min-h-screen bg-secondary">
