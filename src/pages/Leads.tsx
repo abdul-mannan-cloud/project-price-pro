@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDistanceToNow } from "date-fns";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/3d-button";
 import {
   DropdownMenu,
   DropdownMenuContent,

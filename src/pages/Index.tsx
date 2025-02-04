@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/3d-button";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Floating, { FloatingElement } from "@/components/ui/parallax-floating";
