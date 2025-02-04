@@ -1,62 +1,117 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
+import Floating, { FloatingElement } from "@/components/ui/parallax-floating";
+
+const constructionImages = [
+  {
+    url: "https://images.unsplash.com/photo-1504307651254-35680f356dfd",
+    title: "Modern Construction",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1590644365607-1c5a519a54e2",
+    title: "Home Renovation",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e",
+    title: "Architecture Design",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1621274147744-cfb5694bb233",
+    title: "Interior Work",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1581094288338-2314dddb7ece",
+    title: "Home Improvement",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1504615755583-2916b52192a3",
+    title: "Custom Building",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1541976590-713941681591",
+    title: "Professional Tools",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1582653291997-079a1c04e5a1",
+    title: "Quality Work",
+  },
+];
 
 const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="index-page min-h-screen bg-white text-[#1d1d1f]">
-      <div className="bg-gradient-to-b from-[#f5f5f7] to-white">
+    <div className="index-page min-h-screen bg-black text-white relative overflow-hidden">
+      <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center space-y-8">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-fadeIn text-[#1d1d1f]">
-              Smart Estimates for Home Improvement Projects
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 text-[#86868b] animate-fadeIn">
-              Get instant, AI-powered cost estimates for your renovation projects
-            </p>
-            <Button
-              onClick={() => navigate("/estimate")}
-              size="lg"
-              className="bg-[#007AFF] text-white hover:bg-[#0066CC] transition-all duration-300 animate-fadeIn transform hover:scale-105"
+            <motion.h1 
+              className="text-4xl md:text-6xl font-bold mb-6 animate-fadeIn"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
             >
-              Start Your Estimate
-            </Button>
+              Smart Estimates for Home Improvement Projects
+            </motion.h1>
+            <motion.p 
+              className="text-xl md:text-2xl mb-8 text-gray-300 animate-fadeIn"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
+              Get instant, AI-powered cost estimates for your renovation projects
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+            >
+              <Button
+                onClick={() => navigate("/estimate")}
+                size="lg"
+                className="bg-white text-black hover:bg-gray-200 transition-all duration-300 animate-fadeIn transform hover:scale-105"
+              >
+                Start Your Estimate
+              </Button>
+            </motion.div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="text-center p-8 rounded-xl bg-[#f5f5f7] transition-all duration-300 hover:bg-[#e5e5e7] hover:transform hover:scale-105">
-            <div className="text-4xl mb-4 text-[#007AFF]">⚡️</div>
-            <h3 className="text-xl font-semibold mb-2 text-[#1d1d1f]">Instant Estimates</h3>
-            <p className="text-[#86868b]">
-              Get detailed cost breakdowns in minutes, not days
-            </p>
-          </div>
-          <div className="text-center p-8 rounded-xl bg-[#f5f5f7] transition-all duration-300 hover:bg-[#e5e5e7] hover:transform hover:scale-105">
-            <div className="text-4xl mb-4 text-[#007AFF]">🤖</div>
-            <h3 className="text-xl font-semibold mb-2 text-[#1d1d1f]">AI-Powered</h3>
-            <p className="text-[#86868b]">
-              Advanced AI technology for accurate predictions
-            </p>
-          </div>
-          <div className="text-center p-8 rounded-xl bg-[#f5f5f7] transition-all duration-300 hover:bg-[#e5e5e7] hover:transform hover:scale-105">
-            <div className="text-4xl mb-4 text-[#007AFF]">🏗️</div>
-            <h3 className="text-xl font-semibold mb-2 text-[#1d1d1f]">Professional Grade</h3>
-            <p className="text-[#86868b]">
-              Trusted by contractors nationwide
-            </p>
-          </div>
-        </div>
-      </div>
+      <Floating sensitivity={-1} className="overflow-hidden">
+        {constructionImages.map((image, index) => (
+          <FloatingElement
+            key={index}
+            depth={(index % 3) + 1}
+            className={`
+              ${index === 0 ? "top-[8%] left-[11%]" : ""}
+              ${index === 1 ? "top-[10%] left-[32%]" : ""}
+              ${index === 2 ? "top-[2%] left-[53%]" : ""}
+              ${index === 3 ? "top-[0%] left-[83%]" : ""}
+              ${index === 4 ? "top-[40%] left-[2%]" : ""}
+              ${index === 5 ? "top-[70%] left-[77%]" : ""}
+              ${index === 6 ? "top-[73%] left-[15%]" : ""}
+              ${index === 7 ? "top-[80%] left-[50%]" : ""}
+            `}
+          >
+            <motion.img
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.7 }}
+              transition={{ duration: 0.5, delay: index * 0.15 }}
+              src={image.url}
+              alt={image.title}
+              className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg hover:scale-105 hover:opacity-100 duration-200 cursor-pointer transition-all"
+            />
+          </FloatingElement>
+        ))}
+      </Floating>
 
-      <div className="fixed top-4 right-4">
+      <div className="fixed top-4 right-4 z-20">
         <Button
           onClick={() => navigate("/login")}
           variant="ghost"
-          className="text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] transition-all duration-300"
+          className="text-white hover:text-gray-300 hover:bg-black/20 transition-all duration-300"
         >
           Sign In
         </Button>
