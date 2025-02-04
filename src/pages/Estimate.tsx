@@ -599,26 +599,22 @@ const EstimatePage = () => {
 
       <div className="max-w-4xl mx-auto px-4 py-12">
         {stage === 'photo' && (
-          <div className="card p-8 animate-fadeIn">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center gap-6">
-                {contractor?.business_logo_url && (
-                  <img 
-                    src={contractor.business_logo_url}
-                    alt={`${contractor?.business_name || 'Business'} logo`}
-                    className="w-24 h-24 object-contain rounded-lg"
-                  />
-                )}
-                <div>
-                  <h2 className="text-2xl font-semibold mb-2">
-                    🛠 {contractor?.business_name || "Project"} Estimator
-                  </h2>
-                  <p className="text-muted-foreground mb-4">
-                    Take or upload a photo of what you want to repair or modify
-                  </p>
-                  <EstimateAnimation />
-                </div>
-              </div>
+          <div className="card p-8 animate-fadeIn text-center">
+            <div className="flex flex-col items-center gap-6 mb-6">
+              <h2 className="text-2xl font-semibold mb-2">
+                🛠 {contractor?.business_name || "Project"} Estimator
+              </h2>
+              {contractor?.business_logo_url && (
+                <img 
+                  src={contractor.business_logo_url}
+                  alt={`${contractor?.business_name || 'Business'} logo`}
+                  className="w-24 h-24 object-contain rounded-lg"
+                />
+              )}
+              <p className="text-muted-foreground max-w-lg">
+                Quickly estimate your project cost in minutes! Simply take or upload a photo of what you want to repair or modify (e.g., "paint this wall").
+              </p>
+              <EstimateAnimation />
             </div>
             
             <div className="space-y-4">
@@ -632,7 +628,7 @@ const EstimatePage = () => {
                   disabled={isUploading}
                 />
                 <Button 
-                  className="w-full" 
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg" 
                   size="lg" 
                   disabled={isUploading}
                   asChild
@@ -644,8 +640,8 @@ const EstimatePage = () => {
                 </Button>
               </label>
               <Button 
-                variant="ghost" 
-                className="w-full" 
+                variant="outline"
+                className="w-full border-2" 
                 size="lg" 
                 onClick={() => setStage('description')}
               >
