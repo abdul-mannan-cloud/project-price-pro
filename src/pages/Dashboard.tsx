@@ -11,11 +11,14 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 
+const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
+  const [isCopyingUrl, setIsCopyingUrl] = useState(false);
 
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -42,11 +45,10 @@ const Dashboard = () => {
       }
       return data;
     },
-    staleTime: 30000, // Cache data for 30 seconds
-    gcTime: 5 * 60 * 1000, // Keep in garbage collection for 5 minutes
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
   });
 
-  // Prefetch leads data with caching
   const { data: leads = [] } = useQuery({
     queryKey: ["leads"],
     queryFn: async () => {
@@ -97,10 +99,12 @@ const Dashboard = () => {
   const totalEstimatedValue = leads.reduce((sum, lead) => sum + (lead.estimated_cost || 0), 0);
 
   const copyEstimatorLink = async () => {
-    const baseUrl = window.location.origin;
-    const longUrl = `${baseUrl}/estimate/${contractor?.id}`;
-    
     try {
+      setIsCopyingUrl(true);
+      const baseUrl = window.location.origin;
+      const contractorId = contractor?.id || DEFAULT_CONTRACTOR_ID;
+      const longUrl = `${baseUrl}/estimate/${contractorId}`;
+      
       const { data, error } = await supabase.functions.invoke('shorten-url', {
         body: { longUrl }
       });
@@ -117,13 +121,18 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error('Error shortening URL:', error);
-      // Fallback to copying the original URL if shortening fails
+      const baseUrl = window.location.origin;
+      const contractorId = contractor?.id || DEFAULT_CONTRACTOR_ID;
+      const longUrl = `${baseUrl}/estimate/${contractorId}`;
+      
       await navigator.clipboard.writeText(longUrl);
       toast({
         title: "Link copied!",
         description: "The estimator link has been copied to your clipboard.",
         duration: 2000,
       });
+    } finally {
+      setIsCopyingUrl(false);
     }
   };
 
@@ -132,7 +141,7 @@ const Dashboard = () => {
       Icon: Copy,
       name: "Preview Estimator",
       description: "Preview your estimator or copy the link to share",
-      href: `/estimate/${contractor.id}`,
+      href: `/estimate/${contractor?.id || DEFAULT_CONTRACTOR_ID}`,
       cta: "Preview",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
       className: "lg:col-span-3 bg-primary text-white hover:scale-[1.02] transition-transform",
@@ -141,21 +150,18 @@ const Dashboard = () => {
           <h3 className="text-xl font-semibold">Estimator Preview</h3>
           <p>View your estimator as your clients will see it, or copy the link to share.</p>
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => navigate(`/estimate/${contractor.id}`)}>
+            <Button 
+              variant="secondary" 
+              onClick={() => navigate(`/estimate/${contractor?.id || DEFAULT_CONTRACTOR_ID}`)}
+            >
               Open Preview
             </Button>
             <Button 
               variant="outline"
-              onClick={() => {
-                const estimatorUrl = `${window.location.origin}/estimate/${contractor.id}`;
-                navigator.clipboard.writeText(estimatorUrl);
-                toast({
-                  title: "Link copied!",
-                  description: "The estimator link has been copied to your clipboard.",
-                });
-              }}
+              onClick={copyEstimatorLink}
+              disabled={isCopyingUrl}
             >
-              Copy Link
+              {isCopyingUrl ? "Copying..." : "Copy Link"}
             </Button>
           </div>
         </div>
@@ -167,17 +173,13 @@ const Dashboard = () => {
             size="sm"
             onClick={(e) => {
               e.preventDefault();
-              const estimatorUrl = `${window.location.origin}/estimate/${contractor.id}`;
-              navigator.clipboard.writeText(estimatorUrl);
-              toast({
-                title: "Link copied!",
-                description: "The estimator link has been copied to your clipboard.",
-              });
+              copyEstimatorLink();
             }}
+            disabled={isCopyingUrl}
             className="text-white hover:text-white/80"
           >
             <Copy className="w-4 h-4 mr-2" />
-            Copy Link
+            {isCopyingUrl ? "Copying..." : "Copy Link"}
           </Button>
         </div>
       ),
