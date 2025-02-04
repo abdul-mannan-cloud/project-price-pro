@@ -138,13 +138,19 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
   const items: any[] = [];
   const { question, answers: selectedAnswers, options, type } = answer;
 
-  // Base costs per type of work (now using AI rates if available)
+  // Enhanced base costs with more granular categories
   const baseCosts: Record<string, { labor: number; materials: number }> = {
     'installation': { labor: 85, materials: 150 },
     'repair': { labor: 95, materials: 100 },
     'renovation': { labor: 125, materials: 250 },
     'maintenance': { labor: 75, materials: 50 },
     'custom': { labor: 150, materials: 300 },
+    'electrical': { labor: 110, materials: 200 },
+    'plumbing': { labor: 120, materials: 180 },
+    'carpentry': { labor: 95, materials: 160 },
+    'painting': { labor: 65, materials: 90 },
+    'flooring': { labor: 85, materials: 200 },
+    'demolition': { labor: 70, materials: 50 },
   };
 
   const complexityMultipliers: Record<string, number> = {
@@ -158,16 +164,11 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
     const option = options.find((opt: any) => opt.value === selected);
     if (!option) return;
 
-    const workType = option.value.includes('custom') ? 'custom' : 
-                    option.value.includes('install') ? 'installation' :
-                    option.value.includes('repair') ? 'repair' :
-                    option.value.includes('maintenance') ? 'maintenance' : 'renovation';
+    // Determine work type and complexity from the answer
+    const workType = determineWorkType(option.value, question);
+    const complexity = determineComplexity(option.value, question);
 
-    const complexity = option.value.includes('complex') ? 'complex' :
-                      option.value.includes('custom') ? 'custom' :
-                      option.value.includes('simple') ? 'simple' : 'standard';
-
-    const { labor: baseLaborCost, materials: baseMaterialCost } = baseCosts[workType];
+    const { labor: baseLaborCost, materials: baseMaterialCost } = baseCosts[workType] || baseCosts['custom'];
     const complexityMultiplier = complexityMultipliers[complexity];
 
     const adjustedLaborCost = adjustPriceForLocation(
@@ -185,13 +186,13 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
     const laborHours = Math.max(2, Math.ceil(complexityMultiplier * 3));
     const materialQuantity = Math.max(1, Math.ceil(complexityMultiplier * 2));
 
-    // Generate initial items
+    // Generate more descriptive items
     const generatedItems = [];
     
-    // Add labor line item
+    // Add labor line item with enhanced description
     generatedItems.push({
-      title: `${option.label} Labor`,
-      description: `Professional ${workType} labor for ${option.label.toLowerCase()}`,
+      title: `${option.label} - Professional Labor`,
+      description: generateDescription(workType, option.label, 'labor'),
       quantity: laborHours,
       unit: 'HR',
       type: 'labor',
@@ -199,10 +200,10 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
       totalPrice: adjustedLaborCost * laborHours
     });
 
-    // Add materials line item
+    // Add materials line item with enhanced description
     generatedItems.push({
-      title: `${option.label} Materials`,
-      description: `Quality materials for ${option.label.toLowerCase()}`,
+      title: `${option.label} - Materials`,
+      description: generateDescription(workType, option.label, 'materials'),
       quantity: materialQuantity,
       unit: 'EA',
       type: 'material',
@@ -215,15 +216,15 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
     items.push(...itemsWithRates);
 
     // Add specialized items for custom work
-    if (workType === 'custom') {
+    if (workType === 'custom' || complexity === 'complex') {
       const baseCustomCost = 200 * complexityMultiplier;
       const customWorkCost = adjustPriceForLocation(baseCustomCost, location, settings);
       items.push({
-        title: `${option.label} Design & Planning`,
-        description: `Custom design and planning services`,
+        title: `${option.label} - Design & Planning`,
+        description: `Professional design and planning services for ${option.label.toLowerCase()}`,
         quantity: 1,
         unit: 'EA',
-        type: 'labor',
+        type: 'planning',
         unitAmount: customWorkCost,
         totalPrice: customWorkCost
       });
@@ -233,76 +234,67 @@ function generateLineItems(answer: any, location: LocationData | null, settings:
   return items;
 }
 
-function generateEstimateGroups(answers: Record<string, any>, location: LocationData | null, settings: any, aiRates: any[]) {
-  const groups: any[] = [];
-  let totalCost = 0;
-
-  Object.entries(answers).forEach(([category, categoryAnswers]) => {
-    const subgroups = new Map<string, any>();
-    
-    Object.entries(categoryAnswers).forEach(([questionId, answer]: [string, any]) => {
-      const items = generateLineItems(answer, location, settings, aiRates);
-      if (items.length > 0) {
-        const subcategory = determineSubcategory(answer);
-        
-        if (!subgroups.has(subcategory)) {
-          subgroups.set(subcategory, {
-            name: subcategory,
-            items: [],
-            subtotal: 0
-          });
-        }
-
-        const group = subgroups.get(subcategory);
-        group.items.push(...items);
-        group.subtotal = group.items.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
-      }
-    });
-
-    if (subgroups.size > 0) {
-      const groupSubtotal = Array.from(subgroups.values()).reduce((sum, group) => sum + group.subtotal, 0);
-      totalCost += groupSubtotal;
-
-      groups.push({
-        name: category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' '),
-        description: `Complete breakdown for ${category.toLowerCase().replace(/_/g, ' ')} services`,
-        subgroups: Array.from(subgroups.values())
-      });
-    }
-  });
-
-  return { groups, totalCost };
+function determineWorkType(value: string, question: string): string {
+  const combinedText = `${value} ${question}`.toLowerCase();
+  
+  if (combinedText.includes('electrical')) return 'electrical';
+  if (combinedText.includes('plumbing')) return 'plumbing';
+  if (combinedText.includes('carpentry')) return 'carpentry';
+  if (combinedText.includes('painting')) return 'painting';
+  if (combinedText.includes('floor')) return 'flooring';
+  if (combinedText.includes('demolition')) return 'demolition';
+  if (combinedText.includes('install')) return 'installation';
+  if (combinedText.includes('repair')) return 'repair';
+  if (combinedText.includes('renovate')) return 'renovation';
+  if (combinedText.includes('maintain')) return 'maintenance';
+  
+  return 'custom';
 }
 
-function determineSubcategory(answer: any): string {
-  const questionText = answer.question.toLowerCase();
-  const selectedOptions = answer.options
-    .filter((opt: any) => answer.answers.includes(opt.value))
-    .map((opt: any) => opt.label.toLowerCase());
+function determineComplexity(value: string, question: string): string {
+  const combinedText = `${value} ${question}`.toLowerCase();
+  
+  if (combinedText.includes('complex') || combinedText.includes('extensive')) return 'complex';
+  if (combinedText.includes('custom')) return 'custom';
+  if (combinedText.includes('simple') || combinedText.includes('basic')) return 'simple';
+  
+  return 'standard';
+}
 
-  const subcategoryKeywords: Record<string, string[]> = {
-    'Electrical': ['electrical', 'wiring', 'lighting', 'outlet'],
-    'Plumbing': ['plumbing', 'water', 'pipe', 'drain'],
-    'Cabinets': ['cabinet', 'storage', 'drawer'],
-    'Countertops': ['countertop', 'surface', 'granite', 'quartz'],
-    'Flooring': ['floor', 'tile', 'hardwood', 'carpet'],
-    'Walls': ['wall', 'drywall', 'paint', 'texture'],
-    'Appliances': ['appliance', 'refrigerator', 'dishwasher', 'oven'],
-    'HVAC': ['hvac', 'heating', 'cooling', 'ventilation'],
-    'Demolition': ['demolition', 'remove', 'tear out'],
-    'Finishing': ['finish', 'trim', 'molding', 'detail']
+function generateDescription(workType: string, itemLabel: string, type: 'labor' | 'materials'): string {
+  const baseDescription = type === 'labor' 
+    ? 'Professional installation and labor for'
+    : 'High-quality materials and supplies for';
+
+  const details = {
+    electrical: {
+      labor: 'Licensed electrical work including installation, wiring, and safety testing for',
+      materials: 'Professional-grade electrical components and materials for'
+    },
+    plumbing: {
+      labor: 'Expert plumbing services including installation, testing, and certification for',
+      materials: 'Industry-standard plumbing fixtures and materials for'
+    },
+    carpentry: {
+      labor: 'Skilled carpentry work including custom fitting and finishing for',
+      materials: 'Premium wood and carpentry materials for'
+    },
+    painting: {
+      labor: 'Professional painting services including preparation and finishing for',
+      materials: 'High-quality paint and painting supplies for'
+    },
+    flooring: {
+      labor: 'Expert flooring installation including subfloor preparation for',
+      materials: 'Premium flooring materials and underlayment for'
+    },
+    demolition: {
+      labor: 'Professional demolition services including debris removal for',
+      materials: 'Demolition equipment and disposal materials for'
+    }
   };
 
-  for (const [subcategory, keywords] of Object.entries(subcategoryKeywords)) {
-    if (keywords.some(keyword => 
-      questionText.includes(keyword) || 
-      selectedOptions.some(option => option.includes(keyword))
-    )) {
-      return subcategory;
-    }
-  }
-
-  return 'General';
+  const description = details[workType as keyof typeof details]?.[type] || baseDescription;
+  return `${description} ${itemLabel.toLowerCase()}`;
 }
 
 serve(async (req) => {

@@ -95,6 +95,41 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
     }
   };
 
+  const handleSkipForm = async () => {
+    if (!leadId) return;
+
+    try {
+      // Mark the lead as a test estimate
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update({
+          is_test_estimate: true,
+          status: 'test',
+        })
+        .eq('id', leadId);
+
+      if (updateError) throw updateError;
+
+      // Use dummy data for the submission
+      onSubmit({
+        fullName: "Test User",
+        email: "test@example.com",
+        phone: "555-0123",
+        address: "123 Test St"
+      });
+    } catch (error) {
+      console.error('Error skipping form:', error);
+      toast({
+        title: "Error",
+        description: "Unable to skip form. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Check if the current user is a contractor
+  const isContractor = !!contractorId;
+
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="w-full max-w-md mx-auto bg-background rounded-xl p-6 shadow-lg animate-fadeIn">
@@ -170,6 +205,17 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
           >
             {isSubmitting ? "Processing..." : "View Your Custom Estimate"}
           </Button>
+
+          {isContractor && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full mt-2"
+              onClick={handleSkipForm}
+            >
+              Skip Form (Preview Mode)
+            </Button>
+          )}
         </form>
       </div>
     </div>
