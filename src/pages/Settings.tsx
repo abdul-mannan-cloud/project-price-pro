@@ -1,9 +1,9 @@
 import { NavBar } from "@/components/ui/tubelight-navbar";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Settings as SettingsIcon, Users, LayoutDashboard, LogOut, MessageSquare, HelpCircle } from "lucide-react";
+import { Settings as SettingsIcon, Users, LayoutDashboard, LogOut } from "lucide-react";
 import { useState } from "react";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FeedbackForm } from "@/components/settings/FeedbackForm";
 import { FAQ } from "@/components/settings/FAQ";
+import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
 
 interface BrandingColors {
   primary: string;
@@ -47,6 +48,29 @@ const Settings = () => {
     },
   });
 
+  const updateContractorMutation = useMutation({
+    mutationFn: async (formData: any) => {
+      const { error } = await supabase
+        .from("contractors")
+        .update(formData)
+        .eq("id", contractor?.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Settings updated",
+        description: "Your settings have been saved successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update settings. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -58,6 +82,10 @@ const Settings = () => {
     } else {
       navigate("/");
     }
+  };
+
+  const handleSave = (formData: any) => {
+    updateContractorMutation.mutate(formData);
   };
 
   if (contractorLoading) {
@@ -72,45 +100,6 @@ const Settings = () => {
       </div>
     );
   }
-
-  const features = [
-    {
-      title: "Preview Estimator",
-      description: "Test and preview how your estimator looks to clients",
-      icon: <LayoutDashboard className="h-6 w-6" />,
-      onClick: () => navigate("/estimate"),
-    },
-    {
-      title: "Business Information",
-      description: "Update your business details and branding",
-      icon: <SettingsIcon className="h-6 w-6" />,
-      onClick: () => setActiveDialog("business information"),
-    },
-    {
-      title: "Service Categories",
-      description: "Manage the services you offer",
-      icon: <Users className="h-6 w-6" />,
-      onClick: () => setActiveDialog("service categories"),
-    },
-    {
-      title: "AI Preferences",
-      description: "Customize AI behavior and responses",
-      icon: <SettingsIcon className="h-6 w-6" />,
-      onClick: () => setActiveDialog("ai preferences"),
-    },
-    {
-      title: "Send Feedback",
-      description: "Share your thoughts and suggestions",
-      icon: <MessageSquare className="h-6 w-6" />,
-      onClick: () => setActiveDialog("feedback"),
-    },
-    {
-      title: "FAQ",
-      description: "Find answers to common questions",
-      icon: <HelpCircle className="h-6 w-6" />,
-      onClick: () => setActiveDialog("faq"),
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -128,21 +117,7 @@ const Settings = () => {
           </Button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {features.map((feature) => (
-            <button
-              key={feature.title}
-              onClick={feature.onClick}
-              className="p-6 bg-background rounded-lg border border-input hover:border-accent transition-colors text-left"
-            >
-              <div className="flex items-center gap-4 mb-4">
-                {feature.icon}
-                <h3 className="font-medium">{feature.title}</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">{feature.description}</p>
-            </button>
-          ))}
-        </div>
+        <FeaturesSectionWithHoverEffects setActiveDialog={setActiveDialog} />
 
         {/* Settings Dialogs */}
         <SettingsDialog
@@ -150,34 +125,44 @@ const Settings = () => {
           isOpen={activeDialog === "business information"}
           onClose={() => setActiveDialog(null)}
         >
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            handleSave(Object.fromEntries(formData));
+          }}>
             <Input
               label="Business Name"
+              name="business_name"
               defaultValue={contractor?.business_name}
               required
             />
             <Input
               label="Contact Email"
+              name="contact_email"
               type="email"
               defaultValue={contractor?.contact_email}
               required
             />
             <Input
               label="Contact Phone"
+              name="contact_phone"
               type="tel"
               defaultValue={contractor?.contact_phone}
             />
             <Input
               label="Business Address"
+              name="business_address"
               defaultValue={contractor?.business_address}
             />
             <Input
               label="Website"
+              name="website"
               type="url"
               defaultValue={contractor?.website}
             />
             <Input
               label="License Number"
+              name="license_number"
               defaultValue={contractor?.license_number}
             />
             <Button type="submit">
@@ -201,9 +186,7 @@ const Settings = () => {
         >
           <AIRateForm
             rates={(contractor?.contractor_settings?.ai_preferences as any)?.rates || []}
-            onSave={(rates) => {
-              // Handle saving AI rates
-            }}
+            onSave={handleSave}
           />
         </SettingsDialog>
 
