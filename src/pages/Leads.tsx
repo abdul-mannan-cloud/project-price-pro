@@ -9,6 +9,11 @@ import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { LeadsTable } from "@/components/Leads/LeadsTable";
 import { LayoutDashboard, Users, Settings } from "lucide-react";
 import type { Lead, EstimateData } from "@/components/Leads/LeadsTable";
+import type { Json } from "@/integrations/supabase/types";
+
+interface LeadAnswers {
+  answers: Record<string, any>;
+}
 
 const Leads = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -67,7 +72,7 @@ const Leads = () => {
     },
   });
 
-  const handleExport = (filteredLeads: any[]) => {
+  const handleExport = (filteredLeads: Lead[]) => {
     const csvContent = [
       ["Project Title", "Address", "Customer", "Email", "Phone", "Estimated Cost", "Status", "Created"],
       ...filteredLeads.map(lead => [
@@ -78,7 +83,7 @@ const Leads = () => {
         lead.user_phone,
         lead.estimated_cost,
         lead.status,
-        new Date(lead.created_at).toLocaleDateString()
+        new Date(lead.created_at || '').toLocaleDateString()
       ])
     ].map(row => row.join(",")).join("\n");
 
@@ -172,26 +177,27 @@ const Leads = () => {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Questions & Answers</h3>
                 <div className="space-y-4">
-                  {Object.entries(selectedLead.answers?.answers || {}).map(([category, answers]: [string, any]) => (
-                    <div key={category} className="bg-muted/50 p-4 rounded-lg">
-                      <h4 className="font-medium mb-2">{category}</h4>
-                      <div className="space-y-2">
-                        {Object.values(answers || {}).map((qa: any, index: number) => {
-                          const selectedOptions = (qa.options || [])
-                            .filter((opt: any) => (qa.answers || []).includes(opt.value))
-                            .map((opt: any) => opt.label)
-                            .join(", ");
+                  {selectedLead.answers && typeof selectedLead.answers === 'object' && 'answers' in selectedLead.answers && 
+                    Object.entries((selectedLead.answers as LeadAnswers).answers || {}).map(([category, answers]: [string, any]) => (
+                      <div key={category} className="bg-muted/50 p-4 rounded-lg">
+                        <h4 className="font-medium mb-2">{category}</h4>
+                        <div className="space-y-2">
+                          {Object.values(answers || {}).map((qa: any, index: number) => {
+                            const selectedOptions = (qa.options || [])
+                              .filter((opt: any) => (qa.answers || []).includes(opt.value))
+                              .map((opt: any) => opt.label)
+                              .join(", ");
 
-                          return (
-                            <div key={index} className="grid grid-cols-2 gap-4">
-                              <p className="text-sm font-medium">{qa.question}</p>
-                              <p className="text-sm">{selectedOptions}</p>
-                            </div>
-                          );
-                        })}
+                            return (
+                              <div key={index} className="grid grid-cols-2 gap-4">
+                                <p className="text-sm font-medium">{qa.question}</p>
+                                <p className="text-sm">{selectedOptions}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
 
