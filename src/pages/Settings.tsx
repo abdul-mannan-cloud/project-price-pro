@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
+import { Json } from "@/integrations/supabase/types";
 
 const rateOptions = [
   { value: "CF", label: "Cubic Feet (CF)" },
