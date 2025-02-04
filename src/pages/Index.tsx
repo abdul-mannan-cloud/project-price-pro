@@ -52,7 +52,7 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              Smart Estimates for Home Improvement Projects
+              AI Construction Estimate Lead Generation
             </motion.h1>
             <motion.p 
               className="text-xl md:text-2xl mb-8 text-gray-300 animate-fadeIn"
