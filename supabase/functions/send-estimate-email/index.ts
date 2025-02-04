@@ -36,7 +36,14 @@ function generateEstimateHtml(data: any, estimateUrl: string, contractor?: any):
   const totalCost = typeof data.totalCost === 'number' ? data.totalCost : 0;
 
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Project Estimate</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
       ${contractor?.business_logo_url ? 
         `<img src="${contractor.business_logo_url}" alt="${contractor.business_name}" style="max-width: 200px; margin-bottom: 20px;">` 
         : ''}
@@ -86,7 +93,8 @@ function generateEstimateHtml(data: any, estimateUrl: string, contractor?: any):
           </div>
         ` : ''}
       </div>
-    </div>
+    </body>
+    </html>
   `;
 }
 
