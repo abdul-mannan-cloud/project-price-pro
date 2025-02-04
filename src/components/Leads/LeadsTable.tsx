@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { formatDistanceToNow, format } from "date-fns";
-import { MapPin, ArrowUp, ArrowDown, Search, Download, Trash2 } from "lucide-react";
+import { MapPin, ArrowUp, ArrowDown, Search, Download, Trash2, Filter, Phone, Mail, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const statusColors = {
@@ -24,7 +25,7 @@ const statusColors = {
 
 type Status = keyof typeof statusColors;
 
-type SortField = 'projectTitle' | 'address' | 'estimatedCost' | 'status' | 'createdAt';
+type SortField = 'projectTitle' | 'address' | 'estimatedCost' | 'status' | 'createdAt' | 'userName' | 'userEmail' | 'userPhone';
 type SortDirection = 'asc' | 'desc';
 
 interface Lead {
@@ -37,6 +38,12 @@ interface Lead {
   user_name: string | null;
   user_email: string | null;
   user_phone: string | null;
+  estimate_data?: {
+    groups?: Array<{
+      name: string;
+      description?: string;
+    }>;
+  };
 }
 
 interface LeadsTableProps {
@@ -51,6 +58,9 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedMobileLead, setSelectedMobileLead] = useState<Lead | null>(null);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -99,6 +109,15 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
     }
   };
 
+  const handleExportClick = () => {
+    setShowExportDialog(true);
+  };
+
+  const handleExportConfirm = () => {
+    onExport(filteredLeads);
+    setShowExportDialog(false);
+  };
+
   const filteredLeads = leads
     .filter(lead => {
       const searchLower = searchTerm.toLowerCase();
@@ -106,7 +125,8 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
         lead.project_title?.toLowerCase().includes(searchLower) ||
         lead.project_address?.toLowerCase().includes(searchLower) ||
         lead.user_name?.toLowerCase().includes(searchLower) ||
-        lead.user_email?.toLowerCase().includes(searchLower)
+        lead.user_email?.toLowerCase().includes(searchLower) ||
+        lead.user_phone?.toLowerCase().includes(searchLower)
       );
     })
     .sort((a, b) => {
@@ -127,6 +147,15 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
         case 'createdAt':
           comparison = new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
           break;
+        case 'userName':
+          comparison = (a.user_name || '').localeCompare(b.user_name || '');
+          break;
+        case 'userEmail':
+          comparison = (a.user_email || '').localeCompare(b.user_email || '');
+          break;
+        case 'userPhone':
+          comparison = (a.user_phone || '').localeCompare(b.user_phone || '');
+          break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });
@@ -135,13 +164,28 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="relative w-72">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search leads..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search leads..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 pr-8"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
+          </div>
+          {showFilters && (
+            <div className="absolute z-10 mt-2 w-full bg-white rounded-md shadow-lg p-4 space-y-2">
+              {/* Add filter options here */}
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           {selectedLeads.length > 0 && (
@@ -157,7 +201,7 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onExport(filteredLeads)}
+            onClick={handleExportClick}
           >
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -165,7 +209,8 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
         </div>
       </div>
 
-      <div className="rounded-md border">
+      {/* Desktop Table */}
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -176,8 +221,14 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
                 />
               </TableHead>
               <TableHead onClick={() => handleSort('projectTitle')} className="cursor-pointer">
-                Project Title
+                Project Groups
                 {sortField === 'projectTitle' && (
+                  sortDirection === 'asc' ? <ArrowUp className="inline ml-1 w-4 h-4" /> : <ArrowDown className="inline ml-1 w-4 h-4" />
+                )}
+              </TableHead>
+              <TableHead onClick={() => handleSort('userName')} className="cursor-pointer">
+                Customer
+                {sortField === 'userName' && (
                   sortDirection === 'asc' ? <ArrowUp className="inline ml-1 w-4 h-4" /> : <ArrowDown className="inline ml-1 w-4 h-4" />
                 )}
               </TableHead>
@@ -221,7 +272,24 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
                   />
                 </TableCell>
                 <TableCell className="font-medium">
-                  {lead.project_title}
+                  {lead.estimate_data?.groups?.map(group => group.name).join(", ") || lead.project_title}
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{lead.user_name}</span>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="w-3 h-3" />
+                      <a href={`mailto:${lead.user_email}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
+                        {lead.user_email}
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="w-3 h-3" />
+                      <a href={`tel:${lead.user_phone}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
+                        {lead.user_phone}
+                      </a>
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell>
                   {lead.project_address && (
@@ -239,15 +307,24 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
                   ${lead.estimated_cost?.toLocaleString() || "0"}
                 </TableCell>
                 <TableCell>
-                  <Badge 
-                    variant="outline"
-                    className={cn(
-                      "font-normal",
-                      statusColors[lead.status as Status] || statusColors.pending
-                    )}
+                  <Button
+                    variant="ghost"
+                    className="p-0 h-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Add status change handler here
+                    }}
                   >
-                    {lead.status || "pending"}
-                  </Badge>
+                    <Badge 
+                      variant="outline"
+                      className={cn(
+                        "font-normal cursor-pointer",
+                        statusColors[lead.status as Status] || statusColors.pending
+                      )}
+                    >
+                      {lead.status || "pending"}
+                    </Badge>
+                  </Button>
                 </TableCell>
                 <TableCell>
                   {lead.created_at ? formatDate(lead.created_at) : "N/A"}
@@ -257,6 +334,139 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
           </TableBody>
         </Table>
       </div>
+
+      {/* Mobile List */}
+      <div className="md:hidden space-y-4">
+        {filteredLeads.map((lead) => (
+          <div
+            key={lead.id}
+            className="bg-white rounded-lg shadow p-4 space-y-2 cursor-pointer"
+            onClick={() => setSelectedMobileLead(lead)}
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-medium">
+                  {lead.estimate_data?.groups?.map(group => group.name).join(", ") || lead.project_title}
+                </h3>
+                <p className="text-sm text-muted-foreground">{lead.user_name}</p>
+              </div>
+              <Badge 
+                variant="outline"
+                className={cn(
+                  "font-normal",
+                  statusColors[lead.status as Status] || statusColors.pending
+                )}
+              >
+                {lead.status || "pending"}
+              </Badge>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {lead.created_at ? formatDate(lead.created_at) : "N/A"}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile Lead Dialog */}
+      <Dialog open={!!selectedMobileLead} onOpenChange={() => setSelectedMobileLead(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          {selectedMobileLead && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold">
+                {selectedMobileLead.estimate_data?.groups?.map(group => group.name).join(", ") || selectedMobileLead.project_title}
+              </h2>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  <span>{selectedMobileLead.user_name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  <a href={`mailto:${selectedMobileLead.user_email}`} className="text-primary hover:underline">
+                    {selectedMobileLead.user_email}
+                  </a>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  <a href={`tel:${selectedMobileLead.user_phone}`} className="text-primary hover:underline">
+                    {selectedMobileLead.user_phone}
+                  </a>
+                </div>
+                {selectedMobileLead.project_address && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    <Button
+                      variant="ghost"
+                      className="p-0 h-auto hover:bg-transparent"
+                      onClick={(e) => openGoogleMaps(selectedMobileLead.project_address!, e)}
+                    >
+                      {selectedMobileLead.project_address}
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-muted-foreground">Estimated Cost</p>
+                  <p className="font-medium">${selectedMobileLead.estimated_cost?.toLocaleString() || "0"}</p>
+                </div>
+                <Badge 
+                  variant="outline"
+                  className={cn(
+                    "font-normal",
+                    statusColors[selectedMobileLead.status as Status] || statusColors.pending
+                  )}
+                >
+                  {selectedMobileLead.status || "pending"}
+                </Badge>
+              </div>
+              
+              <Button 
+                className="w-full" 
+                onClick={() => {
+                  onLeadClick(selectedMobileLead);
+                  setSelectedMobileLead(null);
+                }}
+              >
+                View Details
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Export Options</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Export Format</label>
+                <select className="w-full border rounded-md p-2">
+                  <option value="csv">CSV</option>
+                  <option value="excel">Excel</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Date Range</label>
+                <select className="w-full border rounded-md p-2">
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowExportDialog(false)}>Cancel</Button>
+              <Button onClick={handleExportConfirm}>Export</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
