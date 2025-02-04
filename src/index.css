@@ -103,12 +103,12 @@
 
   .button {
     @apply rounded-lg px-4 py-2 font-medium transition-colors;
-    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+    @apply bg-primary text-primary-foreground hover:bg-primary-600;
   }
 
   :not(.index-page) button {
     @apply transition-colors;
-    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+    @apply bg-primary text-primary-foreground hover:bg-primary-600;
   }
 
   .container {
