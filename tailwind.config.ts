@@ -19,9 +19,9 @@ export default {
     },
     extend: {
       colors: {
-        border: "var(--border)",
-        input: "var(--input)",
-        ring: "var(--ring)",
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
         background: "var(--background)",
         foreground: "var(--foreground)",
         primary: {
@@ -93,5 +93,14 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    function({ addBase, theme }) {
+      addBase({
+        ':root': {
+          '--primary-opacity-90': 'rgba(155, 135, 245, 0.9)',
+        },
+      });
+    },
+  ],
 } satisfies Config;
