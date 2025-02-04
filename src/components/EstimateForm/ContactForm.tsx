@@ -13,9 +13,11 @@ interface ContactFormProps {
   }) => void;
   leadId?: string;
   contractorId?: string;
+  estimate?: any;
+  contractor?: any;
 }
 
-export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps) => {
+export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contractor }: ContactFormProps) => {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -46,7 +48,6 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
           user_phone: formData.phone,
           project_address: formData.address,
           status: 'new',
-          // Only include contractor_id if it exists and is not null/undefined
           ...(contractorId ? { contractor_id: contractorId } : {})
         })
         .eq('id', leadId);
@@ -56,7 +57,31 @@ export const ContactForm = ({ onSubmit, leadId, contractorId }: ContactFormProps
         throw updateError;
       }
 
-      // If we get here, the update was successful
+      // Generate the estimate URL
+      const estimateUrl = `${window.location.origin}/estimate/${leadId}`;
+
+      // Send the email with the estimate
+      const { error: emailError } = await supabase.functions.invoke('send-estimate-email', {
+        body: {
+          name: formData.fullName,
+          email: formData.email,
+          estimateData: estimate,
+          estimateUrl,
+          contractor
+        }
+      });
+
+      if (emailError) {
+        console.error('Error sending email:', emailError);
+        throw emailError;
+      }
+
+      toast({
+        title: "Success!",
+        description: "Your estimate has been sent to your email.",
+      });
+
+      // If we get here, everything was successful
       onSubmit(formData);
     } catch (error) {
       console.error('Error processing form:', error);

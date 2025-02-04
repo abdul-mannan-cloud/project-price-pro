@@ -663,6 +663,8 @@ const EstimatePage = () => {
               onSubmit={handleContactSubmit} 
               leadId={currentLeadId || undefined}
               contractorId={contractorId}
+              estimate={estimate}
+              contractor={contractor}
             />
           </div>
         )}
