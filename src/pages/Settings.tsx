@@ -147,6 +147,12 @@ const Settings = () => {
     );
   }
 
+  // Get branding colors from contractor data
+  const brandingColors = contractor?.branding_colors || {
+    primary: "#6366F1",
+    secondary: "#4F46E5"
+  };
+
   return (
     <div className="min-h-screen bg-secondary">
       <NavBar items={navItems} />
@@ -350,7 +356,7 @@ const Settings = () => {
           onClose={() => setActiveDialog(null)}
         >
           <AIRateForm
-            rates={contractor?.contractor_settings?.ai_preferences?.rates || []}
+            rates={(contractor?.contractor_settings?.ai_preferences as any)?.rates || []}
             onSave={(rates) => {
               updateSettings.mutate({
                 aiPreferences: {
