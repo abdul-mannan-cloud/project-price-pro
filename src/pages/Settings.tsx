@@ -172,10 +172,20 @@ const Settings = () => {
     return <div>Loading...</div>;
   }
 
-  const brandingColors = contractor?.branding_colors as BrandingColors || {
+  // Safely type cast the branding_colors
+  const defaultColors: BrandingColors = {
     primary: "#007AFF",
     secondary: "#F5F5F7"
   };
+
+  const brandingColors: BrandingColors = 
+    contractor?.branding_colors && 
+    typeof contractor.branding_colors === 'object' && 
+    !Array.isArray(contractor.branding_colors) && 
+    'primary' in contractor.branding_colors && 
+    'secondary' in contractor.branding_colors
+      ? contractor.branding_colors as BrandingColors
+      : defaultColors;
 
   return (
     <div className="min-h-screen bg-secondary">
