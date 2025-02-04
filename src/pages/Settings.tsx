@@ -1,16 +1,18 @@
 import { NavBar } from "@/components/ui/tubelight-navbar";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Settings as SettingsIcon, Users, LayoutDashboard, LogOut } from "lucide-react";
+import { Settings as SettingsIcon, Users, LayoutDashboard, LogOut, MessageSquare, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
 import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
 import { AIRateForm } from "@/components/settings/AIRateForm";
 import { Button } from "@/components/ui/button";
-import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
+import { Input } from "@/components/ui/input";
+import { FeedbackForm } from "@/components/settings/FeedbackForm";
+import { FAQ } from "@/components/settings/FAQ";
 
 interface BrandingColors {
   primary: string;
@@ -28,7 +30,6 @@ const Settings = () => {
     { name: "Settings", url: "/settings", icon: SettingsIcon }
   ];
 
-  // Fetch contractor data
   const { data: contractor, isLoading: contractorLoading } = useQuery({
     queryKey: ["contractor"],
     queryFn: async () => {
@@ -72,11 +73,44 @@ const Settings = () => {
     );
   }
 
-  // Get branding colors from contractor data with type assertion
-  const brandingColors = ((contractor?.branding_colors as unknown) as BrandingColors) || {
-    primary: "#6366F1",
-    secondary: "#4F46E5"
-  };
+  const features = [
+    {
+      title: "Preview Estimator",
+      description: "Test and preview how your estimator looks to clients",
+      icon: <LayoutDashboard className="h-6 w-6" />,
+      onClick: () => navigate("/estimate"),
+    },
+    {
+      title: "Business Information",
+      description: "Update your business details and branding",
+      icon: <SettingsIcon className="h-6 w-6" />,
+      onClick: () => setActiveDialog("business information"),
+    },
+    {
+      title: "Service Categories",
+      description: "Manage the services you offer",
+      icon: <Users className="h-6 w-6" />,
+      onClick: () => setActiveDialog("service categories"),
+    },
+    {
+      title: "AI Preferences",
+      description: "Customize AI behavior and responses",
+      icon: <SettingsIcon className="h-6 w-6" />,
+      onClick: () => setActiveDialog("ai preferences"),
+    },
+    {
+      title: "Send Feedback",
+      description: "Share your thoughts and suggestions",
+      icon: <MessageSquare className="h-6 w-6" />,
+      onClick: () => setActiveDialog("feedback"),
+    },
+    {
+      title: "FAQ",
+      description: "Find answers to common questions",
+      icon: <HelpCircle className="h-6 w-6" />,
+      onClick: () => setActiveDialog("faq"),
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -94,7 +128,21 @@ const Settings = () => {
           </Button>
         </div>
         
-        <FeaturesSectionWithHoverEffects />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {features.map((feature) => (
+            <button
+              key={feature.title}
+              onClick={feature.onClick}
+              className="p-6 bg-background rounded-lg border border-input hover:border-accent transition-colors text-left"
+            >
+              <div className="flex items-center gap-4 mb-4">
+                {feature.icon}
+                <h3 className="font-medium">{feature.title}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">{feature.description}</p>
+            </button>
+          ))}
+        </div>
 
         {/* Settings Dialogs */}
         <SettingsDialog
@@ -102,44 +150,38 @@ const Settings = () => {
           isOpen={activeDialog === "business information"}
           onClose={() => setActiveDialog(null)}
         >
-          <form onSubmit={handleSave} className="space-y-4">
+          <form className="space-y-4">
             <Input
               label="Business Name"
-              name="businessName"
               defaultValue={contractor?.business_name}
               required
             />
             <Input
               label="Contact Email"
-              name="contactEmail"
               type="email"
               defaultValue={contractor?.contact_email}
               required
             />
             <Input
               label="Contact Phone"
-              name="contactPhone"
               type="tel"
               defaultValue={contractor?.contact_phone}
             />
             <Input
               label="Business Address"
-              name="businessAddress"
               defaultValue={contractor?.business_address}
             />
             <Input
               label="Website"
-              name="website"
               type="url"
               defaultValue={contractor?.website}
             />
             <Input
               label="License Number"
-              name="licenseNumber"
               defaultValue={contractor?.license_number}
             />
-            <Button type="submit" disabled={updateSettings.isPending}>
-              {updateSettings.isPending ? "Saving..." : "Save Changes"}
+            <Button type="submit">
+              Save Changes
             </Button>
           </form>
         </SettingsDialog>
@@ -160,21 +202,25 @@ const Settings = () => {
           <AIRateForm
             rates={(contractor?.contractor_settings?.ai_preferences as any)?.rates || []}
             onSave={(rates) => {
-              updateSettings.mutate({
-                aiPreferences: {
-                  rates
-                }
-              });
+              // Handle saving AI rates
             }}
           />
         </SettingsDialog>
 
         <SettingsDialog
-          title="Webhooks"
-          isOpen={activeDialog === "webhooks"}
+          title="Send Feedback"
+          isOpen={activeDialog === "feedback"}
           onClose={() => setActiveDialog(null)}
         >
-          <WebhookSettings />
+          <FeedbackForm />
+        </SettingsDialog>
+
+        <SettingsDialog
+          title="Frequently Asked Questions"
+          isOpen={activeDialog === "faq"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <FAQ />
         </SettingsDialog>
       </div>
     </div>
