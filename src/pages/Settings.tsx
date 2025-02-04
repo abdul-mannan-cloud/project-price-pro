@@ -29,7 +29,7 @@ import { AIInstructionsForm } from "@/components/settings/AIInstructionsForm";
 import { TeammateSettings } from "@/components/settings/TeammateSettings";
 import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
 import { LogoUpload } from "@/components/settings/LogoUpload";
-import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
+import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
 
 interface AIInstruction {
   title: string;
@@ -266,17 +266,7 @@ const Settings = () => {
           <h1 className="text-2xl font-semibold">Settings</h1>
         </div>
         
-        <div className="grid gap-4">
-          {settingsMenuItems.map((item, index) => (
-            <SettingsMenuItem
-              key={index}
-              icon={item.icon}
-              title={item.title}
-              description={item.description}
-              onClick={item.onClick}
-            />
-          ))}
-        </div>
+        <FeaturesSectionWithHoverEffects setActiveDialog={setActiveDialog} />
 
         <SettingsDialog
           title="Business Information"
