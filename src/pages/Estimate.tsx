@@ -46,9 +46,11 @@ const EstimatePage = () => {
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Extract contractor ID from URL params or use default
-  const effectiveContractorId = contractorId || DEFAULT_CONTRACTOR_ID;
+  const { contractorId: rawContractorId } = useParams();
+  // Remove the '?' if present and use default if invalid
+  const effectiveContractorId = rawContractorId?.replace('?', '') || DEFAULT_CONTRACTOR_ID;
 
-  // Fetch contractor data using React Query for better caching and performance
+  // Update the contractor query to use the cleaned contractorId
   const { data: contractor, isLoading: isContractorLoading, error: contractorError } = useQuery({
     queryKey: ["contractor", effectiveContractorId],
     queryFn: async () => {
@@ -87,21 +89,38 @@ const EstimatePage = () => {
             website: null,
             license_number: null,
             contractor_settings: {
+              id: effectiveContractorId, // Add this line to fix the TypeScript error
               markup_percentage: 20,
               tax_rate: 8.5,
               minimum_project_cost: 1000,
-              ai_preferences: null,
-              excluded_categories: [],
-              ai_instructions: null,
-              ai_prompt_template: null,
+              ai_preferences: {} as Json,
+              excluded_categories: [] as string[],
+              ai_instructions: "",
+              ai_prompt_template: "",
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             }
           };
         }
 
-        console.log('Successfully fetched contractor:', data);
-        return data;
+        // Ensure contractor_settings has all required fields
+        const settings = data.contractor_settings || {
+          id: data.id,
+          markup_percentage: 20,
+          tax_rate: 8.5,
+          minimum_project_cost: 1000,
+          ai_preferences: {} as Json,
+          excluded_categories: [] as string[],
+          ai_instructions: "",
+          ai_prompt_template: "",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        return {
+          ...data,
+          contractor_settings: settings
+        };
       } catch (error) {
         console.error('Error in contractor fetch:', error);
         throw error;
