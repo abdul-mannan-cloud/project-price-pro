@@ -17,7 +17,7 @@ import {
 } from "motion/react"
 import { cn } from "@/lib/utils"
 
-// Add type declaration for Intl.Segmenter
+// Updated type declaration for Intl.Segmenter
 declare global {
   interface Intl {
     Segmenter?: {
@@ -92,18 +92,17 @@ const TextRotate = forwardRef<TextRotateRef, TextRotateProps>(
   ) => {
     const [currentTextIndex, setCurrentTextIndex] = useState(0)
 
-    // Updated splitIntoCharacters function with proper type checking
+    // Updated splitIntoCharacters function with better fallback handling
     const splitIntoCharacters = (text: string): string[] => {
-      if (typeof Intl !== "undefined" && "Segmenter" in Intl && Intl.Segmenter) {
+      if (typeof window !== "undefined" && "Intl" in window && "Segmenter" in Intl) {
         try {
           const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" })
           return Array.from(segmenter.segment(text), ({ segment }) => segment)
-        } catch {
-          // Fallback if Segmenter throws an error
+        } catch (error) {
+          console.warn("Segmenter failed, falling back to Array.from:", error)
           return Array.from(text)
         }
       }
-      // Fallback for browsers that don't support Intl.Segmenter
       return Array.from(text)
     }
 
