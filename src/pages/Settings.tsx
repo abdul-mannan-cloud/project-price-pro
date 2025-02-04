@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { LayoutDashboard, Users, Settings as SettingsIcon, X } from "lucide-react";
+import { LayoutDashboard, Users, Settings as SettingsIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CustomSelect } from "@/components/ui/custom-select";
@@ -41,6 +41,11 @@ const typeOptions = [
   { value: "material", label: "Material" },
   { value: "labor", label: "Labor" },
 ];
+
+interface BrandingColors {
+  primary: string;
+  secondary: string;
+}
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -99,6 +104,9 @@ const Settings = () => {
           business_name: formData.businessName,
           contact_email: formData.contactEmail,
           contact_phone: formData.contactPhone,
+          business_address: formData.businessAddress,
+          website: formData.website,
+          license_number: formData.licenseNumber,
           branding_colors: {
             primary: formData.primaryColor,
             secondary: formData.secondaryColor
@@ -149,6 +157,9 @@ const Settings = () => {
       businessName: formData.get("businessName"),
       contactEmail: formData.get("contactEmail"),
       contactPhone: formData.get("contactPhone"),
+      businessAddress: formData.get("businessAddress"),
+      website: formData.get("website"),
+      licenseNumber: formData.get("licenseNumber"),
       primaryColor: formData.get("primaryColor"),
       secondaryColor: formData.get("secondaryColor"),
       minimumProjectCost: formData.get("minimumProjectCost"),
@@ -161,7 +172,7 @@ const Settings = () => {
     return <div>Loading...</div>;
   }
 
-  const brandingColors = contractor?.branding_colors || {
+  const brandingColors = contractor?.branding_colors as BrandingColors || {
     primary: "#007AFF",
     secondary: "#F5F5F7"
   };
@@ -240,8 +251,8 @@ const Settings = () => {
                     document.documentElement.style.setProperty('--primary', color);
                     document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
                   }}
-                  name="primaryColor"
                 />
+                <input type="hidden" name="primaryColor" value={brandingColors.primary} />
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">
@@ -254,8 +265,8 @@ const Settings = () => {
                     document.documentElement.style.setProperty('--secondary', color);
                     document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
                   }}
-                  name="secondaryColor"
                 />
+                <input type="hidden" name="secondaryColor" value={brandingColors.secondary} />
               </div>
             </div>
           </Card>
