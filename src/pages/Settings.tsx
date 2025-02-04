@@ -11,7 +11,10 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { LayoutDashboard, Users, Settings as SettingsIcon } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
-type BrandingColors = NonNullable<Database['public']['Tables']['contractors']['Row']['branding_colors']>;
+type BrandingColors = {
+  primary: string;
+  secondary: string;
+};
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -58,7 +61,8 @@ const Settings = () => {
     secondary: "#4F46E5"
   };
 
-  const brandingColors = contractor?.branding_colors || defaultColors;
+  // Safely cast the branding_colors to our BrandingColors type with a fallback
+  const brandingColors = (contractor?.branding_colors as BrandingColors) || defaultColors;
 
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
