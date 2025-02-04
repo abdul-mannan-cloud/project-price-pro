@@ -61,16 +61,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       size,
       children,
       stretch = false,
-      supportIcon = undefined,
-      leadingIcon = undefined,
+      supportIcon: SupportIcon,
+      leadingIcon: LeadingIcon,
       isLoading = false,
       asChild = false,
       ...props
     },
     ref,
   ) => {
-    const SupportIconRender = supportIcon ?? React.Fragment;
-    const LeadingIconRender = leadingIcon ?? React.Fragment;
     return (
       <motion.button
         className={cn(
@@ -78,17 +76,18 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           stretch && 'w-full',
         )}
         ref={ref}
-        {...props}>
+        {...props}
+      >
         {isLoading ? (
-          <IconLoader2 size={TABLER_ICON_STYLE} className="animate-spin" />
+          <IconLoader2 className="h-4 w-4 animate-spin" />
         ) : (
           <></>
         )}
-        {!isLoading && supportIcon && (
-          <SupportIconRender size={TABLER_ICON_STYLE} />
+        {!isLoading && SupportIcon && (
+          <SupportIcon className="h-4 w-4" />
         )}
         {children}
-        {leadingIcon && <LeadingIconRender size={TABLER_ICON_STYLE} />}
+        {LeadingIcon && <LeadingIcon className="h-4 w-4" />}
       </motion.button>
     );
   },
