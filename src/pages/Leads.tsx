@@ -8,12 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { LeadsTable } from "@/components/Leads/LeadsTable";
 import { LayoutDashboard, Users, Settings } from "lucide-react";
-import type { Lead, EstimateData } from "@/components/Leads/LeadsTable";
-import type { Json } from "@/integrations/supabase/types";
-
-interface LeadAnswers {
-  answers: Record<string, any>;
-}
+import type { Lead } from "@/components/Leads/LeadsTable";
 
 const Leads = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -39,11 +34,7 @@ const Leads = () => {
 
       if (error) throw error;
       
-      // Transform the data to match the Lead interface
-      return (data || []).map(lead => ({
-        ...lead,
-        estimate_data: lead.estimate_data as EstimateData || { groups: [], projectSummary: "" }
-      }));
+      return data as Lead[];
     },
   });
 
@@ -177,8 +168,8 @@ const Leads = () => {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Questions & Answers</h3>
                 <div className="space-y-4">
-                  {selectedLead.answers && typeof selectedLead.answers === 'object' && 'answers' in selectedLead.answers && 
-                    Object.entries((selectedLead.answers as LeadAnswers).answers || {}).map(([category, answers]: [string, any]) => (
+                  {selectedLead.answers && 'answers' in selectedLead.answers && 
+                    Object.entries(selectedLead.answers.answers || {}).map(([category, answers]: [string, any]) => (
                       <div key={category} className="bg-muted/50 p-4 rounded-lg">
                         <h4 className="font-medium mb-2">{category}</h4>
                         <div className="space-y-2">
@@ -201,11 +192,11 @@ const Leads = () => {
                 </div>
               </div>
 
-              {selectedLead.estimate_data && (
+              {selectedLead.estimate_data && selectedLead.estimate_data.groups && (
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Generated Estimate</h3>
                   <EstimateDisplay 
-                    groups={selectedLead.estimate_data.groups || []}
+                    groups={selectedLead.estimate_data.groups}
                     totalCost={selectedLead.estimated_cost || 0}
                     projectSummary={selectedLead.estimate_data.projectSummary}
                   />
