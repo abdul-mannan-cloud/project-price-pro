@@ -224,6 +224,24 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
                 )}
               </div>
             </div>
+
+            {/* Bottom Action Bar */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">
+              <div className="container max-w-6xl mx-auto flex justify-between gap-4">
+                <Button variant="outline" className="w-full gap-2">
+                  <Phone className="h-4 w-4" />
+                  Call
+                </Button>
+                <Button variant="outline" className="w-full gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Text
+                </Button>
+                <Button variant="outline" className="w-full gap-2" onClick={handleCopyLink}>
+                  <Link className="h-4 w-4" />
+                  Copy Link
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
