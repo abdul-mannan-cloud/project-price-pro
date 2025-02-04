@@ -3,6 +3,26 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
+import { Database } from "@/integrations/supabase/types";
+
+type EstimateData = {
+  groups: Array<{
+    name: string;
+    description?: string;
+    subgroups: Array<{
+      name: string;
+      items: Array<{
+        title: string;
+        description?: string;
+        quantity: number;
+        unit?: string;
+        unitAmount: number;
+        totalPrice: number;
+      }>;
+      subtotal: number;
+    }>;
+  }>;
+};
 
 const PublicEstimate = () => {
   const { id } = useParams();
@@ -15,13 +35,18 @@ const PublicEstimate = () => {
         .select(`
           *,
           contractors (
+            id,
             business_name,
             business_logo_url,
             contact_email,
             contact_phone,
             business_address,
             website,
-            license_number
+            license_number,
+            subscription_status,
+            branding_colors,
+            created_at,
+            updated_at
           )
         `)
         .eq("id", id)
@@ -49,11 +74,13 @@ const PublicEstimate = () => {
     );
   }
 
+  const estimateData = lead.estimate_data as EstimateData;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8">
         <EstimateDisplay
-          groups={lead.estimate_data?.groups || []}
+          groups={estimateData?.groups || []}
           totalCost={lead.estimated_cost || 0}
           projectSummary={lead.project_description}
           contractor={lead.contractors}
