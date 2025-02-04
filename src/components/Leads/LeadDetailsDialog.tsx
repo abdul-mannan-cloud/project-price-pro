@@ -10,12 +10,6 @@ import { LeadQuestionsView } from "./LeadQuestionsView";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogHeader,
@@ -125,48 +119,15 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
 
     if (isMobile) {
       return (
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowEmailDialog(true)} className="gap-2">
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" onClick={() => setIsEditing(true)} className="w-full gap-2">
+            <Edit className="h-4 w-4" />
+            Edit Estimate
+          </Button>
+          <Button variant="outline" onClick={() => setShowEmailDialog(true)} className="w-full gap-2">
             <Mail className="h-4 w-4" />
             Email Estimate
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Estimate
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleCopyLink}>
-                <Link className="h-4 w-4 mr-2" />
-                Copy Link
-              </DropdownMenuItem>
-              {lead?.user_phone && (
-                <>
-                  <DropdownMenuItem>
-                    <Phone className="h-4 w-4 mr-2" />
-                    Call
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Text
-                  </DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuItem>
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Export CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Download className="h-4 w-4 mr-2" />
-                Export PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       );
     }
