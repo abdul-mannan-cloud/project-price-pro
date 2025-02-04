@@ -37,7 +37,7 @@
   }
 
   body {
-    @apply bg-secondary text-foreground font-sans antialiased;
+    @apply bg-secondary text-foreground font-sans antialiased min-h-screen;
   }
 
   h1 {
@@ -97,13 +97,17 @@
   /* Default button style (Apple-style) */
   .button {
     @apply rounded-lg px-4 py-2 font-medium transition-colors;
-    @apply bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-700)];
+    @apply bg-white text-foreground border border-input hover:bg-secondary/10;
   }
 
-  /* Dynamic button style (for non-index pages) */
-  :not(.index-page) button {
-    @apply transition-colors;
-    @apply bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-700)];
+  /* Primary button style - only one per container */
+  .button-primary {
+    @apply bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-700)] border-transparent;
+  }
+
+  /* Select/dropdown buttons should be unaffected by color schema */
+  .select-button {
+    @apply bg-background text-foreground border border-input hover:bg-background;
   }
 
   .container {
