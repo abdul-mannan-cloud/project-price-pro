@@ -1,6 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Database } from "@/integrations/supabase/types";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Edit, X } from "lucide-react";
 
 interface LineItem {
   title: string;
@@ -44,6 +48,13 @@ export const EstimateDisplay = ({
   isEditable = false,
   onEstimateChange
 }: EstimateDisplayProps) => {
+  const [selectedItem, setSelectedItem] = useState<{
+    groupIndex: number;
+    subgroupIndex: number;
+    itemIndex: number;
+    item: LineItem;
+  } | null>(null);
+
   const defaultCompany = {
     business_name: "Example Company",
     contact_email: "contact@example.com",
@@ -66,12 +77,10 @@ export const EstimateDisplay = ({
     
     (item[field] as any) = value;
 
-    // Recalculate total price if quantity or unit amount changes
     if (field === 'quantity' || field === 'unitAmount') {
       item.totalPrice = item.quantity * item.unitAmount;
     }
 
-    // Recalculate subgroup subtotal
     newGroups[groupIndex].subgroups[subgroupIndex].subtotal = 
       newGroups[groupIndex].subgroups[subgroupIndex].items.reduce(
         (sum, item) => sum + item.totalPrice, 
@@ -81,27 +90,6 @@ export const EstimateDisplay = ({
     onEstimateChange({ groups: newGroups });
   };
 
-  const handleTextEdit = (
-    groupIndex: number,
-    subgroupIndex: number,
-    itemIndex: number,
-    field: keyof LineItem,
-    value: string
-  ) => {
-    handleItemChange(groupIndex, subgroupIndex, itemIndex, field, value);
-  };
-
-  const handleNumberEdit = (
-    groupIndex: number,
-    subgroupIndex: number,
-    itemIndex: number,
-    field: 'quantity' | 'unitAmount',
-    value: string
-  ) => {
-    const numValue = parseFloat(value) || 0;
-    handleItemChange(groupIndex, subgroupIndex, itemIndex, field, numValue);
-  };
-
   const formatItemTitle = (title: string, unit?: string) => {
     if (!unit) return title;
     return `${title} (${unit})`;
@@ -109,7 +97,7 @@ export const EstimateDisplay = ({
 
   return (
     <Card className={cn(
-      "p-8 max-w-6xl mx-auto transition-all duration-500",
+      "p-8 max-w-6xl mx-auto transition-all duration-500 max-h-[80vh] overflow-y-auto",
       isBlurred && "blur-md pointer-events-none"
     )}>
       {/* Company Header */}
@@ -144,8 +132,8 @@ export const EstimateDisplay = ({
 
       {/* Estimate Groups */}
       <div className="space-y-8">
-        {groups.map((group, index) => (
-          <div key={index} className="bg-gray-50 p-6 rounded-lg">
+        {groups.map((group, groupIndex) => (
+          <div key={groupIndex} className="bg-gray-50 p-6 rounded-lg">
             <div className="mb-4">
               {isEditable ? (
                 <input
@@ -153,7 +141,7 @@ export const EstimateDisplay = ({
                   value={group.name}
                   onChange={(e) => {
                     const newGroups = [...groups];
-                    newGroups[index].name = e.target.value;
+                    newGroups[groupIndex].name = e.target.value;
                     onEstimateChange?.({ groups: newGroups });
                   }}
                   className="text-lg font-semibold bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
@@ -176,7 +164,7 @@ export const EstimateDisplay = ({
                       value={subgroup.name}
                       onChange={(e) => {
                         const newGroups = [...groups];
-                        newGroups[index].subgroups[subIndex].name = e.target.value;
+                        newGroups[groupIndex].subgroups[subIndex].name = e.target.value;
                         onEstimateChange?.({ groups: newGroups });
                       }}
                       className="font-medium text-primary mb-3 bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
@@ -187,7 +175,7 @@ export const EstimateDisplay = ({
                   
                   {/* Line Items Table */}
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full hidden md:table">
                       <thead>
                         <tr className="border-b border-gray-200">
                           <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Item</th>
@@ -205,7 +193,7 @@ export const EstimateDisplay = ({
                                 <input
                                   type="text"
                                   value={item.title}
-                                  onChange={(e) => handleTextEdit(index, subIndex, itemIndex, 'title', e.target.value)}
+                                  onChange={(e) => handleItemChange(groupIndex, subIndex, itemIndex, 'title', e.target.value)}
                                   className="font-medium bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
                                 />
                               ) : (
@@ -217,7 +205,7 @@ export const EstimateDisplay = ({
                                 <input
                                   type="text"
                                   value={item.description || ''}
-                                  onChange={(e) => handleTextEdit(index, subIndex, itemIndex, 'description', e.target.value)}
+                                  onChange={(e) => handleItemChange(groupIndex, subIndex, itemIndex, 'description', e.target.value)}
                                   className="text-sm text-muted-foreground bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
                                 />
                               ) : (
@@ -229,7 +217,7 @@ export const EstimateDisplay = ({
                                 <input
                                   type="number"
                                   value={item.quantity}
-                                  onChange={(e) => handleNumberEdit(index, subIndex, itemIndex, 'quantity', e.target.value)}
+                                  onChange={(e) => handleItemChange(groupIndex, subIndex, itemIndex, 'quantity', parseFloat(e.target.value) || 0)}
                                   className="w-20 text-right bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
                                 />
                               ) : (
@@ -241,7 +229,7 @@ export const EstimateDisplay = ({
                                 <input
                                   type="number"
                                   value={item.unitAmount}
-                                  onChange={(e) => handleNumberEdit(index, subIndex, itemIndex, 'unitAmount', e.target.value)}
+                                  onChange={(e) => handleItemChange(groupIndex, subIndex, itemIndex, 'unitAmount', parseFloat(e.target.value) || 0)}
                                   className="w-24 text-right bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
                                 />
                               ) : (
@@ -255,6 +243,49 @@ export const EstimateDisplay = ({
                         ))}
                       </tbody>
                     </table>
+
+                    {/* Mobile View */}
+                    <div className="md:hidden space-y-4">
+                      {subgroup.items.map((item, itemIndex) => (
+                        <div
+                          key={itemIndex}
+                          className="border-b border-gray-100 pb-4 cursor-pointer"
+                          onClick={() => setSelectedItem({
+                            groupIndex,
+                            subgroupIndex: subIndex,
+                            itemIndex,
+                            item
+                          })}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium">{formatItemTitle(item.title, item.unit)}</p>
+                              <p className="text-sm text-muted-foreground">{item.description}</p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedItem({
+                                  groupIndex,
+                                  subgroupIndex: subIndex,
+                                  itemIndex,
+                                  item
+                                });
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="mt-2 flex justify-between text-sm">
+                            <span>Qty: {item.quantity}</span>
+                            <span>${item.totalPrice.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Subgroup Subtotal */}
@@ -296,6 +327,90 @@ export const EstimateDisplay = ({
           <p className="text-2xl font-bold">${totalCost.toFixed(2)}</p>
         </div>
       </div>
+
+      {/* Mobile Edit Dialog */}
+      <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          {selectedItem && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Edit Item</h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedItem(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Title</label>
+                  <input
+                    type="text"
+                    value={selectedItem.item.title}
+                    onChange={(e) => handleItemChange(
+                      selectedItem.groupIndex,
+                      selectedItem.subgroupIndex,
+                      selectedItem.itemIndex,
+                      'title',
+                      e.target.value
+                    )}
+                    className="w-full mt-1 p-2 border rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Description</label>
+                  <input
+                    type="text"
+                    value={selectedItem.item.description || ''}
+                    onChange={(e) => handleItemChange(
+                      selectedItem.groupIndex,
+                      selectedItem.subgroupIndex,
+                      selectedItem.itemIndex,
+                      'description',
+                      e.target.value
+                    )}
+                    className="w-full mt-1 p-2 border rounded-md"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Quantity</label>
+                    <input
+                      type="number"
+                      value={selectedItem.item.quantity}
+                      onChange={(e) => handleItemChange(
+                        selectedItem.groupIndex,
+                        selectedItem.subgroupIndex,
+                        selectedItem.itemIndex,
+                        'quantity',
+                        parseFloat(e.target.value) || 0
+                      )}
+                      className="w-full mt-1 p-2 border rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Unit Price</label>
+                    <input
+                      type="number"
+                      value={selectedItem.item.unitAmount}
+                      onChange={(e) => handleItemChange(
+                        selectedItem.groupIndex,
+                        selectedItem.subgroupIndex,
+                        selectedItem.itemIndex,
+                        'unitAmount',
+                        parseFloat(e.target.value) || 0
+                      )}
+                      className="w-full mt-1 p-2 border rounded-md"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
