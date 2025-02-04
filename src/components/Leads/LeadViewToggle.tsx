@@ -17,14 +17,14 @@ export const LeadViewToggle = ({ view, onViewChange }: LeadViewToggleProps) => {
       >
         <ToggleGroupItem 
           value="estimate" 
-          className="flex-1 flex items-center justify-center gap-2 transition-all rounded-lg py-3 text-foreground data-[state=on]:bg-transparent"
+          className="flex-1 flex items-center justify-center gap-2 transition-all py-3 text-foreground hover:text-foreground/80"
         >
           <FileText className="h-4 w-4" />
           Estimate
         </ToggleGroupItem>
         <ToggleGroupItem 
           value="questions" 
-          className="flex-1 flex items-center justify-center gap-2 transition-all rounded-lg py-3 text-foreground data-[state=on]:bg-transparent"
+          className="flex-1 flex items-center justify-center gap-2 transition-all py-3 text-foreground hover:text-foreground/80"
         >
           <MessageSquare className="h-4 w-4" />
           Questions
