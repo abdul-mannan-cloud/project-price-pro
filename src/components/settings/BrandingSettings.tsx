@@ -36,7 +36,10 @@ export const BrandingSettings = ({
         .single();
 
       if (error) throw error;
-      return data?.branding_colors as BrandingColors || initialColors;
+      
+      // Safely type cast the branding_colors from Json to BrandingColors
+      const colors = data?.branding_colors as { primary: string; secondary: string } | null;
+      return colors || initialColors;
     },
   });
 
