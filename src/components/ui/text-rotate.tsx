@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils"
 
 // Define Segmenter interface
 interface Segmenter {
-  segment(input: string): {
+  segment(text: string): {
     [Symbol.iterator](): Iterator<{
       segment: string
       index: number
@@ -28,10 +28,10 @@ interface Segmenter {
   }
 }
 
-// Extend the Intl namespace
+// Extend the global Intl interface
 declare global {
-  interface Intl {
-    Segmenter?: {
+  namespace Intl {
+    var Segmenter: {
       new (locale: string, options?: { granularity?: "grapheme" | "word" | "sentence" }): Segmenter
     }
   }
@@ -96,9 +96,9 @@ const TextRotate = forwardRef<TextRotateRef, TextRotateProps>(
     const [currentTextIndex, setCurrentTextIndex] = useState(0)
 
     const splitIntoCharacters = (text: string): string[] => {
-      if (typeof window !== "undefined" && window.Intl?.Segmenter) {
+      if (typeof window !== "undefined" && Intl?.Segmenter) {
         try {
-          const segmenter = new window.Intl.Segmenter("en", { granularity: "grapheme" })
+          const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" })
           return Array.from(segmenter.segment(text), ({ segment }) => segment)
         } catch (error) {
           console.warn("Segmenter failed, falling back to Array.from:", error)
