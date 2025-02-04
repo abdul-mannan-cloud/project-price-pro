@@ -28,12 +28,12 @@ const constructionImages = [
     title: "Floor Installation",
   },
   {
-    url: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7",
-    title: "Construction Planning",
+    url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e",
+    title: "Construction Site",
   },
   {
-    url: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e",
-    title: "Modern Construction",
+    url: "https://images.unsplash.com/photo-1590725140246-20acddc1fb82",
+    title: "Interior Renovation",
   },
 ];
 
