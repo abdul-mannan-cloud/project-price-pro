@@ -159,7 +159,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
                 >
                   <X className="h-5 w-5 text-gray-500" />
                 </button>
-                <div className="h-14" /> {/* Spacer for the X button */}
+                <div className="h-14" />
               </div>
             ) : (
               <button
@@ -177,7 +177,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
             </div>
 
             <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
-              <div className="max-w-6xl mx-auto">
+              <div className="max-w-6xl mx-auto pt-6">
                 {view === "estimate" && (
                   <>
                     {renderActionButtons()}
