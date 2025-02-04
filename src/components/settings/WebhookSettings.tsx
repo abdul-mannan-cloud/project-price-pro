@@ -94,6 +94,11 @@ export const WebhookSettings = () => {
 
   return (
     <div className="space-y-6">
+      <div className="text-sm text-muted-foreground mb-4">
+        Webhooks allow you to receive real-time notifications when new leads are created. 
+        Enter a URL where you want to receive POST requests containing lead information. 
+        This can be used to integrate with your CRM, messaging apps, or other systems.
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Input

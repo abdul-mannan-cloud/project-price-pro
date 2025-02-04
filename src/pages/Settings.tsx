@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { Settings as SettingsIcon, Users, LayoutDashboard, Building2, Palette, Calculator, Webhook } from "lucide-react";
+import { Settings as SettingsIcon, Users, LayoutDashboard, Building2, Palette, Calculator, Webhook, Bot } from "lucide-react";
 import { useState } from "react";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
@@ -70,6 +70,11 @@ const Settings = () => {
           minimum_project_cost: formData.minimumProjectCost,
           markup_percentage: formData.markupPercentage,
           tax_rate: formData.taxRate,
+          ai_preferences: {
+            rate: formData.aiRate,
+            type: formData.aiType,
+            instructions: formData.aiInstructions
+          }
         })
         .eq("id", user.id);
 
@@ -159,6 +164,13 @@ const Settings = () => {
             title="Estimate Settings"
             description="Configure estimate calculations and pricing"
             onClick={() => setActiveDialog("estimate")}
+          />
+
+          <SettingsMenuItem
+            icon={<Bot className="h-5 w-5" />}
+            title="AI Preferences"
+            description="Configure AI settings for estimate generation"
+            onClick={() => setActiveDialog("ai")}
           />
 
           <SettingsMenuItem
@@ -281,6 +293,55 @@ const Settings = () => {
               type="number"
               defaultValue={contractor?.contractor_settings?.tax_rate}
             />
+            <Button type="submit" disabled={updateSettings.isPending}>
+              {updateSettings.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </form>
+        </SettingsDialog>
+
+        {/* AI Preferences Dialog */}
+        <SettingsDialog
+          title="AI Preferences"
+          isOpen={activeDialog === "ai"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Rate Type</label>
+                <select
+                  name="aiRate"
+                  className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
+                  defaultValue={contractor?.contractor_settings?.ai_preferences?.rate || "HR"}
+                >
+                  <option value="HR">Hourly Rate</option>
+                  <option value="SF">Square Foot</option>
+                  <option value="LF">Linear Foot</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Estimate Type</label>
+                <select
+                  name="aiType"
+                  className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
+                  defaultValue={contractor?.contractor_settings?.ai_preferences?.type || "material_labor"}
+                >
+                  <option value="material_labor">Material & Labor</option>
+                  <option value="labor_only">Labor Only</option>
+                  <option value="material_only">Material Only</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Additional Instructions</label>
+                <textarea
+                  name="aiInstructions"
+                  className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
+                  rows={4}
+                  defaultValue={contractor?.contractor_settings?.ai_preferences?.instructions || ""}
+                  placeholder="Add any specific instructions for AI estimate generation..."
+                />
+              </div>
+            </div>
             <Button type="submit" disabled={updateSettings.isPending}>
               {updateSettings.isPending ? "Saving..." : "Save Changes"}
             </Button>
