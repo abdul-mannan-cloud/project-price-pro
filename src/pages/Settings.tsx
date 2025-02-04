@@ -468,24 +468,41 @@ const Settings = () => {
                       value={currentEstimate.title}
                       onChange={(e) => setCurrentEstimate({ ...currentEstimate, title: e.target.value })}
                     />
-                    <CustomSelect
-                      label="Rate Unit"
-                      value={currentEstimate.rate}
-                      onValueChange={(value) => setCurrentEstimate({ ...currentEstimate, rate: value })}
-                      options={rateOptions}
-                    />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Rate</label>
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <Input
+                            type="number"
+                            placeholder="Enter rate"
+                            value={currentEstimate.rate}
+                            onChange={(e) => setCurrentEstimate({ ...currentEstimate, rate: e.target.value })}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <CustomSelect
+                            value={currentEstimate.rateUnit}
+                            onValueChange={(value) => setCurrentEstimate({ ...currentEstimate, rateUnit: value })}
+                            options={rateOptions}
+                          />
+                        </div>
+                      </div>
+                    </div>
                     <CustomSelect
                       label="Type"
                       value={currentEstimate.type}
                       onValueChange={(value) => setCurrentEstimate({ ...currentEstimate, type: value })}
                       options={typeOptions}
                     />
-                    <Textarea
-                      placeholder="Tell AI how to use this rate (optional)"
-                      value={currentEstimate.instructions || ''}
-                      onChange={(e) => setCurrentEstimate({ ...currentEstimate, instructions: e.target.value })}
-                      className="min-h-[100px]"
-                    />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Tell AI how to use this rate (optional)</label>
+                      <Textarea
+                        placeholder="Enter instructions for AI"
+                        value={currentEstimate.instructions || ''}
+                        onChange={(e) => setCurrentEstimate({ ...currentEstimate, instructions: e.target.value })}
+                        className="min-h-[100px]"
+                      />
+                    </div>
                     <Button type="button" onClick={handleSaveEstimate} className="w-full">
                       Save
                     </Button>
