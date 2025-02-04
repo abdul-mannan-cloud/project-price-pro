@@ -22,7 +22,6 @@ export const BrandingSettings = ({
   const [brandingColors, setBrandingColors] = useState<BrandingColors>(initialColors);
   const { toast } = useToast();
 
-  // Add a query to fetch current branding colors
   const { data: currentColors } = useQuery({
     queryKey: ["brandingColors"],
     queryFn: async () => {
@@ -43,11 +42,9 @@ export const BrandingSettings = ({
     },
   });
 
-  // Update local state when currentColors changes
   useEffect(() => {
     if (currentColors) {
       setBrandingColors(currentColors);
-      // Update CSS variables
       document.documentElement.style.setProperty('--primary', currentColors.primary);
       document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
       document.documentElement.style.setProperty('--secondary', currentColors.secondary);
@@ -74,7 +71,6 @@ export const BrandingSettings = ({
 
       if (error) throw error;
       
-      // Update CSS variables immediately after successful save
       document.documentElement.style.setProperty('--primary', colors.primary);
       document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
       document.documentElement.style.setProperty('--secondary', colors.secondary);
@@ -86,7 +82,6 @@ export const BrandingSettings = ({
       const g = parseInt(primaryHex.slice(2, 4), 16);
       const b = parseInt(primaryHex.slice(4, 6), 16);
 
-      // Generate lighter and darker shades
       document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
       document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
       document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
@@ -141,6 +136,7 @@ export const BrandingSettings = ({
           <Button 
             onClick={() => updateBrandingColors.mutate(brandingColors)}
             disabled={updateBrandingColors.isPending}
+            variant="default"
           >
             {updateBrandingColors.isPending ? "Saving..." : "Save Changes"}
           </Button>
@@ -152,14 +148,23 @@ export const BrandingSettings = ({
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Buttons</h3>
               <div className="space-y-2">
-                <Button className="w-full">
+                <Button 
+                  className="w-full"
+                  variant="default"
+                >
                   Primary Button
                 </Button>
                 <Button 
-                  variant="outline"
+                  variant="secondary"
                   className="w-full"
                 >
-                  Outlined Button
+                  Secondary Button
+                </Button>
+                <Button 
+                  variant="select"
+                  className="w-full"
+                >
+                  Dropdown Button (Unaffected)
                 </Button>
               </div>
             </Card>
@@ -179,18 +184,6 @@ export const BrandingSettings = ({
                 >
                   Secondary Background
                 </div>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Text Colors</h3>
-              <div className="space-y-2">
-                <p style={{ color: brandingColors.primary }}>
-                  This text uses the primary color
-                </p>
-                <p style={{ color: brandingColors.secondary }}>
-                  This text uses the secondary color
-                </p>
               </div>
             </Card>
           </div>
