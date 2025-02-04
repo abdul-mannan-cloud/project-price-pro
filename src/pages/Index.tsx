@@ -42,12 +42,12 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="index-page min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="index-page min-h-screen bg-[#F1F1F1] relative overflow-hidden">
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center space-y-8">
             <motion.h1 
-              className="text-4xl md:text-6xl font-bold mb-6 animate-fadeIn"
+              className="text-4xl md:text-6xl font-bold mb-6 text-black animate-fadeIn"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
@@ -55,7 +55,7 @@ const Index = () => {
               AI Construction Estimate Lead Generation
             </motion.h1>
             <motion.p 
-              className="text-xl md:text-2xl mb-8 text-gray-300 animate-fadeIn"
+              className="text-xl md:text-2xl mb-8 text-gray-600 animate-fadeIn"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
@@ -70,7 +70,7 @@ const Index = () => {
               <Button
                 onClick={() => navigate("/estimate")}
                 size="lg"
-                className="bg-white text-black hover:bg-gray-200 transition-all duration-300 animate-fadeIn transform hover:scale-105"
+                className="bg-primary text-white hover:bg-primary-600 transition-all duration-300 animate-fadeIn transform hover:scale-105"
               >
                 Start Your Estimate
               </Button>
@@ -97,11 +97,11 @@ const Index = () => {
           >
             <motion.img
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.7 }}
+              animate={{ opacity: 0.9 }}
               transition={{ duration: 0.5, delay: index * 0.15 }}
               src={image.url}
               alt={image.title}
-              className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg hover:scale-105 hover:opacity-100 duration-200 cursor-pointer transition-all"
+              className="w-32 h-32 md:w-48 md:h-48 object-cover rounded-2xl shadow-lg hover:scale-110 hover:opacity-100 duration-300 cursor-pointer transition-all border-4 border-white/10"
             />
           </FloatingElement>
         ))}
@@ -111,7 +111,7 @@ const Index = () => {
         <Button
           onClick={() => navigate("/login")}
           variant="ghost"
-          className="text-white hover:text-gray-300 hover:bg-black/20 transition-all duration-300"
+          className="text-gray-800 hover:text-gray-600 hover:bg-gray-200/50 transition-all duration-300"
         >
           Sign In
         </Button>
