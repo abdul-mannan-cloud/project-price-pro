@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { LogOut } from "lucide-react";
+import { LogOut, LayoutDashboard, Users as Users2, Settings as SettingsIcon } from "lucide-react";
 import { useState } from "react";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
@@ -26,7 +26,7 @@ const Settings = () => {
 
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { name: "Leads", url: "/leads", icon: Users },
+    { name: "Leads", url: "/leads", icon: Users2 },
     { name: "Settings", url: "/settings", icon: SettingsIcon }
   ];
 
@@ -151,7 +151,6 @@ const Settings = () => {
     );
   }
 
-  // Get branding colors from contractor data with type assertion
   const brandingColors = (contractor?.branding_colors as BrandingColors) || {
     primary: "#6366F1",
     secondary: "#4F46E5"
@@ -175,7 +174,6 @@ const Settings = () => {
         
         <FeaturesSectionWithHoverEffects setActiveDialog={setActiveDialog} />
 
-        {/* Business Information Dialog */}
         <SettingsDialog
           title="Business Information"
           isOpen={activeDialog === "business"}
@@ -223,7 +221,6 @@ const Settings = () => {
           </form>
         </SettingsDialog>
 
-        {/* Branding Dialog */}
         <SettingsDialog
           title="Branding"
           isOpen={activeDialog === "branding"}
@@ -262,7 +259,6 @@ const Settings = () => {
           </form>
         </SettingsDialog>
 
-        {/* Estimate Settings Dialog */}
         <SettingsDialog
           title="Estimate Settings"
           isOpen={activeDialog === "estimate"}
@@ -311,7 +307,6 @@ const Settings = () => {
           </form>
         </SettingsDialog>
 
-        {/* AI Preferences Dialog */}
         <SettingsDialog
           title="AI Preferences"
           isOpen={activeDialog === "ai"}
@@ -329,7 +324,6 @@ const Settings = () => {
           />
         </SettingsDialog>
 
-        {/* Service Categories Dialog */}
         <SettingsDialog
           title="Service Categories"
           isOpen={activeDialog === "categories"}
@@ -338,7 +332,6 @@ const Settings = () => {
           <ServiceCategoriesSettings />
         </SettingsDialog>
 
-        {/* Webhooks Dialog */}
         <SettingsDialog
           title="Webhooks"
           isOpen={activeDialog === "webhooks"}
@@ -353,7 +346,6 @@ const Settings = () => {
           <WebhookSettings />
         </SettingsDialog>
 
-        {/* Feedback Dialog */}
         <SettingsDialog
           title="Feedback"
           isOpen={activeDialog === "feedback"}
@@ -373,7 +365,6 @@ const Settings = () => {
           </div>
         </SettingsDialog>
 
-        {/* FAQ Dialog */}
         <SettingsDialog
           title="Frequently Asked Questions"
           isOpen={activeDialog === "faq"}
