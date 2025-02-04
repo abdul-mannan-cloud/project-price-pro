@@ -1,9 +1,8 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/3d-button";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Floating, { FloatingElement } from "@/components/ui/parallax-floating";
 import { TextRotate } from "@/components/ui/text-rotate";
-import { MagneticButton } from "@/components/ui/magnetic-button";
 
 const constructionImages = [
   {
@@ -52,10 +51,10 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="index-page min-h-screen bg-[#F1F1F1] relative overflow-hidden">
+    <div className="index-page min-h-screen bg-[#F1F1F1] relative overflow-hidden font-['Open Sans']">
       <div className="relative z-10 flex items-center justify-center min-h-screen">
         <div className="container max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
-          <div className="text-center space-y-8 sm:space-y-10">
+          <div className="text-center space-y-8 sm:space-y-10 bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg sm:p-12">
             <motion.h1 
               className="text-2xl sm:text-3xl md:text-5xl font-bold text-black leading-tight animate-fadeIn"
               initial={{ opacity: 0, y: 20 }}
@@ -65,10 +64,11 @@ const Index = () => {
               Transform Your Construction Business with{" "}
               <TextRotate
                 texts={rotatingTexts}
-                mainClassName="text-primary-600"
+                mainClassName="text-primary-600 block mt-2"
                 rotationInterval={3000}
                 staggerDuration={0.02}
               />
+              ...
             </motion.h1>
             <motion.p
               className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4 leading-relaxed animate-fadeIn"
@@ -84,15 +84,14 @@ const Index = () => {
               transition={{ duration: 0.8, delay: 0.4 }}
               className="pt-4"
             >
-              <MagneticButton>
-                <Button
-                  onClick={() => navigate("/estimate")}
-                  size="lg"
-                  className="bg-primary text-white hover:bg-primary-600 transition-all duration-300 animate-fadeIn transform hover:scale-105 text-lg px-8 py-6"
-                >
-                  Start Your Estimate
-                </Button>
-              </MagneticButton>
+              <Button
+                onClick={() => navigate("/estimate")}
+                size="lg"
+                variant="ai"
+                className="text-lg px-8 py-6"
+              >
+                Start Your Estimate
+              </Button>
             </motion.div>
           </div>
         </div>
@@ -129,8 +128,8 @@ const Index = () => {
       <div className="fixed top-4 right-4 z-20">
         <Button
           onClick={() => navigate("/login")}
-          variant="ghost"
-          className="text-gray-800 hover:text-gray-600 hover:bg-gray-200/50 transition-all duration-300"
+          variant="outline"
+          className="text-gray-800 hover:text-gray-600"
         >
           Sign In
         </Button>
