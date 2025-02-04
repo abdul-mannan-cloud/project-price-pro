@@ -54,16 +54,16 @@ interface TextRotateProps {
   elementLevelClassName?: string
 }
 
+interface WordObject {
+  characters: string[]
+  needsSpace: boolean
+}
+
 export interface TextRotateRef {
   next: () => void
   previous: () => void
   jumpTo: (index: number) => void
   reset: () => void
-}
-
-interface WordObject {
-  characters: string[]
-  needsSpace: boolean
 }
 
 const TextRotate = forwardRef<TextRotateRef, TextRotateProps>(
