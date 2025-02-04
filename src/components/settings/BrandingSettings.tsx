@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Json } from "@/integrations/supabase/types";
@@ -21,6 +21,7 @@ export const BrandingSettings = ({
 }) => {
   const [brandingColors, setBrandingColors] = useState<BrandingColors>(initialColors);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: currentColors } = useQuery({
     queryKey: ["brandingColors"],
@@ -36,7 +37,6 @@ export const BrandingSettings = ({
 
       if (error) throw error;
       
-      // Safely type cast the branding_colors from Json to BrandingColors
       const colors = data?.branding_colors as { primary: string; secondary: string } | null;
       return colors || initialColors;
     },
@@ -45,12 +45,30 @@ export const BrandingSettings = ({
   useEffect(() => {
     if (currentColors) {
       setBrandingColors(currentColors);
-      document.documentElement.style.setProperty('--primary', currentColors.primary);
-      document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
-      document.documentElement.style.setProperty('--secondary', currentColors.secondary);
-      document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
+      applyColors(currentColors);
     }
   }, [currentColors]);
+
+  const applyColors = (colors: BrandingColors) => {
+    document.documentElement.style.setProperty('--primary', colors.primary);
+    document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
+    document.documentElement.style.setProperty('--secondary', colors.secondary);
+    document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
+
+    // Update primary color variations
+    const primaryHex = colors.primary.replace('#', '');
+    const r = parseInt(primaryHex.slice(0, 2), 16);
+    const g = parseInt(primaryHex.slice(2, 4), 16);
+    const b = parseInt(primaryHex.slice(4, 6), 16);
+
+    document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
+    document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
+    document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
+    document.documentElement.style.setProperty('--primary-400', `rgba(${r}, ${g}, ${b}, 0.6)`);
+    document.documentElement.style.setProperty('--primary-500', `rgba(${r}, ${g}, ${b}, 0.8)`);
+    document.documentElement.style.setProperty('--primary-600', colors.primary);
+    document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
+  };
 
   const updateBrandingColors = useMutation({
     mutationFn: async (colors: BrandingColors) => {
@@ -71,31 +89,16 @@ export const BrandingSettings = ({
 
       if (error) throw error;
       
-      document.documentElement.style.setProperty('--primary', colors.primary);
-      document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
-      document.documentElement.style.setProperty('--secondary', colors.secondary);
-      document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
-
-      // Update primary color variations
-      const primaryHex = colors.primary.replace('#', '');
-      const r = parseInt(primaryHex.slice(0, 2), 16);
-      const g = parseInt(primaryHex.slice(2, 4), 16);
-      const b = parseInt(primaryHex.slice(4, 6), 16);
-
-      document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
-      document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
-      document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
-      document.documentElement.style.setProperty('--primary-400', `rgba(${r}, ${g}, ${b}, 0.6)`);
-      document.documentElement.style.setProperty('--primary-500', `rgba(${r}, ${g}, ${b}, 0.8)`);
-      document.documentElement.style.setProperty('--primary-600', colors.primary);
-      document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
+      applyColors(colors);
+      return colors;
     },
-    onSuccess: () => {
+    onSuccess: (colors) => {
+      queryClient.setQueryData(["brandingColors"], colors);
       toast({
         title: "Branding colors updated",
         description: "Your brand colors have been updated successfully.",
       });
-      onSave(brandingColors);
+      onSave(colors);
     },
     onError: (error: any) => {
       toast({
