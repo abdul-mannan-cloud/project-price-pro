@@ -8,20 +8,10 @@ import { toast } from "@/hooks/use-toast";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { LeadsTable } from "@/components/Leads/LeadsTable";
 import { LayoutDashboard, Users, Settings } from "lucide-react";
-import { Json } from "@/integrations/supabase/types";
-
-interface EstimateGroup {
-  name: string;
-  description?: string;
-}
-
-interface EstimateData {
-  groups?: EstimateGroup[];
-  projectSummary?: string;
-}
+import type { Lead } from "@/components/Leads/LeadsTable";
 
 const Leads = () => {
-  const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const queryClient = useQueryClient();
 
   const navItems = [
@@ -43,7 +33,12 @@ const Leads = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match the Lead interface
+      return (data || []).map(lead => ({
+        ...lead,
+        estimate_data: lead.estimate_data as EstimateData || { groups: [], projectSummary: "" }
+      }));
     },
   });
 
@@ -217,5 +212,3 @@ const Leads = () => {
     </div>
   );
 };
-
-export default Leads;
