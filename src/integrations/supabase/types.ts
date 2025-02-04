@@ -77,42 +77,51 @@ export type Database = {
       contractors: {
         Row: {
           branding_colors: Json | null
+          business_address: string | null
           business_logo_url: string | null
           business_name: string
           contact_email: string
           contact_phone: string | null
           created_at: string | null
           id: string
+          license_number: string | null
           subscription_status:
             | Database["public"]["Enums"]["subscription_status"]
             | null
           updated_at: string | null
+          website: string | null
         }
         Insert: {
           branding_colors?: Json | null
+          business_address?: string | null
           business_logo_url?: string | null
           business_name: string
           contact_email: string
           contact_phone?: string | null
           created_at?: string | null
           id: string
+          license_number?: string | null
           subscription_status?:
             | Database["public"]["Enums"]["subscription_status"]
             | null
           updated_at?: string | null
+          website?: string | null
         }
         Update: {
           branding_colors?: Json | null
+          business_address?: string | null
           business_logo_url?: string | null
           business_name?: string
           contact_email?: string
           contact_phone?: string | null
           created_at?: string | null
           id?: string
+          license_number?: string | null
           subscription_status?:
             | Database["public"]["Enums"]["subscription_status"]
             | null
           updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
