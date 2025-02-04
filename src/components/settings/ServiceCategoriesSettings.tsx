@@ -2,7 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Category } from "@/types/estimate";
+import { Database } from "@/integrations/supabase/types";
+
+type CategoryFromDB = Database["public"]["Tables"]["categories"]["Row"];
 
 export const ServiceCategoriesSettings = () => {
   const { toast } = useToast();
@@ -18,7 +20,7 @@ export const ServiceCategoriesSettings = () => {
         .order("name");
       
       if (error) throw error;
-      return data as Category[];
+      return data as CategoryFromDB[];
     }
   });
 
