@@ -53,6 +53,7 @@ export interface EstimateGroup {
 export interface EstimateData {
   groups?: EstimateGroup[];
   projectSummary?: string;
+  [key: string]: any; // Add index signature to make it compatible with Json type
 }
 
 export interface Lead {
