@@ -29,17 +29,17 @@ type Status = keyof typeof statusColors;
 type SortField = 'projectTitle' | 'address' | 'estimatedCost' | 'status' | 'createdAt' | 'userName' | 'userEmail' | 'userPhone';
 type SortDirection = 'asc' | 'desc';
 
-interface EstimateGroup {
+export interface EstimateGroup {
   name: string;
   description?: string;
 }
 
-interface EstimateData {
+export interface EstimateData {
   groups?: EstimateGroup[];
   projectSummary?: string;
 }
 
-interface Lead {
+export interface Lead {
   id: string;
   project_title: string;
   project_address: string | null;

@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { LeadsTable } from "@/components/Leads/LeadsTable";
 import { LayoutDashboard, Users, Settings } from "lucide-react";
-import type { Lead } from "@/components/Leads/LeadsTable";
+import type { Lead, EstimateData } from "@/components/Leads/LeadsTable";
 
 const Leads = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -212,3 +212,5 @@ const Leads = () => {
     </div>
   );
 };
+
+export default Leads;
