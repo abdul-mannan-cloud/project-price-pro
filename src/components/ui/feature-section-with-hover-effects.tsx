@@ -10,7 +10,11 @@ import {
   IconTerminal2,
 } from "@tabler/icons-react";
 
-export function FeaturesSectionWithHoverEffects() {
+export function FeaturesSectionWithHoverEffects({
+  setActiveDialog,
+}: {
+  setActiveDialog: (dialog: string | null) => void;
+}) {
   const features = [
     {
       title: "Preview Estimator",
