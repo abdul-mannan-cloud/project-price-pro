@@ -12,6 +12,12 @@ import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
 
+interface AIPreferences {
+  rate: string;
+  type: string;
+  instructions: string;
+}
+
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -137,6 +143,12 @@ const Settings = () => {
           secondary: String(contractor.branding_colors.secondary)
         }
       : defaultColors;
+
+  const aiPreferences = contractor?.contractor_settings?.ai_preferences as AIPreferences || {
+    rate: "HR",
+    type: "material_labor",
+    instructions: ""
+  };
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -312,7 +324,7 @@ const Settings = () => {
                 <select
                   name="aiRate"
                   className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
-                  defaultValue={contractor?.contractor_settings?.ai_preferences?.rate || "HR"}
+                  defaultValue={aiPreferences.rate}
                 >
                   <option value="HR">Hourly Rate</option>
                   <option value="SF">Square Foot</option>
@@ -324,7 +336,7 @@ const Settings = () => {
                 <select
                   name="aiType"
                   className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
-                  defaultValue={contractor?.contractor_settings?.ai_preferences?.type || "material_labor"}
+                  defaultValue={aiPreferences.type}
                 >
                   <option value="material_labor">Material & Labor</option>
                   <option value="labor_only">Labor Only</option>
@@ -337,7 +349,7 @@ const Settings = () => {
                   name="aiInstructions"
                   className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
                   rows={4}
-                  defaultValue={contractor?.contractor_settings?.ai_preferences?.instructions || ""}
+                  defaultValue={aiPreferences.instructions}
                   placeholder="Add any specific instructions for AI estimate generation..."
                 />
               </div>
