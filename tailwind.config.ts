@@ -82,7 +82,7 @@ export default {
         slideUp: "slideUp 0.5s ease-out",
       },
       fontFamily: {
-        sans: ["-apple-system", "SF Pro Text", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
+        sans: ["Open Sans", "-apple-system", "SF Pro Text", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
       },
     },
   },
