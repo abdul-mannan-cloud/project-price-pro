@@ -84,6 +84,7 @@ const ColorPicker = ({
 }) => {
   const [hsl, setHsl] = useState<[number, number, number]>([0, 0, 0])
   const [colorInput, setColorInput] = useState(color)
+  const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
     handleColorChange(color)
@@ -144,11 +145,12 @@ const ColorPicker = ({
   ]
 
   return (
-    <Popover>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           className="w-full justify-start text-left font-normal bg-white"
+          onClick={() => setIsOpen(true)}
         >
           <div
             className="w-6 h-6 rounded-full mr-2 shadow-sm"
