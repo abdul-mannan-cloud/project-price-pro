@@ -200,7 +200,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
             <div className="max-w-6xl mx-auto">
               {view === "estimate" ? (
                 <EstimateDisplay 
