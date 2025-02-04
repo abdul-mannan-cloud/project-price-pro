@@ -37,14 +37,13 @@ const EstimatePage = () => {
   const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { contractorId: urlContractorId } = useParams();
+  const { contractorId } = useParams();
   const location = useLocation();
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Extract contractor ID from URL params or use default
-  const effectiveContractorId = urlContractorId || DEFAULT_CONTRACTOR_ID;
-  console.log('Effective Contractor ID:', effectiveContractorId);
+  const effectiveContractorId = contractorId || DEFAULT_CONTRACTOR_ID;
 
   // Fetch contractor data using React Query for better caching and performance
   const { data: contractor, isLoading: isContractorLoading, error: contractorError } = useQuery({
@@ -59,44 +58,30 @@ const EstimatePage = () => {
             contractor_settings(*)
           `)
           .eq("id", effectiveContractorId)
-          .maybeSingle(); // Changed from single() to maybeSingle()
+          .maybeSingle();
 
         if (error) {
           console.error("Error fetching contractor:", error);
           throw error;
         }
 
-        if (!data && effectiveContractorId !== DEFAULT_CONTRACTOR_ID) {
-          console.log('Falling back to default contractor');
-          const { data: defaultData, error: defaultError } = await supabase
-            .from("contractors")
-            .select(`
-              *,
-              contractor_settings(*)
-            `)
-            .eq("id", DEFAULT_CONTRACTOR_ID)
-            .maybeSingle(); // Changed from single() to maybeSingle()
-
-          if (defaultError) {
-            console.error("Error fetching default contractor:", defaultError);
-            throw defaultError;
-          }
-
-          if (!defaultData) {
-            console.error("No default contractor found");
-            return {
-              business_name: "Example Company",
-              contact_email: "contact@example.com",
-              contact_phone: "(555) 123-4567",
-              contractor_settings: {
-                markup_percentage: 20,
-                tax_rate: 8.5,
-                minimum_project_cost: 1000
-              }
-            };
-          }
-
-          return defaultData;
+        if (!data) {
+          console.log('No contractor found, using default values');
+          return {
+            id: effectiveContractorId,
+            business_name: "Example Company",
+            contact_email: "contact@example.com",
+            contact_phone: "(555) 123-4567",
+            branding_colors: {
+              primary: "#6366F1",
+              secondary: "#4F46E5"
+            },
+            contractor_settings: {
+              markup_percentage: 20,
+              tax_rate: 8.5,
+              minimum_project_cost: 1000
+            }
+          };
         }
 
         console.log('Successfully fetched contractor:', data);
