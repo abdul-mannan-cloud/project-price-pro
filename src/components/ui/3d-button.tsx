@@ -69,8 +69,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) => {
-    const SupportIconRender = supportIcon ?? React.Fragment;
-    const LeadingIconRender = leadingIcon ?? React.Fragment;
+    const SupportIcon = supportIcon;
+    const LeadingIcon = leadingIcon;
     return (
       <motion.button
         className={cn(
@@ -79,16 +79,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         ref={ref}
         {...props}>
-        {isLoading ? (
+        {isLoading && (
           <IconLoader2 size={TABLER_ICON_STYLE} className="animate-spin" />
-        ) : (
-          <></>
         )}
-        {!isLoading && supportIcon && (
-          <SupportIconRender size={TABLER_ICON_STYLE} />
+        {!isLoading && supportIcon && SupportIcon && (
+          <SupportIcon size={TABLER_ICON_STYLE} />
         )}
         {children}
-        {leadingIcon && <LeadingIconRender size={TABLER_ICON_STYLE} />}
+        {leadingIcon && LeadingIcon && (
+          <LeadingIcon size={TABLER_ICON_STYLE} />
+        )}
       </motion.button>
     );
   },
