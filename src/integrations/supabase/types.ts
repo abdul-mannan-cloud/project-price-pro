@@ -9,6 +9,50 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_rates: {
+        Row: {
+          contractor_id: string
+          created_at: string | null
+          id: string
+          instructions: string | null
+          rate: number
+          title: string
+          type: string
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          contractor_id: string
+          created_at?: string | null
+          id?: string
+          instructions?: string | null
+          rate: number
+          title: string
+          type: string
+          unit: string
+          updated_at?: string | null
+        }
+        Update: {
+          contractor_id?: string
+          created_at?: string | null
+          id?: string
+          instructions?: string | null
+          rate?: number
+          title?: string
+          type?: string
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_rates_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string | null
@@ -38,6 +82,7 @@ export type Database = {
       }
       contractor_settings: {
         Row: {
+          ai_instructions: string | null
           ai_preferences: Json | null
           ai_prompt_template: string | null
           created_at: string | null
@@ -49,6 +94,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_instructions?: string | null
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
           created_at?: string | null
@@ -60,6 +106,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_instructions?: string | null
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
           created_at?: string | null
