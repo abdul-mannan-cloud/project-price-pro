@@ -549,7 +549,7 @@ const EstimatePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white flex flex-col">
       <Progress 
         value={getProgressValue()} 
         className="h-8 rounded-none transition-all duration-500 ease-in-out"
@@ -565,82 +565,86 @@ const EstimatePage = () => {
         </button>
       )}
 
-      <div className="w-full px-4 py-12">
+      <div className="flex-1 flex flex-col">
         {stage === 'photo' && (
-          <div className="card p-8 max-w-4xl mx-auto animate-fadeIn">
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-semibold mb-2">
-                  🛠 {contractor?.business_name || "Project"} Estimator
-                </h2>
-                <p className="text-muted-foreground">
-                  Take or upload a photo of what you want to repair or modify
-                </p>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-full max-w-4xl mx-auto px-4">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-semibold mb-2">
+                    🛠 {contractor?.business_name || "Project"} Estimator
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Take or upload a photo of what you want to repair or modify
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="space-y-4">
-              <label className="relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  capture="environment"
-                  disabled={isUploading}
-                />
+              <div className="space-y-4">
+                <label className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    capture="environment"
+                    disabled={isUploading}
+                  />
+                  <Button 
+                    className="w-full" 
+                    size="lg" 
+                    disabled={isUploading}
+                    asChild
+                  >
+                    <div>
+                      <Camera className="mr-2" />
+                      {isUploading ? "UPLOADING..." : "TAKE A PHOTO"}
+                    </div>
+                  </Button>
+                </label>
                 <Button 
+                  variant="ghost" 
                   className="w-full" 
                   size="lg" 
-                  disabled={isUploading}
-                  asChild
+                  onClick={() => setStage('description')}
                 >
-                  <div>
-                    <Camera className="mr-2" />
-                    {isUploading ? "UPLOADING..." : "TAKE A PHOTO"}
-                  </div>
+                  <SkipForward className="mr-2" />
+                  Skip Photo
                 </Button>
-              </label>
-              <Button 
-                variant="ghost" 
-                className="w-full" 
-                size="lg" 
-                onClick={() => setStage('description')}
-              >
-                <SkipForward className="mr-2" />
-                Skip Photo
-              </Button>
+              </div>
             </div>
           </div>
         )}
 
         {stage === 'description' && !selectedCategory && (
-          <div className="card p-8 max-w-4xl mx-auto animate-fadeIn">
-            <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
-            <div className="space-y-2">
-              <Textarea
-                value={projectDescription}
-                onChange={(e) => setProjectDescription(e.target.value)}
-                placeholder="Describe what you need help with (minimum 30 characters)..."
-                className="min-h-[150px]"
-              />
-              {projectDescription.length > 0 && projectDescription.length < 30 && (
-                <p className="text-sm text-destructive">
-                  Please enter at least {30 - projectDescription.length} more characters
-                </p>
-              )}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-full max-w-4xl mx-auto px-4">
+              <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
+              <div className="space-y-2">
+                <Textarea
+                  value={projectDescription}
+                  onChange={(e) => setProjectDescription(e.target.value)}
+                  placeholder="Describe what you need help with (minimum 30 characters)..."
+                  className="min-h-[150px]"
+                />
+                {projectDescription.length > 0 && projectDescription.length < 30 && (
+                  <p className="text-sm text-destructive">
+                    Please enter at least {30 - projectDescription.length} more characters
+                  </p>
+                )}
+              </div>
+              <Button 
+                className="w-full mt-6"
+                onClick={handleDescriptionSubmit}
+                disabled={projectDescription.trim().length < 30}
+              >
+                Continue
+              </Button>
             </div>
-            <Button 
-              className="w-full mt-6"
-              onClick={handleDescriptionSubmit}
-              disabled={projectDescription.trim().length < 30}
-            >
-              Continue
-            </Button>
           </div>
         )}
 
         {stage === 'category' && (
-          <div className="w-full animate-fadeIn">
+          <div className="flex-1">
             <h2 className="text-2xl font-semibold mb-6 text-center">Select Service Category</h2>
             <CategoryGrid 
               categories={categories}
@@ -652,7 +656,7 @@ const EstimatePage = () => {
         )}
 
         {stage === 'contact' && estimate && (
-          <div className="w-full animate-fadeIn">
+          <div className="flex-1">
             <EstimateDisplay 
               groups={estimate.groups} 
               totalCost={estimate.totalCost} 
@@ -670,7 +674,7 @@ const EstimatePage = () => {
         )}
 
         {stage === 'estimate' && estimate && (
-          <div className="w-full animate-fadeIn">
+          <div className="flex-1">
             <EstimateDisplay 
               groups={estimate.groups} 
               totalCost={estimate.totalCost}
@@ -681,10 +685,12 @@ const EstimatePage = () => {
 
         {stage === 'questions' && (
           matchedQuestionSets.length > 0 ? (
-            <QuestionManager
-              questionSets={matchedQuestionSets}
-              onComplete={handleQuestionComplete}
-            />
+            <div className="flex-1">
+              <QuestionManager
+                questionSets={matchedQuestionSets}
+                onComplete={handleQuestionComplete}
+              />
+            </div>
           ) : (
             <LoadingScreen message="Loading your questions..." />
           )
