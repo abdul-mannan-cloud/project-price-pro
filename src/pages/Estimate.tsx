@@ -71,13 +71,33 @@ const EstimatePage = () => {
           return {
             id: effectiveContractorId,
             business_name: "Example Company",
+            business_logo_url: null,
             contact_email: "contact@example.com",
             contact_phone: "(555) 123-4567",
-            subscription_status: "trial",
+            subscription_status: "trial" as const,
+            branding_colors: {
+              primary: "#6366F1",
+              secondary: "#4F46E5"
+            },
+            business_address: null,
+            website: null,
+            license_number: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
             contractor_settings: {
               minimum_project_cost: 1000,
               markup_percentage: 20,
-              tax_rate: 8.5
+              tax_rate: 8.5,
+              ai_prompt_template: null,
+              ai_preferences: {
+                rate: "HR",
+                type: "material_labor",
+                instructions: ""
+              },
+              excluded_categories: [],
+              ai_instructions: "",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             }
           };
         }
