@@ -33,10 +33,10 @@ const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 const PublicEstimate = () => {
   const { id } = useParams();
 
-  const { data: lead, isLoading } = useQuery({
+  const { data: lead, isLoading: isLeadLoading } = useQuery({
     queryKey: ["public-estimate", id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: leadData, error: leadError } = await supabase
         .from("leads")
         .select(`
           *,
@@ -59,63 +59,82 @@ const PublicEstimate = () => {
         .eq("id", id)
         .single();
 
-      if (error) {
-        // If no lead is found, try to get the default contractor information
-        if (error.code === 'PGRST116') {
-          const { data: defaultContractor, error: contractorError } = await supabase
-            .from("contractors")
-            .select(`
-              id,
-              business_name,
-              business_logo_url,
-              contact_email,
-              contact_phone,
-              business_address,
-              website,
-              license_number,
-              subscription_status,
-              branding_colors,
-              created_at,
-              updated_at,
-              contractor_settings (*)
-            `)
-            .eq("id", DEFAULT_CONTRACTOR_ID)
-            .single();
+      if (leadError) {
+        console.log("Lead not found, using default contractor");
+        const { data: defaultContractor, error: contractorError } = await supabase
+          .from("contractors")
+          .select(`
+            id,
+            business_name,
+            business_logo_url,
+            contact_email,
+            contact_phone,
+            business_address,
+            website,
+            license_number,
+            subscription_status,
+            branding_colors,
+            created_at,
+            updated_at,
+            contractor_settings (*)
+          `)
+          .eq("id", DEFAULT_CONTRACTOR_ID)
+          .single();
 
-          if (contractorError) throw contractorError;
-          
-          return {
-            id: id,
-            contractor_id: DEFAULT_CONTRACTOR_ID,
-            estimate_data: { groups: [] },
-            estimated_cost: 0,
-            project_title: "New Estimate",
-            project_description: "",
-            project_address: "",
-            user_name: "",
-            user_email: "",
-            user_phone: "",
-            category: "",
-            answers: { answers: {}, questions: [] },
-            preview_data: {},
-            is_test_estimate: false,
-            status: "pending",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            contractors: defaultContractor
-          };
+        if (contractorError) {
+          console.error("Error fetching default contractor:", contractorError);
+          throw contractorError;
         }
-        throw error;
+
+        return {
+          id: id,
+          contractor_id: DEFAULT_CONTRACTOR_ID,
+          estimate_data: { groups: [] },
+          estimated_cost: 0,
+          project_title: "New Estimate",
+          project_description: "",
+          project_address: "",
+          user_name: "",
+          user_email: "",
+          user_phone: "",
+          category: "",
+          answers: { answers: {}, questions: [] },
+          preview_data: {},
+          is_test_estimate: false,
+          status: "pending",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          contractors: defaultContractor
+        };
       }
-      return data;
+
+      return leadData;
     },
   });
 
-  if (isLoading) {
+  const { data: contractor, isLoading: isContractorLoading } = useQuery({
+    queryKey: ["contractor", lead?.contractor_id || DEFAULT_CONTRACTOR_ID],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contractors")
+        .select(`
+          *,
+          contractor_settings (*)
+        `)
+        .eq("id", lead?.contractor_id || DEFAULT_CONTRACTOR_ID)
+        .single();
+
+      if (error) throw error;
+      return data as ContractorWithSettings;
+    },
+    enabled: !isLeadLoading,
+  });
+
+  if (isLeadLoading || isContractorLoading) {
     return <LoadingScreen message="Loading estimate..." />;
   }
 
-  if (!lead) {
+  if (!lead || !contractor) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -129,20 +148,6 @@ const PublicEstimate = () => {
   }
 
   const estimateData = lead.estimate_data as EstimateData;
-  const contractor = lead.contractors as ContractorWithSettings;
-
-  if (!contractor || !contractor.contractor_settings) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-2">Contractor Not Found</h1>
-          <p className="text-muted-foreground">
-            The contractor information for this estimate is not available.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
