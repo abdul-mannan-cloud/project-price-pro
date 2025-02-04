@@ -40,12 +40,12 @@ const constructionImages = [
 ];
 
 const rotatingTexts = [
-  "Kitchen Remodeling",
-  "Bathroom Renovation",
-  "Home Addition",
-  "Basement Finishing",
-  "Deck Building",
-  "Interior Painting",
+  "AI Estimates",
+  "Smart Pricing",
+  "Lead Generation",
+  "Project Planning",
+  "Cost Analysis",
+  "Business Growth",
 ];
 
 const Index = () => {
@@ -53,31 +53,31 @@ const Index = () => {
 
   return (
     <div className="index-page min-h-screen bg-[#F1F1F1] relative overflow-hidden">
-      <div className="relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center space-y-6 max-w-3xl mx-auto">
+      <div className="relative z-10 flex items-center justify-center min-h-screen">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+          <div className="text-center space-y-8 sm:space-y-10">
             <motion.h1 
-              className="text-4xl md:text-6xl font-bold text-black animate-fadeIn"
+              className="text-3xl sm:text-4xl md:text-6xl font-bold text-black leading-tight animate-fadeIn"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              AI Construction Estimate Lead Generation
+              Transform Your Construction Business with{" "}
+              <TextRotate
+                texts={rotatingTexts}
+                mainClassName="text-primary-600"
+                rotationInterval={3000}
+                staggerDuration={0.02}
+              />
             </motion.h1>
-            <motion.div
-              className="text-xl md:text-2xl text-gray-600 animate-fadeIn flex justify-center items-center h-16"
+            <motion.p
+              className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4 leading-relaxed animate-fadeIn"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              Get instant estimates for{" "}
-              <TextRotate
-                texts={rotatingTexts}
-                mainClassName="ml-2 text-primary-600 font-semibold"
-                rotationInterval={3000}
-                staggerDuration={0.02}
-              />
-            </motion.div>
+              Revolutionize your project estimations with powerful AI technology. Generate precise leads, streamline your workflow, and close projects with unprecedented accuracy and efficiency.
+            </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -87,7 +87,7 @@ const Index = () => {
               <Button
                 onClick={() => navigate("/estimate")}
                 size="lg"
-                className="bg-primary text-white hover:bg-primary-600 transition-all duration-300 animate-fadeIn transform hover:scale-105"
+                className="bg-primary text-white hover:bg-primary-600 transition-all duration-300 animate-fadeIn transform hover:scale-105 text-lg px-8 py-6"
               >
                 Start Your Estimate
               </Button>
