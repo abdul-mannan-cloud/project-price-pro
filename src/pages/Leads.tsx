@@ -34,7 +34,30 @@ const Leads = () => {
 
       if (error) throw error;
       
-      return data as Lead[];
+      // Transform the data to ensure it matches the Lead interface
+      return (data || []).map(lead => ({
+        ...lead,
+        answers: lead.answers as { answers: Record<string, any> },
+        estimate_data: lead.estimate_data as {
+          groups?: {
+            name: string;
+            description?: string;
+            subgroups: {
+              name: string;
+              items: {
+                title: string;
+                description?: string;
+                quantity: number;
+                unit?: string;
+                unitAmount: number;
+                totalPrice: number;
+              }[];
+              subtotal: number;
+            }[];
+          }[];
+          projectSummary?: string;
+        }
+      })) as Lead[];
     },
   });
 
