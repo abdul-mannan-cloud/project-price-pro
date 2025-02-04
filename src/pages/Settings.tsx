@@ -3,16 +3,14 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { ColorPicker } from "@/components/ui/color-picker";
-import { Settings as SettingsIcon, Users, LayoutDashboard, Building2, Palette, Calculator, Webhook, Bot, ListChecks, LogOut } from "lucide-react";
+import { Settings as SettingsIcon, Users, LayoutDashboard, LogOut } from "lucide-react";
 import { useState } from "react";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
-import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
 import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
 import { AIRateForm } from "@/components/settings/AIRateForm";
+import { Button } from "@/components/ui/button";
+import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
 
 interface BrandingColors {
   primary: string;
@@ -61,84 +59,6 @@ const Settings = () => {
     }
   };
 
-  const updateSettings = useMutation({
-    mutationFn: async (formData: any) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
-      const { error: contractorError } = await supabase
-        .from("contractors")
-        .update({
-          business_name: formData.businessName,
-          contact_email: formData.contactEmail,
-          contact_phone: formData.contactPhone,
-          business_address: formData.businessAddress,
-          website: formData.website,
-          license_number: formData.licenseNumber,
-          branding_colors: {
-            primary: formData.primaryColor,
-            secondary: formData.secondaryColor
-          }
-        })
-        .eq("id", user.id);
-
-      if (contractorError) throw contractorError;
-
-      const { error: settingsError } = await supabase
-        .from("contractor_settings")
-        .update({
-          minimum_project_cost: formData.minimumProjectCost,
-          markup_percentage: formData.markupPercentage,
-          tax_rate: formData.taxRate,
-          ai_preferences: {
-            rate: formData.aiRate,
-            type: formData.aiType,
-            instructions: formData.aiInstructions
-          }
-        })
-        .eq("id", user.id);
-
-      if (settingsError) throw settingsError;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Settings saved",
-        description: "Your settings have been updated successfully.",
-      });
-      setActiveDialog(null);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to save settings. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSave = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const form = event.target as HTMLFormElement;
-    const formData = new FormData(form);
-    
-    updateSettings.mutate({
-      businessName: formData.get("businessName"),
-      contactEmail: formData.get("contactEmail"),
-      contactPhone: formData.get("contactPhone"),
-      businessAddress: formData.get("businessAddress"),
-      website: formData.get("website"),
-      licenseNumber: formData.get("licenseNumber"),
-      primaryColor: formData.get("primaryColor"),
-      secondaryColor: formData.get("secondaryColor"),
-      minimumProjectCost: formData.get("minimumProjectCost"),
-      markupPercentage: formData.get("markupPercentage"),
-      taxRate: formData.get("taxRate"),
-      aiRate: formData.get("aiRate"),
-      aiType: formData.get("aiType"),
-      aiInstructions: formData.get("aiInstructions"),
-    });
-  };
-
   if (contractorLoading) {
     return (
       <div className="min-h-screen bg-secondary">
@@ -153,7 +73,7 @@ const Settings = () => {
   }
 
   // Get branding colors from contractor data with type assertion
-  const brandingColors = (contractor?.branding_colors as BrandingColors) || {
+  const brandingColors = ((contractor?.branding_colors as unknown) as BrandingColors) || {
     primary: "#6366F1",
     secondary: "#4F46E5"
   };
@@ -174,54 +94,12 @@ const Settings = () => {
           </Button>
         </div>
         
-        <div className="space-y-4">
-          <SettingsMenuItem
-            icon={<Building2 className="h-5 w-5" />}
-            title="Business Information"
-            description="Manage your business details and contact information"
-            onClick={() => setActiveDialog("business")}
-          />
+        <FeaturesSectionWithHoverEffects />
 
-          <SettingsMenuItem
-            icon={<Palette className="h-5 w-5" />}
-            title="Branding"
-            description="Customize your brand colors and appearance"
-            onClick={() => setActiveDialog("branding")}
-          />
-
-          <SettingsMenuItem
-            icon={<Calculator className="h-5 w-5" />}
-            title="Estimate Settings"
-            description="Configure estimate calculations and pricing"
-            onClick={() => setActiveDialog("estimate")}
-          />
-
-          <SettingsMenuItem
-            icon={<Bot className="h-5 w-5" />}
-            title="AI Preferences"
-            description="Configure AI settings for estimate generation"
-            onClick={() => setActiveDialog("ai")}
-          />
-
-          <SettingsMenuItem
-            icon={<ListChecks className="h-5 w-5" />}
-            title="Service Categories"
-            description="Choose which services you want to offer to your customers"
-            onClick={() => setActiveDialog("categories")}
-          />
-
-          <SettingsMenuItem
-            icon={<Webhook className="h-5 w-5" />}
-            title="Webhooks"
-            description="Manage webhook integrations for lead notifications"
-            onClick={() => setActiveDialog("webhooks")}
-          />
-        </div>
-
-        {/* Business Information Dialog */}
+        {/* Settings Dialogs */}
         <SettingsDialog
           title="Business Information"
-          isOpen={activeDialog === "business"}
+          isOpen={activeDialog === "business information"}
           onClose={() => setActiveDialog(null)}
         >
           <form onSubmit={handleSave} className="space-y-4">
@@ -266,98 +144,17 @@ const Settings = () => {
           </form>
         </SettingsDialog>
 
-        {/* Branding Dialog */}
         <SettingsDialog
-          title="Branding"
-          isOpen={activeDialog === "branding"}
+          title="Service Categories"
+          isOpen={activeDialog === "service categories"}
           onClose={() => setActiveDialog(null)}
         >
-          <form onSubmit={handleSave} className="space-y-6">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                Primary Color
-              </label>
-              <ColorPicker
-                color={brandingColors.primary}
-                onChange={(color) => {
-                  document.documentElement.style.setProperty('--primary', color);
-                  document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
-                }}
-              />
-              <input type="hidden" name="primaryColor" value={brandingColors.primary} />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                Secondary Color
-              </label>
-              <ColorPicker
-                color={brandingColors.secondary}
-                onChange={(color) => {
-                  document.documentElement.style.setProperty('--secondary', color);
-                  document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
-                }}
-              />
-              <input type="hidden" name="secondaryColor" value={brandingColors.secondary} />
-            </div>
-            <Button type="submit" disabled={updateSettings.isPending}>
-              {updateSettings.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </form>
+          <ServiceCategoriesSettings />
         </SettingsDialog>
 
-        {/* Estimate Settings Dialog */}
-        <SettingsDialog
-          title="Estimate Settings"
-          isOpen={activeDialog === "estimate"}
-          onClose={() => setActiveDialog(null)}
-        >
-          <form onSubmit={handleSave} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Minimum Project Cost ($)</label>
-              <Input
-                name="minimumProjectCost"
-                type="number"
-                defaultValue={contractor?.contractor_settings?.minimum_project_cost}
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                The minimum cost you're willing to take on for any project
-              </p>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Markup Percentage (%)</label>
-              <Input
-                name="markupPercentage"
-                type="number"
-                defaultValue={contractor?.contractor_settings?.markup_percentage}
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                This markup is applied in the background and is not visible to customers. 
-                It helps cover overhead costs and maintain profit margins.
-              </p>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Tax Rate (%)</label>
-              <Input
-                name="taxRate"
-                type="number"
-                defaultValue={contractor?.contractor_settings?.tax_rate}
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Local tax rate applied to estimates
-              </p>
-            </div>
-            <Button type="submit" disabled={updateSettings.isPending}>
-              {updateSettings.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </form>
-        </SettingsDialog>
-
-        {/* AI Preferences Dialog */}
         <SettingsDialog
           title="AI Preferences"
-          isOpen={activeDialog === "ai"}
+          isOpen={activeDialog === "ai preferences"}
           onClose={() => setActiveDialog(null)}
         >
           <AIRateForm
@@ -372,27 +169,11 @@ const Settings = () => {
           />
         </SettingsDialog>
 
-        {/* Service Categories Dialog */}
-        <SettingsDialog
-          title="Service Categories"
-          isOpen={activeDialog === "categories"}
-          onClose={() => setActiveDialog(null)}
-        >
-          <ServiceCategoriesSettings />
-        </SettingsDialog>
-
-        {/* Webhooks Dialog */}
         <SettingsDialog
           title="Webhooks"
           isOpen={activeDialog === "webhooks"}
           onClose={() => setActiveDialog(null)}
         >
-          <div className="mb-4">
-            <p className="text-sm text-muted-foreground">
-              Webhooks allow you to receive real-time notifications when new leads are created. 
-              You can configure external services to receive these notifications and automate your workflow.
-            </p>
-          </div>
           <WebhookSettings />
         </SettingsDialog>
       </div>
