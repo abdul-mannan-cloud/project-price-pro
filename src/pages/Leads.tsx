@@ -302,21 +302,23 @@ const Leads = () => {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Questions & Answers</h3>
                 <div className="space-y-4">
-                  {Object.entries(selectedLead.answers || {}).map(([category, answers]: [string, any]) => (
+                  {Object.entries(selectedLead.answers?.answers || {}).map(([category, answers]: [string, any]) => (
                     <div key={category} className="bg-muted/50 p-4 rounded-lg">
                       <h4 className="font-medium mb-2">{category}</h4>
                       <div className="space-y-2">
-                        {Object.values(answers).map((qa: any, index: number) => (
-                          <div key={index} className="grid grid-cols-2 gap-4">
-                            <p className="text-sm font-medium">{qa.question}</p>
-                            <p className="text-sm">
-                              {qa.options
-                                .filter((opt: any) => qa.answers.includes(opt.value))
-                                .map((opt: any) => opt.label)
-                                .join(", ")}
-                            </p>
-                          </div>
-                        ))}
+                        {Object.values(answers || {}).map((qa: any, index: number) => {
+                          const selectedOptions = (qa.options || [])
+                            .filter((opt: any) => (qa.answers || []).includes(opt.value))
+                            .map((opt: any) => opt.label)
+                            .join(", ");
+
+                          return (
+                            <div key={index} className="grid grid-cols-2 gap-4">
+                              <p className="text-sm font-medium">{qa.question}</p>
+                              <p className="text-sm">{selectedOptions}</p>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
