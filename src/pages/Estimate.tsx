@@ -59,29 +59,27 @@ const EstimatePage = () => {
             contractor_settings(*)
           `)
           .eq("id", effectiveContractorId)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error("Error fetching contractor:", error);
-          // If the specified contractor is not found, try to fetch the default contractor
-          if (effectiveContractorId !== DEFAULT_CONTRACTOR_ID) {
-            console.log('Falling back to default contractor');
-            const { data: defaultData, error: defaultError } = await supabase
-              .from("contractors")
-              .select(`
-                *,
-                contractor_settings(*)
-              `)
-              .eq("id", DEFAULT_CONTRACTOR_ID)
-              .single();
-
-            if (defaultError) {
-              console.error("Error fetching default contractor:", defaultError);
-              throw defaultError;
-            }
-            return defaultData;
-          }
           throw error;
+        }
+
+        if (!data) {
+          console.log('No contractor found, using default values');
+          return {
+            id: effectiveContractorId,
+            business_name: "Example Company",
+            contact_email: "contact@example.com",
+            contact_phone: "(555) 123-4567",
+            subscription_status: "trial",
+            contractor_settings: {
+              minimum_project_cost: 1000,
+              markup_percentage: 20,
+              tax_rate: 8.5
+            }
+          };
         }
 
         console.log('Successfully fetched contractor:', data);
@@ -115,7 +113,7 @@ const EstimatePage = () => {
       const { data: optionsData, error: optionsError } = await supabase
         .from('Options')
         .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .eq('Key Options', '42e64c9b-53b2-49bd-ad77-995ecb3106c6')
         .single();
 
       if (optionsError) throw optionsError;
@@ -152,7 +150,7 @@ const EstimatePage = () => {
       const { data: optionsData, error: optionsError } = await supabase
         .from('Options')
         .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .eq('Key Options', '42e64c9b-53b2-49bd-ad77-995ecb3106c6')
         .single();
 
       if (optionsError) throw optionsError;
@@ -280,7 +278,7 @@ const EstimatePage = () => {
       const { data, error } = await supabase
         .from('Options')
         .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
+        .eq('Key Options', '42e64c9b-53b2-49bd-ad77-995ecb3106c6')
         .single();
 
       if (error) {
