@@ -54,7 +54,7 @@ const Settings = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [editingEstimateIndex, setEditingEstimateIndex] = useState<number | null>(null);
   const [editingInstructionIndex, setEditingInstructionIndex] = useState<number | null>(null);
-  const [aiEstimateRows, setAiEstimateRows] = useState([{ title: "", rate: "HR", type: "material_labor", instructions: "" }]);
+  const [aiEstimateRows, setAiEstimateRows] = useState([{ title: "", rate: "", rateUnit: "HR", type: "material_labor", instructions: "" }]);
   const [aiInstructionRows, setAiInstructionRows] = useState([{ instruction: "" }]);
   const [isEstimateDialogOpen, setIsEstimateDialogOpen] = useState(false);
   const [isInstructionDialogOpen, setIsInstructionDialogOpen] = useState(false);
