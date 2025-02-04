@@ -98,12 +98,16 @@ serve(async (req) => {
   try {
     const { name, email, estimateData, estimateUrl, contractor }: EmailRequest = await req.json();
 
-    console.log("Sending estimate email to:", { name, email, estimateUrl });
-    console.log("Estimate data:", estimateData);
+    console.log("Received request with:", { name, email, estimateUrl });
+    console.log("Estimate data:", JSON.stringify(estimateData, null, 2));
     console.log("Contractor info:", contractor);
 
     if (!estimateData) {
       throw new Error("No estimate data provided");
+    }
+
+    if (!email) {
+      throw new Error("No email address provided");
     }
 
     const emailResponse = await resend.emails.send({
