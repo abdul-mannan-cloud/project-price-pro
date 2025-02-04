@@ -11,7 +11,7 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
       {/* Customer Information */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
-        <div className="grid gap-4">
+        <div className="grid gap-4 bg-muted/30 p-6 rounded-lg">
           <div>
             <p className="text-sm text-muted-foreground">Name</p>
             <p className="font-medium">{lead.user_name || "Not provided"}</p>
@@ -36,7 +36,7 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
       {/* Project Details */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Project Details</h3>
-        <div className="space-y-4">
+        <div className="space-y-4 bg-muted/30 p-6 rounded-lg">
           <div>
             <p className="text-sm text-muted-foreground">Title</p>
             <p className="font-medium">{lead.project_title}</p>
@@ -61,14 +61,21 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
               <h4 className="font-medium text-primary">{category}</h4>
               <div className="space-y-4">
                 {Object.values(answers).map((qa: any, index: number) => (
-                  <div key={index} className="bg-muted/30 p-4 rounded-lg">
-                    <p className="font-medium mb-2">{qa.question}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {qa.options
-                        ?.filter((opt: any) => qa.answers?.includes(opt.value))
-                        .map((opt: any) => opt.label)
-                        .join(", ")}
-                    </p>
+                  <div key={index} className="bg-muted/30 p-6 rounded-lg">
+                    <p className="font-medium mb-3">{qa.question}</p>
+                    <div className="space-y-2">
+                      {qa.answers?.map((answer: string, i: number) => {
+                        const option = qa.options?.find((opt: any) => opt.value === answer);
+                        return (
+                          <div key={i} className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-primary/60" />
+                            <p className="text-muted-foreground">
+                              {option?.label || answer}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
