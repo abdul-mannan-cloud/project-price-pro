@@ -4,7 +4,8 @@ import { cn } from '@/lib/utils';
 import { IconLoader2, TablerIcon } from '@tabler/icons-react';
 import { motion, MotionProps } from 'framer-motion';
 
-const TABLER_ICON_STYLE = { size: 14 };
+const ICON_SIZE = 14;
+
 const buttonVariants = cva(
   'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 gap-2 border',
   {
@@ -80,15 +81,15 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         {...props}>
         {isLoading ? (
-          <IconLoader2 {...TABLER_ICON_STYLE} className="animate-spin" />
+          <IconLoader2 size={ICON_SIZE} className="animate-spin" />
         ) : (
           <></>
         )}
         {!isLoading && supportIcon && (
-          <SupportIconRender {...TABLER_ICON_STYLE} />
+          <SupportIconRender size={ICON_SIZE} />
         )}
         {children}
-        {leadingIcon && <LeadingIconRender {...TABLER_ICON_STYLE} />}
+        {leadingIcon && <LeadingIconRender size={ICON_SIZE} />}
       </motion.button>
     );
   },
