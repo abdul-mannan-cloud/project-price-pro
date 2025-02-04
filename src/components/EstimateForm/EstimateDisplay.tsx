@@ -99,226 +99,227 @@ export const EstimateDisplay = ({
 
   return (
     <Card className={cn(
-      "transition-all duration-500 max-h-[80vh] overflow-y-auto",
-      "w-full mx-auto",
-      isMobile ? "rounded-none p-4" : "max-w-6xl p-8",
+      "transition-all duration-500",
+      "w-full h-full flex flex-col",
+      isMobile ? "rounded-none" : "rounded-xl",
       isBlurred && "blur-md pointer-events-none"
     )}>
-      {/* Company Header */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b gap-4">
-        <div className="flex items-center space-x-4">
-          {contractor?.business_logo_url && (
-            <img 
-              src={contractor.business_logo_url} 
-              alt={`${companyInfo.business_name} logo`}
-              className="w-12 h-12 md:w-16 md:h-16 object-contain"
-            />
-          )}
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold">{companyInfo.business_name}</h1>
-            <p className="text-sm text-muted-foreground">{companyInfo.contact_email}</p>
-            <p className="text-sm text-muted-foreground">{companyInfo.contact_phone}</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-muted-foreground">Date</p>
-          <p className="font-medium">{new Date().toLocaleDateString()}</p>
-        </div>
-      </div>
-
-      {/* Project Summary */}
-      {projectSummary && (
-        <div className="mb-8 bg-muted/50 p-4 rounded-lg">
-          <h2 className="text-lg font-semibold mb-2">Project Overview</h2>
-          <p className="text-sm text-muted-foreground">{projectSummary}</p>
-        </div>
-      )}
-
-      {/* Estimate Groups */}
-      <div className="space-y-6">
-        {groups.map((group, groupIndex) => (
-          <div key={groupIndex} className="bg-gray-50 p-4 md:p-6 rounded-lg">
-            <div className="mb-4">
-              {isEditable ? (
-                <input
-                  type="text"
-                  value={group.name}
-                  onChange={(e) => {
-                    const newGroups = [...groups];
-                    newGroups[groupIndex].name = e.target.value;
-                    onEstimateChange?.({ groups: newGroups });
-                  }}
-                  className="text-lg font-semibold bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
-                />
-              ) : (
-                <h3 className="text-lg font-semibold">{group.name}</h3>
-              )}
-              {group.description && (
-                <p className="text-sm text-muted-foreground mt-1">{group.description}</p>
-              )}
+      <div className="flex-1 overflow-y-auto">
+        <div className={cn(
+          "w-full mx-auto",
+          isMobile ? "p-4" : "max-w-6xl p-8"
+        )}>
+          {/* Company Header */}
+          <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b gap-4">
+            {contractor?.business_logo_url && (
+              <img 
+                src={contractor.business_logo_url} 
+                alt={`${companyInfo.business_name} logo`}
+                className="w-12 h-12 md:w-16 md:h-16 object-contain"
+              />
+            )}
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold">{companyInfo.business_name}</h1>
+              <p className="text-sm text-muted-foreground">{companyInfo.contact_email}</p>
+              <p className="text-sm text-muted-foreground">{companyInfo.contact_phone}</p>
             </div>
+          </div>
 
-            {/* Subgroups */}
-            <div className="space-y-4">
-              {group.subgroups.map((subgroup, subIndex) => (
-                <div key={subIndex} className="bg-white p-4 rounded-md shadow-sm">
+          {/* Project Summary */}
+          {projectSummary && (
+            <div className="mb-8 bg-muted/50 p-4 rounded-lg">
+              <h2 className="text-lg font-semibold mb-2">Project Overview</h2>
+              <p className="text-sm text-muted-foreground">{projectSummary}</p>
+            </div>
+          )}
+
+          {/* Estimate Groups */}
+          <div className="space-y-6">
+            {groups.map((group, groupIndex) => (
+              <div key={groupIndex} className="bg-gray-50 p-4 md:p-6 rounded-lg">
+                <div className="mb-4">
                   {isEditable ? (
                     <input
                       type="text"
-                      value={subgroup.name}
+                      value={group.name}
                       onChange={(e) => {
                         const newGroups = [...groups];
-                        newGroups[groupIndex].subgroups[subIndex].name = e.target.value;
+                        newGroups[groupIndex].name = e.target.value;
                         onEstimateChange?.({ groups: newGroups });
                       }}
-                      className="font-medium text-primary mb-3 bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
+                      className="text-lg font-semibold bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
                     />
                   ) : (
-                    <h4 className="font-medium mb-3 text-primary">{subgroup.name}</h4>
+                    <h3 className="text-lg font-semibold">{group.name}</h3>
                   )}
-                  
-                  {/* Line Items */}
-                  <div className="overflow-x-auto">
-                    {/* Desktop Table View */}
-                    <table className="w-full hidden md:table">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Item</th>
-                          <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Description</th>
-                          <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Qty</th>
-                          <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Unit Price</th>
-                          <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Total</th>
-                          {isEditable && <th className="w-16"></th>}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {subgroup.items.map((item, itemIndex) => (
-                          <tr key={itemIndex} className="border-b border-gray-100">
-                            <td className="py-3 px-4">
-                              <span className="font-medium">{formatItemTitle(item.title, item.unit)}</span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="text-sm text-muted-foreground">{item.description}</span>
-                            </td>
-                            <td className="py-3 px-4 text-right">{item.quantity}</td>
-                            <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
-                            <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
-                            {isEditable && (
-                              <td className="py-3 px-4">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => setSelectedItem({
-                                    groupIndex,
-                                    subgroupIndex: subIndex,
-                                    itemIndex,
-                                    item
-                                  })}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    {/* Mobile View */}
-                    <div className="md:hidden space-y-4">
-                      {subgroup.items.map((item, itemIndex) => (
-                        <div
-                          key={itemIndex}
-                          className="border-b border-gray-100 pb-4 last:border-0"
-                          onClick={() => isEditable && setSelectedItem({
-                            groupIndex,
-                            subgroupIndex: subIndex,
-                            itemIndex,
-                            item
-                          })}
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex-1">
-                              <p className="font-medium">{formatItemTitle(item.title, item.unit)}</p>
-                              {item.description && (
-                                <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                              )}
-                            </div>
-                            {isEditable && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 shrink-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedItem({
-                                    groupIndex,
-                                    subgroupIndex: subIndex,
-                                    itemIndex,
-                                    item
-                                  });
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-3 gap-2 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Qty:</span>
-                              <span className="ml-1 font-medium">{item.quantity}</span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Price:</span>
-                              <span className="ml-1 font-medium">${item.unitAmount.toFixed(2)}</span>
-                            </div>
-                            <div className="text-right">
-                              <span className="font-medium">${item.totalPrice.toFixed(2)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Subgroup Subtotal */}
-                  <div className="mt-4 pt-4 border-t flex justify-between items-center">
-                    <p className="font-medium">Subtotal for {subgroup.name}</p>
-                    <p className="font-semibold">${subgroup.subtotal.toFixed(2)}</p>
-                  </div>
+                  {group.description && (
+                    <p className="text-sm text-muted-foreground mt-1">{group.description}</p>
+                  )}
                 </div>
-              ))}
-            </div>
 
-            {/* Group Subtotal */}
-            <div className="mt-6 pt-4 border-t flex justify-between items-center">
-              <p className="font-medium">Subtotal for {group.name}</p>
-              <p className="font-semibold">
-                ${group.subgroups.reduce((sum, subgroup) => sum + subgroup.subtotal, 0).toFixed(2)}
-              </p>
+                {/* Subgroups */}
+                <div className="space-y-4">
+                  {group.subgroups.map((subgroup, subIndex) => (
+                    <div key={subIndex} className="bg-white p-4 rounded-md shadow-sm">
+                      {isEditable ? (
+                        <input
+                          type="text"
+                          value={subgroup.name}
+                          onChange={(e) => {
+                            const newGroups = [...groups];
+                            newGroups[groupIndex].subgroups[subIndex].name = e.target.value;
+                            onEstimateChange?.({ groups: newGroups });
+                          }}
+                          className="font-medium text-primary mb-3 bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
+                        />
+                      ) : (
+                        <h4 className="font-medium mb-3 text-primary">{subgroup.name}</h4>
+                      )}
+                      
+                      {/* Line Items */}
+                      <div className="overflow-x-auto">
+                        {/* Desktop Table View */}
+                        <table className="w-full hidden md:table">
+                          <thead>
+                            <tr className="border-b border-gray-200">
+                              <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Item</th>
+                              <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Description</th>
+                              <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Qty</th>
+                              <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Unit Price</th>
+                              <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Total</th>
+                              {isEditable && <th className="w-16"></th>}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {subgroup.items.map((item, itemIndex) => (
+                              <tr key={itemIndex} className="border-b border-gray-100">
+                                <td className="py-3 px-4">
+                                  <span className="font-medium">{formatItemTitle(item.title, item.unit)}</span>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className="text-sm text-muted-foreground">{item.description}</span>
+                                </td>
+                                <td className="py-3 px-4 text-right">{item.quantity}</td>
+                                <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
+                                <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
+                                {isEditable && (
+                                  <td className="py-3 px-4">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => setSelectedItem({
+                                        groupIndex,
+                                        subgroupIndex: subIndex,
+                                        itemIndex,
+                                        item
+                                      })}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </td>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+
+                        {/* Mobile View */}
+                        <div className="md:hidden space-y-4">
+                          {subgroup.items.map((item, itemIndex) => (
+                            <div
+                              key={itemIndex}
+                              className="border-b border-gray-100 pb-4 last:border-0"
+                              onClick={() => isEditable && setSelectedItem({
+                                groupIndex,
+                                subgroupIndex: subIndex,
+                                itemIndex,
+                                item
+                              })}
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex-1">
+                                  <p className="font-medium">{formatItemTitle(item.title, item.unit)}</p>
+                                  {item.description && (
+                                    <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                                  )}
+                                </div>
+                                {isEditable && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 shrink-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedItem({
+                                        groupIndex,
+                                        subgroupIndex: subIndex,
+                                        itemIndex,
+                                        item
+                                      });
+                                    }}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">Qty:</span>
+                                  <span className="ml-1 font-medium">{item.quantity}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Price:</span>
+                                  <span className="ml-1 font-medium">${item.unitAmount.toFixed(2)}</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="font-medium">${item.totalPrice.toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Subgroup Subtotal */}
+                      <div className="mt-4 pt-4 border-t flex justify-between items-center">
+                        <p className="font-medium">Subtotal for {subgroup.name}</p>
+                        <p className="font-semibold">${subgroup.subtotal.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Group Subtotal */}
+                <div className="mt-6 pt-4 border-t flex justify-between items-center">
+                  <p className="font-medium">Subtotal for {group.name}</p>
+                  <p className="font-semibold">
+                    ${group.subgroups.reduce((sum, subgroup) => sum + subgroup.subtotal, 0).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Total Section */}
+          <div className="mt-8 pt-6 border-t space-y-4">
+            <div className="flex justify-between items-center text-muted-foreground">
+              <p>Subtotal</p>
+              <p>${(totalCost * 0.8).toFixed(2)}</p>
+            </div>
+            <div className="flex justify-between items-center text-muted-foreground">
+              <p>Tax (8.5%)</p>
+              <p>${(totalCost * 0.085).toFixed(2)}</p>
+            </div>
+            <div className="flex justify-between items-center text-muted-foreground">
+              <p>Service Fee (20%)</p>
+              <p>${(totalCost * 0.2).toFixed(2)}</p>
+            </div>
+            <div className="flex justify-between items-center pt-4 border-t">
+              <p className="text-xl font-semibold">Total Estimate</p>
+              <p className="text-2xl font-bold">${totalCost.toFixed(2)}</p>
             </div>
           </div>
-        ))}
-      </div>
-      
-      {/* Total Section */}
-      <div className="mt-8 pt-6 border-t space-y-4">
-        <div className="flex justify-between items-center text-muted-foreground">
-          <p>Subtotal</p>
-          <p>${(totalCost * 0.8).toFixed(2)}</p>
-        </div>
-        <div className="flex justify-between items-center text-muted-foreground">
-          <p>Tax (8.5%)</p>
-          <p>${(totalCost * 0.085).toFixed(2)}</p>
-        </div>
-        <div className="flex justify-between items-center text-muted-foreground">
-          <p>Service Fee (20%)</p>
-          <p>${(totalCost * 0.2).toFixed(2)}</p>
-        </div>
-        <div className="flex justify-between items-center pt-4 border-t">
-          <p className="text-xl font-semibold">Total Estimate</p>
-          <p className="text-2xl font-bold">${totalCost.toFixed(2)}</p>
         </div>
       </div>
 
