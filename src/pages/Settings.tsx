@@ -5,61 +5,17 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { LayoutDashboard, Users, Settings as SettingsIcon, PlusCircle, MinusCircle, Edit, Trash } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { CustomSelect } from "@/components/ui/custom-select";
-import { Textarea } from "@/components/ui/textarea";
+import { Settings as SettingsIcon, Users, LayoutDashboard, Building2, Palette, Calculator, Webhook } from "lucide-react";
 import { useState } from "react";
-import { Json } from "@/integrations/supabase/types";
-
-const rateOptions = [
-  { value: "CF", label: "Cubic Feet (CF)" },
-  { value: "CY", label: "Cubic Yards (CY)" },
-  { value: "DY", label: "Day (DY)" },
-  { value: "EA", label: "Each (EA)" },
-  { value: "GAL", label: "Gallon (Gal)" },
-  { value: "HR", label: "Hour (HR)" },
-  { value: "IN", label: "Inch (IN)" },
-  { value: "LBS", label: "Pounds (LBS)" },
-  { value: "LF", label: "Linear Foot (LF)" },
-  { value: "LS", label: "Lump Sum (LS)" },
-  { value: "MO", label: "Month (MO)" },
-  { value: "SF", label: "Square Foot (SF)" },
-  { value: "SHT", label: "Sheet (SHT)" },
-  { value: "SQ", label: "Square (SQ)" },
-  { value: "SY", label: "Square Yards (SY)" },
-  { value: "TONS", label: "Tons (TONS)" },
-  { value: "WK", label: "Week (WK)" },
-  { value: "WY", label: "Week (WY)" },
-  { value: "YD", label: "Yard (YD)" },
-];
-
-const typeOptions = [
-  { value: "material_labor", label: "Material + Labor" },
-  { value: "material", label: "Material" },
-  { value: "labor", label: "Labor" },
-];
-
-interface BrandingColors {
-  primary: string;
-  secondary: string;
-}
+import { SettingsDialog } from "@/components/settings/SettingsDialog";
+import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
+import { WebhookSettings } from "@/components/settings/WebhookSettings";
 
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [editingEstimateIndex, setEditingEstimateIndex] = useState<number | null>(null);
-  const [editingInstructionIndex, setEditingInstructionIndex] = useState<number | null>(null);
-  const [aiEstimateRows, setAiEstimateRows] = useState([{ title: "", rate: "", rateUnit: "HR", type: "material_labor", instructions: "" }]);
-  const [aiInstructionRows, setAiInstructionRows] = useState([{ instruction: "" }]);
-  const [isEstimateDialogOpen, setIsEstimateDialogOpen] = useState(false);
-  const [isInstructionDialogOpen, setIsInstructionDialogOpen] = useState(false);
-  const [currentEstimate, setCurrentEstimate] = useState({ title: "", rate: "", rateUnit: "HR", type: "material_labor", instructions: "" });
-  const [currentInstruction, setCurrentInstruction] = useState({ instruction: "" });
+  const [activeDialog, setActiveDialog] = useState<string | null>(null);
 
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -82,20 +38,6 @@ const Settings = () => {
 
       if (error) throw error;
       return data;
-    },
-  });
-
-  // Fetch available categories
-  const { data: categories } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("Options")
-        .select("*")
-        .single();
-
-      if (error) throw error;
-      return Object.keys(data).filter(key => key !== "Key Options");
     },
   });
 
@@ -128,12 +70,6 @@ const Settings = () => {
           minimum_project_cost: formData.minimumProjectCost,
           markup_percentage: formData.markupPercentage,
           tax_rate: formData.taxRate,
-          excluded_categories: selectedCategories,
-          ai_preferences: {
-            rate: currentEstimate.rate,
-            type: currentEstimate.type,
-            instructions: currentEstimate.instructions
-          }
         })
         .eq("id", user.id);
 
@@ -144,6 +80,7 @@ const Settings = () => {
         title: "Settings saved",
         description: "Your settings have been updated successfully.",
       });
+      setActiveDialog(null);
     },
     onError: (error) => {
       toast({
@@ -174,67 +111,20 @@ const Settings = () => {
     });
   };
 
-  const handleEditEstimate = (index: number) => {
-    setCurrentEstimate(aiEstimateRows[index]);
-    setEditingEstimateIndex(index);
-    setIsEstimateDialogOpen(true);
-  };
-
-  const handleEditInstruction = (index: number) => {
-    setCurrentInstruction(aiInstructionRows[index]);
-    setEditingInstructionIndex(index);
-    setIsInstructionDialogOpen(true);
-  };
-
-  const handleSaveEstimate = () => {
-    if (editingEstimateIndex !== null) {
-      const newRows = [...aiEstimateRows];
-      newRows[editingEstimateIndex] = currentEstimate;
-      setAiEstimateRows(newRows);
-    } else {
-      setAiEstimateRows([...aiEstimateRows, currentEstimate]);
-    }
-    setIsEstimateDialogOpen(false);
-    setEditingEstimateIndex(null);
-    setCurrentEstimate({ title: "", rate: "", rateUnit: "HR", type: "material_labor", instructions: "" });
-  };
-
-  const handleSaveInstruction = () => {
-    if (editingInstructionIndex !== null) {
-      const newRows = [...aiInstructionRows];
-      newRows[editingInstructionIndex] = currentInstruction;
-      setAiInstructionRows(newRows);
-    } else {
-      setAiInstructionRows([...aiInstructionRows, currentInstruction]);
-    }
-    setIsInstructionDialogOpen(false);
-    setEditingInstructionIndex(null);
-    setCurrentInstruction({ instruction: "" });
-  };
-
-  const handleDeleteEstimate = (index: number) => {
-    setAiEstimateRows(aiEstimateRows.filter((_, i) => i !== index));
-  };
-
-  const handleDeleteInstruction = (index: number) => {
-    setAiInstructionRows(aiInstructionRows.filter((_, i) => i !== index));
-  };
-
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  // Safely type cast the branding_colors
-  const defaultColors: BrandingColors = {
+  const defaultColors = {
     primary: "#007AFF",
     secondary: "#F5F5F7"
   };
 
-  const brandingColors: BrandingColors = 
+  const brandingColors = 
     contractor?.branding_colors && 
     typeof contractor.branding_colors === 'object' && 
     !Array.isArray(contractor.branding_colors) && 
-    contractor.branding_colors as { [key: string]: Json } &&
+    contractor.branding_colors as { [key: string]: any } &&
     'primary' in contractor.branding_colors && 
     'secondary' in contractor.branding_colors
       ? {
@@ -246,340 +136,166 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-secondary">
       <NavBar items={navItems} />
-      <form onSubmit={handleSave} className="container mx-auto py-8">
-        <div className="space-y-6">
-          <h1 className="text-2xl font-semibold">Settings</h1>
-          
-          <Card className="p-6 bg-white">
-            <h2 className="text-lg font-medium mb-2">Business Information</h2>
-            <p className="text-sm text-muted-foreground mb-4">Manage your business details and contact information.</p>
-            <div className="space-y-4">
-              <div className="form-group">
-                <Input
-                  label="Business Name"
-                  defaultValue={contractor?.business_name}
-                  name="businessName"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <Input
-                  label="Contact Email"
-                  defaultValue={contractor?.contact_email}
-                  name="contactEmail"
-                  type="email"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <Input
-                  label="Contact Phone"
-                  defaultValue={contractor?.contact_phone}
-                  name="contactPhone"
-                  type="tel"
-                />
-              </div>
-              <div className="form-group">
-                <Input
-                  label="Business Address"
-                  defaultValue={contractor?.business_address}
-                  name="businessAddress"
-                />
-              </div>
-              <div className="form-group">
-                <Input
-                  label="Website"
-                  defaultValue={contractor?.website}
-                  name="website"
-                  type="url"
-                />
-              </div>
-              <div className="form-group">
-                <Input
-                  label="License Number"
-                  defaultValue={contractor?.license_number}
-                  name="licenseNumber"
-                />
-              </div>
-            </div>
-          </Card>
+      <div className="container mx-auto py-8">
+        <h1 className="text-2xl font-semibold mb-6">Settings</h1>
+        
+        <div className="space-y-4">
+          <SettingsMenuItem
+            icon={<Building2 className="h-5 w-5" />}
+            title="Business Information"
+            description="Manage your business details and contact information"
+            onClick={() => setActiveDialog("business")}
+          />
 
-          <Card className="p-6 bg-white">
-            <h2 className="text-lg font-medium mb-2">Branding</h2>
-            <p className="text-sm text-muted-foreground mb-4">Customize your brand colors to match your business identity.</p>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Primary Color
-                </label>
-                <ColorPicker
-                  color={brandingColors.primary}
-                  onChange={(color) => {
-                    // Update primary color in CSS variables
-                    document.documentElement.style.setProperty('--primary', color);
-                    document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
-                  }}
-                />
-                <input type="hidden" name="primaryColor" value={brandingColors.primary} />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Secondary Color
-                </label>
-                <ColorPicker
-                  color={brandingColors.secondary}
-                  onChange={(color) => {
-                    // Update secondary color in CSS variables
-                    document.documentElement.style.setProperty('--secondary', color);
-                    document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
-                  }}
-                />
-                <input type="hidden" name="secondaryColor" value={brandingColors.secondary} />
-              </div>
-            </div>
-          </Card>
+          <SettingsMenuItem
+            icon={<Palette className="h-5 w-5" />}
+            title="Branding"
+            description="Customize your brand colors and appearance"
+            onClick={() => setActiveDialog("branding")}
+          />
 
-          <Card className="p-6 bg-white">
-            <h2 className="text-lg font-medium mb-2">Estimate Settings</h2>
-            <p className="text-sm text-muted-foreground mb-4">Configure your estimate calculations. Note: Markup percentages are not visible to leads.</p>
-            <div className="space-y-4">
-              <div className="form-group">
-                <Input
-                  label="Minimum Project Cost ($)"
-                  defaultValue={contractor?.contractor_settings?.minimum_project_cost}
-                  name="minimumProjectCost"
-                  type="number"
-                />
-              </div>
-              <div className="form-group">
-                <Input
-                  label="Markup Percentage (%)"
-                  defaultValue={contractor?.contractor_settings?.markup_percentage}
-                  name="markupPercentage"
-                  type="number"
-                />
-              </div>
-              <div className="form-group">
-                <Input
-                  label="Tax Rate (%)"
-                  defaultValue={contractor?.contractor_settings?.tax_rate}
-                  name="taxRate"
-                  type="number"
-                />
-              </div>
-              
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full">
-                    Manage Service Categories
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Select Available Services</DialogTitle>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Choose which service categories you want to offer. Your customers will only see and answer questions for the categories you select.
-                    </p>
-                  </DialogHeader>
-                  <div className="grid grid-cols-2 gap-4 py-4">
-                    {categories?.map((category) => (
-                      <div key={category} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={category}
-                          checked={!selectedCategories.includes(category)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedCategories(selectedCategories.filter(c => c !== category));
-                            } else {
-                              setSelectedCategories([...selectedCategories, category]);
-                            }
-                          }}
-                        />
-                        <label htmlFor={category} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          {category}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </Card>
+          <SettingsMenuItem
+            icon={<Calculator className="h-5 w-5" />}
+            title="Estimate Settings"
+            description="Configure estimate calculations and pricing"
+            onClick={() => setActiveDialog("estimate")}
+          />
 
-          <Card className="p-6 bg-white">
-            <h2 className="text-lg font-medium mb-2">AI Estimate Preferences</h2>
-            <p className="text-sm text-muted-foreground mb-4">Configure how AI generates estimates for your services.</p>
-            <div className="space-y-4">
-              <div className="space-y-4">
-                {aiEstimateRows.map((row, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{row.title || 'Untitled Estimate'}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Rate: {row.rate}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Type: {row.type}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEditEstimate(index)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteEstimate(index)}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setEditingEstimateIndex(null);
-                    setCurrentEstimate({ title: "", rate: "", rateUnit: "HR", type: "material_labor", instructions: "" });
-                    setIsEstimateDialogOpen(true);
-                  }}
-                  className="w-full"
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Add Estimate Setting
-                </Button>
-              </div>
+          <SettingsMenuItem
+            icon={<Webhook className="h-5 w-5" />}
+            title="Webhooks"
+            description="Manage webhook integrations for lead notifications"
+            onClick={() => setActiveDialog("webhooks")}
+          />
+        </div>
 
-              <Dialog open={isEstimateDialogOpen} onOpenChange={setIsEstimateDialogOpen}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingEstimateIndex !== null ? 'Edit Estimate Setting' : 'Add Estimate Setting'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <Input
-                      label="Title"
-                      value={currentEstimate.title}
-                      onChange={(e) => setCurrentEstimate({ ...currentEstimate, title: e.target.value })}
-                    />
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Rate</label>
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <Input
-                            type="number"
-                            placeholder="Enter rate"
-                            value={currentEstimate.rate}
-                            onChange={(e) => setCurrentEstimate({ ...currentEstimate, rate: e.target.value })}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <CustomSelect
-                            label="Unit"
-                            value={currentEstimate.rateUnit}
-                            onValueChange={(value) => setCurrentEstimate({ ...currentEstimate, rateUnit: value })}
-                            options={rateOptions}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <CustomSelect
-                      label="Type"
-                      value={currentEstimate.type}
-                      onValueChange={(value) => setCurrentEstimate({ ...currentEstimate, type: value })}
-                      options={typeOptions}
-                    />
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Tell AI how to use this rate (optional)</label>
-                      <Textarea
-                        placeholder="Enter instructions for AI"
-                        value={currentEstimate.instructions || ''}
-                        onChange={(e) => setCurrentEstimate({ ...currentEstimate, instructions: e.target.value })}
-                        className="min-h-[100px]"
-                      />
-                    </div>
-                    <Button type="button" onClick={handleSaveEstimate} className="w-full">
-                      Save
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <div className="space-y-4">
-                {aiInstructionRows.map((row, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <p className="text-sm">{row.instruction || 'Empty instruction'}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEditInstruction(index)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteInstruction(index)}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setEditingInstructionIndex(null);
-                    setCurrentInstruction({ instruction: "" });
-                    setIsInstructionDialogOpen(true);
-                  }}
-                  className="w-full"
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Add Instruction
-                </Button>
-              </div>
-
-              <Dialog open={isInstructionDialogOpen} onOpenChange={setIsInstructionDialogOpen}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingInstructionIndex !== null ? 'Edit Instruction' : 'Add Instruction'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <Textarea
-                      placeholder="Enter specific instructions for AI estimates"
-                      value={currentInstruction.instruction}
-                      onChange={(e) => setCurrentInstruction({ instruction: e.target.value })}
-                      className="min-h-[100px]"
-                    />
-                    <Button type="button" onClick={handleSaveInstruction} className="w-full">
-                      Save
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </Card>
-
-          <div className="flex justify-end">
+        {/* Business Information Dialog */}
+        <SettingsDialog
+          title="Business Information"
+          isOpen={activeDialog === "business"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <form onSubmit={handleSave} className="space-y-4">
+            <Input
+              label="Business Name"
+              name="businessName"
+              defaultValue={contractor?.business_name}
+              required
+            />
+            <Input
+              label="Contact Email"
+              name="contactEmail"
+              type="email"
+              defaultValue={contractor?.contact_email}
+              required
+            />
+            <Input
+              label="Contact Phone"
+              name="contactPhone"
+              type="tel"
+              defaultValue={contractor?.contact_phone}
+            />
+            <Input
+              label="Business Address"
+              name="businessAddress"
+              defaultValue={contractor?.business_address}
+            />
+            <Input
+              label="Website"
+              name="website"
+              type="url"
+              defaultValue={contractor?.website}
+            />
+            <Input
+              label="License Number"
+              name="licenseNumber"
+              defaultValue={contractor?.license_number}
+            />
             <Button type="submit" disabled={updateSettings.isPending}>
               {updateSettings.isPending ? "Saving..." : "Save Changes"}
             </Button>
-          </div>
-        </div>
-      </form>
+          </form>
+        </SettingsDialog>
+
+        {/* Branding Dialog */}
+        <SettingsDialog
+          title="Branding"
+          isOpen={activeDialog === "branding"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <form onSubmit={handleSave} className="space-y-6">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                Primary Color
+              </label>
+              <ColorPicker
+                color={brandingColors.primary}
+                onChange={(color) => {
+                  document.documentElement.style.setProperty('--primary', color);
+                  document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
+                }}
+              />
+              <input type="hidden" name="primaryColor" value={brandingColors.primary} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                Secondary Color
+              </label>
+              <ColorPicker
+                color={brandingColors.secondary}
+                onChange={(color) => {
+                  document.documentElement.style.setProperty('--secondary', color);
+                  document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
+                }}
+              />
+              <input type="hidden" name="secondaryColor" value={brandingColors.secondary} />
+            </div>
+            <Button type="submit" disabled={updateSettings.isPending}>
+              {updateSettings.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </form>
+        </SettingsDialog>
+
+        {/* Estimate Settings Dialog */}
+        <SettingsDialog
+          title="Estimate Settings"
+          isOpen={activeDialog === "estimate"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <form onSubmit={handleSave} className="space-y-4">
+            <Input
+              label="Minimum Project Cost ($)"
+              name="minimumProjectCost"
+              type="number"
+              defaultValue={contractor?.contractor_settings?.minimum_project_cost}
+            />
+            <Input
+              label="Markup Percentage (%)"
+              name="markupPercentage"
+              type="number"
+              defaultValue={contractor?.contractor_settings?.markup_percentage}
+            />
+            <Input
+              label="Tax Rate (%)"
+              name="taxRate"
+              type="number"
+              defaultValue={contractor?.contractor_settings?.tax_rate}
+            />
+            <Button type="submit" disabled={updateSettings.isPending}>
+              {updateSettings.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </form>
+        </SettingsDialog>
+
+        {/* Webhooks Dialog */}
+        <SettingsDialog
+          title="Webhooks"
+          isOpen={activeDialog === "webhooks"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <WebhookSettings />
+        </SettingsDialog>
+      </div>
     </div>
   );
 };
