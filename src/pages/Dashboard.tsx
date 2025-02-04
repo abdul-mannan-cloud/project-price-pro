@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { LayoutDashboard, Users, Settings, Copy, LineChart, FileText, Bell, Calendar } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Copy, LineChart, FileText, Bell, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
 
@@ -88,7 +88,6 @@ const Dashboard = () => {
 
   const totalLeads = leads.length;
   const totalEstimatedValue = leads.reduce((sum, lead) => sum + (lead.estimated_cost || 0), 0);
-  const averageEstimate = totalLeads > 0 ? totalEstimatedValue / totalLeads : 0;
 
   const features = [
     {
@@ -110,22 +109,52 @@ const Dashboard = () => {
       className: "lg:col-start-2 lg:col-end-3 lg:row-start-1 lg:row-end-4",
     },
     {
-      Icon: Calendar,
-      name: "Average Estimate",
-      description: `Average estimate value: $${averageEstimate.toLocaleString()}`,
-      href: "/leads",
-      cta: "Learn more",
+      Icon: Copy,
+      name: "Preview Estimator",
+      description: "Preview your estimator or copy the link to share",
+      href: `/estimate/${contractor.id}`,
+      cta: "Preview",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
       className: "lg:col-start-1 lg:col-end-2 lg:row-start-3 lg:row-end-4",
+      actions: (
+        <div className="flex gap-2 mt-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={(e) => {
+              e.preventDefault();
+              const estimatorUrl = `${window.location.origin}/estimate/${contractor.id}`;
+              navigator.clipboard.writeText(estimatorUrl);
+              toast({
+                title: "Link copied!",
+                description: "The estimator link has been copied to your clipboard.",
+              });
+            }}
+          >
+            <Copy className="w-4 h-4 mr-2" />
+            Copy Link
+          </Button>
+        </div>
+      ),
     },
     {
-      Icon: Bell,
+      Icon: History,
       name: "Recent Activity",
-      description: "View your most recent leads and estimates",
+      description: "Latest updates and notifications",
       href: "/leads",
-      cta: "View activity",
+      cta: "View all",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
       className: "lg:col-start-3 lg:col-end-4 lg:row-start-1 lg:row-end-4",
+      content: (
+        <div className="mt-4 space-y-3">
+          {leads.slice(0, 3).map((lead) => (
+            <div key={lead.id} className="flex items-center gap-2 text-sm text-gray-600">
+              <Bell className="w-4 h-4" />
+              <span>New lead: {lead.project_title}</span>
+            </div>
+          ))}
+        </div>
+      ),
     },
   ];
 
@@ -135,29 +164,6 @@ const Dashboard = () => {
       <div className="container mx-auto py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-semibold">Welcome, {contractor.business_name}</h1>
-          <div className="flex gap-4">
-            <Button 
-              onClick={() => {
-                const estimatorUrl = `${window.location.origin}/estimate/${contractor.id}`;
-                navigator.clipboard.writeText(estimatorUrl);
-                toast({
-                  title: "Link copied!",
-                  description: "The estimator link has been copied to your clipboard.",
-                });
-              }}
-              className="gap-2"
-              variant="outline"
-            >
-              <Copy className="w-4 h-4" />
-              Copy Link
-            </Button>
-            <Button 
-              onClick={() => navigate(`/estimate/${contractor.id}`)}
-              className="gap-2"
-            >
-              Preview Estimator
-            </Button>
-          </div>
         </div>
 
         <BentoGrid className="lg:grid-rows-3">

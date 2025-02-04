@@ -1,53 +1,51 @@
-import { ReactNode } from "react";
+import React from "react";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-const BentoGrid = ({
-  children,
-  className,
-}: {
-  children: ReactNode;
+interface BentoGridProps {
+  children: React.ReactNode;
   className?: string;
-}) => {
+}
+
+interface BentoCardProps {
+  name: string;
+  description: string;
+  Icon: React.ComponentType<any>;
+  href: string;
+  cta: string;
+  className?: string;
+  background?: React.ReactNode;
+  actions?: React.ReactNode;
+  content?: React.ReactNode;
+}
+
+const BentoGrid = ({ children, className }: BentoGridProps) => {
   return (
-    <div
-      className={cn(
-        "grid w-full auto-rows-[22rem] grid-cols-3 gap-4",
-        className,
-      )}
-    >
+    <div className={cn("grid w-full auto-rows-[22rem] grid-cols-3 gap-4", className)}>
       {children}
     </div>
   );
 };
 
-const BentoCard = ({
-  name,
-  className,
-  background,
-  Icon,
-  description,
-  href,
+const BentoCard = ({ 
+  name, 
+  className, 
+  background, 
+  Icon, 
+  description, 
+  href, 
   cta,
-}: {
-  name: string;
-  className: string;
-  background: ReactNode;
-  Icon: any;
-  description: string;
-  href: string;
-  cta: string;
-}) => (
+  actions,
+  content 
+}: BentoCardProps) => (
   <div
     key={name}
     className={cn(
       "group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl",
-      // light styles
       "bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
-      // dark styles
       "transform-gpu dark:bg-black dark:[border:1px_solid_rgba(255,255,255,.1)] dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset]",
-      className,
+      className
     )}
   >
     <div>{background}</div>
@@ -57,11 +55,13 @@ const BentoCard = ({
         {name}
       </h3>
       <p className="max-w-lg text-neutral-400">{description}</p>
+      {content}
+      {actions}
     </div>
-
     <div
       className={cn(
-        "pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100",
+        "pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4",
+        "opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100"
       )}
     >
       <Button variant="ghost" asChild size="sm" className="pointer-events-auto">
