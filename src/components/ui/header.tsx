@@ -54,14 +54,14 @@ export function Header1() {
           </a>
           <nav className="hidden lg:flex items-center gap-6">
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
+              <DropdownMenuTrigger className="group flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
                 Industries
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuGroup>
+              <DropdownMenuContent align="start" className="w-72 p-3">
+                <DropdownMenuGroup className="grid grid-cols-2 gap-2">
                   {industryOptions.map((industry) => (
-                    <DropdownMenuItem key={industry}>
+                    <DropdownMenuItem key={industry} className="cursor-pointer rounded-md px-3 py-2 hover:bg-primary/10">
                       {industry}
                     </DropdownMenuItem>
                   ))}
