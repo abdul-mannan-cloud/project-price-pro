@@ -17,11 +17,6 @@ import { TeammateSettings } from "@/components/settings/TeammateSettings";
 import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
 import { LogoUpload } from "@/components/settings/LogoUpload";
 
-interface BrandingColors {
-  primary: string;
-  secondary: string;
-}
-
 interface AIInstruction {
   title: string;
   description: string;
@@ -55,6 +50,19 @@ const Settings = () => {
       return data;
     },
   });
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      navigate("/");
+    }
+  };
 
   const updateSettings = useMutation({
     mutationFn: async (formData: any) => {
@@ -119,6 +127,10 @@ const Settings = () => {
     updateSettings.mutate(data);
   };
 
+  const handleSave = (data: any) => {
+    updateSettings.mutate(data);
+  };
+
   const parsedInstructions = (): AIInstruction[] => {
     try {
       if (!contractor?.contractor_settings?.ai_instructions) return [];
@@ -164,12 +176,14 @@ const Settings = () => {
     );
   }
 
-  const brandingColors: BrandingColors = contractor?.branding_colors 
-    ? (contractor.branding_colors as unknown as BrandingColors) 
+  const brandingColors = contractor?.branding_colors 
+    ? (contractor.branding_colors as unknown as { primary: string; secondary: string }) 
     : {
         primary: "#6366F1",
         secondary: "#4F46E5"
       };
+
+  // ... keep existing code (the rest of the JSX for settings dialogs)
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -387,7 +401,7 @@ const Settings = () => {
             </div>
             <WebhookSettings />
           </SettingsDialog>
-
+          
           <SettingsDialog
             title="Log Out"
             description="Sign out of your account"
