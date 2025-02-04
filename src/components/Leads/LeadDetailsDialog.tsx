@@ -1,20 +1,13 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
-import { Phone, MessageSquare, Download, FileSpreadsheet, Mail, X, Edit, MoreVertical } from "lucide-react";
+import { Phone, MessageSquare, Download, FileSpreadsheet, Mail, X, Edit } from "lucide-react";
 import type { Lead } from "./LeadsTable";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { LeadViewToggle } from "./LeadViewToggle";
 import { LeadQuestionsView } from "./LeadQuestionsView";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface LeadDetailsDialogProps {
   lead: Lead | null;
@@ -26,7 +19,6 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   const [view, setView] = useState<"estimate" | "questions">("estimate");
   const [isEditing, setIsEditing] = useState(false);
   const [editedEstimate, setEditedEstimate] = useState(lead?.estimate_data);
-  const isMobile = useIsMobile();
 
   const handleSaveEstimate = async () => {
     if (!lead) return;
@@ -92,101 +84,11 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
 
   if (!lead) return null;
 
-  const renderActionButtons = () => {
-    if (isEditing) {
-      return <Button onClick={handleSaveEstimate}>Save Changes</Button>;
-    }
-
-    if (isMobile) {
-      return (
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSendEmail} className="gap-2">
-            <Mail className="h-4 w-4" />
-            Email Estimate
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Estimate
-              </DropdownMenuItem>
-              {lead.user_phone && (
-                <>
-                  <DropdownMenuItem>
-                    <Phone className="h-4 w-4 mr-2" />
-                    Call
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Text
-                  </DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuItem>
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Export CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Download className="h-4 w-4 mr-2" />
-                Export PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      );
-    }
-
-    return (
-      <>
-        <div className="flex gap-2">
-          {lead.user_phone && (
-            <>
-              <Button variant="outline" className="gap-2">
-                <Phone className="h-4 w-4" />
-                Call
-              </Button>
-              <Button variant="outline" className="gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Text
-              </Button>
-            </>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {view === "estimate" && (
-            <>
-              <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
-                <Edit className="h-4 w-4" />
-                Edit Estimate
-              </Button>
-              <Button variant="outline" onClick={handleSendEmail} className="gap-2">
-                <Mail className="h-4 w-4" />
-                Email Estimate
-              </Button>
-              <Button variant="outline" className="gap-2">
-                <FileSpreadsheet className="h-4 w-4" />
-                Export CSV
-              </Button>
-              <Button variant="outline" className="gap-2">
-                <Download className="h-4 w-4" />
-                Export PDF
-              </Button>
-            </>
-          )}
-        </div>
-      </>
-    );
-  };
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-full h-[100vh] p-0 m-0">
         <div className="flex flex-col h-full relative">
+          {/* Close Button */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-50"
@@ -194,12 +96,14 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
             <X className="h-5 w-5 text-gray-500" />
           </button>
 
+          {/* Top Toggle Bar */}
           <div className="border-b bg-background sticky top-0 z-40">
             <div className="max-w-6xl mx-auto w-[95%]">
               <LeadViewToggle view={view} onViewChange={setView} />
             </div>
           </div>
 
+          {/* Content Area - Scrollable */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-6xl mx-auto">
               {view === "estimate" ? (
@@ -216,9 +120,49 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
             </div>
           </div>
 
+          {/* Bottom Actions - Fixed */}
           <div className="border-t bg-background py-4 w-full">
             <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
-              {renderActionButtons()}
+              <div className="flex gap-2">
+                {lead.user_phone && (
+                  <>
+                    <Button variant="outline" className="gap-2">
+                      <Phone className="h-4 w-4" />
+                      Call
+                    </Button>
+                    <Button variant="outline" className="gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Text
+                    </Button>
+                  </>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {view === "estimate" && (
+                  isEditing ? (
+                    <Button onClick={handleSaveEstimate}>Save Changes</Button>
+                  ) : (
+                    <>
+                      <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
+                        <Edit className="h-4 w-4" />
+                        Edit Estimate
+                      </Button>
+                      <Button variant="outline" onClick={handleSendEmail} className="gap-2">
+                        <Mail className="h-4 w-4" />
+                        Email Estimate
+                      </Button>
+                      <Button variant="outline" className="gap-2">
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Export CSV
+                      </Button>
+                      <Button variant="outline" className="gap-2">
+                        <Download className="h-4 w-4" />
+                        Export PDF
+                      </Button>
+                    </>
+                  )
+                )}
+              </div>
             </div>
           </div>
         </div>
