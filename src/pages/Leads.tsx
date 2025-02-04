@@ -1,38 +1,12 @@
-import { NavBar } from "@/components/ui/tubelight-navbar";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, Users, Settings, MoreVertical, Phone, Mail, Trash2, ExternalLink } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { formatDistanceToNow } from "date-fns";
-import { Button } from "@/components/ui/3d-button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { NavBar } from "@/components/ui/tubelight-navbar";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-
-const statusColors = {
-  pending: "bg-yellow-100 text-yellow-800",
-  completed: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-800",
-  "in-progress": "bg-blue-100 text-blue-800"
-} as const;
-
-type Status = keyof typeof statusColors;
+import { LeadsTable } from "@/components/Leads/LeadsTable";
+import { LayoutDashboard, Users, Settings } from "lucide-react";
 
 const Leads = () => {
   const [selectedLead, setSelectedLead] = useState<any>(null);
@@ -61,69 +35,59 @@ const Leads = () => {
     },
   });
 
-  const updateLeadStatus = useMutation({
-    mutationFn: async ({ leadId, status }: { leadId: string, status: Status }) => {
-      const { error } = await supabase
-        .from("leads")
-        .update({ status })
-        .eq("id", leadId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
-      toast({
-        title: "Status updated",
-        description: "The lead status has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to update lead status. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const deleteLead = useMutation({
-    mutationFn: async (leadId: string) => {
+    mutationFn: async (leadIds: string[]) => {
       const { error } = await supabase
         .from("leads")
         .delete()
-        .eq("id", leadId);
+        .in("id", leadIds);
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       toast({
-        title: "Lead deleted",
-        description: "The lead has been deleted successfully.",
+        title: "Leads deleted",
+        description: "The selected leads have been deleted successfully.",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to delete lead. Please try again.",
+        description: "Failed to delete leads. Please try again.",
         variant: "destructive",
       });
     },
   });
+
+  const handleExport = (filteredLeads: any[]) => {
+    const csvContent = [
+      ["Project Title", "Address", "Customer", "Email", "Phone", "Estimated Cost", "Status", "Created"],
+      ...filteredLeads.map(lead => [
+        lead.project_title,
+        lead.project_address,
+        lead.user_name,
+        lead.user_email,
+        lead.user_phone,
+        lead.estimated_cost,
+        lead.status,
+        new Date(lead.created_at).toLocaleDateString()
+      ])
+    ].map(row => row.join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `leads-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
-
-  const handleStatusChange = (leadId: string, newStatus: Status) => {
-    updateLeadStatus.mutate({ leadId, status: newStatus });
-  };
-
-  const handleDelete = (leadId: string) => {
-    if (window.confirm("Are you sure you want to delete this lead?")) {
-      deleteLead.mutate(leadId);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
@@ -131,112 +95,12 @@ const Leads = () => {
       <div className="container mx-auto py-8">
         <h1 className="text-2xl font-semibold mb-6">Leads</h1>
         
-        <div className="overflow-hidden rounded-lg border border-border bg-background">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="h-9 py-2">Project Title</TableHead>
-                <TableHead className="h-9 py-2">Category</TableHead>
-                <TableHead className="h-9 py-2">Customer</TableHead>
-                <TableHead className="h-9 py-2">Contact</TableHead>
-                <TableHead className="h-9 py-2">Estimated Cost</TableHead>
-                <TableHead className="h-9 py-2">Status</TableHead>
-                <TableHead className="h-9 py-2">Created</TableHead>
-                <TableHead className="h-9 py-2 w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {leads.map((lead) => (
-                <TableRow 
-                  key={lead.id} 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => setSelectedLead(lead)}
-                >
-                  <TableCell className="py-2 font-medium">{lead.project_title}</TableCell>
-                  <TableCell className="py-2">{lead.category}</TableCell>
-                  <TableCell className="py-2">{lead.user_name || "Anonymous"}</TableCell>
-                  <TableCell className="py-2">
-                    <div className="flex gap-2">
-                      {lead.user_email && (
-                        <a 
-                          href={`mailto:${lead.user_email}`}
-                          className="inline-flex items-center hover:text-primary"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Mail className="w-4 h-4 mr-1" />
-                          <span className="sr-only">Email</span>
-                        </a>
-                      )}
-                      {lead.user_phone && (
-                        <a 
-                          href={`tel:${lead.user_phone}`}
-                          className="inline-flex items-center hover:text-primary"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Phone className="w-4 h-4 mr-1" />
-                          <span className="sr-only">Call</span>
-                        </a>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    ${lead.estimated_cost?.toLocaleString() || "0"}
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button 
-                          variant="ghost" 
-                          className={cn(
-                            "h-auto py-1 px-2 font-normal",
-                            statusColors[lead.status as Status] || statusColors.pending
-                          )}
-                        >
-                          {lead.status || "pending"}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {Object.keys(statusColors).map((status) => (
-                          <DropdownMenuItem
-                            key={status}
-                            onClick={() => handleStatusChange(lead.id, status as Status)}
-                          >
-                            {status}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    {lead.created_at ? formatDistanceToNow(new Date(lead.created_at), { addSuffix: true }) : "N/A"}
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setSelectedLead(lead)}>
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-red-600"
-                          onClick={() => handleDelete(lead.id)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete Lead
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <LeadsTable
+          leads={leads}
+          onLeadClick={setSelectedLead}
+          onDeleteLeads={(leadIds) => deleteLead.mutate(leadIds)}
+          onExport={handleExport}
+        />
       </div>
 
       <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
@@ -247,7 +111,6 @@ const Leads = () => {
                 <div>
                   <h2 className="text-2xl font-bold mb-2">{selectedLead.project_title}</h2>
                   <div className="flex gap-4 text-sm text-muted-foreground">
-                    <p>Category: {selectedLead.category}</p>
                     <p>Status: <Badge variant="outline">{selectedLead.status}</Badge></p>
                   </div>
                 </div>
