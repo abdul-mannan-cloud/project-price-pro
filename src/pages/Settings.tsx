@@ -1,3 +1,4 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +38,11 @@ interface AIInstruction {
   instructions: string;
 }
 
+interface BrandingColors {
+  primary: string;
+  secondary: string;
+}
+
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -63,6 +69,16 @@ const Settings = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  const defaultBrandingColors: BrandingColors = {
+    primary: "#6366F1",
+    secondary: "#4F46E5"
+  };
+
+  const [brandingColors, setBrandingColors] = useState<BrandingColors>(() => {
+    const colors = contractor?.branding_colors as BrandingColors | null;
+    return colors || defaultBrandingColors;
   });
 
   const handleLogout = async () => {
@@ -140,13 +156,8 @@ const Settings = () => {
     },
   });
 
-  const [brandingColors, setBrandingColors] = useState({
-    primary: contractor?.branding_colors?.primary || "#6366F1",
-    secondary: contractor?.branding_colors?.secondary || "#4F46E5"
-  });
-
   const updateBrandingColors = useMutation({
-    mutationFn: async (colors: { primary: string; secondary: string }) => {
+    mutationFn: async (colors: BrandingColors) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
