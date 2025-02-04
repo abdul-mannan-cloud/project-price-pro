@@ -22,13 +22,13 @@ export function Header1() {
 
   const NavigationButtons = () => (
     <div className="flex items-center">
-      {/* Text Links */}
+      {/* Text Links - Now left-aligned */}
       <div className="flex items-center gap-6 mr-8">
         {textLinks.map((link, index) => (
           <button
             key={index}
             onClick={link.onClick}
-            className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
+            className="text-left text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
           >
             {link.label}
           </button>
