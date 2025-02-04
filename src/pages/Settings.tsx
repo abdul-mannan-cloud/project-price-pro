@@ -14,6 +14,11 @@ import { WebhookSettings } from "@/components/settings/WebhookSettings";
 import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
 import { AIRateForm } from "@/components/settings/AIRateForm";
 
+interface BrandingColors {
+  primary: string;
+  secondary: string;
+}
+
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -147,8 +152,8 @@ const Settings = () => {
     );
   }
 
-  // Get branding colors from contractor data
-  const brandingColors = contractor?.branding_colors || {
+  // Get branding colors from contractor data with type assertion
+  const brandingColors = (contractor?.branding_colors as BrandingColors) || {
     primary: "#6366F1",
     secondary: "#4F46E5"
   };
