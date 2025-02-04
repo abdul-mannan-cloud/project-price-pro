@@ -1,6 +1,9 @@
+"use client"
+
 import React, { useEffect, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Check, ChevronDown } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -72,58 +75,46 @@ const trimColorString = (color: string, maxLength: number = 20): string => {
   return `${color.slice(0, maxLength - 3)}...`
 }
 
-interface ColorPickerProps {
-  color: string;
-  onChange: (color: string) => void;
-}
-
-export function ColorPicker({ color, onChange }: ColorPickerProps) {
+const ColorPicker = ({
+  color,
+  onChange,
+}: {
+  color: string
+  onChange: (color: string) => void
+}) => {
   const [hsl, setHsl] = useState<[number, number, number]>([0, 0, 0])
   const [colorInput, setColorInput] = useState(color)
-  const [tempColor, setTempColor] = useState(color)
-  const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
-    const [h, s, l] = color.startsWith('#') ? hexToHsl(color) : color.match(/\d+(\.\d+)?/g)?.map(Number) || [0, 0, 0]
-    setHsl([h, s, l])
-    setColorInput(color)
-    setTempColor(color)
+    handleColorChange(color)
   }, [color])
 
   const handleColorChange = (newColor: string) => {
     const normalizedColor = normalizeColor(newColor)
-    setTempColor(normalizedColor)
+    setColorInput(normalizedColor)
 
     let h, s, l
     if (normalizedColor.startsWith("#")) {
-      [h, s, l] = hexToHsl(normalizedColor)
+      ;[h, s, l] = hexToHsl(normalizedColor)
     } else {
-      [h, s, l] = normalizedColor.match(/\d+(\.\d+)?/g)?.map(Number) || [0, 0, 0]
+      ;[h, s, l] = normalizedColor.match(/\d+(\.\d+)?/g)?.map(Number) || [
+        0, 0, 0,
+      ]
     }
+
     setHsl([h, s, l])
-
-    // Update CSS variables when color changes
-    document.documentElement.style.setProperty('--primary', normalizedColor)
-    document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF')
-    document.documentElement.style.setProperty('--primary-opacity-90', `${normalizedColor}e6`) // e6 is hex for 90% opacity
-  }
-
-  const handleSave = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setColorInput(tempColor)
-    onChange(tempColor)
-    setIsOpen(false)
+    onChange(`hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, ${l.toFixed(1)}%)`)
   }
 
   const handleHueChange = (hue: number) => {
     const newHsl: [number, number, number] = [hue, hsl[1], hsl[2]]
     setHsl(newHsl)
-    const newColor = `hsl(${newHsl[0]}, ${newHsl[1]}%, ${newHsl[2]}%)`
-    handleColorChange(newColor)
+    handleColorChange(`hsl(${newHsl[0]}, ${newHsl[1]}%, ${newHsl[2]}%)`)
   }
 
-  const handleSaturationLightnessChange = (event: React.MouseEvent<HTMLDivElement>) => {
-    event.stopPropagation()
+  const handleSaturationLightnessChange = (
+    event: React.MouseEvent<HTMLDivElement>
+  ) => {
     const rect = event.currentTarget.getBoundingClientRect()
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
@@ -131,14 +122,18 @@ export function ColorPicker({ color, onChange }: ColorPickerProps) {
     const l = Math.round(100 - (y / rect.height) * 100)
     const newHsl: [number, number, number] = [hsl[0], s, l]
     setHsl(newHsl)
-    const newColor = `hsl(${newHsl[0]}, ${newHsl[1]}%, ${newHsl[2]}%)`
-    handleColorChange(newColor)
+    handleColorChange(`hsl(${newHsl[0]}, ${newHsl[1]}%, ${newHsl[2]}%)`)
   }
 
-  const handleColorInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleColorInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const newColor = event.target.value
     setColorInput(newColor)
-    if (/^#[0-9A-Fa-f]{6}$/.test(newColor) || /^hsl\(\d+,\s*\d+%,\s*\d+%\)$/.test(newColor)) {
+    if (
+      /^#[0-9A-Fa-f]{6}$/.test(newColor) ||
+      /^hsl\(\d+,\s*\d+%,\s*\d+%\)$/.test(newColor)
+    ) {
       handleColorChange(newColor)
     }
   }
@@ -149,15 +144,11 @@ export function ColorPicker({ color, onChange }: ColorPickerProps) {
   ]
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-full justify-start text-left font-normal"
-          onClick={(e) => {
-            e.stopPropagation()
-            setIsOpen(true)
-          }}
+          className="w-full justify-start text-left font-normal bg-white"
         >
           <div
             className="w-6 h-6 rounded-full mr-2 shadow-sm"
@@ -167,10 +158,7 @@ export function ColorPicker({ color, onChange }: ColorPickerProps) {
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="w-[280px] p-3"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <PopoverContent className="w-[280px] p-3 bg-white">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -230,7 +218,7 @@ export function ColorPicker({ color, onChange }: ColorPickerProps) {
             />
             <motion.div
               className="w-8 h-8 rounded-md shadow-sm"
-              style={{ backgroundColor: tempColor }}
+              style={{ backgroundColor: colorInput }}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             />
@@ -242,14 +230,11 @@ export function ColorPicker({ color, onChange }: ColorPickerProps) {
                   key={preset}
                   className="w-8 h-8 rounded-full relative"
                   style={{ backgroundColor: preset }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleColorChange(preset)
-                  }}
+                  onClick={() => handleColorChange(preset)}
                   whileHover={{ scale: 1.2, zIndex: 1 }}
                   whileTap={{ scale: 0.9 }}
                 >
-                  {tempColor === preset && (
+                  {colorInput === preset && (
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
@@ -263,14 +248,10 @@ export function ColorPicker({ color, onChange }: ColorPickerProps) {
               ))}
             </AnimatePresence>
           </div>
-          <Button 
-            onClick={handleSave}
-            className="w-full"
-          >
-            Save Changes
-          </Button>
         </motion.div>
       </PopoverContent>
     </Popover>
-  )
-}
+  );
+};
+
+export { ColorPicker }
