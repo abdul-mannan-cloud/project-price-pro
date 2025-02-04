@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Floating, { FloatingElement } from "@/components/ui/parallax-floating";
 import { TextRotate } from "@/components/ui/text-rotate";
 import { Header1 } from "@/components/ui/header";
+import { Footerdemo } from "@/components/ui/footer-section";
 
 const constructionImages = [
   {
@@ -63,7 +64,7 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              Transform Your Construction Business...
+              Transform your construction business with...
             </motion.h1>
             <div className="flex justify-center">
               <TextRotate
@@ -137,6 +138,8 @@ const Index = () => {
           Sign In
         </Button>
       </div>
+
+      <Footerdemo />
     </div>
   );
 };
