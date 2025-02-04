@@ -9,23 +9,23 @@ import { Footerdemo } from "@/components/ui/footer-section";
 const constructionImages = [
   {
     url: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e",
-    title: "Electrician",
+    title: "Electrician Working",
   },
   {
-    url: "https://images.unsplash.com/photo-1603796846097-bee99e4a601f",
-    title: "Plumber",
-  },
-  {
-    url: "https://images.unsplash.com/photo-1484154218962-a197022b5858",
-    title: "Home Remodel",
+    url: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1",
+    title: "Plumbing Service",
   },
   {
     url: "https://images.unsplash.com/photo-1581578731548-c64695cc6952",
-    title: "Handyman",
+    title: "Professional Handyman",
   },
   {
-    url: "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d",
-    title: "Floor Installer",
+    url: "https://images.unsplash.com/photo-1534237710431-e2fc698436d0",
+    title: "Home Renovation",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1513694203232-719a280e022f",
+    title: "Floor Installation",
   },
 ];
 
