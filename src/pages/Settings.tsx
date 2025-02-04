@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { LayoutDashboard, Users, Settings as SettingsIcon } from "lucide-react";
+import { LayoutDashboard, Users, Settings as SettingsIcon, Info, PlusCircle, MinusCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CustomSelect } from "@/components/ui/custom-select";
@@ -55,6 +55,8 @@ const Settings = () => {
   const [aiRate, setAiRate] = useState("HR");
   const [aiType, setAiType] = useState("material_labor");
   const [aiInstructions, setAiInstructions] = useState("");
+  const [aiEstimateRows, setAiEstimateRows] = useState([{ title: "", rate: "HR", type: "material_labor" }]);
+  const [aiInstructionRows, setAiInstructionRows] = useState([{ instruction: "" }]);
 
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -169,6 +171,22 @@ const Settings = () => {
     });
   };
 
+  const handleAddEstimateRow = () => {
+    setAiEstimateRows([...aiEstimateRows, { title: "", rate: "HR", type: "material_labor" }]);
+  };
+
+  const handleRemoveEstimateRow = (index: number) => {
+    setAiEstimateRows(aiEstimateRows.filter((_, i) => i !== index));
+  };
+
+  const handleAddInstructionRow = () => {
+    setAiInstructionRows([...aiInstructionRows, { instruction: "" }]);
+  };
+
+  const handleRemoveInstructionRow = (index: number) => {
+    setAiInstructionRows(aiInstructionRows.filter((_, i) => i !== index));
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -199,8 +217,9 @@ const Settings = () => {
         <div className="space-y-6">
           <h1 className="text-2xl font-semibold">Settings</h1>
           
-          <Card className="p-6">
-            <h2 className="text-lg font-medium mb-4">Business Information</h2>
+          <Card className="p-6 bg-white">
+            <h2 className="text-lg font-medium mb-2">Business Information</h2>
+            <p className="text-sm text-muted-foreground mb-4">Manage your business details and contact information.</p>
             <div className="space-y-4">
               <div className="form-group">
                 <Input
@@ -252,8 +271,9 @@ const Settings = () => {
             </div>
           </Card>
 
-          <Card className="p-6">
-            <h2 className="text-lg font-medium mb-4">Branding</h2>
+          <Card className="p-6 bg-white">
+            <h2 className="text-lg font-medium mb-2">Branding</h2>
+            <p className="text-sm text-muted-foreground mb-4">Customize your brand colors to match your business identity.</p>
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">
@@ -286,8 +306,9 @@ const Settings = () => {
             </div>
           </Card>
 
-          <Card className="p-6">
-            <h2 className="text-lg font-medium mb-4">Estimate Settings</h2>
+          <Card className="p-6 bg-white">
+            <h2 className="text-lg font-medium mb-2">Estimate Settings</h2>
+            <p className="text-sm text-muted-foreground mb-4">Configure your estimate calculations. Note: Markup percentages are not visible to leads.</p>
             <div className="space-y-4">
               <div className="form-group">
                 <Input
@@ -323,6 +344,9 @@ const Settings = () => {
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Select Available Services</DialogTitle>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Choose which service categories you want to offer. Your customers will only see and answer questions for the categories you select.
+                    </p>
                   </DialogHeader>
                   <div className="grid grid-cols-2 gap-4 py-4">
                     {categories?.map((category) => (
@@ -349,39 +373,127 @@ const Settings = () => {
             </div>
           </Card>
 
-          <Card className="p-6">
-            <h2 className="text-lg font-medium mb-4">AI Estimate Preferences</h2>
+          <Card className="p-6 bg-white">
+            <h2 className="text-lg font-medium mb-2">AI Estimate Preferences</h2>
+            <p className="text-sm text-muted-foreground mb-4">Configure how AI generates estimates for your services.</p>
             <div className="space-y-4">
-              <div className="form-group">
-                <Input
-                  label="Title"
-                  placeholder="Enter title format for AI estimates"
-                  name="aiTitle"
-                />
-              </div>
-              <CustomSelect
-                label="Rate Unit"
-                value={aiRate}
-                onValueChange={setAiRate}
-                options={rateOptions}
-              />
-              <CustomSelect
-                label="Type"
-                value={aiType}
-                onValueChange={setAiType}
-                options={typeOptions}
-              />
-              <div className="form-group">
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  AI Instructions
-                </label>
-                <Textarea
-                  placeholder="Enter specific instructions for AI estimates (e.g., For remodels, always use white oak hardwood flooring and quartz counter-tops)"
-                  value={aiInstructions}
-                  onChange={(e) => setAiInstructions(e.target.value)}
-                  className="min-h-[100px]"
-                />
-              </div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full flex items-center gap-2">
+                    <PlusCircle className="h-4 w-4" />
+                    Configure AI Estimates
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>AI Estimate Settings</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    {aiEstimateRows.map((row, index) => (
+                      <div key={index} className="flex gap-4 items-start">
+                        <div className="flex-1 space-y-4">
+                          <Input
+                            label="Title"
+                            value={row.title}
+                            onChange={(e) => {
+                              const newRows = [...aiEstimateRows];
+                              newRows[index].title = e.target.value;
+                              setAiEstimateRows(newRows);
+                            }}
+                          />
+                          <CustomSelect
+                            label="Rate Unit"
+                            value={row.rate}
+                            onValueChange={(value) => {
+                              const newRows = [...aiEstimateRows];
+                              newRows[index].rate = value;
+                              setAiEstimateRows(newRows);
+                            }}
+                            options={rateOptions}
+                          />
+                          <CustomSelect
+                            label="Type"
+                            value={row.type}
+                            onValueChange={(value) => {
+                              const newRows = [...aiEstimateRows];
+                              newRows[index].type = value;
+                              setAiEstimateRows(newRows);
+                            }}
+                            options={typeOptions}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveEstimateRow(index)}
+                          className="mt-8"
+                        >
+                          <MinusCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddEstimateRow}
+                      className="w-full mt-4"
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add Estimate Setting
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full flex items-center gap-2">
+                    <PlusCircle className="h-4 w-4" />
+                    Configure AI Instructions
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>AI Instructions</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    {aiInstructionRows.map((row, index) => (
+                      <div key={index} className="flex gap-4 items-start">
+                        <div className="flex-1">
+                          <Textarea
+                            placeholder="Enter specific instructions for AI estimates"
+                            value={row.instruction}
+                            onChange={(e) => {
+                              const newRows = [...aiInstructionRows];
+                              newRows[index].instruction = e.target.value;
+                              setAiInstructionRows(newRows);
+                            }}
+                            className="min-h-[100px]"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveInstructionRow(index)}
+                        >
+                          <MinusCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddInstructionRow}
+                      className="w-full mt-4"
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add Instruction
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </Card>
 

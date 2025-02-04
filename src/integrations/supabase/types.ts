@@ -38,6 +38,7 @@ export type Database = {
       }
       contractor_settings: {
         Row: {
+          ai_preferences: Json | null
           ai_prompt_template: string | null
           created_at: string | null
           id: string
@@ -47,6 +48,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_preferences?: Json | null
           ai_prompt_template?: string | null
           created_at?: string | null
           id: string
@@ -56,6 +58,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_preferences?: Json | null
           ai_prompt_template?: string | null
           created_at?: string | null
           id?: string
