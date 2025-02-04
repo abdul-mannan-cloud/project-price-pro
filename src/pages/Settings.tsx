@@ -320,24 +320,24 @@ const Settings = () => {
           onClose={() => setActiveDialog(null)}
         >
           <div className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">AI Instructions</h3>
-              <p className="text-sm text-muted-foreground">
-                Provide general instructions for how AI should handle estimate generation
-              </p>
-              <textarea
-                name="aiInstructions"
-                className="w-full min-h-[150px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-                defaultValue={contractor?.contractor_settings?.ai_instructions}
-                placeholder="Enter instructions for AI estimate generation..."
-              />
-            </div>
+            <AIInstructionsForm
+              instructions={(contractor?.contractor_settings?.ai_preferences as any)?.instructions || []}
+              onSave={(instructions) => {
+                updateSettings.mutate({
+                  aiPreferences: {
+                    ...contractor?.contractor_settings?.ai_preferences,
+                    instructions
+                  }
+                });
+              }}
+            />
             
             <AIRateForm
               rates={(contractor?.contractor_settings?.ai_preferences as any)?.rates || []}
               onSave={(rates) => {
                 updateSettings.mutate({
                   aiPreferences: {
+                    ...contractor?.contractor_settings?.ai_preferences,
                     rates
                   }
                 });
