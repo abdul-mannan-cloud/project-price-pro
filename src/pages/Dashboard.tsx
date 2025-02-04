@@ -23,22 +23,7 @@ const Dashboard = () => {
     { name: "Settings", url: "/settings", icon: Settings }
   ];
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        toast({
-          title: "Authentication required",
-          description: "Please sign in to access the dashboard",
-          variant: "destructive",
-        });
-        navigate("/login");
-      }
-    };
-    checkAuth();
-  }, [navigate, toast]);
-
+  // Prefetch contractor data
   const { data: contractor, isLoading } = useQuery({
     queryKey: ["contractor"],
     queryFn: async () => {
@@ -58,8 +43,11 @@ const Dashboard = () => {
       }
       return data;
     },
+    staleTime: 30000, // Cache data for 30 seconds
+    cacheTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
+  // Prefetch leads data with caching
   const { data: leads = [] } = useQuery({
     queryKey: ["leads"],
     queryFn: async () => {
@@ -76,7 +64,25 @@ const Dashboard = () => {
       return data || [];
     },
     enabled: !!contractor,
+    staleTime: 30000,
+    cacheTime: 5 * 60 * 1000,
   });
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to access the dashboard",
+          variant: "destructive",
+        });
+        navigate("/login");
+      }
+    };
+    checkAuth();
+  }, [navigate, toast]);
 
   if (isLoading) {
     return (
@@ -90,6 +96,41 @@ const Dashboard = () => {
 
   const totalLeads = leads.length;
   const totalEstimatedValue = leads.reduce((sum, lead) => sum + (lead.estimated_cost || 0), 0);
+
+  const copyEstimatorLink = async () => {
+    const baseUrl = window.location.origin;
+    const longUrl = `${baseUrl}/estimate/${contractor.id}`;
+    
+    try {
+      // Use the short.url service to create a shortened link
+      const response = await fetch('https://short.url/api/shorten', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ longUrl }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to shorten URL');
+      
+      const { shortUrl } = await response.json();
+      await navigator.clipboard.writeText(shortUrl);
+      
+      toast({
+        title: "Link copied!",
+        description: "The shortened estimator link has been copied to your clipboard.",
+        duration: 2000,
+      });
+    } catch (error) {
+      // Fallback to copying the original URL if shortening fails
+      await navigator.clipboard.writeText(longUrl);
+      toast({
+        title: "Link copied!",
+        description: "The estimator link has been copied to your clipboard.",
+        duration: 2000,
+      });
+    }
+  };
 
   const features = [
     {
