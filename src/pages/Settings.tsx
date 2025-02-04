@@ -273,8 +273,6 @@ const Settings = () => {
           <h1 className="text-2xl font-semibold">Settings</h1>
         </div>
         
-        <FeaturesSectionWithHoverEffects setActiveDialog={setActiveDialog} />
-
         {activeDialog === "branding" ? (
           <BrandingSettings
             initialColors={brandingColors}
@@ -284,198 +282,198 @@ const Settings = () => {
             }}
           />
         ) : (
-          <>
-            <SettingsDialog
-              title="Business Information"
-              description="Update your business details and contact information"
-              isOpen={activeDialog === "business"}
-              onClose={() => setActiveDialog(null)}
-            >
-              <form onSubmit={handleFormSubmit} className="space-y-4">
-                <LogoUpload currentLogo={contractor?.business_logo_url} />
-                <Input
-                  label="Business Name"
-                  name="businessName"
-                  defaultValue={contractor?.business_name}
-                  required
-                />
-                <Input
-                  label="Contact Email"
-                  name="contactEmail"
-                  type="email"
-                  defaultValue={contractor?.contact_email}
-                  required
-                />
-                <Input
-                  label="Contact Phone"
-                  name="contactPhone"
-                  type="tel"
-                  defaultValue={contractor?.contact_phone}
-                />
-                <Input
-                  label="Business Address"
-                  name="businessAddress"
-                  defaultValue={contractor?.business_address}
-                />
-                <Input
-                  label="Website"
-                  name="website"
-                  type="url"
-                  defaultValue={contractor?.website}
-                />
-                <Input
-                  label="License Number"
-                  name="licenseNumber"
-                  defaultValue={contractor?.license_number}
-                />
-                <Button type="submit" disabled={updateSettings.isPending}>
-                  {updateSettings.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-              </form>
-            </SettingsDialog>
-
-            <SettingsDialog
-              title="Team Members"
-              description="Manage your team members and their access"
-              isOpen={activeDialog === "team"}
-              onClose={() => setActiveDialog(null)}
-            >
-              <TeammateSettings />
-            </SettingsDialog>
-
-            <SettingsDialog
-              title="Subscription"
-              description="Manage your subscription and billing"
-              isOpen={activeDialog === "subscription"}
-              onClose={() => setActiveDialog(null)}
-            >
-              <SubscriptionSettings />
-            </SettingsDialog>
-
-            <SettingsDialog
-              title="Estimate Settings"
-              description="Configure your pricing and cost calculations"
-              isOpen={activeDialog === "estimate"}
-              onClose={() => setActiveDialog(null)}
-            >
-              <form onSubmit={handleFormSubmit} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Minimum Project Cost ($)</label>
-                  <Input
-                    name="minimumProjectCost"
-                    type="number"
-                    defaultValue={contractor?.contractor_settings?.minimum_project_cost}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    The minimum cost you're willing to take on for any project
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Markup Percentage (%)</label>
-                  <Input
-                    name="markupPercentage"
-                    type="number"
-                    defaultValue={contractor?.contractor_settings?.markup_percentage}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    This markup is applied in the background and is not visible to customers. 
-                    It helps cover overhead costs and maintain profit margins.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Tax Rate (%)</label>
-                  <Input
-                    name="taxRate"
-                    type="number"
-                    defaultValue={contractor?.contractor_settings?.tax_rate}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Local tax rate applied to estimates
-                  </p>
-                </div>
-                <Button type="submit" disabled={updateSettings.isPending}>
-                  {updateSettings.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-              </form>
-            </SettingsDialog>
-
-            <SettingsDialog
-              title="AI Preferences"
-              description="Configure how AI generates estimates and manages rates"
-              isOpen={activeDialog === "ai"}
-              onClose={() => setActiveDialog(null)}
-            >
-              <div className="space-y-6">
-                <AIInstructionsForm
-                  instructions={parsedInstructions()}
-                  onSave={(instructions) => {
-                    updateSettings.mutate({
-                      aiInstructions: instructions
-                    });
-                  }}
-                />
-                
-                <AIRateForm
-                  rates={(contractor?.contractor_settings?.ai_preferences as any)?.rates || []}
-                  onSave={(rates) => {
-                    updateSettings.mutate({
-                      aiPreferences: {
-                        rates
-                      }
-                    });
-                  }}
-                />
-              </div>
-            </SettingsDialog>
-
-            <SettingsDialog
-              title="Service Categories"
-              description="Select which services you offer and customize your estimate workflow"
-              isOpen={activeDialog === "categories"}
-              onClose={() => setActiveDialog(null)}
-            >
-              <ServiceCategoriesSettings />
-            </SettingsDialog>
-
-            <SettingsDialog
-              title="Webhooks"
-              description="Configure external integrations and automation"
-              isOpen={activeDialog === "webhooks"}
-              onClose={() => setActiveDialog(null)}
-            >
-              <div className="mb-4">
-                <p className="text-sm text-muted-foreground">
-                  Webhooks allow you to receive real-time notifications when new leads are created. 
-                  You can configure external services to receive these notifications and automate your workflow.
-                </p>
-              </div>
-              <WebhookSettings />
-            </SettingsDialog>
-            
-            <SettingsDialog
-              title="Log Out"
-              description="Sign out of your account"
-              isOpen={activeDialog === "logout"}
-              onClose={() => setActiveDialog(null)}
-            >
-              <div className="space-y-4">
-                <p className="text-muted-foreground">
-                  Are you sure you want to log out? You will need to sign in again to access your account.
-                </p>
-                <Button
-                  variant="destructive"
-                  onClick={handleLogout}
-                  className="w-full"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Log Out
-                </Button>
-              </div>
-            </SettingsDialog>
-          </>
+          <FeaturesSectionWithHoverEffects setActiveDialog={setActiveDialog} />
         )}
+
+        <SettingsDialog
+          title="Business Information"
+          description="Update your business details and contact information"
+          isOpen={activeDialog === "business"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <form onSubmit={handleFormSubmit} className="space-y-4">
+            <LogoUpload currentLogo={contractor?.business_logo_url} />
+            <Input
+              label="Business Name"
+              name="businessName"
+              defaultValue={contractor?.business_name}
+              required
+            />
+            <Input
+              label="Contact Email"
+              name="contactEmail"
+              type="email"
+              defaultValue={contractor?.contact_email}
+              required
+            />
+            <Input
+              label="Contact Phone"
+              name="contactPhone"
+              type="tel"
+              defaultValue={contractor?.contact_phone}
+            />
+            <Input
+              label="Business Address"
+              name="businessAddress"
+              defaultValue={contractor?.business_address}
+            />
+            <Input
+              label="Website"
+              name="website"
+              type="url"
+              defaultValue={contractor?.website}
+            />
+            <Input
+              label="License Number"
+              name="licenseNumber"
+              defaultValue={contractor?.license_number}
+            />
+            <Button type="submit" disabled={updateSettings.isPending}>
+              {updateSettings.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </form>
+        </SettingsDialog>
+
+        <SettingsDialog
+          title="Team Members"
+          description="Manage your team members and their access"
+          isOpen={activeDialog === "team"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <TeammateSettings />
+        </SettingsDialog>
+
+        <SettingsDialog
+          title="Subscription"
+          description="Manage your subscription and billing"
+          isOpen={activeDialog === "subscription"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <SubscriptionSettings />
+        </SettingsDialog>
+
+        <SettingsDialog
+          title="Estimate Settings"
+          description="Configure your pricing and cost calculations"
+          isOpen={activeDialog === "estimate"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <form onSubmit={handleFormSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Minimum Project Cost ($)</label>
+              <Input
+                name="minimumProjectCost"
+                type="number"
+                defaultValue={contractor?.contractor_settings?.minimum_project_cost}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                The minimum cost you're willing to take on for any project
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Markup Percentage (%)</label>
+              <Input
+                name="markupPercentage"
+                type="number"
+                defaultValue={contractor?.contractor_settings?.markup_percentage}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                This markup is applied in the background and is not visible to customers. 
+                It helps cover overhead costs and maintain profit margins.
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Tax Rate (%)</label>
+              <Input
+                name="taxRate"
+                type="number"
+                defaultValue={contractor?.contractor_settings?.tax_rate}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Local tax rate applied to estimates
+              </p>
+            </div>
+            <Button type="submit" disabled={updateSettings.isPending}>
+              {updateSettings.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </form>
+        </SettingsDialog>
+
+        <SettingsDialog
+          title="AI Preferences"
+          description="Configure how AI generates estimates and manages rates"
+          isOpen={activeDialog === "ai"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <div className="space-y-6">
+            <AIInstructionsForm
+              instructions={parsedInstructions()}
+              onSave={(instructions) => {
+                updateSettings.mutate({
+                  aiInstructions: instructions
+                });
+              }}
+            />
+            
+            <AIRateForm
+              rates={(contractor?.contractor_settings?.ai_preferences as any)?.rates || []}
+              onSave={(rates) => {
+                updateSettings.mutate({
+                  aiPreferences: {
+                    rates
+                  }
+                });
+              }}
+            />
+          </div>
+        </SettingsDialog>
+
+        <SettingsDialog
+          title="Service Categories"
+          description="Select which services you offer and customize your estimate workflow"
+          isOpen={activeDialog === "categories"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <ServiceCategoriesSettings />
+        </SettingsDialog>
+
+        <SettingsDialog
+          title="Webhooks"
+          description="Configure external integrations and automation"
+          isOpen={activeDialog === "webhooks"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <div className="mb-4">
+            <p className="text-sm text-muted-foreground">
+              Webhooks allow you to receive real-time notifications when new leads are created. 
+              You can configure external services to receive these notifications and automate your workflow.
+            </p>
+          </div>
+          <WebhookSettings />
+        </SettingsDialog>
+        
+        <SettingsDialog
+          title="Log Out"
+          description="Sign out of your account"
+          isOpen={activeDialog === "logout"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              Are you sure you want to log out? You will need to sign in again to access your account.
+            </p>
+            <Button
+              variant="destructive"
+              onClick={handleLogout}
+              className="w-full"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Log Out
+            </Button>
+          </div>
+        </SettingsDialog>
       </div>
     </div>
   );
