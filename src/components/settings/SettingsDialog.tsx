@@ -11,7 +11,7 @@ interface SettingsDialogProps {
 export const SettingsDialog = ({ title, isOpen, onClose, children }: SettingsDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl bg-secondary/50 backdrop-blur-sm">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
