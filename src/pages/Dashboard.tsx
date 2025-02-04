@@ -44,7 +44,7 @@ const Dashboard = () => {
       return data;
     },
     staleTime: 30000, // Cache data for 30 seconds
-    cacheTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    gcTime: 5 * 60 * 1000, // Keep in garbage collection for 5 minutes
   });
 
   // Prefetch leads data with caching
@@ -65,7 +65,7 @@ const Dashboard = () => {
     },
     enabled: !!contractor,
     staleTime: 30000,
-    cacheTime: 5 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
   useEffect(() => {
