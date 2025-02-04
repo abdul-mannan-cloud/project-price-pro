@@ -97,7 +97,7 @@ const Dashboard = () => {
       href: "/leads",
       cta: "View all leads",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
-      className: "lg:col-start-1 lg:col-end-2 lg:row-start-1 lg:row-end-3",
+      className: "lg:col-span-1 hover:scale-[1.02] transition-transform",
     },
     {
       Icon: LineChart,
@@ -106,7 +106,7 @@ const Dashboard = () => {
       href: "/leads",
       cta: "View details",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
-      className: "lg:col-start-2 lg:col-end-3 lg:row-start-1 lg:row-end-4",
+      className: "lg:col-span-1 hover:scale-[1.02] transition-transform",
     },
     {
       Icon: Copy,
@@ -115,11 +115,11 @@ const Dashboard = () => {
       href: `/estimate/${contractor.id}`,
       cta: "Preview",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
-      className: "lg:col-start-1 lg:col-end-2 lg:row-start-3 lg:row-end-4",
+      className: "lg:col-span-2 bg-primary text-white hover:scale-[1.02] transition-transform",
       actions: (
         <div className="flex gap-2 mt-2">
           <Button 
-            variant="outline" 
+            variant="secondary"
             size="sm"
             onClick={(e) => {
               e.preventDefault();
@@ -144,7 +144,7 @@ const Dashboard = () => {
       href: "/leads",
       cta: "View all",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
-      className: "lg:col-start-3 lg:col-end-4 lg:row-start-1 lg:row-end-4",
+      className: "lg:col-span-2 hover:scale-[1.02] transition-transform",
       content: (
         <div className="mt-4 space-y-3">
           {leads.slice(0, 3).map((lead) => (
@@ -166,7 +166,7 @@ const Dashboard = () => {
           <h1 className="text-2xl font-semibold">Welcome, {contractor.business_name}</h1>
         </div>
 
-        <BentoGrid className="lg:grid-rows-3">
+        <BentoGrid className="grid-cols-1 md:grid-cols-2 gap-4">
           {features.map((feature) => (
             <BentoCard key={feature.name} {...feature} />
           ))}
