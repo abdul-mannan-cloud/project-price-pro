@@ -13,16 +13,17 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { formatDistanceToNow, format } from "date-fns";
-import { MapPin, ArrowUp, ArrowDown, Search, Download, Trash2, Filter, Phone, Mail, User } from "lucide-react";
+import { MapPin, ArrowUp, ArrowDown, Search, Download, Trash2, Filter, Phone, Mail, User, Calendar, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Json } from "@/integrations/supabase/types";
-
-const statusColors = {
-  pending: "bg-yellow-100 text-yellow-800",
-  completed: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-800",
-  "in-progress": "bg-blue-100 text-blue-800"
-} as const;
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Status = keyof typeof statusColors;
 
@@ -78,14 +79,25 @@ interface LeadsTableProps {
   onExport: (filteredLeads: Lead[]) => void;
 }
 
+const statusColors = {
+  pending: "bg-yellow-100 text-yellow-800",
+  completed: "bg-green-100 text-green-800",
+  cancelled: "bg-red-100 text-red-800",
+  "in-progress": "bg-blue-100 text-blue-800"
+} as const;
+
 export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: LeadsTableProps) => {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedMobileLead, setSelectedMobileLead] = useState<Lead | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [filters, setFilters] = useState({
+    status: [] as string[],
+    dateRange: 'all',
+    costRange: 'all',
+  });
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -187,37 +199,100 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div className="relative w-72">
+      <div className="flex justify-between items-center gap-4">
+        <div className="flex-1 max-w-md space-y-1.5">
+          <label htmlFor="search-leads" className="text-sm font-medium text-muted-foreground">
+            Search Leads
+          </label>
           <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search leads..."
+              id="search-leads"
+              placeholder="Search by name, email, or address..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-8"
+              className="pl-8 h-10"
             />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-1 top-1"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="h-4 w-4" />
-            </Button>
           </div>
-          {showFilters && (
-            <div className="absolute z-10 mt-2 w-full bg-white rounded-md shadow-lg p-4 space-y-2">
-              {/* Add filter options here */}
-            </div>
-          )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-10">
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {['pending', 'in-progress', 'completed', 'cancelled'].map((status) => (
+                <DropdownMenuCheckboxItem
+                  key={status}
+                  checked={filters.status.includes(status)}
+                  onCheckedChange={(checked) => {
+                    setFilters(prev => ({
+                      ...prev,
+                      status: checked 
+                        ? [...prev.status, status]
+                        : prev.status.filter(s => s !== status)
+                    }));
+                  }}
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Date Range</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {[
+                { value: 'all', label: 'All Time' },
+                { value: 'today', label: 'Today' },
+                { value: 'week', label: 'This Week' },
+                { value: 'month', label: 'This Month' }
+              ].map((option) => (
+                <DropdownMenuCheckboxItem
+                  key={option.value}
+                  checked={filters.dateRange === option.value}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setFilters(prev => ({ ...prev, dateRange: option.value }));
+                    }
+                  }}
+                >
+                  {option.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Cost Range</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {[
+                { value: 'all', label: 'All' },
+                { value: 'under1k', label: 'Under $1,000' },
+                { value: '1k-5k', label: '$1,000 - $5,000' },
+                { value: '5k-10k', label: '$5,000 - $10,000' },
+                { value: 'over10k', label: 'Over $10,000' }
+              ].map((option) => (
+                <DropdownMenuCheckboxItem
+                  key={option.value}
+                  checked={filters.costRange === option.value}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setFilters(prev => ({ ...prev, costRange: option.value }));
+                    }
+                  }}
+                >
+                  {option.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           {selectedLeads.length > 0 && (
             <Button
               variant="destructive"
               size="sm"
               onClick={() => onDeleteLeads(selectedLeads)}
+              className="h-10"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Delete Selected
@@ -227,6 +302,7 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
             variant="outline"
             size="sm"
             onClick={handleExportClick}
+            className="h-10"
           >
             <Download className="w-4 h-4 mr-2" />
             Export
