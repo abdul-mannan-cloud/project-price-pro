@@ -91,13 +91,12 @@ const Settings = () => {
           minimum_project_cost: formData.minimumProjectCost,
           markup_percentage: formData.markupPercentage,
           tax_rate: formData.taxRate,
-          ai_instructions: formData.aiInstructions
+          ai_instructions: formData.aiInstructions || []
         })
         .eq("id", user.id);
 
       if (settingsError) throw settingsError;
 
-      // Update CSS variables for branding colors
       document.documentElement.style.setProperty('--primary', formData.primaryColor);
       document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
       document.documentElement.style.setProperty('--secondary', formData.secondaryColor);
@@ -322,7 +321,7 @@ const Settings = () => {
         >
           <div className="space-y-6">
             <AIInstructionsForm
-              instructions={(contractor?.contractor_settings?.ai_instructions as any)?.instructions || []}
+              instructions={contractor?.contractor_settings?.ai_instructions || []}
               onSave={(instructions) => {
                 updateSettings.mutate({
                   aiInstructions: instructions
@@ -335,7 +334,6 @@ const Settings = () => {
               onSave={(rates) => {
                 updateSettings.mutate({
                   aiPreferences: {
-                    ...contractor?.contractor_settings?.ai_preferences,
                     rates
                   }
                 });
