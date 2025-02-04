@@ -32,6 +32,18 @@ type SortDirection = 'asc' | 'desc';
 export interface EstimateGroup {
   name: string;
   description?: string;
+  subgroups: {
+    name: string;
+    items: {
+      title: string;
+      description?: string;
+      quantity: number;
+      unit?: string;
+      unitAmount: number;
+      totalPrice: number;
+    }[];
+    subtotal: number;
+  }[];
 }
 
 export interface EstimateData {
@@ -50,7 +62,9 @@ export interface Lead {
   user_email: string | null;
   user_phone: string | null;
   estimate_data: EstimateData;
-  answers: Json;
+  answers: {
+    answers: Record<string, any>;
+  };
   category: string | null;
   contractor_id: string | null;
   project_description: string | null;
