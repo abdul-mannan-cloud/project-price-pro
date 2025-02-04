@@ -15,11 +15,6 @@ import { FeedbackForm } from "@/components/settings/FeedbackForm";
 import { FAQ } from "@/components/settings/FAQ";
 import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
 
-interface BrandingColors {
-  primary: string;
-  secondary: string;
-}
-
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -71,6 +66,10 @@ const Settings = () => {
     },
   });
 
+  const handleSave = (formData: any) => {
+    updateContractorMutation.mutate(formData);
+  };
+
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -82,10 +81,6 @@ const Settings = () => {
     } else {
       navigate("/");
     }
-  };
-
-  const handleSave = (formData: any) => {
-    updateContractorMutation.mutate(formData);
   };
 
   if (contractorLoading) {
