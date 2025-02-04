@@ -63,7 +63,7 @@ const EstimatePage = () => {
 
         if (error) {
           console.error("Error fetching contractor:", error);
-          // If the specified contractor is not found, try to fetch the default contractor
+          // Only try to fetch default if we weren't already trying to fetch it
           if (effectiveContractorId !== DEFAULT_CONTRACTOR_ID) {
             console.log('Falling back to default contractor');
             const { data: defaultData, error: defaultError } = await supabase
