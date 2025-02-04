@@ -17,6 +17,26 @@ import {
 } from "motion/react"
 import { cn } from "@/lib/utils"
 
+// Define Segmenter interface
+interface Segmenter {
+  segment(text: string): {
+    [Symbol.iterator](): Iterator<{
+      segment: string
+      index: number
+      input: string
+    }>
+  }
+}
+
+// Extend the global Intl interface
+declare global {
+  namespace Intl {
+    var Segmenter: {
+      new (locale: string, options?: { granularity?: "grapheme" | "word" | "sentence" }): Segmenter
+    }
+  }
+}
+
 interface TextRotateProps {
   texts: string[]
   rotationInterval?: number
