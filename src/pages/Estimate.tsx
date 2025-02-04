@@ -16,6 +16,8 @@ import { Question, Category, CategoryQuestions, AnswersState } from "@/types/est
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
+import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
+import { PaintbrushAnimation } from "@/components/EstimateForm/PaintbrushAnimation";
 
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
@@ -35,6 +37,7 @@ const EstimatePage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryQuestions | null>(null);
   const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
@@ -428,7 +431,7 @@ const EstimatePage = () => {
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           projectDescription, 
-          imageUrl: uploadedImageUrl, 
+          imageUrls: uploadedPhotos, 
           answers: formattedAnswers,
           contractorId: effectiveContractorId,
           leadId: currentLeadId,
@@ -501,7 +504,7 @@ const EstimatePage = () => {
       const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           projectDescription, 
-          imageUrl: uploadedImageUrl, 
+          imageUrls: uploadedPhotos, 
           answers: answersForSupabase,
           contractorId: effectiveContractorId,
           leadId: lead.id,
@@ -614,8 +617,9 @@ const EstimatePage = () => {
         {stage === 'photo' && (
           <div className="card p-8 animate-fadeIn text-center">
             <div className="flex flex-col items-center gap-6 mb-6">
+              <PaintbrushAnimation />
               <h2 className="text-2xl font-semibold mb-2">
-                🛠 {contractor?.business_name || "Project"} Estimator
+                {contractor?.business_name || "Project"} Estimator
               </h2>
               {contractor?.business_logo_url && (
                 <img 
@@ -625,43 +629,15 @@ const EstimatePage = () => {
                 />
               )}
               <p className="text-muted-foreground max-w-lg">
-                Quickly estimate your project cost in minutes! Simply take or upload a photo of what you want to repair or modify (e.g., "paint this wall").
+                Quickly estimate your project cost in minutes! Take or upload photos of what you want to repair or modify.
               </p>
-              <EstimateAnimation />
             </div>
             
-            <div className="space-y-4">
-              <label className="relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  capture="environment"
-                  disabled={isUploading}
-                />
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg" 
-                  size="lg" 
-                  disabled={isUploading}
-                  asChild
-                >
-                  <div>
-                    <Camera className="mr-2" />
-                    {isUploading ? "UPLOADING..." : "TAKE A PHOTO"}
-                  </div>
-                </Button>
-              </label>
-              <Button 
-                variant="outline"
-                className="w-full border-2" 
-                size="lg" 
-                onClick={() => setStage('description')}
-              >
-                <SkipForward className="mr-2" />
-                Skip Photo
-              </Button>
-            </div>
+            <PhotoUpload
+              onPhotosSelected={setUploadedPhotos}
+              onNext={() => setStage('description')}
+              uploadedPhotos={uploadedPhotos}
+            />
           </div>
         )}
 

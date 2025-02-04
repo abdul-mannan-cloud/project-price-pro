@@ -229,6 +229,7 @@ export type Database = {
           preview_data: Json | null
           project_address: string | null
           project_description: string | null
+          project_images: Json | null
           project_title: string
           status: string | null
           updated_at: string | null
@@ -248,6 +249,7 @@ export type Database = {
           preview_data?: Json | null
           project_address?: string | null
           project_description?: string | null
+          project_images?: Json | null
           project_title: string
           status?: string | null
           updated_at?: string | null
@@ -267,6 +269,7 @@ export type Database = {
           preview_data?: Json | null
           project_address?: string | null
           project_description?: string | null
+          project_images?: Json | null
           project_title?: string
           status?: string | null
           updated_at?: string | null

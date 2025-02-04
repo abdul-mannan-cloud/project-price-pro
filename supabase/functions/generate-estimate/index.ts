@@ -4,7 +4,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 interface RequestBody {
   projectDescription: string;
-  imageUrl?: string;
+  imageUrls?: string[];  // Updated to handle multiple images
   answers: Record<string, any>;
   contractorId?: string;
   leadId?: string;
@@ -303,8 +303,8 @@ serve(async (req) => {
   }
 
   try {
-    const { projectDescription, answers, contractorId, category } = await req.json() as RequestBody;
-    console.log('Generating estimate for:', { projectDescription, category, contractorId });
+    const { projectDescription, imageUrls, answers, contractorId, leadId, category } = await req.json() as RequestBody;
+    console.log('Generating estimate for:', { projectDescription, category, contractorId, imageCount: imageUrls?.length });
 
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
     const locationData = await getLocationData(clientIP);
