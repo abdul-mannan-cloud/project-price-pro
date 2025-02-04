@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
+import { Json } from "@/integrations/supabase/types";
 import { 
   LogOut, 
   LayoutDashboard as LayoutDashboardIcon, 
@@ -77,7 +78,7 @@ const Settings = () => {
   };
 
   const [brandingColors, setBrandingColors] = useState<BrandingColors>(() => {
-    const colors = contractor?.branding_colors as BrandingColors | null;
+    const colors = contractor?.branding_colors as { primary: string; secondary: string } | null;
     return colors || defaultBrandingColors;
   });
 
@@ -161,10 +162,15 @@ const Settings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
+      const brandingColorsJson: Json = {
+        primary: colors.primary,
+        secondary: colors.secondary
+      };
+
       const { error } = await supabase
         .from("contractors")
         .update({
-          branding_colors: colors
+          branding_colors: brandingColorsJson
         })
         .eq("id", user.id);
 
