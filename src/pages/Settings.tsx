@@ -19,6 +19,13 @@ interface AIPreferences {
   instructions: string;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+}
+
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -30,8 +37,8 @@ const Settings = () => {
     { name: "Settings", url: "/settings", icon: SettingsIcon }
   ];
 
-  // Fetch categories data
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+  // Fetch categories data with proper typing
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -140,7 +147,16 @@ const Settings = () => {
   };
 
   if (contractorLoading || categoriesLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-secondary">
+        <NavBar items={navItems} />
+        <div className="container mx-auto py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-muted-foreground">Loading settings...</div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const defaultColors = {
@@ -440,7 +456,7 @@ const Settings = () => {
             </p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {categories?.map((category) => (
+              {categories.map((category) => (
                 <div key={category.id} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
