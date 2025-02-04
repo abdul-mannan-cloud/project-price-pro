@@ -27,6 +27,14 @@ const constructionImages = [
     url: "https://images.unsplash.com/photo-1513694203232-719a280e022f",
     title: "Floor Installation",
   },
+  {
+    url: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7",
+    title: "Construction Planning",
+  },
+  {
+    url: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e",
+    title: "Modern Construction",
+  },
 ];
 
 const rotatingTexts = [
@@ -100,6 +108,8 @@ const Index = () => {
               ${index === 2 ? "bottom-[5%] right-[5%]" : ""} // Bottom right
               ${index === 3 ? "bottom-[5%] left-[5%]" : ""} // Bottom left
               ${index === 4 ? "bottom-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2" : ""} // Center
+              ${index === 5 ? "top-[50%] left-[5%] transform -translate-y-1/2" : ""} // Middle left
+              ${index === 6 ? "top-[50%] right-[5%] transform -translate-y-1/2" : ""} // Middle right
             `}
           >
             <motion.img
