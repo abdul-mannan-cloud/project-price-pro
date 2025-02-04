@@ -11,17 +11,17 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        ai: 'bg-primary text-primary-foreground hover:bg-primary/90 border-primary-700 border-b-4 shadow-md',
+        ai: 'bg-indigo-500 text-white hover:bg-indigo-600 border-indigo-700 border-b-4 border-b-indigo-600 shadow-md',
         default:
-          'bg-primary text-primary-foreground hover:bg-primary/90 border-primary-700 border-b-4 shadow-md',
+          'bg-blue-500 text-primary-foreground hover:bg-blue-600 border-blue-700 border-b-4 border-b-blue-600 shadow-md',
         destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-red-700 border-b-4 border-red-600 shadow-md',
+          'bg-red-500 text-destructive-foreground hover:bg-red-600 border-red-700 border-b-4 border-red-600 shadow-md',
         outline:
           'border bg-white hover:bg-neutral-100 border-neutral-300 border-b-4 border-b-neutral-200',
         outline_destructive:
           'border text-red-500 bg-white hover:bg-red-50 border-red-600 border-b-4 border-b-red-500',
         secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80 border-secondary-700 border-b-4 shadow-md',
+          'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         ghost_destructive: 'bg-transparent text-red-500 hover:bg-red-100',
         link: 'text-primary underline-offset-4 hover:underline',
