@@ -13,6 +13,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+// Helper functions for color conversion
 const hslToHex = (h: number, s: number, l: number) => {
   l /= 100
   const a = (s * Math.min(l, 1 - l)) / 100
@@ -84,6 +85,7 @@ const ColorPicker = ({
 }) => {
   const [hsl, setHsl] = useState<[number, number, number]>([0, 0, 0])
   const [colorInput, setColorInput] = useState(color)
+  const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
     handleColorChange(color)
@@ -132,23 +134,33 @@ const ColorPicker = ({
     setColorInput(newColor)
     if (
       /^#[0-9A-Fa-f]{6}$/.test(newColor) ||
-      /^hsl\(\d+,\s*\d+%,\s*\d+%\)$/.test(newColor)
+      /^hsl$$\d+,\s*\d+%,\s*\d+%$$$/.test(newColor)
     ) {
       handleColorChange(newColor)
     }
   }
 
   const colorPresets = [
-    "#FF3B30", "#FF9500", "#FFCC00", "#4CD964", "#5AC8FA", "#007AFF",
-    "#5856D6", "#FF2D55", "#8E8E93", "#EFEFF4", "#E5E5EA", "#D1D1D6"
+    "#FF3B30",
+    "#FF9500",
+    "#FFCC00",
+    "#4CD964",
+    "#5AC8FA",
+    "#007AFF",
+    "#5856D6",
+    "#FF2D55",
+    "#8E8E93",
+    "#EFEFF4",
+    "#E5E5EA",
+    "#D1D1D6",
   ]
 
   return (
-    <Popover>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-full justify-start text-left font-normal bg-white"
+          className="w-full justify-start text-left font-normal"
         >
           <div
             className="w-6 h-6 rounded-full mr-2 shadow-sm"
@@ -158,7 +170,7 @@ const ColorPicker = ({
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-3 bg-white">
+      <PopoverContent className="w-[280px] p-3">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -251,7 +263,7 @@ const ColorPicker = ({
         </motion.div>
       </PopoverContent>
     </Popover>
-  );
-};
+  )
+}
 
 export { ColorPicker }
