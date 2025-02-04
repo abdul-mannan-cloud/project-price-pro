@@ -90,15 +90,17 @@ const Settings = () => {
           minimum_project_cost: formData.minimumProjectCost,
           markup_percentage: formData.markupPercentage,
           tax_rate: formData.taxRate,
-          ai_preferences: {
-            rate: formData.aiRate,
-            type: formData.aiType,
-            instructions: formData.aiInstructions
-          }
+          ai_instructions: formData.aiInstructions
         })
         .eq("id", user.id);
 
       if (settingsError) throw settingsError;
+
+      // Update CSS variables for branding colors
+      document.documentElement.style.setProperty('--primary', formData.primaryColor);
+      document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
+      document.documentElement.style.setProperty('--secondary', formData.secondaryColor);
+      document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
     },
     onSuccess: () => {
       toast({
@@ -133,8 +135,6 @@ const Settings = () => {
       minimumProjectCost: formData.get("minimumProjectCost"),
       markupPercentage: formData.get("markupPercentage"),
       taxRate: formData.get("taxRate"),
-      aiRate: formData.get("aiRate"),
-      aiType: formData.get("aiType"),
       aiInstructions: formData.get("aiInstructions"),
     });
   };
@@ -179,6 +179,7 @@ const Settings = () => {
 
         <SettingsDialog
           title="Business Information"
+          description="Update your business details and contact information"
           isOpen={activeDialog === "business"}
           onClose={() => setActiveDialog(null)}
         >
@@ -226,6 +227,7 @@ const Settings = () => {
 
         <SettingsDialog
           title="Branding"
+          description="Customize your brand colors and appearance"
           isOpen={activeDialog === "branding"}
           onClose={() => setActiveDialog(null)}
         >
@@ -264,6 +266,7 @@ const Settings = () => {
 
         <SettingsDialog
           title="Estimate Settings"
+          description="Configure your pricing and cost calculations"
           isOpen={activeDialog === "estimate"}
           onClose={() => setActiveDialog(null)}
         >
@@ -312,23 +315,40 @@ const Settings = () => {
 
         <SettingsDialog
           title="AI Preferences"
+          description="Configure how AI generates estimates and manages rates"
           isOpen={activeDialog === "ai"}
           onClose={() => setActiveDialog(null)}
         >
-          <AIRateForm
-            rates={(contractor?.contractor_settings?.ai_preferences as any)?.rates || []}
-            onSave={(rates) => {
-              updateSettings.mutate({
-                aiPreferences: {
-                  rates
-                }
-              });
-            }}
-          />
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">AI Instructions</h3>
+              <p className="text-sm text-muted-foreground">
+                Provide general instructions for how AI should handle estimate generation
+              </p>
+              <textarea
+                name="aiInstructions"
+                className="w-full min-h-[150px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                defaultValue={contractor?.contractor_settings?.ai_instructions}
+                placeholder="Enter instructions for AI estimate generation..."
+              />
+            </div>
+            
+            <AIRateForm
+              rates={(contractor?.contractor_settings?.ai_preferences as any)?.rates || []}
+              onSave={(rates) => {
+                updateSettings.mutate({
+                  aiPreferences: {
+                    rates
+                  }
+                });
+              }}
+            />
+          </div>
         </SettingsDialog>
 
         <SettingsDialog
           title="Service Categories"
+          description="Select which services you offer and customize your estimate workflow"
           isOpen={activeDialog === "categories"}
           onClose={() => setActiveDialog(null)}
         >
@@ -337,6 +357,7 @@ const Settings = () => {
 
         <SettingsDialog
           title="Webhooks"
+          description="Configure external integrations and automation"
           isOpen={activeDialog === "webhooks"}
           onClose={() => setActiveDialog(null)}
         >
@@ -350,26 +371,8 @@ const Settings = () => {
         </SettingsDialog>
 
         <SettingsDialog
-          title="Feedback"
-          isOpen={activeDialog === "feedback"}
-          onClose={() => setActiveDialog(null)}
-        >
-          <div className="space-y-4">
-            <p className="text-muted-foreground">
-              We value your feedback! Please share your thoughts, suggestions, or report any issues you've encountered.
-            </p>
-            <form className="space-y-4">
-              <textarea
-                className="w-full h-32 p-3 rounded-lg border border-input bg-background"
-                placeholder="Your feedback..."
-              />
-              <Button type="submit">Submit Feedback</Button>
-            </form>
-          </div>
-        </SettingsDialog>
-
-        <SettingsDialog
           title="Frequently Asked Questions"
+          description="Find answers to common questions about using the platform"
           isOpen={activeDialog === "faq"}
           onClose={() => setActiveDialog(null)}
         >
