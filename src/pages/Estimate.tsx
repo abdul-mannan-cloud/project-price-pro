@@ -59,29 +59,44 @@ const EstimatePage = () => {
             contractor_settings(*)
           `)
           .eq("id", effectiveContractorId)
-          .single();
+          .maybeSingle(); // Changed from single() to maybeSingle()
 
         if (error) {
           console.error("Error fetching contractor:", error);
-          // Only try to fetch default if we weren't already trying to fetch it
-          if (effectiveContractorId !== DEFAULT_CONTRACTOR_ID) {
-            console.log('Falling back to default contractor');
-            const { data: defaultData, error: defaultError } = await supabase
-              .from("contractors")
-              .select(`
-                *,
-                contractor_settings(*)
-              `)
-              .eq("id", DEFAULT_CONTRACTOR_ID)
-              .single();
-
-            if (defaultError) {
-              console.error("Error fetching default contractor:", defaultError);
-              throw defaultError;
-            }
-            return defaultData;
-          }
           throw error;
+        }
+
+        if (!data && effectiveContractorId !== DEFAULT_CONTRACTOR_ID) {
+          console.log('Falling back to default contractor');
+          const { data: defaultData, error: defaultError } = await supabase
+            .from("contractors")
+            .select(`
+              *,
+              contractor_settings(*)
+            `)
+            .eq("id", DEFAULT_CONTRACTOR_ID)
+            .maybeSingle(); // Changed from single() to maybeSingle()
+
+          if (defaultError) {
+            console.error("Error fetching default contractor:", defaultError);
+            throw defaultError;
+          }
+
+          if (!defaultData) {
+            console.error("No default contractor found");
+            return {
+              business_name: "Example Company",
+              contact_email: "contact@example.com",
+              contact_phone: "(555) 123-4567",
+              contractor_settings: {
+                markup_percentage: 20,
+                tax_rate: 8.5,
+                minimum_project_cost: 1000
+              }
+            };
+          }
+
+          return defaultData;
         }
 
         console.log('Successfully fetched contractor:', data);
