@@ -46,7 +46,8 @@ const PublicEstimate = () => {
             subscription_status,
             branding_colors,
             created_at,
-            updated_at
+            updated_at,
+            contractor_settings (*)
           )
         `)
         .eq("id", id)
@@ -75,6 +76,20 @@ const PublicEstimate = () => {
   }
 
   const estimateData = lead.estimate_data as EstimateData;
+  const contractor = {
+    ...lead.contractors,
+    contractor_settings: lead.contractors?.contractor_settings || {
+      ai_preferences: {},
+      ai_prompt_template: "",
+      created_at: "",
+      excluded_categories: [],
+      id: lead.contractors?.id || "",
+      markup_percentage: 0,
+      minimum_project_cost: 0,
+      tax_rate: 0,
+      updated_at: "",
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,7 +98,7 @@ const PublicEstimate = () => {
           groups={estimateData?.groups || []}
           totalCost={lead.estimated_cost || 0}
           projectSummary={lead.project_description}
-          contractor={lead.contractors}
+          contractor={contractor}
         />
       </div>
     </div>
