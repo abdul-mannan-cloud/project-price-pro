@@ -144,11 +144,20 @@ const Settings = () => {
         }
       : defaultColors;
 
-  const aiPreferences = contractor?.contractor_settings?.ai_preferences as AIPreferences || {
+  const defaultAIPreferences: AIPreferences = {
     rate: "HR",
     type: "material_labor",
     instructions: ""
   };
+
+  const aiPreferences = contractor?.contractor_settings?.ai_preferences && 
+    typeof contractor.contractor_settings.ai_preferences === 'object' && 
+    !Array.isArray(contractor.contractor_settings.ai_preferences) &&
+    'rate' in contractor.contractor_settings.ai_preferences &&
+    'type' in contractor.contractor_settings.ai_preferences &&
+    'instructions' in contractor.contractor_settings.ai_preferences
+      ? contractor.contractor_settings.ai_preferences as AIPreferences
+      : defaultAIPreferences;
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -366,6 +375,12 @@ const Settings = () => {
           isOpen={activeDialog === "webhooks"}
           onClose={() => setActiveDialog(null)}
         >
+          <div className="mb-4">
+            <p className="text-sm text-muted-foreground">
+              Webhooks allow you to receive real-time notifications when new leads are created. 
+              You can configure external services to receive these notifications and automate your workflow.
+            </p>
+          </div>
           <WebhookSettings />
         </SettingsDialog>
       </div>
