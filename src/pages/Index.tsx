@@ -1,16 +1,9 @@
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Check if there's a default contractor ID and navigate to the estimate page
-    const defaultContractorId = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
-    navigate(`/estimate/${defaultContractorId}`);
-  }, [navigate]);
 
   return (
     <main className="bg-background">
