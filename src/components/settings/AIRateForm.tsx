@@ -21,10 +21,10 @@ import {
 
 interface AIRate {
   title: string;
+  description: string;
   rate: string;
   unit: string;
   type: string;
-  description?: string;
   instructions?: string;
 }
 
@@ -66,10 +66,10 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
   const [isAddingRate, setIsAddingRate] = useState(false);
   const [newRate, setNewRate] = useState<AIRate>({
     title: "",
+    description: "",
     rate: "",
     unit: "",
     type: "material_labor",
-    description: "",
     instructions: ""
   });
 
@@ -78,10 +78,10 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
     setIsAddingRate(false);
     setNewRate({
       title: "",
+      description: "",
       rate: "",
       unit: "",
       type: "material_labor",
-      description: "",
       instructions: ""
     });
   };
