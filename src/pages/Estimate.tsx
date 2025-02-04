@@ -68,6 +68,7 @@ const EstimatePage = () => {
 
         if (!data) {
           console.log('No contractor found, using default values');
+          const timestamp = new Date().toISOString();
           return {
             id: effectiveContractorId,
             business_name: "Example Company",
@@ -82,8 +83,8 @@ const EstimatePage = () => {
             business_address: null,
             website: null,
             license_number: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            created_at: timestamp,
+            updated_at: timestamp,
             contractor_settings: {
               id: effectiveContractorId,
               minimum_project_cost: 1000,
@@ -94,11 +95,11 @@ const EstimatePage = () => {
                 rate: "HR",
                 type: "material_labor",
                 instructions: ""
-              },
+              } as Json,
               excluded_categories: [],
               ai_instructions: "",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              created_at: timestamp,
+              updated_at: timestamp
             }
           };
         }
@@ -137,7 +138,10 @@ const EstimatePage = () => {
         .eq('Key Options', '42e64c9b-53b2-49bd-ad77-995ecb3106c6')
         .maybeSingle();
 
-      if (optionsError) throw optionsError;
+      if (optionsError) {
+        console.error('Error fetching options:', optionsError);
+        throw optionsError;
+      }
 
       if (!optionsData) {
         console.log('No options data found');
