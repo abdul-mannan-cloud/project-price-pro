@@ -13,6 +13,7 @@ import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
 import { Json } from "@/integrations/supabase/types";
 import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
+import { AIRateForm } from "@/components/settings/AIRateForm";
 
 interface AIPreferences {
   rate: string;
@@ -390,26 +391,29 @@ const Settings = () => {
           isOpen={activeDialog === "ai"}
           onClose={() => setActiveDialog(null)}
         >
-          <form onSubmit={handleSave} className="space-y-6">
+          <div className="space-y-6">
+            <AIRateForm
+              rates={[
+                {
+                  title: "Default Labor Rate",
+                  rate: "75",
+                  unit: "HR",
+                  type: "hourly",
+                  instructions: "Use this rate for standard labor calculations"
+                }
+              ]}
+              onSave={(rates) => {
+                // Handle saving the rates to your backend
+                updateSettings.mutate({
+                  aiPreferences: {
+                    ...aiPreferences,
+                    rates
+                  }
+                });
+              }}
+            />
+
             <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Rate Type</label>
-                <div className="flex gap-4 mt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      // Add rate logic
-                    }}
-                  >
-                    Add Rate
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Add custom rates for different units of measurement (e.g., HR - Hour, SF - Square Foot)
-                </p>
-              </div>
-              
               <div>
                 <label className="text-sm font-medium">Estimate Type</label>
                 <select
@@ -426,16 +430,6 @@ const Settings = () => {
               <div>
                 <div className="flex justify-between items-center">
                   <label className="text-sm font-medium">Additional Instructions</label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      // Add instruction logic
-                    }}
-                  >
-                    Add Instruction
-                  </Button>
                 </div>
                 <textarea
                   name="aiInstructions"
@@ -446,10 +440,11 @@ const Settings = () => {
                 />
               </div>
             </div>
+            
             <Button type="submit" disabled={updateSettings.isPending}>
               {updateSettings.isPending ? "Saving..." : "Save Changes"}
             </Button>
-          </form>
+          </div>
         </SettingsDialog>
 
         {/* Service Categories Dialog */}
@@ -481,3 +476,4 @@ const Settings = () => {
 };
 
 export default Settings;
+
