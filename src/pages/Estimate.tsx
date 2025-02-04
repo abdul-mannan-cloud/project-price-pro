@@ -586,13 +586,15 @@ const EstimatePage = () => {
       />
       
       {contractor && (
-        <button 
-          onClick={() => navigate("/dashboard")}
-          className="absolute top-4 left-4 text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
-        >
-          <ArrowLeft size={20} />
-          Back to Dashboard
-        </button>
+        <div className="w-full border-b border-gray-200 py-2 px-4">
+          <button 
+            onClick={() => navigate("/dashboard")}
+            className="text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
+          >
+            <ArrowLeft size={20} />
+            Back to Dashboard
+          </button>
+        </div>
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-12">
