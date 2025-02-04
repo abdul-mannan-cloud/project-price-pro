@@ -24,6 +24,12 @@ interface BrandingColors {
   secondary: string;
 }
 
+interface AIInstruction {
+  title: string;
+  description: string;
+  instructions: string;
+}
+
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -161,6 +167,19 @@ const Settings = () => {
         primary: "#6366F1",
         secondary: "#4F46E5"
       };
+
+  const parsedInstructions = (): AIInstruction[] => {
+    try {
+      if (!contractor?.contractor_settings?.ai_instructions) return [];
+      if (Array.isArray(contractor.contractor_settings.ai_instructions)) {
+        return contractor.contractor_settings.ai_instructions;
+      }
+      const parsed = JSON.parse(contractor.contractor_settings.ai_instructions);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  };
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -334,7 +353,7 @@ const Settings = () => {
           >
             <div className="space-y-6">
               <AIInstructionsForm
-                instructions={contractor?.contractor_settings?.ai_instructions || []}
+                instructions={parsedInstructions()}
                 onSave={(instructions) => {
                   updateSettings.mutate({
                     aiInstructions: instructions
