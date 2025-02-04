@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
@@ -15,6 +15,8 @@ import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category, CategoryQuestions, AnswersState } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
+
+const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
@@ -34,31 +36,49 @@ const EstimatePage = () => {
   const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { contractorId } = useParams();
-  const [isLoading, setIsLoading] = useState(true);
+  const { contractorId: urlContractorId } = useParams();
+  const location = useLocation();
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
 
+  // Extract contractor ID from URL params or use default
+  const effectiveContractorId = urlContractorId || DEFAULT_CONTRACTOR_ID;
+
+  // Fetch contractor data using React Query for better caching and performance
   const { data: contractor, isError: isContractorError } = useQuery({
-    queryKey: ["contractor", contractorId],
+    queryKey: ["contractor", effectiveContractorId],
     queryFn: async () => {
-      if (!contractorId) {
-        throw new Error("No contractor ID provided");
-      }
       const { data, error } = await supabase
         .from("contractors")
-        .select("*, contractor_settings(*)")
-        .eq("id", contractorId)
-        .maybeSingle();
+        .select(`
+          *,
+          contractor_settings(*)
+        `)
+        .eq("id", effectiveContractorId)
+        .single();
+
       if (error) {
         console.error("Error fetching contractor:", error);
+        // If the specified contractor is not found, try to fetch the default contractor
+        if (effectiveContractorId !== DEFAULT_CONTRACTOR_ID) {
+          const { data: defaultData, error: defaultError } = await supabase
+            .from("contractors")
+            .select(`
+              *,
+              contractor_settings(*)
+            `)
+            .eq("id", DEFAULT_CONTRACTOR_ID)
+            .single();
+
+          if (defaultError) throw defaultError;
+          return defaultData;
+        }
         throw error;
       }
-      if (!data) {
-        throw new Error("Contractor not found");
-      }
+
       return data;
     },
-    enabled: !!contractorId,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    retry: 1
   });
 
   useEffect(() => {
@@ -74,12 +94,6 @@ const EstimatePage = () => {
   useEffect(() => {
     loadCategories();
   }, []);
-
-  useEffect(() => {
-    if (selectedCategory) {
-      loadQuestionSet(selectedCategory);
-    }
-  }, [selectedCategory]);
 
   const loadCategories = async () => {
     try {
@@ -388,7 +402,7 @@ const EstimatePage = () => {
           projectDescription, 
           imageUrl: uploadedImageUrl, 
           answers: formattedAnswers,
-          contractorId,
+          contractorId: effectiveContractorId,
           leadId: currentLeadId,
           category: selectedCategory
         }
@@ -439,9 +453,6 @@ const EstimatePage = () => {
         return acc;
       }, {} as Record<string, any>);
 
-      // Ensure we have a valid contractor ID
-      const effectiveContractorId = contractorId || '098bcb69-99c6-445b-bf02-94dc7ef8c938';
-
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert({
@@ -477,7 +488,7 @@ const EstimatePage = () => {
         .update({ 
           estimate_data: estimateData,
           estimated_cost: estimateData.totalCost || 0,
-          contractor_id: effectiveContractorId // Ensure contractor_id is set in the update as well
+          contractor_id: effectiveContractorId
         })
         .eq('id', lead.id);
 
@@ -666,7 +677,7 @@ const EstimatePage = () => {
             <ContactForm 
               onSubmit={handleContactSubmit} 
               leadId={currentLeadId || undefined}
-              contractorId={contractorId}
+              contractorId={effectiveContractorId}
               estimate={estimate}
               contractor={contractor}
             />

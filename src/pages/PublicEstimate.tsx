@@ -33,10 +33,10 @@ const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 const PublicEstimate = () => {
   const { id } = useParams();
 
-  const { data: lead, isLoading: isLeadLoading } = useQuery({
+  const { data: lead } = useQuery({
     queryKey: ["public-estimate", id],
     queryFn: async () => {
-      const { data: leadData, error: leadError } = await supabase
+      const { data, error } = await supabase
         .from("leads")
         .select(`
           *,
@@ -57,12 +57,11 @@ const PublicEstimate = () => {
           )
         `)
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
-      if (leadError) {
-        console.log("Lead not found or error, using default contractor");
+      if (error || !data) {
         return {
-          id: id,
+          id,
           contractor_id: DEFAULT_CONTRACTOR_ID,
           estimate_data: null,
           estimated_cost: 0,
@@ -74,7 +73,7 @@ const PublicEstimate = () => {
         };
       }
 
-      return leadData;
+      return data;
     },
   });
 
@@ -91,16 +90,30 @@ const PublicEstimate = () => {
         .single();
 
       if (error) {
-        console.error("Error fetching contractor:", error);
+        // If the specified contractor is not found, try to fetch the default contractor
+        if (lead?.contractor_id !== DEFAULT_CONTRACTOR_ID) {
+          const { data: defaultData, error: defaultError } = await supabase
+            .from("contractors")
+            .select(`
+              *,
+              contractor_settings (*)
+            `)
+            .eq("id", DEFAULT_CONTRACTOR_ID)
+            .single();
+
+          if (defaultError) throw defaultError;
+          return defaultData;
+        }
         throw error;
       }
 
       return data as ContractorWithSettings;
     },
     enabled: !!lead,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  if (isLeadLoading || isContractorLoading) {
+  if (isContractorLoading) {
     return <LoadingScreen message="Loading estimate..." />;
   }
 
