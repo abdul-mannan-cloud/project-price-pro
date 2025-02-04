@@ -6,13 +6,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { Settings as SettingsIcon, Users, LayoutDashboard, Building2, Palette, Calculator, Webhook, Bot, ListChecks, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useState } from "react";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
-import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
 import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
 import { AIRateForm } from "@/components/settings/AIRateForm";
+import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
 
 interface BrandingColors {
   primary: string;
@@ -30,7 +30,6 @@ const Settings = () => {
     { name: "Settings", url: "/settings", icon: SettingsIcon }
   ];
 
-  // Fetch contractor data
   const { data: contractor, isLoading: contractorLoading } = useQuery({
     queryKey: ["contractor"],
     queryFn: async () => {
@@ -174,49 +173,7 @@ const Settings = () => {
           </Button>
         </div>
         
-        <div className="space-y-4">
-          <SettingsMenuItem
-            icon={<Building2 className="h-5 w-5" />}
-            title="Business Information"
-            description="Manage your business details and contact information"
-            onClick={() => setActiveDialog("business")}
-          />
-
-          <SettingsMenuItem
-            icon={<Palette className="h-5 w-5" />}
-            title="Branding"
-            description="Customize your brand colors and appearance"
-            onClick={() => setActiveDialog("branding")}
-          />
-
-          <SettingsMenuItem
-            icon={<Calculator className="h-5 w-5" />}
-            title="Estimate Settings"
-            description="Configure estimate calculations and pricing"
-            onClick={() => setActiveDialog("estimate")}
-          />
-
-          <SettingsMenuItem
-            icon={<Bot className="h-5 w-5" />}
-            title="AI Preferences"
-            description="Configure AI settings for estimate generation"
-            onClick={() => setActiveDialog("ai")}
-          />
-
-          <SettingsMenuItem
-            icon={<ListChecks className="h-5 w-5" />}
-            title="Service Categories"
-            description="Choose which services you want to offer to your customers"
-            onClick={() => setActiveDialog("categories")}
-          />
-
-          <SettingsMenuItem
-            icon={<Webhook className="h-5 w-5" />}
-            title="Webhooks"
-            description="Manage webhook integrations for lead notifications"
-            onClick={() => setActiveDialog("webhooks")}
-          />
-        </div>
+        <FeaturesSectionWithHoverEffects setActiveDialog={setActiveDialog} />
 
         {/* Business Information Dialog */}
         <SettingsDialog
@@ -394,6 +351,54 @@ const Settings = () => {
             </p>
           </div>
           <WebhookSettings />
+        </SettingsDialog>
+
+        {/* Feedback Dialog */}
+        <SettingsDialog
+          title="Feedback"
+          isOpen={activeDialog === "feedback"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              We value your feedback! Please share your thoughts, suggestions, or report any issues you've encountered.
+            </p>
+            <form className="space-y-4">
+              <textarea
+                className="w-full h-32 p-3 rounded-lg border border-input bg-background"
+                placeholder="Your feedback..."
+              />
+              <Button type="submit">Submit Feedback</Button>
+            </form>
+          </div>
+        </SettingsDialog>
+
+        {/* FAQ Dialog */}
+        <SettingsDialog
+          title="Frequently Asked Questions"
+          isOpen={activeDialog === "faq"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h3 className="font-medium">How do I update my business information?</h3>
+              <p className="text-muted-foreground">
+                Click on the "Business Information" card to update your business details, including name, contact information, and address.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium">How do I customize my brand colors?</h3>
+              <p className="text-muted-foreground">
+                Navigate to the "Branding" section where you can select your primary and secondary brand colors using our color picker.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium">How do webhook notifications work?</h3>
+              <p className="text-muted-foreground">
+                Webhooks allow you to receive real-time notifications when new leads are created. Configure your webhook endpoints in the "Webhooks" section.
+              </p>
+            </div>
+          </div>
         </SettingsDialog>
       </div>
     </div>
