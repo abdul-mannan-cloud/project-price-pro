@@ -5,6 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Edit, X } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface LineItem {
   title: string;
@@ -54,6 +55,7 @@ export const EstimateDisplay = ({
     itemIndex: number;
     item: LineItem;
   } | null>(null);
+  const isMobile = useIsMobile();
 
   const defaultCompany = {
     business_name: "Example Company",
@@ -97,21 +99,23 @@ export const EstimateDisplay = ({
 
   return (
     <Card className={cn(
-      "p-8 max-w-6xl mx-auto transition-all duration-500 max-h-[80vh] overflow-y-auto",
+      "transition-all duration-500 max-h-[80vh] overflow-y-auto",
+      "w-full mx-auto",
+      isMobile ? "rounded-none p-4" : "max-w-6xl p-8",
       isBlurred && "blur-md pointer-events-none"
     )}>
       {/* Company Header */}
-      <div className="flex items-start justify-between mb-8 pb-6 border-b">
+      <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b gap-4">
         <div className="flex items-center space-x-4">
           {contractor?.business_logo_url && (
             <img 
               src={contractor.business_logo_url} 
               alt={`${companyInfo.business_name} logo`}
-              className="w-16 h-16 object-contain"
+              className="w-12 h-12 md:w-16 md:h-16 object-contain"
             />
           )}
           <div>
-            <h1 className="text-2xl font-bold">{companyInfo.business_name}</h1>
+            <h1 className="text-xl md:text-2xl font-bold">{companyInfo.business_name}</h1>
             <p className="text-sm text-muted-foreground">{companyInfo.contact_email}</p>
             <p className="text-sm text-muted-foreground">{companyInfo.contact_phone}</p>
           </div>
@@ -131,9 +135,9 @@ export const EstimateDisplay = ({
       )}
 
       {/* Estimate Groups */}
-      <div className="space-y-8">
+      <div className="space-y-6">
         {groups.map((group, groupIndex) => (
-          <div key={groupIndex} className="bg-gray-50 p-6 rounded-lg">
+          <div key={groupIndex} className="bg-gray-50 p-4 md:p-6 rounded-lg">
             <div className="mb-4">
               {isEditable ? (
                 <input
@@ -144,7 +148,7 @@ export const EstimateDisplay = ({
                     newGroups[groupIndex].name = e.target.value;
                     onEstimateChange?.({ groups: newGroups });
                   }}
-                  className="text-lg font-semibold bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
+                  className="text-lg font-semibold bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
                 />
               ) : (
                 <h3 className="text-lg font-semibold">{group.name}</h3>
@@ -155,7 +159,7 @@ export const EstimateDisplay = ({
             </div>
 
             {/* Subgroups */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {group.subgroups.map((subgroup, subIndex) => (
                 <div key={subIndex} className="bg-white p-4 rounded-md shadow-sm">
                   {isEditable ? (
@@ -167,14 +171,15 @@ export const EstimateDisplay = ({
                         newGroups[groupIndex].subgroups[subIndex].name = e.target.value;
                         onEstimateChange?.({ groups: newGroups });
                       }}
-                      className="font-medium text-primary mb-3 bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
+                      className="font-medium text-primary mb-3 bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
                     />
                   ) : (
                     <h4 className="font-medium mb-3 text-primary">{subgroup.name}</h4>
                   )}
                   
-                  {/* Line Items Table */}
+                  {/* Line Items */}
                   <div className="overflow-x-auto">
+                    {/* Desktop Table View */}
                     <table className="w-full hidden md:table">
                       <thead>
                         <tr className="border-b border-gray-200">
@@ -183,62 +188,38 @@ export const EstimateDisplay = ({
                           <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Qty</th>
                           <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Unit Price</th>
                           <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Total</th>
+                          {isEditable && <th className="w-16"></th>}
                         </tr>
                       </thead>
                       <tbody>
                         {subgroup.items.map((item, itemIndex) => (
                           <tr key={itemIndex} className="border-b border-gray-100">
                             <td className="py-3 px-4">
-                              {isEditable ? (
-                                <input
-                                  type="text"
-                                  value={item.title}
-                                  onChange={(e) => handleItemChange(groupIndex, subIndex, itemIndex, 'title', e.target.value)}
-                                  className="font-medium bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
-                                />
-                              ) : (
-                                <span className="font-medium">{formatItemTitle(item.title, item.unit)}</span>
-                              )}
+                              <span className="font-medium">{formatItemTitle(item.title, item.unit)}</span>
                             </td>
                             <td className="py-3 px-4">
-                              {isEditable ? (
-                                <input
-                                  type="text"
-                                  value={item.description || ''}
-                                  onChange={(e) => handleItemChange(groupIndex, subIndex, itemIndex, 'description', e.target.value)}
-                                  className="text-sm text-muted-foreground bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
-                                />
-                              ) : (
-                                <span className="text-sm text-muted-foreground">{item.description}</span>
-                              )}
+                              <span className="text-sm text-muted-foreground">{item.description}</span>
                             </td>
-                            <td className="py-3 px-4 text-right">
-                              {isEditable ? (
-                                <input
-                                  type="number"
-                                  value={item.quantity}
-                                  onChange={(e) => handleItemChange(groupIndex, subIndex, itemIndex, 'quantity', parseFloat(e.target.value) || 0)}
-                                  className="w-20 text-right bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
-                                />
-                              ) : (
-                                item.quantity
-                              )}
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              {isEditable ? (
-                                <input
-                                  type="number"
-                                  value={item.unitAmount}
-                                  onChange={(e) => handleItemChange(groupIndex, subIndex, itemIndex, 'unitAmount', parseFloat(e.target.value) || 0)}
-                                  className="w-24 text-right bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
-                                />
-                              ) : (
-                                `$${item.unitAmount.toFixed(2)}`
-                              )}
-                            </td>
-                            <td className="py-3 px-4 text-right font-medium">
-                              ${item.totalPrice.toFixed(2)}
-                            </td>
+                            <td className="py-3 px-4 text-right">{item.quantity}</td>
+                            <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
+                            <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
+                            {isEditable && (
+                              <td className="py-3 px-4">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => setSelectedItem({
+                                    groupIndex,
+                                    subgroupIndex: subIndex,
+                                    itemIndex,
+                                    item
+                                  })}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -249,39 +230,52 @@ export const EstimateDisplay = ({
                       {subgroup.items.map((item, itemIndex) => (
                         <div
                           key={itemIndex}
-                          className="border-b border-gray-100 pb-4 cursor-pointer"
-                          onClick={() => setSelectedItem({
+                          className="border-b border-gray-100 pb-4 last:border-0"
+                          onClick={() => isEditable && setSelectedItem({
                             groupIndex,
                             subgroupIndex: subIndex,
                             itemIndex,
                             item
                           })}
                         >
-                          <div className="flex justify-between items-start">
-                            <div>
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
                               <p className="font-medium">{formatItemTitle(item.title, item.unit)}</p>
-                              <p className="text-sm text-muted-foreground">{item.description}</p>
+                              {item.description && (
+                                <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                              )}
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedItem({
-                                  groupIndex,
-                                  subgroupIndex: subIndex,
-                                  itemIndex,
-                                  item
-                                });
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                            {isEditable && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedItem({
+                                    groupIndex,
+                                    subgroupIndex: subIndex,
+                                    itemIndex,
+                                    item
+                                  });
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
-                          <div className="mt-2 flex justify-between text-sm">
-                            <span>Qty: {item.quantity}</span>
-                            <span>${item.totalPrice.toFixed(2)}</span>
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Qty:</span>
+                              <span className="ml-1 font-medium">{item.quantity}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Price:</span>
+                              <span className="ml-1 font-medium">${item.unitAmount.toFixed(2)}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-medium">${item.totalPrice.toFixed(2)}</span>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -308,7 +302,7 @@ export const EstimateDisplay = ({
         ))}
       </div>
       
-      {/* Total */}
+      {/* Total Section */}
       <div className="mt-8 pt-6 border-t space-y-4">
         <div className="flex justify-between items-center text-muted-foreground">
           <p>Subtotal</p>
