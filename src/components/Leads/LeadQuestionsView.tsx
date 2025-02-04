@@ -3,10 +3,14 @@ import { Mail, Phone } from "lucide-react";
 import type { Lead } from "./LeadsTable";
 
 interface LeadQuestionsViewProps {
-  lead: Lead;
+  lead: Lead | null;
 }
 
 export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
+  if (!lead) {
+    return <div>No lead data available</div>;
+  }
+
   const handleEmailClick = (email: string) => {
     window.location.href = `mailto:${email}`;
   };
@@ -23,11 +27,11 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
         <div className="grid gap-4 bg-muted/30 p-6 rounded-lg">
           <div>
             <p className="text-sm text-muted-foreground">Name</p>
-            <p className="font-medium">{lead.user_name || "Not provided"}</p>
+            <p className="font-medium">{lead?.user_name || "Not provided"}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Email</p>
-            {lead.user_email ? (
+            {lead?.user_email ? (
               <button
                 onClick={() => handleEmailClick(lead.user_email!)}
                 className="font-medium text-primary hover:underline inline-flex items-center gap-2"
@@ -41,7 +45,7 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Phone</p>
-            {lead.user_phone ? (
+            {lead?.user_phone ? (
               <button
                 onClick={() => handlePhoneClick(lead.user_phone!)}
                 className="font-medium text-primary hover:underline inline-flex items-center gap-2"
@@ -55,7 +59,7 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Project Address</p>
-            <p className="font-medium">{lead.project_address || "Not provided"}</p>
+            <p className="font-medium">{lead?.project_address || "Not provided"}</p>
           </div>
         </div>
       </div>
@@ -68,9 +72,9 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
         <div className="space-y-4 bg-muted/30 p-6 rounded-lg">
           <div>
             <p className="text-sm text-muted-foreground">Title</p>
-            <p className="font-medium">{lead.project_title}</p>
+            <p className="font-medium">{lead?.project_title || "Not provided"}</p>
           </div>
-          {lead.project_description && (
+          {lead?.project_description && (
             <div>
               <p className="text-sm text-muted-foreground">Description</p>
               <p className="font-medium">{lead.project_description}</p>
@@ -89,7 +93,7 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
           Each category contains specific questions and their corresponding answers.
         </p>
         <div className="space-y-6">
-          {lead.answers && lead.answers.answers && Object.entries(lead.answers.answers).map(([category, answers]) => (
+          {lead?.answers?.answers && Object.entries(lead.answers.answers).map(([category, answers]) => (
             <div key={category} className="space-y-4">
               <h4 className="font-medium text-primary text-lg">{category}</h4>
               <div className="space-y-6">
