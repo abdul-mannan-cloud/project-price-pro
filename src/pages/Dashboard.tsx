@@ -18,7 +18,6 @@ const Dashboard = () => {
     { name: "Settings", url: "/settings", icon: Settings }
   ];
 
-  // Check if user is authenticated
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -35,7 +34,6 @@ const Dashboard = () => {
     checkAuth();
   }, [navigate, toast]);
 
-  // Fetch contractor data
   const { data: contractor, isLoading } = useQuery({
     queryKey: ["contractor"],
     queryFn: async () => {
@@ -57,7 +55,6 @@ const Dashboard = () => {
     },
   });
 
-  // Fetch leads data
   const { data: leads = [] } = useQuery({
     queryKey: ["leads"],
     queryFn: async () => {
@@ -115,7 +112,7 @@ const Dashboard = () => {
       href: `/estimate/${contractor.id}`,
       cta: "Preview",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
-      className: "lg:col-span-2 bg-primary text-white hover:scale-[1.02] transition-transform",
+      className: "lg:col-span-3 bg-primary text-white hover:scale-[1.02] transition-transform",
       actions: (
         <div className="flex gap-2 mt-2">
           <Button 
@@ -130,6 +127,7 @@ const Dashboard = () => {
                 description: "The estimator link has been copied to your clipboard.",
               });
             }}
+            className="text-white hover:text-primary"
           >
             <Copy className="w-4 h-4 mr-2" />
             Copy Link
@@ -144,7 +142,7 @@ const Dashboard = () => {
       href: "/leads",
       cta: "View all",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
-      className: "lg:col-span-2 hover:scale-[1.02] transition-transform",
+      className: "lg:col-span-3 hover:scale-[1.02] transition-transform",
       content: (
         <div className="mt-4 space-y-3">
           {leads.slice(0, 3).map((lead) => (
