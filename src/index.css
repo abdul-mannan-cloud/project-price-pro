@@ -97,7 +97,7 @@
   /* Default button style (Apple-style) */
   .button {
     @apply rounded-lg px-4 py-2 font-medium transition-colors;
-    @apply bg-white text-foreground border border-input hover:bg-secondary/10;
+    @apply bg-white text-foreground border border-input hover:bg-secondary/50;
   }
 
   /* Primary button style - only one per container */
