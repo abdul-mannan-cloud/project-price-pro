@@ -1,7 +1,7 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
-import { Phone, MessageSquare, Download, FileSpreadsheet, Mail, X, Edit, MoreVertical } from "lucide-react";
+import { Phone, MessageSquare, Download, FileSpreadsheet, Mail, X, Edit, MoreVertical, Link } from "lucide-react";
 import type { Lead } from "./LeadsTable";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -15,6 +15,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 
 interface LeadDetailsDialogProps {
   lead: Lead | null;
@@ -26,6 +36,8 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   const [view, setView] = useState<"estimate" | "questions">("estimate");
   const [isEditing, setIsEditing] = useState(false);
   const [editedEstimate, setEditedEstimate] = useState(lead?.estimate_data);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState(lead?.user_email || '');
   const isMobile = useIsMobile();
 
   const handleSaveEstimate = async () => {
@@ -54,10 +66,10 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   };
 
   const handleSendEmail = async () => {
-    if (!lead?.user_email) {
+    if (!emailRecipient) {
       toast({
         title: "Error",
-        description: "No email address provided for this lead.",
+        description: "Please provide an email address.",
         variant: "destructive",
       });
       return;
@@ -68,10 +80,10 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: lead.user_name,
-          email: lead.user_email,
-          estimateData: lead.estimate_data,
-          estimateUrl: window.location.href,
+          name: lead?.user_name,
+          email: emailRecipient,
+          estimateData: lead?.estimate_data,
+          estimateUrl: `${window.location.origin}/estimate/${lead?.id}`,
         }),
       });
 
@@ -79,8 +91,9 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
 
       toast({
         title: "Email sent",
-        description: "The estimate has been sent to the customer.",
+        description: "The estimate has been sent successfully.",
       });
+      setShowEmailDialog(false);
     } catch (error) {
       toast({
         title: "Error",
@@ -88,6 +101,16 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
         variant: "destructive",
       });
     }
+  };
+
+  const handleCopyLink = () => {
+    const estimateUrl = `${window.location.origin}/estimate/${lead?.id}`;
+    navigator.clipboard.writeText(estimateUrl).then(() => {
+      toast({
+        title: "Link copied",
+        description: "The estimate link has been copied to your clipboard.",
+      });
+    });
   };
 
   if (!lead) return null;
@@ -100,7 +123,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
     if (isMobile) {
       return (
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSendEmail} className="gap-2">
+          <Button variant="outline" onClick={() => setShowEmailDialog(true)} className="gap-2">
             <Mail className="h-4 w-4" />
             Email Estimate
           </Button>
@@ -114,6 +137,10 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
               <DropdownMenuItem onClick={() => setIsEditing(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Estimate
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyLink}>
+                <Link className="h-4 w-4 mr-2" />
+                Copy Link
               </DropdownMenuItem>
               {lead.user_phone && (
                 <>
@@ -142,87 +169,84 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
     }
 
     return (
-      <>
-        <div className="flex gap-2">
-          {lead.user_phone && (
-            <>
-              <Button variant="outline" className="gap-2">
-                <Phone className="h-4 w-4" />
-                Call
-              </Button>
-              <Button variant="outline" className="gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Text
-              </Button>
-            </>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {view === "estimate" && (
-            <>
-              <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
-                <Edit className="h-4 w-4" />
-                Edit Estimate
-              </Button>
-              <Button variant="outline" onClick={handleSendEmail} className="gap-2">
-                <Mail className="h-4 w-4" />
-                Email Estimate
-              </Button>
-              <Button variant="outline" className="gap-2">
-                <FileSpreadsheet className="h-4 w-4" />
-                Export CSV
-              </Button>
-              <Button variant="outline" className="gap-2">
-                <Download className="h-4 w-4" />
-                Export PDF
-              </Button>
-            </>
-          )}
-        </div>
-      </>
+      <div className="w-full grid grid-cols-2 gap-4">
+        <Button variant="default" onClick={() => setIsEditing(true)} className="w-full gap-2">
+          <Edit className="h-4 w-4" />
+          Edit Estimate
+        </Button>
+        <Button variant="default" onClick={() => setShowEmailDialog(true)} className="w-full gap-2">
+          <Mail className="h-4 w-4" />
+          Email Estimate
+        </Button>
+      </div>
     );
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-full h-[100vh] p-0 m-0">
-        <div className="flex flex-col h-full relative">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-50"
-          >
-            <X className="h-5 w-5 text-gray-500" />
-          </button>
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-full h-[100vh] p-0 m-0">
+          <div className="flex flex-col h-full relative">
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-50"
+            >
+              <X className="h-5 w-5 text-gray-500" />
+            </button>
 
-          <div className="border-b bg-background sticky top-0 z-40">
-            <div className="max-w-6xl mx-auto w-[95%]">
-              <LeadViewToggle view={view} onViewChange={setView} />
+            <div className="border-b bg-background sticky top-0 z-40">
+              <div className="max-w-6xl mx-auto w-[95%]">
+                <LeadViewToggle view={view} onViewChange={setView} />
+              </div>
+            </div>
+
+            <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
+              <div className="max-w-6xl mx-auto">
+                {view === "estimate" && (
+                  <>
+                    {renderActionButtons()}
+                    <div className="mt-4">
+                      <EstimateDisplay 
+                        groups={lead.estimate_data?.groups || []}
+                        totalCost={lead.estimated_cost || 0}
+                        projectSummary={lead.project_description}
+                        isEditable={isEditing}
+                        onEstimateChange={setEditedEstimate}
+                      />
+                    </div>
+                  </>
+                )}
+                {view === "questions" && (
+                  <LeadQuestionsView lead={lead} />
+                )}
+              </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
 
-          <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
-            <div className="max-w-6xl mx-auto">
-              {view === "estimate" ? (
-                <EstimateDisplay 
-                  groups={lead.estimate_data?.groups || []}
-                  totalCost={lead.estimated_cost || 0}
-                  projectSummary={lead.project_description}
-                  isEditable={isEditing}
-                  onEstimateChange={setEditedEstimate}
-                />
-              ) : (
-                <LeadQuestionsView lead={lead} />
-              )}
-            </div>
+      <AlertDialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send Estimate</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter the email address where you'd like to send this estimate.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Input
+              type="email"
+              placeholder="Email address"
+              value={emailRecipient}
+              onChange={(e) => setEmailRecipient(e.target.value)}
+            />
           </div>
-
-          <div className="border-t bg-background py-4 w-full">
-            <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
-              {renderActionButtons()}
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button onClick={handleSendEmail}>Send Email</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
