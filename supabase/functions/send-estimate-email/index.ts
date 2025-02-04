@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
-import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -18,6 +17,62 @@ interface EmailRequest {
   contractor?: any;
 }
 
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount);
+}
+
+function generateEstimateHtml(data: any, estimateUrl: string, contractor?: any): string {
+  const groups = data.groups || [];
+  const totalCost = data.totalCost || 0;
+
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      ${contractor?.business_logo_url ? 
+        `<img src="${contractor.business_logo_url}" alt="${contractor.business_name}" style="max-width: 200px; margin-bottom: 20px;">` 
+        : ''}
+      
+      <h1 style="color: #333; margin-bottom: 30px;">Your Project Estimate</h1>
+      
+      ${groups.map((group: any) => `
+        <div style="margin-bottom: 30px; background: #f9f9f9; padding: 20px; border-radius: 8px;">
+          <h2 style="color: #444; margin-top: 0;">${group.name}</h2>
+          <div style="margin-left: 20px;">
+            ${group.items.map((item: any) => `
+              <div style="margin-bottom: 15px;">
+                <p style="margin: 5px 0; color: #666;">
+                  <strong>${item.name}</strong>
+                  ${item.description ? `<br><span style="font-size: 14px;">${item.description}</span>` : ''}
+                  <br><span style="color: #0066cc;">${formatCurrency(item.cost)}</span>
+                </p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+      
+      <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; margin-top: 30px;">
+        <h2 style="color: #333; margin: 0;">Total Estimated Cost: ${formatCurrency(totalCost)}</h2>
+      </div>
+      
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p>You can view your detailed estimate online at: <a href="${estimateUrl}" style="color: #0066cc;">${estimateUrl}</a></p>
+        
+        ${contractor ? `
+          <div style="margin-top: 20px;">
+            <h3 style="color: #333;">Contact Information</h3>
+            ${contractor.contact_phone ? `<p>Phone: ${contractor.contact_phone}</p>` : ''}
+            ${contractor.contact_email ? `<p>Email: ${contractor.contact_email}</p>` : ''}
+            ${contractor.business_address ? `<p>Address: ${contractor.business_address}</p>` : ''}
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -26,24 +81,7 @@ serve(async (req) => {
   try {
     const { name, email, estimateData, estimateUrl, contractor }: EmailRequest = await req.json();
 
-    console.log("Starting PDF generation for estimate:", { name, email, estimateUrl });
-
-    // Launch browser with specific args for Deno environment
-    const browser = await puppeteer.launch({
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-      ]
-    });
-    
-    console.log("Browser launched successfully");
-    
-    const page = await browser.newPage();
-    await page.goto(estimateUrl, { waitUntil: 'networkidle0' });
-    const pdf = await page.pdf({ format: 'A4' });
-    await browser.close();
-    
-    console.log("PDF generated successfully");
+    console.log("Sending estimate email to:", { name, email, estimateUrl });
 
     const emailResponse = await resend.emails.send({
       from: contractor?.business_name 
@@ -51,32 +89,7 @@ serve(async (req) => {
         : "Estimate <onboarding@resend.dev>",
       to: [email],
       subject: "Your Project Estimate",
-      attachments: [
-        {
-          filename: 'estimate.pdf',
-          content: pdf,
-        },
-      ],
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <p>Hello ${name},</p>
-          
-          <p>Thank you for your interest! Attached is a PDF of your estimate.</p>
-          
-          <p>You can also view your estimate online at: <a href="${estimateUrl}">${estimateUrl}</a></p>
-          
-          ${contractor ? `
-          <p>If you have any questions, please don't hesitate to contact us:</p>
-          <ul>
-            ${contractor.contact_phone ? `<li>Phone: ${contractor.contact_phone}</li>` : ''}
-            ${contractor.contact_email ? `<li>Email: ${contractor.contact_email}</li>` : ''}
-          </ul>
-          ` : ''}
-          
-          <p>Best regards,<br>
-          ${contractor?.business_name || 'The Team'}</p>
-        </div>
-      `,
+      html: generateEstimateHtml(estimateData, estimateUrl, contractor),
     });
 
     console.log("Email sent successfully:", emailResponse);
