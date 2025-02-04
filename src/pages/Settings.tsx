@@ -7,13 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { LayoutDashboard, Users, Settings as SettingsIcon, Info, PlusCircle, MinusCircle } from "lucide-react";
+import { LayoutDashboard, Users, Settings as SettingsIcon, PlusCircle, MinusCircle, Edit, Trash } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-import { Json } from "@/integrations/supabase/types";
 
 const rateOptions = [
   { value: "CF", label: "Cubic Feet (CF)" },
@@ -52,11 +51,14 @@ const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [aiRate, setAiRate] = useState("HR");
-  const [aiType, setAiType] = useState("material_labor");
-  const [aiInstructions, setAiInstructions] = useState("");
+  const [editingEstimateIndex, setEditingEstimateIndex] = useState<number | null>(null);
+  const [editingInstructionIndex, setEditingInstructionIndex] = useState<number | null>(null);
   const [aiEstimateRows, setAiEstimateRows] = useState([{ title: "", rate: "HR", type: "material_labor" }]);
   const [aiInstructionRows, setAiInstructionRows] = useState([{ instruction: "" }]);
+  const [isEstimateDialogOpen, setIsEstimateDialogOpen] = useState(false);
+  const [isInstructionDialogOpen, setIsInstructionDialogOpen] = useState(false);
+  const [currentEstimate, setCurrentEstimate] = useState({ title: "", rate: "HR", type: "material_labor" });
+  const [currentInstruction, setCurrentInstruction] = useState({ instruction: "" });
 
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -127,9 +129,9 @@ const Settings = () => {
           tax_rate: formData.taxRate,
           excluded_categories: selectedCategories,
           ai_preferences: {
-            rate: aiRate,
-            type: aiType,
-            instructions: aiInstructions
+            rate: currentEstimate.rate,
+            type: currentEstimate.type,
+            instructions: currentInstruction.instruction
           }
         })
         .eq("id", user.id);
@@ -171,19 +173,49 @@ const Settings = () => {
     });
   };
 
-  const handleAddEstimateRow = () => {
-    setAiEstimateRows([...aiEstimateRows, { title: "", rate: "HR", type: "material_labor" }]);
+  const handleEditEstimate = (index: number) => {
+    setCurrentEstimate(aiEstimateRows[index]);
+    setEditingEstimateIndex(index);
+    setIsEstimateDialogOpen(true);
   };
 
-  const handleRemoveEstimateRow = (index: number) => {
+  const handleEditInstruction = (index: number) => {
+    setCurrentInstruction(aiInstructionRows[index]);
+    setEditingInstructionIndex(index);
+    setIsInstructionDialogOpen(true);
+  };
+
+  const handleSaveEstimate = () => {
+    if (editingEstimateIndex !== null) {
+      const newRows = [...aiEstimateRows];
+      newRows[editingEstimateIndex] = currentEstimate;
+      setAiEstimateRows(newRows);
+    } else {
+      setAiEstimateRows([...aiEstimateRows, currentEstimate]);
+    }
+    setIsEstimateDialogOpen(false);
+    setEditingEstimateIndex(null);
+    setCurrentEstimate({ title: "", rate: "HR", type: "material_labor" });
+  };
+
+  const handleSaveInstruction = () => {
+    if (editingInstructionIndex !== null) {
+      const newRows = [...aiInstructionRows];
+      newRows[editingInstructionIndex] = currentInstruction;
+      setAiInstructionRows(newRows);
+    } else {
+      setAiInstructionRows([...aiInstructionRows, currentInstruction]);
+    }
+    setIsInstructionDialogOpen(false);
+    setEditingInstructionIndex(null);
+    setCurrentInstruction({ instruction: "" });
+  };
+
+  const handleDeleteEstimate = (index: number) => {
     setAiEstimateRows(aiEstimateRows.filter((_, i) => i !== index));
   };
 
-  const handleAddInstructionRow = () => {
-    setAiInstructionRows([...aiInstructionRows, { instruction: "" }]);
-  };
-
-  const handleRemoveInstructionRow = (index: number) => {
+  const handleDeleteInstruction = (index: number) => {
     setAiInstructionRows(aiInstructionRows.filter((_, i) => i !== index));
   };
 
@@ -377,119 +409,135 @@ const Settings = () => {
             <h2 className="text-lg font-medium mb-2">AI Estimate Preferences</h2>
             <p className="text-sm text-muted-foreground mb-4">Configure how AI generates estimates for your services.</p>
             <div className="space-y-4">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full flex items-center gap-2">
-                    <PlusCircle className="h-4 w-4" />
-                    Configure AI Estimates
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+              <div className="space-y-4">
+                {aiEstimateRows.map((row, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{row.title || 'Untitled Estimate'}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Rate: {row.rate} | Type: {row.type}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditEstimate(index)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteEstimate(index)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditingEstimateIndex(null);
+                    setCurrentEstimate({ title: "", rate: "HR", type: "material_labor" });
+                    setIsEstimateDialogOpen(true);
+                  }}
+                  className="w-full"
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Add Estimate Setting
+                </Button>
+              </div>
+
+              <Dialog open={isEstimateDialogOpen} onOpenChange={setIsEstimateDialogOpen}>
+                <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>AI Estimate Settings</DialogTitle>
+                    <DialogTitle>
+                      {editingEstimateIndex !== null ? 'Edit Estimate Setting' : 'Add Estimate Setting'}
+                    </DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    {aiEstimateRows.map((row, index) => (
-                      <div key={index} className="flex gap-4 items-start">
-                        <div className="flex-1 space-y-4">
-                          <Input
-                            label="Title"
-                            value={row.title}
-                            onChange={(e) => {
-                              const newRows = [...aiEstimateRows];
-                              newRows[index].title = e.target.value;
-                              setAiEstimateRows(newRows);
-                            }}
-                          />
-                          <CustomSelect
-                            label="Rate Unit"
-                            value={row.rate}
-                            onValueChange={(value) => {
-                              const newRows = [...aiEstimateRows];
-                              newRows[index].rate = value;
-                              setAiEstimateRows(newRows);
-                            }}
-                            options={rateOptions}
-                          />
-                          <CustomSelect
-                            label="Type"
-                            value={row.type}
-                            onValueChange={(value) => {
-                              const newRows = [...aiEstimateRows];
-                              newRows[index].type = value;
-                              setAiEstimateRows(newRows);
-                            }}
-                            options={typeOptions}
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveEstimateRow(index)}
-                          className="mt-8"
-                        >
-                          <MinusCircle className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleAddEstimateRow}
-                      className="w-full mt-4"
-                    >
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      Add Estimate Setting
+                  <div className="space-y-4">
+                    <Input
+                      label="Title"
+                      value={currentEstimate.title}
+                      onChange={(e) => setCurrentEstimate({ ...currentEstimate, title: e.target.value })}
+                    />
+                    <CustomSelect
+                      label="Rate Unit"
+                      value={currentEstimate.rate}
+                      onValueChange={(value) => setCurrentEstimate({ ...currentEstimate, rate: value })}
+                      options={rateOptions}
+                    />
+                    <CustomSelect
+                      label="Type"
+                      value={currentEstimate.type}
+                      onValueChange={(value) => setCurrentEstimate({ ...currentEstimate, type: value })}
+                      options={typeOptions}
+                    />
+                    <Button type="button" onClick={handleSaveEstimate} className="w-full">
+                      Save
                     </Button>
                   </div>
                 </DialogContent>
               </Dialog>
 
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full flex items-center gap-2">
-                    <PlusCircle className="h-4 w-4" />
-                    Configure AI Instructions
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+              <div className="space-y-4">
+                {aiInstructionRows.map((row, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <p className="text-sm">{row.instruction || 'Empty instruction'}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditInstruction(index)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteInstruction(index)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditingInstructionIndex(null);
+                    setCurrentInstruction({ instruction: "" });
+                    setIsInstructionDialogOpen(true);
+                  }}
+                  className="w-full"
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Add Instruction
+                </Button>
+              </div>
+
+              <Dialog open={isInstructionDialogOpen} onOpenChange={setIsInstructionDialogOpen}>
+                <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>AI Instructions</DialogTitle>
+                    <DialogTitle>
+                      {editingInstructionIndex !== null ? 'Edit Instruction' : 'Add Instruction'}
+                    </DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    {aiInstructionRows.map((row, index) => (
-                      <div key={index} className="flex gap-4 items-start">
-                        <div className="flex-1">
-                          <Textarea
-                            placeholder="Enter specific instructions for AI estimates"
-                            value={row.instruction}
-                            onChange={(e) => {
-                              const newRows = [...aiInstructionRows];
-                              newRows[index].instruction = e.target.value;
-                              setAiInstructionRows(newRows);
-                            }}
-                            className="min-h-[100px]"
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveInstructionRow(index)}
-                        >
-                          <MinusCircle className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleAddInstructionRow}
-                      className="w-full mt-4"
-                    >
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      Add Instruction
+                  <div className="space-y-4">
+                    <Textarea
+                      placeholder="Enter specific instructions for AI estimates"
+                      value={currentInstruction.instruction}
+                      onChange={(e) => setCurrentInstruction({ instruction: e.target.value })}
+                      className="min-h-[100px]"
+                    />
+                    <Button type="button" onClick={handleSaveInstruction} className="w-full">
+                      Save
                     </Button>
                   </div>
                 </DialogContent>
