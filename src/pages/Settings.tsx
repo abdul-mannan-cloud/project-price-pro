@@ -58,7 +58,7 @@ const Settings = () => {
   const [aiInstructionRows, setAiInstructionRows] = useState([{ instruction: "" }]);
   const [isEstimateDialogOpen, setIsEstimateDialogOpen] = useState(false);
   const [isInstructionDialogOpen, setIsInstructionDialogOpen] = useState(false);
-  const [currentEstimate, setCurrentEstimate] = useState({ title: "", rate: "HR", type: "material_labor", instructions: "" });
+  const [currentEstimate, setCurrentEstimate] = useState({ title: "", rate: "", rateUnit: "HR", type: "material_labor", instructions: "" });
   const [currentInstruction, setCurrentInstruction] = useState({ instruction: "" });
 
   const navItems = [
@@ -196,7 +196,7 @@ const Settings = () => {
     }
     setIsEstimateDialogOpen(false);
     setEditingEstimateIndex(null);
-    setCurrentEstimate({ title: "", rate: "HR", type: "material_labor", instructions: "" });
+    setCurrentEstimate({ title: "", rate: "", rateUnit: "HR", type: "material_labor", instructions: "" });
   };
 
   const handleSaveInstruction = () => {
@@ -445,7 +445,7 @@ const Settings = () => {
                   variant="outline"
                   onClick={() => {
                     setEditingEstimateIndex(null);
-                    setCurrentEstimate({ title: "", rate: "HR", type: "material_labor", instructions: "" });
+                    setCurrentEstimate({ title: "", rate: "", rateUnit: "HR", type: "material_labor", instructions: "" });
                     setIsEstimateDialogOpen(true);
                   }}
                   className="w-full"
@@ -481,6 +481,7 @@ const Settings = () => {
                         </div>
                         <div className="flex-1">
                           <CustomSelect
+                            label="Unit"
                             value={currentEstimate.rateUnit}
                             onValueChange={(value) => setCurrentEstimate({ ...currentEstimate, rateUnit: value })}
                             options={rateOptions}
