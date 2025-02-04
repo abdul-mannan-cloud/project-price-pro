@@ -182,9 +182,13 @@ const Settings = () => {
     contractor?.branding_colors && 
     typeof contractor.branding_colors === 'object' && 
     !Array.isArray(contractor.branding_colors) && 
+    contractor.branding_colors as { [key: string]: Json } &&
     'primary' in contractor.branding_colors && 
     'secondary' in contractor.branding_colors
-      ? contractor.branding_colors as BrandingColors
+      ? {
+          primary: String(contractor.branding_colors.primary),
+          secondary: String(contractor.branding_colors.secondary)
+        }
       : defaultColors;
 
   return (
