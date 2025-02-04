@@ -17,10 +17,10 @@ import {
 } from "motion/react"
 import { cn } from "@/lib/utils"
 
-// Properly declare Intl.Segmenter types
+// Define Segmenter as a property that might not exist on Intl
 declare global {
   interface Intl {
-    Segmenter: {
+    Segmenter?: {
       new (locale: string, options?: { granularity?: "grapheme" | "word" | "sentence" }): {
         segment: (input: string) => {
           [Symbol.iterator](): Iterator<{
@@ -93,7 +93,7 @@ const TextRotate = forwardRef<TextRotateRef, TextRotateProps>(
     const [currentTextIndex, setCurrentTextIndex] = useState(0)
 
     const splitIntoCharacters = (text: string): string[] => {
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && Intl.Segmenter) {
         try {
           const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" })
           return Array.from(segmenter.segment(text), ({ segment }) => segment)
