@@ -9,6 +9,8 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
+import Leads from "./pages/Leads";
 
 const queryClient = new QueryClient();
 
@@ -25,8 +27,8 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/leads" element={<Dashboard />} />
-          <Route path="/settings" element={<Dashboard />} />
+          <Route path="/leads" element={<Leads />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
