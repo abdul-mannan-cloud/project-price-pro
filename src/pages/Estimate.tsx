@@ -43,17 +43,15 @@ const EstimatePage = () => {
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { contractorId: rawContractorId } = useParams();
+  const { contractorId: rawContractorId } = useParams<{ contractorId: string }>();
   const location = useLocation();
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
-  // Clean up the contractorId by removing any URL-encoded characters and the '?' if present
   const effectiveContractorId = rawContractorId 
     ? decodeURIComponent(rawContractorId).replace(/[?]/g, '')
     : DEFAULT_CONTRACTOR_ID;
 
-  // Update the contractor query to use the cleaned contractorId
   const { data: contractor, isLoading: isContractorLoading, error: contractorError } = useQuery({
     queryKey: ["contractor", effectiveContractorId],
     queryFn: async () => {
@@ -106,7 +104,6 @@ const EstimatePage = () => {
           };
         }
 
-        // Ensure contractor_settings has all required fields
         const settings = data.contractor_settings || {
           id: data.id,
           markup_percentage: 20,
