@@ -16,6 +16,7 @@ import { Question, Category, CategoryQuestions, AnswersState } from "@/types/est
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
+import { Json } from "@/integrations/supabase/types";
 
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
@@ -47,6 +48,7 @@ const EstimatePage = () => {
   console.log('Effective Contractor ID:', effectiveContractorId);
 
   // Fetch contractor data using React Query for better caching and performance
+
   const { data: contractor, isLoading: isContractorLoading, error: contractorError } = useQuery({
     queryKey: ["contractor", effectiveContractorId],
     queryFn: async () => {
@@ -69,6 +71,12 @@ const EstimatePage = () => {
         if (!data) {
           console.log('No contractor found, using default values');
           const timestamp = new Date().toISOString();
+          const defaultAiPreferences: Json = {
+            rate: "HR",
+            type: "material_labor",
+            instructions: ""
+          };
+          
           return {
             id: effectiveContractorId,
             business_name: "Example Company",
@@ -79,7 +87,7 @@ const EstimatePage = () => {
             branding_colors: {
               primary: "#6366F1",
               secondary: "#4F46E5"
-            },
+            } as Json,
             business_address: null,
             website: null,
             license_number: null,
@@ -91,11 +99,7 @@ const EstimatePage = () => {
               markup_percentage: 20,
               tax_rate: 8.5,
               ai_prompt_template: null,
-              ai_preferences: {
-                rate: "HR",
-                type: "material_labor",
-                instructions: ""
-              } as unknown as JSON,
+              ai_preferences: defaultAiPreferences,
               excluded_categories: [],
               ai_instructions: "",
               created_at: timestamp,
@@ -761,5 +765,3 @@ const EstimatePage = () => {
     </div>
   );
 };
-
-export default EstimatePage;
