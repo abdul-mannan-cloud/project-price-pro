@@ -155,7 +155,7 @@ export const EstimateDisplay = ({
 
       {/* Estimate Groups */}
       <div className="space-y-6">
-        {groups.map((group, groupIndex) => (
+        {Array.isArray(groups) && groups.map((group, groupIndex) => (
           <div key={groupIndex} className="bg-gray-50 p-4 md:p-6 rounded-lg">
             <div className="mb-4">
               {isEditable ? (
@@ -163,9 +163,10 @@ export const EstimateDisplay = ({
                   type="text"
                   value={group.name}
                   onChange={(e) => {
+                    if (!onEstimateChange) return;
                     const newGroups = [...groups];
                     newGroups[groupIndex].name = e.target.value;
-                    onEstimateChange?.({ groups: newGroups });
+                    onEstimateChange({ groups: newGroups });
                   }}
                   className="text-lg font-semibold bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
                 />
@@ -179,23 +180,24 @@ export const EstimateDisplay = ({
 
             {/* Subgroups */}
             <div className="space-y-4">
-              {group.subgroups.map((subgroup, subIndex) => (
+              {Array.isArray(group.subgroups) && group.subgroups.map((subgroup, subIndex) => (
                 <div key={subIndex} className="bg-white p-4 rounded-md shadow-sm">
                   {isEditable ? (
                     <input
                       type="text"
                       value={subgroup.name}
                       onChange={(e) => {
+                        if (!onEstimateChange) return;
                         const newGroups = [...groups];
                         newGroups[groupIndex].subgroups[subIndex].name = e.target.value;
-                        onEstimateChange?.({ groups: newGroups });
+                        onEstimateChange({ groups: newGroups });
                       }}
                       className="font-medium text-primary mb-3 bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none w-full"
                     />
                   ) : (
                     <h4 className="font-medium mb-3 text-primary">{subgroup.name}</h4>
                   )}
-                  
+
                   {/* Line Items */}
                   <div className="overflow-x-auto">
                     {/* Desktop Table View */}
@@ -210,72 +212,76 @@ export const EstimateDisplay = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {subgroup.items.map((item, itemIndex) => (
+                        {Array.isArray(subgroup.items) && subgroup.items.map((item, itemIndex) => (
                           <tr key={itemIndex} className="border-b border-gray-100">
                             <td className="py-3 px-4">
                               {isEditable ? (
-                                renderEditableField(
-                                  item.title,
-                                  (value) => handleItemChange(
+                                <input
+                                  type="text"
+                                  value={item.title}
+                                  onChange={(e) => handleItemChange(
                                     groupIndex,
                                     subIndex,
                                     itemIndex,
                                     'title',
-                                    value
-                                  )
-                                )
+                                    e.target.value
+                                  )}
+                                  className="bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
+                                />
                               ) : (
                                 <span className="font-medium">{formatItemTitle(item.title, item.unit)}</span>
                               )}
                             </td>
                             <td className="py-3 px-4">
                               {isEditable ? (
-                                renderEditableField(
-                                  item.description || '',
-                                  (value) => handleItemChange(
+                                <input
+                                  type="text"
+                                  value={item.description || ''}
+                                  onChange={(e) => handleItemChange(
                                     groupIndex,
                                     subIndex,
                                     itemIndex,
                                     'description',
-                                    value
-                                  )
-                                )
+                                    e.target.value
+                                  )}
+                                  className="bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
+                                />
                               ) : (
                                 <span className="text-sm text-muted-foreground">{item.description}</span>
                               )}
                             </td>
                             <td className="py-3 px-4 text-right">
                               {isEditable ? (
-                                renderEditableField(
-                                  item.quantity,
-                                  (value) => handleItemChange(
+                                <input
+                                  type="number"
+                                  value={item.quantity}
+                                  onChange={(e) => handleItemChange(
                                     groupIndex,
                                     subIndex,
                                     itemIndex,
                                     'quantity',
-                                    value
-                                  ),
-                                  'number',
-                                  'w-20 text-right'
-                                )
+                                    parseFloat(e.target.value) || 0
+                                  )}
+                                  className="w-20 text-right bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
+                                />
                               ) : (
                                 item.quantity
                               )}
                             </td>
                             <td className="py-3 px-4 text-right">
                               {isEditable ? (
-                                renderEditableField(
-                                  item.unitAmount,
-                                  (value) => handleItemChange(
+                                <input
+                                  type="number"
+                                  value={item.unitAmount}
+                                  onChange={(e) => handleItemChange(
                                     groupIndex,
                                     subIndex,
                                     itemIndex,
                                     'unitAmount',
-                                    value
-                                  ),
-                                  'number',
-                                  'w-24 text-right'
-                                )
+                                    parseFloat(e.target.value) || 0
+                                  )}
+                                  className="w-24 text-right bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none"
+                                />
                               ) : (
                                 `$${item.unitAmount.toFixed(2)}`
                               )}
@@ -288,7 +294,7 @@ export const EstimateDisplay = ({
 
                     {/* Mobile View */}
                     <div className="md:hidden space-y-4">
-                      {subgroup.items.map((item, itemIndex) => (
+                      {Array.isArray(subgroup.items) && subgroup.items.map((item, itemIndex) => (
                         <div
                           key={itemIndex}
                           className="border-b border-gray-100 pb-4 last:border-0"
