@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
-import * as puppeteer from 'https://deno.land/x/puppeteer@16.2.0/mod.ts';
+import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -15,6 +15,7 @@ interface EmailRequest {
   email: string;
   estimateData: any;
   estimateUrl: string;
+  contractor?: any;
 }
 
 serve(async (req) => {
@@ -23,19 +24,33 @@ serve(async (req) => {
   }
 
   try {
-    const { name, email, estimateData, estimateUrl }: EmailRequest = await req.json();
+    const { name, email, estimateData, estimateUrl, contractor }: EmailRequest = await req.json();
 
-    // Generate PDF using Puppeteer
-    const browser = await puppeteer.launch();
+    console.log("Starting PDF generation for estimate:", { name, email, estimateUrl });
+
+    // Launch browser with specific args for Deno environment
+    const browser = await puppeteer.launch({
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+      ]
+    });
+    
+    console.log("Browser launched successfully");
+    
     const page = await browser.newPage();
     await page.goto(estimateUrl, { waitUntil: 'networkidle0' });
     const pdf = await page.pdf({ format: 'A4' });
     await browser.close();
+    
+    console.log("PDF generated successfully");
 
     const emailResponse = await resend.emails.send({
-      from: "Estimate <onboarding@resend.dev>",
+      from: contractor?.business_name 
+        ? `${contractor.business_name} <onboarding@resend.dev>`
+        : "Estimate <onboarding@resend.dev>",
       to: [email],
-      subject: "Your Estimate",
+      subject: "Your Project Estimate",
       attachments: [
         {
           filename: 'estimate.pdf',
@@ -50,10 +65,16 @@ serve(async (req) => {
           
           <p>You can also view your estimate online at: <a href="${estimateUrl}">${estimateUrl}</a></p>
           
-          <p>Please let us know if you have any questions!</p>
+          ${contractor ? `
+          <p>If you have any questions, please don't hesitate to contact us:</p>
+          <ul>
+            ${contractor.contact_phone ? `<li>Phone: ${contractor.contact_phone}</li>` : ''}
+            ${contractor.contact_email ? `<li>Email: ${contractor.contact_email}</li>` : ''}
+          </ul>
+          ` : ''}
           
           <p>Best regards,<br>
-          The Team</p>
+          ${contractor?.business_name || 'The Team'}</p>
         </div>
       `,
     });
