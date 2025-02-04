@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/3d-button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const location = useLocation();
+  const [isSignUp, setIsSignUp] = useState(location.state?.isSignUp || false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -15,6 +16,10 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    setIsSignUp(location.state?.isSignUp || false);
+  }, [location.state?.isSignUp]);
 
   const validateForm = () => {
     if (!email || !password) {
@@ -80,39 +85,19 @@ const Login = () => {
           password,
         });
 
-        if (signInError) {
-          console.error('Sign in error:', signInError);
-          throw signInError;
-        }
-
-        // Check if contractor record exists
-        const { data: contractor, error: contractorError } = await supabase
-          .from("contractors")
-          .select("*")
-          .eq("id", (await supabase.auth.getUser()).data.user?.id)
-          .maybeSingle();
-
-        if (contractorError) throw contractorError;
+        if (signInError) throw signInError;
 
         toast({
           title: "Welcome back!",
           description: "You have successfully signed in.",
         });
-
-        // Navigate based on contractor existence
-        if (contractor) {
-          navigate("/dashboard");
-        } else {
-          navigate("/onboarding");
-        }
+        navigate("/dashboard");
       }
     } catch (error: any) {
       console.error("Auth error:", error);
       toast({
         title: "Authentication Error",
-        description: error.message === "Invalid login credentials" 
-          ? "Invalid email or password. Please try again."
-          : error.message || "An error occurred during authentication.",
+        description: error.message || "An error occurred during authentication.",
         variant: "destructive",
       });
     } finally {
