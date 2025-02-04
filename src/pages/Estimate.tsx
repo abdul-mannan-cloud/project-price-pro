@@ -565,10 +565,10 @@ const EstimatePage = () => {
         </button>
       )}
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 w-full">
         {stage === 'photo' && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="w-full max-w-4xl mx-auto px-4">
+          <div className="h-full flex items-center justify-center px-4">
+            <div className="card w-full max-w-4xl animate-fadeIn">
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-semibold mb-2">
@@ -616,8 +616,8 @@ const EstimatePage = () => {
         )}
 
         {stage === 'description' && !selectedCategory && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="w-full max-w-4xl mx-auto px-4">
+          <div className="h-full flex items-center justify-center px-4">
+            <div className="card w-full max-w-4xl animate-fadeIn">
               <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
               <div className="space-y-2">
                 <Textarea
@@ -644,19 +644,21 @@ const EstimatePage = () => {
         )}
 
         {stage === 'category' && (
-          <div className="flex-1">
+          <div className="w-full h-full">
             <h2 className="text-2xl font-semibold mb-6 text-center">Select Service Category</h2>
-            <CategoryGrid 
-              categories={categories}
-              selectedCategory={selectedCategory || undefined}
-              onSelectCategory={handleCategorySelect}
-              completedCategories={completedCategories}
-            />
+            <div className="px-4">
+              <CategoryGrid 
+                categories={categories}
+                selectedCategory={selectedCategory || undefined}
+                onSelectCategory={handleCategorySelect}
+                completedCategories={completedCategories}
+              />
+            </div>
           </div>
         )}
 
         {stage === 'contact' && estimate && (
-          <div className="flex-1">
+          <div className="w-full h-full">
             <EstimateDisplay 
               groups={estimate.groups} 
               totalCost={estimate.totalCost} 
@@ -674,7 +676,7 @@ const EstimatePage = () => {
         )}
 
         {stage === 'estimate' && estimate && (
-          <div className="flex-1">
+          <div className="w-full h-full">
             <EstimateDisplay 
               groups={estimate.groups} 
               totalCost={estimate.totalCost}
@@ -685,12 +687,10 @@ const EstimatePage = () => {
 
         {stage === 'questions' && (
           matchedQuestionSets.length > 0 ? (
-            <div className="flex-1">
-              <QuestionManager
-                questionSets={matchedQuestionSets}
-                onComplete={handleQuestionComplete}
-              />
-            </div>
+            <QuestionManager
+              questionSets={matchedQuestionSets}
+              onComplete={handleQuestionComplete}
+            />
           ) : (
             <LoadingScreen message="Loading your questions..." />
           )
