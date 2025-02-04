@@ -60,51 +60,17 @@ const PublicEstimate = () => {
         .single();
 
       if (leadError) {
-        console.log("Lead not found, using default contractor");
-        const { data: defaultContractor, error: contractorError } = await supabase
-          .from("contractors")
-          .select(`
-            id,
-            business_name,
-            business_logo_url,
-            contact_email,
-            contact_phone,
-            business_address,
-            website,
-            license_number,
-            subscription_status,
-            branding_colors,
-            created_at,
-            updated_at,
-            contractor_settings (*)
-          `)
-          .eq("id", DEFAULT_CONTRACTOR_ID)
-          .single();
-
-        if (contractorError) {
-          console.error("Error fetching default contractor:", contractorError);
-          throw contractorError;
-        }
-
+        console.log("Lead not found or error, using default contractor");
         return {
           id: id,
           contractor_id: DEFAULT_CONTRACTOR_ID,
-          estimate_data: { groups: [] },
+          estimate_data: null,
           estimated_cost: 0,
           project_title: "New Estimate",
           project_description: "",
-          project_address: "",
-          user_name: "",
-          user_email: "",
-          user_phone: "",
-          category: "",
-          answers: { answers: {}, questions: [] },
-          preview_data: {},
-          is_test_estimate: false,
           status: "pending",
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          contractors: defaultContractor
+          updated_at: new Date().toISOString()
         };
       }
 
@@ -124,17 +90,21 @@ const PublicEstimate = () => {
         .eq("id", lead?.contractor_id || DEFAULT_CONTRACTOR_ID)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching contractor:", error);
+        throw error;
+      }
+
       return data as ContractorWithSettings;
     },
-    enabled: !isLeadLoading,
+    enabled: !!lead,
   });
 
   if (isLeadLoading || isContractorLoading) {
     return <LoadingScreen message="Loading estimate..." />;
   }
 
-  if (!lead || !contractor) {
+  if (!contractor) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -147,15 +117,15 @@ const PublicEstimate = () => {
     );
   }
 
-  const estimateData = lead.estimate_data as EstimateData;
+  const estimateData = lead?.estimate_data as EstimateData;
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8">
         <EstimateDisplay
           groups={estimateData?.groups || []}
-          totalCost={lead.estimated_cost || 0}
-          projectSummary={lead.project_description}
+          totalCost={lead?.estimated_cost || 0}
+          projectSummary={lead?.project_description}
           contractor={contractor}
         />
       </div>
