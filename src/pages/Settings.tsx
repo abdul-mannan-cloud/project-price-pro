@@ -13,8 +13,6 @@ import { WebhookSettings } from "@/components/settings/WebhookSettings";
 import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
 import { AIRateForm } from "@/components/settings/AIRateForm";
 import { AIInstructionsForm } from "@/components/settings/AIInstructionsForm";
-import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { TeammateSettings } from "@/components/settings/TeammateSettings";
 import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
 import { LogoUpload } from "@/components/settings/LogoUpload";
@@ -100,7 +98,7 @@ const Settings = () => {
           minimum_project_cost: formData.minimumProjectCost,
           markup_percentage: formData.markupPercentage,
           tax_rate: formData.taxRate,
-          ai_instructions: formData.aiInstructions || []
+          ai_instructions: JSON.stringify(formData.aiInstructions || [])
         })
         .eq("id", user.id);
 
@@ -127,27 +125,6 @@ const Settings = () => {
     },
   });
 
-  const handleSave = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const form = event.target as HTMLFormElement;
-    const formData = new FormData(form);
-    
-    updateSettings.mutate({
-      businessName: formData.get("businessName"),
-      contactEmail: formData.get("contactEmail"),
-      contactPhone: formData.get("contactPhone"),
-      businessAddress: formData.get("businessAddress"),
-      website: formData.get("website"),
-      licenseNumber: formData.get("licenseNumber"),
-      primaryColor: formData.get("primaryColor"),
-      secondaryColor: formData.get("secondaryColor"),
-      minimumProjectCost: formData.get("minimumProjectCost"),
-      markupPercentage: formData.get("markupPercentage"),
-      taxRate: formData.get("taxRate"),
-      aiInstructions: formData.get("aiInstructions"),
-    });
-  };
-
   if (contractorLoading) {
     return (
       <div className="min-h-screen bg-secondary">
@@ -171,12 +148,15 @@ const Settings = () => {
   const parsedInstructions = (): AIInstruction[] => {
     try {
       if (!contractor?.contractor_settings?.ai_instructions) return [];
-      if (Array.isArray(contractor.contractor_settings.ai_instructions)) {
-        return contractor.contractor_settings.ai_instructions;
+      if (typeof contractor.contractor_settings.ai_instructions === 'string') {
+        const parsed = JSON.parse(contractor.contractor_settings.ai_instructions);
+        return Array.isArray(parsed) ? parsed : [];
       }
-      const parsed = JSON.parse(contractor.contractor_settings.ai_instructions);
-      return Array.isArray(parsed) ? parsed : [];
+      return Array.isArray(contractor.contractor_settings.ai_instructions) 
+        ? contractor.contractor_settings.ai_instructions 
+        : [];
     } catch (e) {
+      console.error('Error parsing AI instructions:', e);
       return [];
     }
   };
