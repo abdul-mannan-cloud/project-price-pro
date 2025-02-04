@@ -17,26 +17,6 @@ import {
 } from "motion/react"
 import { cn } from "@/lib/utils"
 
-// Define Segmenter interface
-interface Segmenter {
-  segment(text: string): {
-    [Symbol.iterator](): Iterator<{
-      segment: string
-      index: number
-      input: string
-    }>
-  }
-}
-
-// Extend the global Intl interface
-declare global {
-  namespace Intl {
-    var Segmenter: {
-      new (locale: string, options?: { granularity?: "grapheme" | "word" | "sentence" }): Segmenter
-    }
-  }
-}
-
 interface TextRotateProps {
   texts: string[]
   rotationInterval?: number
@@ -57,16 +37,16 @@ interface TextRotateProps {
   elementLevelClassName?: string
 }
 
-interface WordObject {
-  characters: string[]
-  needsSpace: boolean
-}
-
 export interface TextRotateRef {
   next: () => void
   previous: () => void
   jumpTo: (index: number) => void
   reset: () => void
+}
+
+interface WordObject {
+  characters: string[]
+  needsSpace: boolean
 }
 
 const TextRotate = forwardRef<TextRotateRef, TextRotateProps>(
@@ -96,14 +76,9 @@ const TextRotate = forwardRef<TextRotateRef, TextRotateProps>(
     const [currentTextIndex, setCurrentTextIndex] = useState(0)
 
     const splitIntoCharacters = (text: string): string[] => {
-      if (typeof window !== "undefined" && Intl?.Segmenter) {
-        try {
-          const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" })
-          return Array.from(segmenter.segment(text), ({ segment }) => segment)
-        } catch (error) {
-          console.warn("Segmenter failed, falling back to Array.from:", error)
-          return Array.from(text)
-        }
+      if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
+        const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" })
+        return Array.from(segmenter.segment(text), ({ segment }) => segment)
       }
       return Array.from(text)
     }
