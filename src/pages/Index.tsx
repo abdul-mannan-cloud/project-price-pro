@@ -6,6 +6,8 @@ import { TextRotate } from "@/components/ui/text-rotate";
 import { Header1 } from "@/components/ui/header";
 import { Footerdemo } from "@/components/ui/footer-section";
 
+const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
+
 const constructionImages = [
   {
     url: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e",
@@ -85,7 +87,7 @@ const Index = () => {
               className="pt-4"
             >
               <Button
-                onClick={() => navigate("/estimate")}
+                onClick={() => navigate(`/estimate/${DEFAULT_CONTRACTOR_ID}`)}
                 size="lg"
                 variant="default"
                 className="text-lg px-8 py-6"
