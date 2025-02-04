@@ -233,6 +233,7 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
     <div className="space-y-4">
       <div className="flex justify-between items-center gap-4">
         <div className="form-group flex-1 max-w-md mb-0">
+          <Search className="absolute left-2 top-[50%] -translate-y-[50%] h-4 w-4 text-muted-foreground pointer-events-none z-10" />
           <input
             type="text"
             id="search-leads"
@@ -241,10 +242,9 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <label htmlFor="search-leads" className="form-label">
+          <label htmlFor="search-leads" className="form-label pl-6">
             Search Leads
           </label>
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         </div>
         <div className="flex items-center gap-2">
           <DropdownMenu>
