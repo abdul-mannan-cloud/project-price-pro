@@ -20,7 +20,7 @@ import { Json } from "@/integrations/supabase/types";
 
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
-const EstimatePage = () => {
+export default function Estimate() {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
   const [projectDescription, setProjectDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -43,11 +43,8 @@ const EstimatePage = () => {
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
-  // Extract contractor ID from URL params or use default
   const effectiveContractorId = urlContractorId || DEFAULT_CONTRACTOR_ID;
   console.log('Effective Contractor ID:', effectiveContractorId);
-
-  // Fetch contractor data using React Query for better caching and performance
 
   const { data: contractor, isLoading: isContractorLoading, error: contractorError } = useQuery({
     queryKey: ["contractor", effectiveContractorId],
@@ -116,7 +113,7 @@ const EstimatePage = () => {
       }
     },
     retry: 1,
-    staleTime: 5 * 60 * 1000 // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000
   });
 
   useEffect(() => {
@@ -299,7 +296,7 @@ const EstimatePage = () => {
   };
 
   const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000; // 1 second
+  const RETRY_DELAY = 1000;
 
   const loadCategoryQuestions = async (retryCount = 0) => {
     if (!selectedCategory) {
@@ -764,6 +761,4 @@ const EstimatePage = () => {
       </div>
     </div>
   );
-};
-
-export default EstimatePage;
+}
