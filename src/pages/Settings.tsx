@@ -6,12 +6,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { Settings as SettingsIcon, Users, LayoutDashboard, Building2, Palette, Calculator, Webhook, Bot } from "lucide-react";
+import { Settings as SettingsIcon, Users, LayoutDashboard, Building2, Palette, Calculator, Webhook, Bot, ListChecks } from "lucide-react";
 import { useState } from "react";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
 import { Json } from "@/integrations/supabase/types";
+import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
 
 interface AIPreferences {
   rate: string;
@@ -233,6 +234,13 @@ const Settings = () => {
           />
 
           <SettingsMenuItem
+            icon={<ListChecks className="h-5 w-5" />}
+            title="Service Categories"
+            description="Choose which services you want to offer to your customers"
+            onClick={() => setActiveDialog("categories")}
+          />
+
+          <SettingsMenuItem
             icon={<Webhook className="h-5 w-5" />}
             title="Webhooks"
             description="Manage webhook integrations for lead notifications"
@@ -450,40 +458,7 @@ const Settings = () => {
           isOpen={activeDialog === "categories"}
           onClose={() => setActiveDialog(null)}
         >
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Select which service categories you want to offer to your customers
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {categories.map((category) => (
-                <div key={category.id} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id={category.id}
-                    checked={!contractor?.contractor_settings?.excluded_categories?.includes(category.id)}
-                    onChange={(e) => {
-                      const excluded = contractor?.contractor_settings?.excluded_categories || [];
-                      if (e.target.checked) {
-                        // Remove from excluded
-                        updateSettings.mutate({
-                          excluded_categories: excluded.filter((id) => id !== category.id)
-                        });
-                      } else {
-                        // Add to excluded
-                        updateSettings.mutate({
-                          excluded_categories: [...excluded, category.id]
-                        });
-                      }
-                    }}
-                  />
-                  <label htmlFor={category.id} className="text-sm">
-                    {category.name}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ServiceCategoriesSettings />
         </SettingsDialog>
 
         {/* Webhooks Dialog */}
