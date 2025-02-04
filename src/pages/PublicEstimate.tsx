@@ -24,6 +24,10 @@ type EstimateData = {
   }>;
 };
 
+type ContractorWithSettings = Database["public"]["Tables"]["contractors"]["Row"] & {
+  contractor_settings: Database["public"]["Tables"]["contractor_settings"]["Row"];
+};
+
 const PublicEstimate = () => {
   const { id } = useParams();
 
@@ -76,20 +80,20 @@ const PublicEstimate = () => {
   }
 
   const estimateData = lead.estimate_data as EstimateData;
-  const contractor = {
-    ...lead.contractors,
-    contractor_settings: lead.contractors?.contractor_settings || {
-      ai_preferences: {},
-      ai_prompt_template: "",
-      created_at: "",
-      excluded_categories: [],
-      id: lead.contractors?.id || "",
-      markup_percentage: 0,
-      minimum_project_cost: 0,
-      tax_rate: 0,
-      updated_at: "",
-    }
-  };
+  const contractor = lead.contractors as ContractorWithSettings;
+
+  if (!contractor || !contractor.contractor_settings) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold mb-2">Contractor Not Found</h1>
+          <p className="text-muted-foreground">
+            The contractor information for this estimate is not available.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
