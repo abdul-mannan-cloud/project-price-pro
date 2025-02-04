@@ -95,7 +95,7 @@ const EstimatePage = () => {
                 rate: "HR",
                 type: "material_labor",
                 instructions: ""
-              } as Json,
+              } as unknown as JSON,
               excluded_categories: [],
               ai_instructions: "",
               created_at: timestamp,
