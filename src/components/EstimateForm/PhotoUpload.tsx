@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Camera, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PhotoUploadProps {
   onPhotosSelected: (urls: string[]) => void;
