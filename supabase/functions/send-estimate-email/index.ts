@@ -25,8 +25,15 @@ function formatCurrency(amount: number): string {
 }
 
 function generateEstimateHtml(data: any, estimateUrl: string, contractor?: any): string {
-  const groups = data.groups || [];
-  const totalCost = data.totalCost || 0;
+  console.log('Generating HTML with data:', { data, estimateUrl, contractor });
+
+  if (!data || typeof data !== 'object') {
+    console.error('Invalid estimate data:', data);
+    throw new Error('Invalid estimate data provided');
+  }
+
+  const groups = Array.isArray(data.groups) ? data.groups : [];
+  const totalCost = typeof data.totalCost === 'number' ? data.totalCost : 0;
 
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -38,18 +45,28 @@ function generateEstimateHtml(data: any, estimateUrl: string, contractor?: any):
       
       ${groups.map((group: any) => `
         <div style="margin-bottom: 30px; background: #f9f9f9; padding: 20px; border-radius: 8px;">
-          <h2 style="color: #444; margin-top: 0;">${group.name}</h2>
-          <div style="margin-left: 20px;">
-            ${group.items.map((item: any) => `
-              <div style="margin-bottom: 15px;">
-                <p style="margin: 5px 0; color: #666;">
-                  <strong>${item.name}</strong>
-                  ${item.description ? `<br><span style="font-size: 14px;">${item.description}</span>` : ''}
-                  <br><span style="color: #0066cc;">${formatCurrency(item.cost)}</span>
-                </p>
+          <h2 style="color: #444; margin-top: 0;">${group.name || 'Unnamed Group'}</h2>
+          ${group.subgroups?.map((subgroup: any) => `
+            <div style="margin-left: 20px; margin-bottom: 20px;">
+              <h3 style="color: #666; margin-bottom: 10px;">${subgroup.name || 'Unnamed Subgroup'}</h3>
+              ${subgroup.items?.map((item: any) => `
+                <div style="margin-bottom: 15px; padding: 10px; background: #fff; border-radius: 4px;">
+                  <p style="margin: 5px 0; color: #666;">
+                    <strong>${item.title || 'Unnamed Item'}</strong>
+                    ${item.description ? `<br><span style="font-size: 14px;">${item.description}</span>` : ''}
+                    <br>
+                    <span style="color: #0066cc;">
+                      ${item.quantity || 0} ${item.unit || 'units'} × ${formatCurrency(item.unitAmount || 0)} = 
+                      ${formatCurrency(item.totalPrice || 0)}
+                    </span>
+                  </p>
+                </div>
+              `).join('') || 'No items'}
+              <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                <strong>Subtotal: ${formatCurrency(subgroup.subtotal || 0)}</strong>
               </div>
-            `).join('')}
-          </div>
+            </div>
+          `).join('') || 'No subgroups'}
         </div>
       `).join('')}
       
@@ -82,6 +99,12 @@ serve(async (req) => {
     const { name, email, estimateData, estimateUrl, contractor }: EmailRequest = await req.json();
 
     console.log("Sending estimate email to:", { name, email, estimateUrl });
+    console.log("Estimate data:", estimateData);
+    console.log("Contractor info:", contractor);
+
+    if (!estimateData) {
+      throw new Error("No estimate data provided");
+    }
 
     const emailResponse = await resend.emails.send({
       from: contractor?.business_name 
@@ -103,8 +126,12 @@ serve(async (req) => {
     });
   } catch (error: any) {
     console.error("Error in send-estimate-email function:", error);
+    console.error("Error details:", error.stack);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
