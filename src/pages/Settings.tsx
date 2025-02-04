@@ -52,15 +52,21 @@ const Settings = () => {
   });
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      navigate("/");
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account.",
+      });
+    } catch (error: any) {
       toast({
         title: "Error",
         description: "Failed to log out. Please try again.",
         variant: "destructive",
       });
-    } else {
-      navigate("/");
     }
   };
 
@@ -111,7 +117,7 @@ const Settings = () => {
       });
       setActiveDialog(null);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: "Failed to save settings. Please try again.",
@@ -417,6 +423,7 @@ const Settings = () => {
                 onClick={handleLogout}
                 className="w-full"
               >
+                <LogOut className="h-4 w-4 mr-2" />
                 Log Out
               </Button>
             </div>
