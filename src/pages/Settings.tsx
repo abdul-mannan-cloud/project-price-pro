@@ -11,6 +11,7 @@ import { useState } from "react";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
+import { Json } from "@/integrations/supabase/types";
 
 interface AIPreferences {
   rate: string;
