@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { formatDistanceToNow, format } from "date-fns";
-import { MapPin, ArrowUp, ArrowDown, Search, Download, Trash2, Filter, Phone, Mail, User, Calendar, DollarSign } from "lucide-react";
+import { MapPin, ArrowUp, ArrowDown, Search, Download, Trash2, Filter, Phone, Mail, User, Calendar, DollarSign, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Json } from "@/integrations/supabase/types";
 import {
@@ -23,7 +23,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 type Status = keyof typeof statusColors;
 
@@ -153,6 +156,34 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
   const handleExportConfirm = () => {
     onExport(filteredLeads);
     setShowExportDialog(false);
+  };
+
+  const handleStatusChange = async (leadId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ status: newStatus })
+        .eq('id', leadId);
+
+      if (error) throw error;
+
+      // Update local state to reflect the change
+      const updatedLeads = leads.map(lead => 
+        lead.id === leadId ? { ...lead, status: newStatus } : lead
+      );
+      
+      toast({
+        title: "Status updated",
+        description: `Lead status has been changed to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update lead status",
+        variant: "destructive",
+      });
+    }
   };
 
   const filteredLeads = leads
@@ -408,24 +439,51 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
                   ${lead.estimated_cost?.toLocaleString() || "0"}
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    className="p-0 h-auto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Add status change handler here
-                    }}
-                  >
-                    <Badge 
-                      variant="outline"
-                      className={cn(
-                        "font-normal cursor-pointer",
-                        statusColors[lead.status as Status] || statusColors.pending
-                      )}
-                    >
-                      {lead.status || "pending"}
-                    </Badge>
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        className="p-0 h-auto hover:bg-transparent"
+                      >
+                        <Badge 
+                          variant="outline"
+                          className={cn(
+                            "font-normal cursor-pointer",
+                            statusColors[lead.status as Status] || statusColors.pending
+                          )}
+                        >
+                          {lead.status || "pending"}
+                        </Badge>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {Object.keys(statusColors).map((status) => (
+                        <DropdownMenuItem
+                          key={status}
+                          className="flex items-center gap-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(lead.id, status);
+                          }}
+                        >
+                          {lead.status === status && (
+                            <Check className="h-4 w-4" />
+                          )}
+                          <Badge 
+                            variant="outline"
+                            className={cn(
+                              "font-normal",
+                              statusColors[status as Status]
+                            )}
+                          >
+                            {status}
+                          </Badge>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
                 <TableCell>
                   {lead.created_at ? formatDate(lead.created_at) : "N/A"}
