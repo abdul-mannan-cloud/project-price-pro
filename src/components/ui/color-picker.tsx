@@ -75,47 +75,55 @@ const trimColorString = (color: string, maxLength: number = 20): string => {
   return `${color.slice(0, maxLength - 3)}...`
 }
 
-const ColorPicker = ({
-  color,
-  onChange,
-}: {
-  color: string
-  onChange: (color: string) => void
-}) => {
+interface ColorPickerProps {
+  color: string;
+  onChange: (color: string) => void;
+}
+
+const ColorPicker = ({ color, onChange }: ColorPickerProps) => {
   const [hsl, setHsl] = useState<[number, number, number]>([0, 0, 0])
   const [colorInput, setColorInput] = useState(color)
+  const [tempColor, setTempColor] = useState(color)
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
-    handleColorChange(color)
+    handleColorChange(color, false)
   }, [color])
 
-  const handleColorChange = (newColor: string) => {
+  const handleColorChange = (newColor: string, isTemporary: boolean = true) => {
     const normalizedColor = normalizeColor(newColor)
-    setColorInput(normalizedColor)
+    if (isTemporary) {
+      setTempColor(normalizedColor)
+    } else {
+      setColorInput(normalizedColor)
+    }
 
     let h, s, l
     if (normalizedColor.startsWith("#")) {
       ;[h, s, l] = hexToHsl(normalizedColor)
     } else {
-      ;[h, s, l] = normalizedColor.match(/\d+(\.\d+)?/g)?.map(Number) || [
-        0, 0, 0,
-      ]
+      ;[h, s, l] = normalizedColor.match(/\d+(\.\d+)?/g)?.map(Number) || [0, 0, 0]
     }
 
     setHsl([h, s, l])
-    onChange(`hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, ${l.toFixed(1)}%)`)
+    if (!isTemporary) {
+      onChange(`hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, ${l.toFixed(1)}%)`)
+    }
+  }
+
+  const handleSave = () => {
+    handleColorChange(tempColor, false)
+    setIsOpen(false)
   }
 
   const handleHueChange = (hue: number) => {
     const newHsl: [number, number, number] = [hue, hsl[1], hsl[2]]
     setHsl(newHsl)
-    handleColorChange(`hsl(${newHsl[0]}, ${newHsl[1]}%, ${newHsl[2]}%)`)
+    const newColor = `hsl(${newHsl[0]}, ${newHsl[1]}%, ${newHsl[2]}%)`
+    handleColorChange(newColor)
   }
 
-  const handleSaturationLightnessChange = (
-    event: React.MouseEvent<HTMLDivElement>
-  ) => {
+  const handleSaturationLightnessChange = (event: React.MouseEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
@@ -123,18 +131,14 @@ const ColorPicker = ({
     const l = Math.round(100 - (y / rect.height) * 100)
     const newHsl: [number, number, number] = [hsl[0], s, l]
     setHsl(newHsl)
-    handleColorChange(`hsl(${newHsl[0]}, ${newHsl[1]}%, ${newHsl[2]}%)`)
+    const newColor = `hsl(${newHsl[0]}, ${newHsl[1]}%, ${newHsl[2]}%)`
+    handleColorChange(newColor)
   }
 
-  const handleColorInputChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleColorInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = event.target.value
     setColorInput(newColor)
-    if (
-      /^#[0-9A-Fa-f]{6}$/.test(newColor) ||
-      /^hsl\(\d+,\s*\d+%,\s*\d+%\)$/.test(newColor)
-    ) {
+    if (/^#[0-9A-Fa-f]{6}$/.test(newColor) || /^hsl\(\d+,\s*\d+%,\s*\d+%\)$/.test(newColor)) {
       handleColorChange(newColor)
     }
   }
@@ -220,7 +224,7 @@ const ColorPicker = ({
             />
             <motion.div
               className="w-8 h-8 rounded-md shadow-sm"
-              style={{ backgroundColor: colorInput }}
+              style={{ backgroundColor: tempColor }}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             />
@@ -236,7 +240,7 @@ const ColorPicker = ({
                   whileHover={{ scale: 1.2, zIndex: 1 }}
                   whileTap={{ scale: 0.9 }}
                 >
-                  {colorInput === preset && (
+                  {tempColor === preset && (
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
@@ -250,6 +254,9 @@ const ColorPicker = ({
               ))}
             </AnimatePresence>
           </div>
+          <Button onClick={handleSave} className="w-full">
+            Save Changes
+          </Button>
         </motion.div>
       </PopoverContent>
     </Popover>
