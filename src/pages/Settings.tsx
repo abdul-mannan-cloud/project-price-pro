@@ -9,11 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { LayoutDashboard, Users, Settings as SettingsIcon } from "lucide-react";
+import type { Database } from "@/integrations/supabase/types";
 
-interface BrandingColors {
-  primary: string;
-  secondary: string;
-}
+type BrandingColors = NonNullable<Database['public']['Tables']['contractors']['Row']['branding_colors']>;
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -55,7 +53,12 @@ const Settings = () => {
     return <div>Loading...</div>;
   }
 
-  const brandingColors = contractor?.branding_colors as BrandingColors;
+  const defaultColors: BrandingColors = {
+    primary: "#6366F1",
+    secondary: "#4F46E5"
+  };
+
+  const brandingColors = contractor?.branding_colors || defaultColors;
 
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
@@ -95,7 +98,7 @@ const Settings = () => {
                   Primary Color
                 </label>
                 <ColorPicker
-                  color={brandingColors?.primary || "#6366F1"}
+                  color={brandingColors.primary}
                   onChange={() => {}}
                 />
               </div>
@@ -104,7 +107,7 @@ const Settings = () => {
                   Secondary Color
                 </label>
                 <ColorPicker
-                  color={brandingColors?.secondary || "#4F46E5"}
+                  color={brandingColors.secondary}
                   onChange={() => {}}
                 />
               </div>

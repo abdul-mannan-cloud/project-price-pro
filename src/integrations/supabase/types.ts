@@ -76,7 +76,7 @@ export type Database = {
       }
       contractors: {
         Row: {
-          branding_colors: Json | null
+          branding_colors: BrandingColors | null
           business_logo_url: string | null
           business_name: string
           contact_email: string
@@ -292,6 +292,11 @@ export type Database = {
       [_ in never]: never
     }
   }
+}
+
+interface BrandingColors {
+  primary: string;
+  secondary: string;
 }
 
 type PublicSchema = Database[Extract<keyof Database, "public">]
