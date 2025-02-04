@@ -35,25 +35,7 @@ const Leads = () => {
       return (data || []).map(lead => ({
         ...lead,
         answers: lead.answers as { answers: Record<string, any> },
-        estimate_data: lead.estimate_data as {
-          groups?: {
-            name: string;
-            description?: string;
-            subgroups: {
-              name: string;
-              items: {
-                title: string;
-                description?: string;
-                quantity: number;
-                unit?: string;
-                unitAmount: number;
-                totalPrice: number;
-              }[];
-              subtotal: number;
-            }[];
-          }[];
-          projectSummary?: string;
-        }
+        estimate_data: lead.estimate_data as EstimateData
       })) as Lead[];
     },
   });
@@ -83,6 +65,14 @@ const Leads = () => {
     },
   });
 
+  const handleExport = (filteredLeads: Lead[]) => {
+    // TODO: Implement export functionality
+    toast({
+      title: "Export",
+      description: "Export functionality will be implemented soon.",
+    });
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -97,6 +87,7 @@ const Leads = () => {
           leads={leads}
           onLeadClick={setSelectedLead}
           onDeleteLeads={(leadIds) => deleteLead.mutate(leadIds)}
+          onExport={handleExport}
         />
       </div>
 
