@@ -1,7 +1,7 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
-import { Phone, MessageSquare, Download, FileSpreadsheet, Mail, X, Edit, MoreVertical, Link } from "lucide-react";
+import { Phone, MessageSquare, Download, FileSpreadsheet, Mail, X, Edit, Link } from "lucide-react";
 import type { Lead } from "./LeadsTable";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -151,12 +151,24 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-full h-[100vh] p-0 m-0">
           <div className="flex flex-col h-full relative">
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-50"
-            >
-              <X className="h-5 w-5 text-gray-500" />
-            </button>
+            {isMobile ? (
+              <div className="sticky top-0 z-50 bg-white border-b">
+                <button
+                  onClick={onClose}
+                  className="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+                <div className="h-14" /> {/* Spacer for the X button */}
+              </div>
+            ) : (
+              <button
+                onClick={onClose}
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-50"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            )}
 
             <div className="border-b bg-background sticky top-0 z-40">
               <div className="max-w-6xl mx-auto w-[95%]">
