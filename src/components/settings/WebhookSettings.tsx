@@ -15,6 +15,9 @@ export const WebhookSettings = () => {
   const { data: webhooks, isLoading } = useQuery({
     queryKey: ["webhooks"],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
       const { data, error } = await supabase
         .from("webhooks")
         .select("*")
@@ -27,9 +30,13 @@ export const WebhookSettings = () => {
 
   const addWebhook = useMutation({
     mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
       const { error } = await supabase.from("webhooks").insert({
         url: newWebhookUrl,
         description: newWebhookDescription,
+        contractor_id: user.id,
       });
 
       if (error) throw error;
