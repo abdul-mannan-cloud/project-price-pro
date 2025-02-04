@@ -31,7 +31,7 @@ const Settings = () => {
   ];
 
   // Fetch categories data
-  const { data: categories } = useQuery({
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -39,12 +39,12 @@ const Settings = () => {
         .select("*");
       
       if (error) throw error;
-      return data;
+      return data || [];
     }
   });
 
   // Fetch contractor data
-  const { data: contractor, isLoading } = useQuery({
+  const { data: contractor, isLoading: contractorLoading } = useQuery({
     queryKey: ["contractor"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -139,8 +139,8 @@ const Settings = () => {
     });
   };
 
-  if (isLoading) {
-    return <div>Loading...</div>;
+  if (contractorLoading || categoriesLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   const defaultColors = {
