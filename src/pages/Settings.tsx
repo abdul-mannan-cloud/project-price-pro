@@ -125,6 +125,13 @@ const Settings = () => {
     },
   });
 
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+    updateSettings.mutate(data);
+  };
+
   if (contractorLoading) {
     return (
       <div className="min-h-screen bg-secondary">
@@ -176,7 +183,7 @@ const Settings = () => {
             isOpen={activeDialog === "business"}
             onClose={() => setActiveDialog(null)}
           >
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleFormSubmit} className="space-y-4">
               <LogoUpload currentLogo={contractor?.business_logo_url} />
               <Input
                 label="Business Name"
@@ -243,7 +250,7 @@ const Settings = () => {
             isOpen={activeDialog === "branding"}
             onClose={() => setActiveDialog(null)}
           >
-            <form onSubmit={handleSave} className="space-y-6">
+            <form onSubmit={handleFormSubmit} className="space-y-6">
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">
                   Primary Color
@@ -282,7 +289,7 @@ const Settings = () => {
             isOpen={activeDialog === "estimate"}
             onClose={() => setActiveDialog(null)}
           >
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleFormSubmit} className="space-y-4">
               <div>
                 <label className="text-sm font-medium">Minimum Project Cost ($)</label>
                 <Input
