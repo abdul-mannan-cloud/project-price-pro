@@ -2,15 +2,12 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import Floating, { FloatingElement } from "@/components/ui/parallax-floating";
+import { TextRotate } from "@/components/ui/text-rotate";
 
 const constructionImages = [
   {
     url: "https://images.unsplash.com/photo-1504307651254-35680f356dfd",
     title: "Modern Construction",
-  },
-  {
-    url: "https://images.unsplash.com/photo-1590644365607-1c5a519a54e2",
-    title: "Home Renovation",
   },
   {
     url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e",
@@ -36,6 +33,19 @@ const constructionImages = [
     url: "https://images.unsplash.com/photo-1582653291997-079a1c04e5a1",
     title: "Quality Work",
   },
+  {
+    url: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f",
+    title: "Construction Site",
+  },
+];
+
+const rotatingTexts = [
+  "Kitchen Remodeling",
+  "Bathroom Renovation",
+  "Home Addition",
+  "Basement Finishing",
+  "Deck Building",
+  "Interior Painting",
 ];
 
 const Index = () => {
@@ -44,28 +54,35 @@ const Index = () => {
   return (
     <div className="index-page min-h-screen bg-[#F1F1F1] relative overflow-hidden">
       <div className="relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <div className="text-center space-y-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center space-y-6 max-w-3xl mx-auto">
             <motion.h1 
-              className="text-4xl md:text-6xl font-bold mb-6 text-black animate-fadeIn"
+              className="text-4xl md:text-6xl font-bold text-black animate-fadeIn"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
               AI Construction Estimate Lead Generation
             </motion.h1>
-            <motion.p 
-              className="text-xl md:text-2xl mb-8 text-gray-600 animate-fadeIn"
+            <motion.div
+              className="text-xl md:text-2xl text-gray-600 animate-fadeIn flex justify-center items-center h-16"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              Get instant, AI-powered cost estimates for your renovation projects
-            </motion.p>
+              Get instant estimates for{" "}
+              <TextRotate
+                texts={rotatingTexts}
+                mainClassName="ml-2 text-primary-600 font-semibold"
+                rotationInterval={3000}
+                staggerDuration={0.02}
+              />
+            </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
+              className="pt-4"
             >
               <Button
                 onClick={() => navigate("/estimate")}
@@ -85,11 +102,11 @@ const Index = () => {
             key={index}
             depth={(index % 3) + 1}
             className={`
-              ${index === 0 ? "top-[8%] left-[11%]" : ""}
-              ${index === 1 ? "top-[10%] left-[32%]" : ""}
-              ${index === 2 ? "top-[2%] left-[53%]" : ""}
-              ${index === 3 ? "top-[0%] left-[83%]" : ""}
-              ${index === 4 ? "top-[40%] left-[2%]" : ""}
+              ${index === 0 ? "top-[15%] left-[11%]" : ""}
+              ${index === 1 ? "top-[18%] left-[32%]" : ""}
+              ${index === 2 ? "top-[12%] left-[53%]" : ""}
+              ${index === 3 ? "top-[10%] left-[83%]" : ""}
+              ${index === 4 ? "top-[45%] left-[2%]" : ""}
               ${index === 5 ? "top-[70%] left-[77%]" : ""}
               ${index === 6 ? "top-[73%] left-[15%]" : ""}
               ${index === 7 ? "top-[80%] left-[50%]" : ""}
