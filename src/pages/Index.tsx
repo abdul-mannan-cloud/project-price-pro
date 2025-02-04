@@ -32,7 +32,7 @@ const constructionImages = [
     title: "Construction Site",
   },
   {
-    url: "https://images.unsplash.com/photo-1590725140246-20acddc1fb82",
+    url: "https://images.unsplash.com/photo-1590725121839-892b458a74fe",
     title: "Interior Renovation",
   },
 ];
