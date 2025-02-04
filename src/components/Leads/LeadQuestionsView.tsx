@@ -1,4 +1,5 @@
 import { Separator } from "@/components/ui/separator";
+import { Mail, Phone } from "lucide-react";
 import type { Lead } from "./LeadsTable";
 
 interface LeadQuestionsViewProps {
@@ -6,6 +7,14 @@ interface LeadQuestionsViewProps {
 }
 
 export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
+  const handleEmailClick = (email: string) => {
+    window.location.href = `mailto:${email}`;
+  };
+
+  const handlePhoneClick = (phone: string) => {
+    window.location.href = `tel:${phone}`;
+  };
+
   return (
     <div className="space-y-8">
       {/* Customer Information */}
@@ -18,11 +27,31 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Email</p>
-            <p className="font-medium">{lead.user_email || "Not provided"}</p>
+            {lead.user_email ? (
+              <button
+                onClick={() => handleEmailClick(lead.user_email!)}
+                className="font-medium text-primary hover:underline inline-flex items-center gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                {lead.user_email}
+              </button>
+            ) : (
+              <p className="font-medium">Not provided</p>
+            )}
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Phone</p>
-            <p className="font-medium">{lead.user_phone || "Not provided"}</p>
+            {lead.user_phone ? (
+              <button
+                onClick={() => handlePhoneClick(lead.user_phone!)}
+                className="font-medium text-primary hover:underline inline-flex items-center gap-2"
+              >
+                <Phone className="h-4 w-4" />
+                {lead.user_phone}
+              </button>
+            ) : (
+              <p className="font-medium">Not provided</p>
+            )}
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Project Address</p>
@@ -58,20 +87,27 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
         <div className="space-y-6">
           {lead.answers && lead.answers.answers && Object.entries(lead.answers.answers).map(([category, answers]) => (
             <div key={category} className="space-y-4">
-              <h4 className="font-medium text-primary">{category}</h4>
+              <h4 className="font-medium text-primary text-lg">{category}</h4>
               <div className="space-y-4">
                 {Object.values(answers).map((qa: any, index: number) => (
                   <div key={index} className="bg-muted/30 p-6 rounded-lg">
-                    <p className="font-medium mb-3">{qa.question}</p>
-                    <div className="space-y-2">
+                    <p className="font-medium text-lg mb-4 text-foreground/90">{qa.question}</p>
+                    <div className="space-y-3">
                       {qa.answers?.map((answer: string, i: number) => {
                         const option = qa.options?.find((opt: any) => opt.value === answer);
                         return (
-                          <div key={i} className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-primary/60" />
-                            <p className="text-muted-foreground">
-                              {option?.label || answer}
-                            </p>
+                          <div key={i} className="flex items-start gap-3 bg-background/50 p-3 rounded-md">
+                            <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+                            <div>
+                              <p className="text-foreground">
+                                {option?.label || answer}
+                              </p>
+                              {option?.description && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {option.description}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
