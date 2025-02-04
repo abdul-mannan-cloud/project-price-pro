@@ -1,8 +1,9 @@
-import { Button } from "@/components/ui/3d-button";
+import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Floating, { FloatingElement } from "@/components/ui/parallax-floating";
 import { TextRotate } from "@/components/ui/text-rotate";
+import { Header1 } from "@/components/ui/header";
 
 const constructionImages = [
   {
@@ -52,24 +53,26 @@ const Index = () => {
 
   return (
     <div className="index-page min-h-screen bg-[#F1F1F1] relative overflow-hidden font-['Open Sans']">
+      <Header1 />
       <div className="relative z-10 flex items-center justify-center min-h-screen">
         <div className="container max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
           <div className="text-center space-y-8 sm:space-y-10 bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg sm:p-12">
             <motion.h1 
-              className="text-2xl sm:text-3xl md:text-5xl font-bold text-black leading-tight animate-fadeIn"
+              className="text-2xl sm:text-3xl md:text-4xl font-bold text-black leading-tight animate-fadeIn text-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              Transform Your Construction Business with{" "}
+              Transform Your Construction Business...
+            </motion.h1>
+            <div className="flex justify-center">
               <TextRotate
                 texts={rotatingTexts}
-                mainClassName="text-primary-600 block mt-2"
+                mainClassName="text-primary-600 text-2xl sm:text-3xl md:text-4xl font-bold"
                 rotationInterval={3000}
                 staggerDuration={0.02}
               />
-              ...
-            </motion.h1>
+            </div>
             <motion.p
               className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4 leading-relaxed animate-fadeIn"
               initial={{ opacity: 0, y: 20 }}
@@ -87,7 +90,7 @@ const Index = () => {
               <Button
                 onClick={() => navigate("/estimate")}
                 size="lg"
-                variant="ai"
+                variant="default"
                 className="text-lg px-8 py-6"
               >
                 Start Your Estimate
