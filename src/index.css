@@ -23,13 +23,13 @@
     --secondary-foreground: #1d1d1f;
     --muted: #F5F5F7;
     --muted-foreground: #86868B;
-    --accent: #007AFF;
-    --accent-foreground: #FFFFFF;
+    --accent: var(--primary);
+    --accent-foreground: var(--primary-foreground);
     --destructive: #ff3b30;
     --destructive-foreground: #FFFFFF;
     --border: #d2d2d7;
     --input: #d2d2d7;
-    --ring: #0066cc;
+    --ring: var(--primary);
   }
 
   * {
