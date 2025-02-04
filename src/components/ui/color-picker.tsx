@@ -103,10 +103,9 @@ const ColorPicker = ({ color, onChange }: ColorPickerProps) => {
     setHsl([h, s, l])
 
     // Update CSS variables when color changes
-    document.documentElement.style.setProperty(
-      '--primary-opacity-90',
-      `${normalizedColor}e6` // e6 is hex for 90% opacity
-    )
+    document.documentElement.style.setProperty('--primary', normalizedColor)
+    document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF')
+    document.documentElement.style.setProperty('--primary-opacity-90', `${normalizedColor}e6`) // e6 is hex for 90% opacity
   }
 
   const handleSave = (e: React.MouseEvent) => {
@@ -275,5 +274,3 @@ const ColorPicker = ({ color, onChange }: ColorPickerProps) => {
     </Popover>
   )
 }
-
-export { ColorPicker }
