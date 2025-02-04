@@ -549,7 +549,7 @@ const EstimatePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white">
       <Progress 
         value={getProgressValue()} 
         className="h-8 rounded-none transition-all duration-500 ease-in-out"
@@ -565,100 +565,94 @@ const EstimatePage = () => {
         </button>
       )}
 
-      <div className="flex-1 w-full">
+      <div className="w-full px-4 py-12">
         {stage === 'photo' && (
-          <div className="h-full flex items-center justify-center px-4">
-            <div className="card w-full max-w-4xl animate-fadeIn">
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-semibold mb-2">
-                    🛠 {contractor?.business_name || "Project"} Estimator
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Take or upload a photo of what you want to repair or modify
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <label className="relative">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    capture="environment"
-                    disabled={isUploading}
-                  />
-                  <Button 
-                    className="w-full" 
-                    size="lg" 
-                    disabled={isUploading}
-                    asChild
-                  >
-                    <div>
-                      <Camera className="mr-2" />
-                      {isUploading ? "UPLOADING..." : "TAKE A PHOTO"}
-                    </div>
-                  </Button>
-                </label>
-                <Button 
-                  variant="ghost" 
-                  className="w-full" 
-                  size="lg" 
-                  onClick={() => setStage('description')}
-                >
-                  <SkipForward className="mr-2" />
-                  Skip Photo
-                </Button>
+          <div className="card p-8 max-w-4xl mx-auto animate-fadeIn">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">
+                  🛠 {contractor?.business_name || "Project"} Estimator
+                </h2>
+                <p className="text-muted-foreground">
+                  Take or upload a photo of what you want to repair or modify
+                </p>
               </div>
             </div>
-          </div>
-        )}
-
-        {stage === 'description' && !selectedCategory && (
-          <div className="h-full flex items-center justify-center px-4">
-            <div className="card w-full max-w-4xl animate-fadeIn">
-              <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
-              <div className="space-y-2">
-                <Textarea
-                  value={projectDescription}
-                  onChange={(e) => setProjectDescription(e.target.value)}
-                  placeholder="Describe what you need help with (minimum 30 characters)..."
-                  className="min-h-[150px]"
+            <div className="space-y-4">
+              <label className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  capture="environment"
+                  disabled={isUploading}
                 />
-                {projectDescription.length > 0 && projectDescription.length < 30 && (
-                  <p className="text-sm text-destructive">
-                    Please enter at least {30 - projectDescription.length} more characters
-                  </p>
-                )}
-              </div>
+                <Button 
+                  className="w-full" 
+                  size="lg" 
+                  disabled={isUploading}
+                  asChild
+                >
+                  <div>
+                    <Camera className="mr-2" />
+                    {isUploading ? "UPLOADING..." : "TAKE A PHOTO"}
+                  </div>
+                </Button>
+              </label>
               <Button 
-                className="w-full mt-6"
-                onClick={handleDescriptionSubmit}
-                disabled={projectDescription.trim().length < 30}
+                variant="ghost" 
+                className="w-full" 
+                size="lg" 
+                onClick={() => setStage('description')}
               >
-                Continue
+                <SkipForward className="mr-2" />
+                Skip Photo
               </Button>
             </div>
           </div>
         )}
 
-        {stage === 'category' && (
-          <div className="w-full h-full">
-            <h2 className="text-2xl font-semibold mb-6 text-center">Select Service Category</h2>
-            <div className="px-4">
-              <CategoryGrid 
-                categories={categories}
-                selectedCategory={selectedCategory || undefined}
-                onSelectCategory={handleCategorySelect}
-                completedCategories={completedCategories}
+        {stage === 'description' && !selectedCategory && (
+          <div className="card p-8 max-w-4xl mx-auto animate-fadeIn">
+            <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
+            <div className="space-y-2">
+              <Textarea
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                placeholder="Describe what you need help with (minimum 30 characters)..."
+                className="min-h-[150px]"
               />
+              {projectDescription.length > 0 && projectDescription.length < 30 && (
+                <p className="text-sm text-destructive">
+                  Please enter at least {30 - projectDescription.length} more characters
+                </p>
+              )}
             </div>
+            <Button 
+              className="w-full mt-6"
+              onClick={handleDescriptionSubmit}
+              disabled={projectDescription.trim().length < 30}
+            >
+              Continue
+            </Button>
+          </div>
+        )}
+
+        {stage === 'category' && (
+          <div className="w-full animate-fadeIn">
+            <h2 className="text-2xl font-semibold mb-6 text-center">Select Service Category</h2>
+            <CategoryGrid 
+              categories={categories}
+              selectedCategory={selectedCategory || undefined}
+              onSelectCategory={handleCategorySelect}
+              completedCategories={completedCategories}
+            />
           </div>
         )}
 
         {stage === 'contact' && estimate && (
-          <div className="w-full h-full">
+          <div className="w-full animate-fadeIn">
             <EstimateDisplay 
               groups={estimate.groups} 
               totalCost={estimate.totalCost} 
@@ -676,7 +670,7 @@ const EstimatePage = () => {
         )}
 
         {stage === 'estimate' && estimate && (
-          <div className="w-full h-full">
+          <div className="w-full animate-fadeIn">
             <EstimateDisplay 
               groups={estimate.groups} 
               totalCost={estimate.totalCost}
