@@ -1,7 +1,7 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
-import { Phone, MessageSquare, Download, FileSpreadsheet, Mail } from "lucide-react";
+import { Phone, MessageSquare, Download, FileSpreadsheet, Mail, X, Edit } from "lucide-react";
 import type { Lead } from "./LeadsTable";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -86,12 +86,24 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-full h-screen p-0 m-0">
-        <div className="flex flex-col h-full">
-          {/* Top Toggle Bar */}
-          <LeadViewToggle view={view} onViewChange={setView} />
+      <DialogContent className="max-w-full h-[100vh] p-0 m-0">
+        <div className="flex flex-col h-full relative">
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-50"
+          >
+            <X className="h-5 w-5 text-gray-500" />
+          </button>
 
-          {/* Content Area - Make it fill available space and scroll */}
+          {/* Top Toggle Bar */}
+          <div className="border-b bg-background sticky top-0 z-40">
+            <div className="max-w-6xl mx-auto w-[95%]">
+              <LeadViewToggle view={view} onViewChange={setView} />
+            </div>
+          </div>
+
+          {/* Content Area - Scrollable */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-6xl mx-auto">
               {view === "estimate" ? (
@@ -108,9 +120,9 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
             </div>
           </div>
 
-          {/* Bottom Actions - Now properly sticky */}
-          <div className="border-t bg-background p-4 w-full">
-            <div className="max-w-6xl mx-auto flex justify-between items-center">
+          {/* Bottom Actions - Fixed */}
+          <div className="border-t bg-background py-4 w-full">
+            <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
               <div className="flex gap-2">
                 {lead.user_phone && (
                   <>
@@ -126,23 +138,29 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
                 )}
               </div>
               <div className="flex gap-2">
-                {view === "estimate" && isEditing ? (
-                  <Button onClick={handleSaveEstimate}>Save Changes</Button>
-                ) : (
-                  <>
-                    <Button variant="outline" onClick={handleSendEmail} className="gap-2">
-                      <Mail className="h-4 w-4" />
-                      Email Estimate
-                    </Button>
-                    <Button variant="outline" className="gap-2">
-                      <FileSpreadsheet className="h-4 w-4" />
-                      Export CSV
-                    </Button>
-                    <Button variant="outline" className="gap-2">
-                      <Download className="h-4 w-4" />
-                      Export PDF
-                    </Button>
-                  </>
+                {view === "estimate" && (
+                  isEditing ? (
+                    <Button onClick={handleSaveEstimate}>Save Changes</Button>
+                  ) : (
+                    <>
+                      <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
+                        <Edit className="h-4 w-4" />
+                        Edit Estimate
+                      </Button>
+                      <Button variant="outline" onClick={handleSendEmail} className="gap-2">
+                        <Mail className="h-4 w-4" />
+                        Email Estimate
+                      </Button>
+                      <Button variant="outline" className="gap-2">
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Export CSV
+                      </Button>
+                      <Button variant="outline" className="gap-2">
+                        <Download className="h-4 w-4" />
+                        Export PDF
+                      </Button>
+                    </>
+                  )
                 )}
               </div>
             </div>
