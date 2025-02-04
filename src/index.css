@@ -10,17 +10,24 @@
     --card-foreground: #1d1d1f;
     --popover: #FFFFFF;
     --popover-foreground: #1d1d1f;
-    --primary: #007AFF;
+    --primary: #9b87f5;
     --primary-foreground: #FFFFFF;
-    --primary-100: #E1F0FF;
-    --primary-200: #B8DAFF;
-    --primary-300: #8FC4FF;
-    --primary-400: #66AEFF;
-    --primary-500: #3D98FF;
-    --primary-600: #1482FF;
-    --primary-700: #006BE6;
-    --secondary: #F5F5F7;
-    --secondary-foreground: #1d1d1f;
+    --primary-100: #f4f1fe;
+    --primary-200: #e9e3fd;
+    --primary-300: #d3c9fb;
+    --primary-400: #beb0f9;
+    --primary-500: #a896f7;
+    --primary-600: #8778d6;
+    --primary-700: #7569b8;
+    --secondary: #7E69AB;
+    --secondary-foreground: #FFFFFF;
+    --secondary-100: #f0edf6;
+    --secondary-200: #e1dbec;
+    --secondary-300: #c3b8d9;
+    --secondary-400: #a494c6;
+    --secondary-500: #8671b3;
+    --secondary-600: #725d99;
+    --secondary-700: #614f85;
     --muted: #F5F5F7;
     --muted-foreground: #86868B;
     --accent: var(--primary);
@@ -56,7 +63,7 @@
 
   .form-input {
     @apply h-[52px] w-full rounded-lg border border-input bg-background px-3 pt-5 pb-1 text-[15px] transition-all;
-    @apply focus:border-[#007AFF] focus:ring-[#007AFF] focus:outline-none;
+    @apply focus:border-primary focus:ring-primary focus:outline-none;
     @apply placeholder:text-transparent;
   }
 
@@ -85,7 +92,7 @@
 
   .select-trigger {
     @apply h-[52px] w-full rounded-lg border border-input bg-background px-3 pt-5 pb-0 text-[15px] transition-all;
-    @apply focus:border-[#007AFF] focus:ring-[#007AFF] focus:outline-none;
+    @apply focus:border-primary focus:ring-primary focus:outline-none;
     @apply flex items-center;
     min-height: 52px;
   }
@@ -94,16 +101,14 @@
     @apply bg-background border border-input rounded-xl shadow-sm;
   }
 
-  /* Default button style (Apple-style) */
   .button {
     @apply rounded-lg px-4 py-2 font-medium transition-colors;
-    @apply bg-background border border-input text-foreground hover:bg-[#f5f5f7];
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
   }
 
-  /* Dynamic button style (for non-index pages) */
   :not(.index-page) button {
     @apply transition-colors;
-    @apply bg-background border border-input text-foreground hover:bg-[#f5f5f7];
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
   }
 
   .container {
