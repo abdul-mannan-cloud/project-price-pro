@@ -377,9 +377,12 @@ const Settings = () => {
           onClose={() => setActiveDialog(null)}
         >
           <div className="space-y-4">
-            <Accordion type="single" collapsible className="w-full space-y-2">
-              <AccordionItem value="1" className="rounded-lg bg-background px-4 py-1">
-                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
+            <Accordion type="single" collapsible className="w-full -space-y-px">
+              <AccordionItem
+                value="1"
+                className="border bg-background px-4 py-1 first:rounded-t-lg last:rounded-b-lg"
+              >
+                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline [&>svg]:-order-1">
                   How do I update my business information?
                 </AccordionTrigger>
                 <AccordionContent className="pb-2 ps-7 text-muted-foreground">
@@ -387,8 +390,11 @@ const Settings = () => {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="2" className="rounded-lg bg-background px-4 py-1">
-                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
+              <AccordionItem
+                value="2"
+                className="border bg-background px-4 py-1 first:rounded-t-lg last:rounded-b-lg"
+              >
+                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline [&>svg]:-order-1">
                   How do I customize my brand colors?
                 </AccordionTrigger>
                 <AccordionContent className="pb-2 ps-7 text-muted-foreground">
@@ -396,8 +402,11 @@ const Settings = () => {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="3" className="rounded-lg bg-background px-4 py-1">
-                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
+              <AccordionItem
+                value="3"
+                className="border bg-background px-4 py-1 first:rounded-t-lg last:rounded-b-lg"
+              >
+                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline [&>svg]:-order-1">
                   How do estimate calculations work?
                 </AccordionTrigger>
                 <AccordionContent className="pb-2 ps-7 text-muted-foreground">
@@ -405,8 +414,11 @@ const Settings = () => {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="4" className="rounded-lg bg-background px-4 py-1">
-                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
+              <AccordionItem
+                value="4"
+                className="border bg-background px-4 py-1 first:rounded-t-lg last:rounded-b-lg"
+              >
+                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline [&>svg]:-order-1">
                   What are webhooks and how do I use them?
                 </AccordionTrigger>
                 <AccordionContent className="pb-2 ps-7 text-muted-foreground">
@@ -414,8 +426,11 @@ const Settings = () => {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="5" className="rounded-lg bg-background px-4 py-1">
-                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
+              <AccordionItem
+                value="5"
+                className="border bg-background px-4 py-1 first:rounded-t-lg last:rounded-b-lg"
+              >
+                <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline [&>svg]:-order-1">
                   How do I manage service categories?
                 </AccordionTrigger>
                 <AccordionContent className="pb-2 ps-7 text-muted-foreground">
