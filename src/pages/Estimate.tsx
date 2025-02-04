@@ -765,3 +765,5 @@ const EstimatePage = () => {
     </div>
   );
 };
+
+export default EstimatePage;
