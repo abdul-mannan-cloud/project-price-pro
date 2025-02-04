@@ -54,6 +54,12 @@ const UNIT_OPTIONS = [
   { value: "YD", label: "Yard (YD)" },
 ];
 
+const TYPE_OPTIONS = [
+  { value: "material_labor", label: "Material + Labor" },
+  { value: "material", label: "Material" },
+  { value: "labor", label: "Labor" },
+];
+
 export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
   const [aiRates, setAiRates] = useState<AIRate[]>(rates);
   const [isAddingRate, setIsAddingRate] = useState(false);
@@ -61,7 +67,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
     title: "",
     rate: "",
     unit: "",
-    type: "hourly",
+    type: "material_labor",
     instructions: ""
   });
 
@@ -72,7 +78,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
       title: "",
       rate: "",
       unit: "",
-      type: "hourly",
+      type: "material_labor",
       instructions: ""
     });
   };
@@ -172,15 +178,24 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
                 </SelectContent>
               </Select>
             </div>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-              value={newRate.type}
-              onChange={(e) => setNewRate({ ...newRate, type: e.target.value })}
-            >
-              <option value="hourly">Hourly</option>
-              <option value="fixed">Fixed</option>
-              <option value="square_foot">Square Foot</option>
-            </select>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Type</label>
+              <Select
+                value={newRate.type}
+                onValueChange={(value) => setNewRate({ ...newRate, type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Info className="h-4 w-4 text-muted-foreground" />
