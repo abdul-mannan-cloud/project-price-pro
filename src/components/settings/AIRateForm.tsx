@@ -24,6 +24,7 @@ interface AIRate {
   rate: string;
   unit: string;
   type: string;
+  description?: string;
   instructions?: string;
 }
 
@@ -68,6 +69,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
     rate: "",
     unit: "",
     type: "material_labor",
+    description: "",
     instructions: ""
   });
 
@@ -79,6 +81,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
       rate: "",
       unit: "",
       type: "material_labor",
+      description: "",
       instructions: ""
     });
   };
@@ -111,6 +114,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
         <TableHeader>
           <TableRow>
             <TableHead>Title</TableHead>
+            <TableHead>Description</TableHead>
             <TableHead>Rate</TableHead>
             <TableHead>Unit</TableHead>
             <TableHead>Type</TableHead>
@@ -122,6 +126,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
           {aiRates.map((rate, index) => (
             <TableRow key={index}>
               <TableCell>{rate.title}</TableCell>
+              <TableCell className="max-w-[200px] truncate">{rate.description}</TableCell>
               <TableCell>{rate.rate}</TableCell>
               <TableCell>{rate.unit}</TableCell>
               <TableCell>{rate.type}</TableCell>
@@ -152,6 +157,12 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
               value={newRate.title}
               onChange={(e) => setNewRate({ ...newRate, title: e.target.value })}
               placeholder="e.g., Standard Labor Rate"
+            />
+            <Input
+              label="Description"
+              value={newRate.description}
+              onChange={(e) => setNewRate({ ...newRate, description: e.target.value })}
+              placeholder="Brief description of the rate"
             />
             <Input
               label="Rate"
