@@ -23,7 +23,6 @@ const Dashboard = () => {
     { name: "Settings", url: "/settings", icon: Settings }
   ];
 
-  // Prefetch contractor data
   const { data: contractor, isLoading } = useQuery({
     queryKey: ["contractor"],
     queryFn: async () => {
@@ -99,21 +98,16 @@ const Dashboard = () => {
 
   const copyEstimatorLink = async () => {
     const baseUrl = window.location.origin;
-    const longUrl = `${baseUrl}/estimate/${contractor.id}`;
+    const longUrl = `${baseUrl}/estimate/${contractor?.id}`;
     
     try {
-      // Use the short.url service to create a shortened link
-      const response = await fetch('https://short.url/api/shorten', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ longUrl }),
+      const { data, error } = await supabase.functions.invoke('shorten-url', {
+        body: { longUrl }
       });
+
+      if (error) throw error;
       
-      if (!response.ok) throw new Error('Failed to shorten URL');
-      
-      const { shortUrl } = await response.json();
+      const shortUrl = data.shortURL;
       await navigator.clipboard.writeText(shortUrl);
       
       toast({
@@ -122,6 +116,7 @@ const Dashboard = () => {
         duration: 2000,
       });
     } catch (error) {
+      console.error('Error shortening URL:', error);
       // Fallback to copying the original URL if shortening fails
       await navigator.clipboard.writeText(longUrl);
       toast({
