@@ -85,6 +85,7 @@ const EstimatePage = () => {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             contractor_settings: {
+              id: effectiveContractorId,
               minimum_project_cost: 1000,
               markup_percentage: 20,
               tax_rate: 8.5,
@@ -134,9 +135,15 @@ const EstimatePage = () => {
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9b-53b2-49bd-ad77-995ecb3106c6')
-        .single();
+        .maybeSingle();
 
       if (optionsError) throw optionsError;
+
+      if (!optionsData) {
+        console.log('No options data found');
+        setCategories([]);
+        return;
+      }
 
       const transformedCategories: Category[] = Object.keys(optionsData)
         .filter(key => key !== 'Key Options')
@@ -171,7 +178,7 @@ const EstimatePage = () => {
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9b-53b2-49bd-ad77-995ecb3106c6')
-        .single();
+        .maybeSingle();
 
       if (optionsError) throw optionsError;
 
@@ -299,7 +306,7 @@ const EstimatePage = () => {
         .from('Options')
         .select('*')
         .eq('Key Options', '42e64c9b-53b2-49bd-ad77-995ecb3106c6')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching options:', error);
