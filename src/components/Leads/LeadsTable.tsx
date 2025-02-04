@@ -29,6 +29,16 @@ type Status = keyof typeof statusColors;
 type SortField = 'projectTitle' | 'address' | 'estimatedCost' | 'status' | 'createdAt' | 'userName' | 'userEmail' | 'userPhone';
 type SortDirection = 'asc' | 'desc';
 
+interface EstimateGroup {
+  name: string;
+  description?: string;
+}
+
+interface EstimateData {
+  groups?: EstimateGroup[];
+  projectSummary?: string;
+}
+
 interface Lead {
   id: string;
   project_title: string;
@@ -39,7 +49,7 @@ interface Lead {
   user_name: string | null;
   user_email: string | null;
   user_phone: string | null;
-  estimate_data: Json;
+  estimate_data: EstimateData;
   answers: Json;
   category: string | null;
   contractor_id: string | null;
