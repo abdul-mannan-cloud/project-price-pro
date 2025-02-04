@@ -97,6 +97,25 @@ export const EstimateDisplay = ({
     return `${title} (${unit})`;
   };
 
+  const renderEditableField = (
+    value: string | number,
+    onChange: (value: any) => void,
+    type: 'text' | 'number' = 'text',
+    className?: string
+  ) => {
+    return (
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value)}
+        className={cn(
+          "bg-transparent border-b border-gray-300 focus:border-primary focus:outline-none px-1",
+          className
+        )}
+      />
+    );
+  };
+
   return (
     <Card className={cn(
       "transition-all duration-500 max-h-[80vh] overflow-y-auto",
@@ -188,38 +207,80 @@ export const EstimateDisplay = ({
                           <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Qty</th>
                           <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Unit Price</th>
                           <th className="text-right py-2 px-4 text-sm font-medium text-gray-500">Total</th>
-                          {isEditable && <th className="w-16"></th>}
                         </tr>
                       </thead>
                       <tbody>
                         {subgroup.items.map((item, itemIndex) => (
                           <tr key={itemIndex} className="border-b border-gray-100">
                             <td className="py-3 px-4">
-                              <span className="font-medium">{formatItemTitle(item.title, item.unit)}</span>
+                              {isEditable ? (
+                                renderEditableField(
+                                  item.title,
+                                  (value) => handleItemChange(
+                                    groupIndex,
+                                    subIndex,
+                                    itemIndex,
+                                    'title',
+                                    value
+                                  )
+                                )
+                              ) : (
+                                <span className="font-medium">{formatItemTitle(item.title, item.unit)}</span>
+                              )}
                             </td>
                             <td className="py-3 px-4">
-                              <span className="text-sm text-muted-foreground">{item.description}</span>
-                            </td>
-                            <td className="py-3 px-4 text-right">{item.quantity}</td>
-                            <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
-                            <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
-                            {isEditable && (
-                              <td className="py-3 px-4">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => setSelectedItem({
+                              {isEditable ? (
+                                renderEditableField(
+                                  item.description || '',
+                                  (value) => handleItemChange(
                                     groupIndex,
-                                    subgroupIndex: subIndex,
+                                    subIndex,
                                     itemIndex,
-                                    item
-                                  })}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </td>
-                            )}
+                                    'description',
+                                    value
+                                  )
+                                )
+                              ) : (
+                                <span className="text-sm text-muted-foreground">{item.description}</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              {isEditable ? (
+                                renderEditableField(
+                                  item.quantity,
+                                  (value) => handleItemChange(
+                                    groupIndex,
+                                    subIndex,
+                                    itemIndex,
+                                    'quantity',
+                                    value
+                                  ),
+                                  'number',
+                                  'w-20 text-right'
+                                )
+                              ) : (
+                                item.quantity
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              {isEditable ? (
+                                renderEditableField(
+                                  item.unitAmount,
+                                  (value) => handleItemChange(
+                                    groupIndex,
+                                    subIndex,
+                                    itemIndex,
+                                    'unitAmount',
+                                    value
+                                  ),
+                                  'number',
+                                  'w-24 text-right'
+                                )
+                              ) : (
+                                `$${item.unitAmount.toFixed(2)}`
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -231,7 +292,7 @@ export const EstimateDisplay = ({
                         <div
                           key={itemIndex}
                           className="border-b border-gray-100 pb-4 last:border-0"
-                          onClick={() => isEditable && setSelectedItem({
+                          onClick={() => isEditable && isMobile && setSelectedItem({
                             groupIndex,
                             subgroupIndex: subIndex,
                             itemIndex,
@@ -323,88 +384,90 @@ export const EstimateDisplay = ({
       </div>
 
       {/* Mobile Edit Dialog */}
-      <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          {selectedItem && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Edit Item</h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSelectedItem(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+      {isMobile && (
+        <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
+          <DialogContent className="sm:max-w-[425px]">
+            {selectedItem && (
               <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Title</label>
-                  <input
-                    type="text"
-                    value={selectedItem.item.title}
-                    onChange={(e) => handleItemChange(
-                      selectedItem.groupIndex,
-                      selectedItem.subgroupIndex,
-                      selectedItem.itemIndex,
-                      'title',
-                      e.target.value
-                    )}
-                    className="w-full mt-1 p-2 border rounded-md"
-                  />
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Edit Item</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSelectedItem(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Description</label>
-                  <input
-                    type="text"
-                    value={selectedItem.item.description || ''}
-                    onChange={(e) => handleItemChange(
-                      selectedItem.groupIndex,
-                      selectedItem.subgroupIndex,
-                      selectedItem.itemIndex,
-                      'description',
-                      e.target.value
-                    )}
-                    className="w-full mt-1 p-2 border rounded-md"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Quantity</label>
+                    <label className="text-sm font-medium">Title</label>
                     <input
-                      type="number"
-                      value={selectedItem.item.quantity}
+                      type="text"
+                      value={selectedItem.item.title}
                       onChange={(e) => handleItemChange(
                         selectedItem.groupIndex,
                         selectedItem.subgroupIndex,
                         selectedItem.itemIndex,
-                        'quantity',
-                        parseFloat(e.target.value) || 0
+                        'title',
+                        e.target.value
                       )}
                       className="w-full mt-1 p-2 border rounded-md"
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Unit Price</label>
+                    <label className="text-sm font-medium">Description</label>
                     <input
-                      type="number"
-                      value={selectedItem.item.unitAmount}
+                      type="text"
+                      value={selectedItem.item.description || ''}
                       onChange={(e) => handleItemChange(
                         selectedItem.groupIndex,
                         selectedItem.subgroupIndex,
                         selectedItem.itemIndex,
-                        'unitAmount',
-                        parseFloat(e.target.value) || 0
+                        'description',
+                        e.target.value
                       )}
                       className="w-full mt-1 p-2 border rounded-md"
                     />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Quantity</label>
+                      <input
+                        type="number"
+                        value={selectedItem.item.quantity}
+                        onChange={(e) => handleItemChange(
+                          selectedItem.groupIndex,
+                          selectedItem.subgroupIndex,
+                          selectedItem.itemIndex,
+                          'quantity',
+                          parseFloat(e.target.value) || 0
+                        )}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Unit Price</label>
+                      <input
+                        type="number"
+                        value={selectedItem.item.unitAmount}
+                        onChange={(e) => handleItemChange(
+                          selectedItem.groupIndex,
+                          selectedItem.subgroupIndex,
+                          selectedItem.itemIndex,
+                          'unitAmount',
+                          parseFloat(e.target.value) || 0
+                        )}
+                        className="w-full mt-1 p-2 border rounded-md"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 };
