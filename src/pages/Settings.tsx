@@ -375,7 +375,7 @@ const Settings = () => {
         >
           <div className="space-y-4">
             <Accordion type="single" collapsible className="w-full space-y-2">
-              <AccordionItem value="1" className="rounded-lg border bg-background px-4 py-1">
+              <AccordionItem value="1" className="rounded-lg bg-background px-4 py-1">
                 <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
                   How do I update my business information?
                 </AccordionTrigger>
@@ -384,7 +384,7 @@ const Settings = () => {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="2" className="rounded-lg border bg-background px-4 py-1">
+              <AccordionItem value="2" className="rounded-lg bg-background px-4 py-1">
                 <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
                   How do I customize my brand colors?
                 </AccordionTrigger>
@@ -393,7 +393,7 @@ const Settings = () => {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="3" className="rounded-lg border bg-background px-4 py-1">
+              <AccordionItem value="3" className="rounded-lg bg-background px-4 py-1">
                 <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
                   How do estimate calculations work?
                 </AccordionTrigger>
@@ -402,7 +402,7 @@ const Settings = () => {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="4" className="rounded-lg border bg-background px-4 py-1">
+              <AccordionItem value="4" className="rounded-lg bg-background px-4 py-1">
                 <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
                   What are webhooks and how do I use them?
                 </AccordionTrigger>
@@ -411,7 +411,7 @@ const Settings = () => {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="5" className="rounded-lg border bg-background px-4 py-1">
+              <AccordionItem value="5" className="rounded-lg bg-background px-4 py-1">
                 <AccordionTrigger className="justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline">
                   How do I manage service categories?
                 </AccordionTrigger>
