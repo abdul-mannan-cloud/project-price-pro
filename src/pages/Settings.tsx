@@ -12,6 +12,7 @@ import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
 import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
 import { AIRateForm } from "@/components/settings/AIRateForm";
+import { AIInstructionsForm } from "@/components/settings/AIInstructionsForm";
 import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
@@ -321,13 +322,10 @@ const Settings = () => {
         >
           <div className="space-y-6">
             <AIInstructionsForm
-              instructions={(contractor?.contractor_settings?.ai_preferences as any)?.instructions || []}
+              instructions={(contractor?.contractor_settings?.ai_instructions as any)?.instructions || []}
               onSave={(instructions) => {
                 updateSettings.mutate({
-                  aiPreferences: {
-                    ...contractor?.contractor_settings?.ai_preferences,
-                    instructions
-                  }
+                  aiInstructions: instructions
                 });
               }}
             />
