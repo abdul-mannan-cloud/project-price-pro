@@ -56,7 +56,7 @@
 
   .form-input {
     @apply h-[52px] w-full rounded-lg border border-input bg-background px-3 pt-5 pb-1 text-[15px] transition-all;
-    @apply focus:border-[#007AFF] focus:ring-[#007AFF] focus:outline-none;
+    @apply focus:border-[var(--primary)] focus:ring-[var(--primary)] focus:outline-none;
     @apply placeholder:text-transparent;
   }
 
@@ -85,7 +85,7 @@
 
   .select-trigger {
     @apply h-[52px] w-full rounded-lg border border-input bg-background px-3 pt-5 pb-0 text-[15px] transition-all;
-    @apply focus:border-[#007AFF] focus:ring-[#007AFF] focus:outline-none;
+    @apply focus:border-[var(--primary)] focus:ring-[var(--primary)] focus:outline-none;
     @apply flex items-center;
     min-height: 52px;
   }
@@ -97,13 +97,13 @@
   /* Default button style (Apple-style) */
   .button {
     @apply rounded-lg px-4 py-2 font-medium transition-colors;
-    @apply bg-background border border-input text-foreground hover:bg-[#f5f5f7];
+    @apply bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-700)];
   }
 
   /* Dynamic button style (for non-index pages) */
   :not(.index-page) button {
     @apply transition-colors;
-    @apply bg-background border border-input text-foreground hover:bg-[#f5f5f7];
+    @apply bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-700)];
   }
 
   .container {

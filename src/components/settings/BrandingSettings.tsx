@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Json } from "@/integrations/supabase/types";
@@ -21,6 +21,36 @@ export const BrandingSettings = ({
 }) => {
   const [brandingColors, setBrandingColors] = useState<BrandingColors>(initialColors);
   const { toast } = useToast();
+
+  // Add a query to fetch current branding colors
+  const { data: currentColors } = useQuery({
+    queryKey: ["brandingColors"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { data, error } = await supabase
+        .from("contractors")
+        .select("branding_colors")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+      return data?.branding_colors as BrandingColors || initialColors;
+    },
+  });
+
+  // Update local state when currentColors changes
+  useEffect(() => {
+    if (currentColors) {
+      setBrandingColors(currentColors);
+      // Update CSS variables
+      document.documentElement.style.setProperty('--primary', currentColors.primary);
+      document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
+      document.documentElement.style.setProperty('--secondary', currentColors.secondary);
+      document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
+    }
+  }, [currentColors]);
 
   const updateBrandingColors = useMutation({
     mutationFn: async (colors: BrandingColors) => {
@@ -41,10 +71,26 @@ export const BrandingSettings = ({
 
       if (error) throw error;
       
+      // Update CSS variables immediately after successful save
       document.documentElement.style.setProperty('--primary', colors.primary);
       document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
       document.documentElement.style.setProperty('--secondary', colors.secondary);
       document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
+
+      // Update primary color variations
+      const primaryHex = colors.primary.replace('#', '');
+      const r = parseInt(primaryHex.slice(0, 2), 16);
+      const g = parseInt(primaryHex.slice(2, 4), 16);
+      const b = parseInt(primaryHex.slice(4, 6), 16);
+
+      // Generate lighter and darker shades
+      document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
+      document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
+      document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
+      document.documentElement.style.setProperty('--primary-400', `rgba(${r}, ${g}, ${b}, 0.6)`);
+      document.documentElement.style.setProperty('--primary-500', `rgba(${r}, ${g}, ${b}, 0.8)`);
+      document.documentElement.style.setProperty('--primary-600', colors.primary);
+      document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
     },
     onSuccess: () => {
       toast({
@@ -103,12 +149,12 @@ export const BrandingSettings = ({
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Buttons</h3>
               <div className="space-y-2">
-                <Button style={{ backgroundColor: brandingColors.primary }}>
+                <Button className="w-full">
                   Primary Button
                 </Button>
                 <Button 
                   variant="outline"
-                  style={{ borderColor: brandingColors.primary, color: brandingColors.primary }}
+                  className="w-full"
                 >
                   Outlined Button
                 </Button>
