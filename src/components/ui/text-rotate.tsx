@@ -93,9 +93,9 @@ const TextRotate = forwardRef<TextRotateRef, TextRotateProps>(
     const [currentTextIndex, setCurrentTextIndex] = useState(0)
 
     const splitIntoCharacters = (text: string): string[] => {
-      if (typeof window !== "undefined" && Intl.Segmenter) {
+      if (typeof window !== "undefined" && window.Intl?.Segmenter) {
         try {
-          const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" })
+          const segmenter = new window.Intl.Segmenter("en", { granularity: "grapheme" })
           return Array.from(segmenter.segment(text), ({ segment }) => segment)
         } catch (error) {
           console.warn("Segmenter failed, falling back to Array.from:", error)
