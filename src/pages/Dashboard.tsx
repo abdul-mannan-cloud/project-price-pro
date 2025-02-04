@@ -105,7 +105,7 @@ const Dashboard = () => {
           <h3 className="text-xl font-semibold">Estimator Preview</h3>
           <p>View your estimator as your clients will see it, or copy the link to share.</p>
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => window.open(`/estimate/${contractor.id}`, '_blank')}>
+            <Button variant="secondary" onClick={() => navigate(`/estimate/${contractor.id}`)}>
               Open Preview
             </Button>
             <Button 
