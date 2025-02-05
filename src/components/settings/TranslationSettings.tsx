@@ -18,7 +18,7 @@ export const TranslationSettings = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
 
-  const { data: settings, isLoading } = useQuery({
+  const { data: settings } = useQuery({
     queryKey: ["contractorSettings"],
     queryFn: async () => {
       try {
@@ -29,7 +29,7 @@ export const TranslationSettings = () => {
           .from("contractor_settings")
           .select("preferred_language")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
         return data;
@@ -76,12 +76,10 @@ export const TranslationSettings = () => {
   useEffect(() => {
     const setupLanguage = async () => {
       try {
-        // Get system language
+        const storedPreference = localStorage.getItem('preferred_language');
         const systemLanguage = navigator.language.split('-')[0];
         
-        // Check if we have a stored preference
-        const storedPreference = localStorage.getItem('preferred_language');
-        
+        // Use this order of precedence: settings > localStorage > system > default
         let preferredLanguage = 'en';
 
         if (settings?.preferred_language) {
@@ -90,11 +88,12 @@ export const TranslationSettings = () => {
           preferredLanguage = storedPreference;
         } else if (languages.some(lang => lang.code === systemLanguage)) {
           preferredLanguage = systemLanguage;
-          // If we're using system language, save it as the user's preference
-          await updateLanguage.mutateAsync(systemLanguage);
+          // Save system language preference if it's the first time
+          if (!storedPreference) {
+            localStorage.setItem('preferred_language', systemLanguage);
+          }
         }
 
-        // Set the language
         await i18next.changeLanguage(preferredLanguage);
       } catch (error) {
         console.error('Error setting up language:', error);
@@ -102,15 +101,7 @@ export const TranslationSettings = () => {
     };
 
     setupLanguage();
-  }, [settings, updateLanguage]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <div className="text-sm text-muted-foreground">{t("Loading language preferences...")}</div>
-      </div>
-    );
-  }
+  }, [settings]);
 
   return (
     <Card className="p-8 space-y-6">
