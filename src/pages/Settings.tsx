@@ -79,18 +79,18 @@ const Settings = () => {
         .eq('contractor_id', user.id);
 
       if (error) throw error;
-      
-      // Transform data to match AIRate interface
-      return data.map(rate => ({
-        title: rate.title,
-        description: rate.description,
-        rate: rate.rate,  // Keep as number, no need to convert to string
-        unit: rate.unit,
-        type: rate.type,
-        instructions: rate.instructions || ""
-      }));
-    },
-  });
+    
+    // Transform data to match AIRate interface
+    return data.map(rate => ({
+      title: rate.title,
+      description: rate.description, // Include description property
+      rate: rate.rate,
+      unit: rate.unit,
+      type: rate.type,
+      instructions: rate.instructions || ""
+    }));
+  },
+});
 
   const updateSettings = useMutation({
     mutationFn: async (formData: any) => {
