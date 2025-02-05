@@ -131,10 +131,10 @@ export const QuestionCard = ({
 
         {/* Desktop continue button */}
         {!isMobile && question.type === 'multiple_choice' && showNextButton && (
-          <div className="hidden md:block">
+          <div className="hidden md:block w-full">
             <Button 
               onClick={onNext}
-              className="w-full md:w-auto"
+              className="w-full"
               variant="default"
               size="lg"
             >
