@@ -482,7 +482,7 @@ const EstimatePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-secondary">
+    <div className="min-h-screen bg-white">
       <Progress 
         value={getProgressValue()} 
         className="h-8 rounded-none transition-all duration-500 ease-in-out"
@@ -491,14 +491,14 @@ const EstimatePage = () => {
       {contractor && (
         <button 
           onClick={() => navigate("/dashboard")}
-          className="absolute top-4 left-4 text-muted-foreground hover:text-foreground flex items-center gap-2 p-2 z-10"
+          className="absolute top-4 left-4 text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
         >
           <ArrowLeft size={20} />
           Back to Dashboard
         </button>
       )}
 
-      <div className="container max-w-4xl mx-auto px-4 py-12">
+      <div className="max-w-4xl mx-auto px-4 py-12">
         {stage === 'photo' && (
           <div className="card p-8 animate-fadeIn">
             <div className="flex flex-col items-start gap-6">
