@@ -15,8 +15,10 @@ serve(async (req) => {
 
   try {
     const { email, contractorId, businessName } = await req.json()
+    console.log('Received invitation request:', { email, contractorId, businessName })
 
     if (!email || !contractorId || !businessName) {
+      console.error('Missing required fields:', { email, contractorId, businessName })
       throw new Error('Missing required fields')
     }
 
@@ -26,6 +28,7 @@ serve(async (req) => {
       throw new Error('Email service configuration error')
     }
 
+    console.log('Initializing Resend client...')
     const resend = new Resend(resendApiKey)
 
     // Generate a signup link that includes the team invitation data
@@ -33,9 +36,9 @@ serve(async (req) => {
     signupUrl.searchParams.set('invited_by', contractorId)
     signupUrl.searchParams.set('email', email)
 
-    console.log('Sending invitation email to:', email)
-    console.log('Signup URL:', signupUrl.toString())
+    console.log('Generated signup URL:', signupUrl.toString())
 
+    console.log('Attempting to send invitation email...')
     const emailResponse = await resend.emails.send({
       from: 'onboarding@resend.dev',
       to: email,
@@ -62,7 +65,7 @@ serve(async (req) => {
     console.log('Email sent successfully:', emailResponse)
 
     return new Response(
-      JSON.stringify({ message: 'Invitation sent successfully' }),
+      JSON.stringify({ message: 'Invitation sent successfully', emailResponse }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
@@ -73,4 +76,3 @@ serve(async (req) => {
     )
   }
 })
-
