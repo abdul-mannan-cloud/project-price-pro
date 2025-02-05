@@ -6,9 +6,23 @@ interface QuestionCardProps {
   question: Question;
   onAnswer: (questionId: string, value: string | string[]) => void;
   selectedAnswers?: string[];
+  onNext?: () => void;
+  isLastQuestion?: boolean;
+  currentStage?: number;
+  totalStages?: number;
+  hasFollowUpQuestion?: boolean;
 }
 
-export const QuestionCard = ({ question, onAnswer, selectedAnswers = [] }: QuestionCardProps) => {
+export const QuestionCard = ({ 
+  question, 
+  onAnswer, 
+  selectedAnswers = [], 
+  onNext,
+  isLastQuestion = false,
+  currentStage,
+  totalStages,
+  hasFollowUpQuestion = false
+}: QuestionCardProps) => {
   const [selected, setSelected] = useState<string[]>(selectedAnswers);
 
   const handleOptionSelect = (value: string) => {
@@ -64,6 +78,18 @@ export const QuestionCard = ({ question, onAnswer, selectedAnswers = [] }: Quest
           </div>
         ))}
       </div>
+
+      {question.type === 'multiple_choice' && onNext && (
+        <div className="mt-6">
+          <button
+            onClick={onNext}
+            className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary/90 transition-colors"
+            disabled={selected.length === 0}
+          >
+            {isLastQuestion ? 'Complete' : 'Next'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

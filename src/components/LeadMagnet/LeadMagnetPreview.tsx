@@ -155,8 +155,8 @@ export const LeadMagnetPreview = () => {
       {currentStep > 0 && currentStep <= questions.length && (
         <QuestionCard
           question={questions[currentStep - 1]}
-          selectedOptions={selectedOptions[currentStep - 1] ? [selectedOptions[currentStep - 1]] : []}
-          onSelect={(questionId, value) => handleOptionSelect(value[0])}
+          selectedAnswers={selectedOptions[currentStep - 1] ? [selectedOptions[currentStep - 1]] : []}
+          onAnswer={(questionId, value) => handleOptionSelect(value[0])}
           onNext={handleNext}
           isLastQuestion={currentStep === questions.length}
           currentStage={currentStep}
