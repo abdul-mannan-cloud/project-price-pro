@@ -27,6 +27,11 @@ const templates = [
     id: "bold",
     name: "Bold",
     description: "High-contrast dark theme with gradient accents and strong typography"
+  },
+  {
+    id: "excel",
+    name: "Excel",
+    description: "Clean spreadsheet-like design with alternating row colors and compact layout"
   }
 ];
 
