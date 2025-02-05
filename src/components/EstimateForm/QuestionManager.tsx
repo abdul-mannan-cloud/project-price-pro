@@ -171,6 +171,11 @@ export const QuestionManager = ({
         });
 
         if (error) throw error;
+        
+        if (!estimateData) {
+          throw new Error('No estimate data received');
+        }
+
         setShowingEstimate(true);
         onComplete(answers);
       } catch (error) {
