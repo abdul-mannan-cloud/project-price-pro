@@ -63,8 +63,14 @@ export const QuestionCard = ({
 
   return (
     <>
-      <Card className="w-full max-w-6xl mx-auto p-6 relative bg-white">
-        <h2 className="text-2xl font-semibold mb-6">{question?.question}</h2>
+      <Card className={cn(
+        "w-full max-w-6xl mx-auto relative bg-white",
+        isMobile ? "p-4 rounded-none" : "p-6 rounded-xl"
+      )}>
+        <h2 className={cn(
+          "font-semibold mb-6",
+          isMobile ? "text-xl" : "text-[22px]"
+        )}>{question?.question}</h2>
 
         <div className={cn(
           "grid gap-4 mb-20 md:mb-6",
