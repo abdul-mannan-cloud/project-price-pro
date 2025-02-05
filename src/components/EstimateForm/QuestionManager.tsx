@@ -30,6 +30,12 @@ export const QuestionManager = ({
   }, [currentSetIndex, questionSets]);
 
   useEffect(() => {
+    if (!isLoadingQuestions && pendingBranchTransition) {
+      handleBranchTransition();
+    }
+  }, [pendingBranchTransition, isLoadingQuestions]);
+
+  useEffect(() => {
     // Calculate and update progress
     const totalQuestions = questionSets.reduce((acc, set) => 
       acc + (Array.isArray(set.questions) ? set.questions.length : 0), 0);
@@ -39,11 +45,11 @@ export const QuestionManager = ({
 
     const progress = Math.min((answeredQuestions / totalQuestions) * 100, 100);
     onProgressChange(progress);
-  }, [answers, questionSets]);
+  }, [answers, questionSets, onProgressChange]);
 
   const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {
-      handleComplete();
+      onComplete(answers);
       return;
     }
 
@@ -78,11 +84,32 @@ export const QuestionManager = ({
     }
   };
 
+  const findNextQuestionId = (
+    currentQuestion: Question,
+    selectedValue: string
+  ): string | null | 'NEXT_BRANCH' => {
+    const selectedOption = currentQuestion.options.find(
+      (opt) => opt.value.toLowerCase() === selectedValue.toLowerCase()
+    );
+    
+    if (selectedOption?.next) {
+      if (selectedOption.next === 'NEXT_BRANCH') return 'NEXT_BRANCH';
+      if (selectedOption.next === 'END') return null;
+      return selectedOption.next;
+    }
+
+    if (currentQuestion.next === 'NEXT_BRANCH') return 'NEXT_BRANCH';
+    if (currentQuestion.next === 'END' || !currentQuestion.next) return null;
+
+    const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
+    return currentIndex < questionSequence.length - 1
+      ? questionSequence[currentIndex + 1].id
+      : null;
+  };
+
   const moveToNextQuestionSet = () => {
-    setPendingBranchTransition(false);
     if (currentSetIndex < questionSets.length - 1) {
       setCurrentSetIndex(prev => prev + 1);
-      setIsLoadingQuestions(true);
     } else {
       handleComplete();
     }
@@ -181,23 +208,27 @@ export const QuestionManager = ({
   };
 
   const handleComplete = async () => {
-    setIsGeneratingEstimate(true);
-    try {
-      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { answers }
-      });
+    if (currentSetIndex < questionSets.length - 1) {
+      moveToNextQuestionSet();
+    } else {
+      setIsGeneratingEstimate(true);
+      try {
+        const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
+          body: { answers }
+        });
 
-      if (error) throw error;
-      onComplete(answers);
-    } catch (error) {
-      console.error('Error generating estimate:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate estimate. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingEstimate(false);
+        if (error) throw error;
+        onComplete(answers);
+      } catch (error) {
+        console.error('Error generating estimate:', error);
+        toast({
+          title: "Error",
+          description: "Failed to generate estimate. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsGeneratingEstimate(false);
+      }
     }
   };
 
