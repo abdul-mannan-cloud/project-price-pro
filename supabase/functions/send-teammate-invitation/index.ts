@@ -28,7 +28,7 @@ serve(async (req) => {
       throw new Error('Email service configuration error')
     }
 
-    console.log('Initializing Resend client...')
+    console.log('Initializing Resend client with API key length:', resendApiKey.length)
     const resend = new Resend(resendApiKey)
 
     // Generate a team onboarding link that includes the invitation data
@@ -38,9 +38,9 @@ serve(async (req) => {
 
     console.log('Generated onboarding URL:', onboardingUrl.toString())
 
-    console.log('Attempting to send invitation email...')
+    console.log('Preparing to send invitation email...')
     const emailResponse = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'Lovable App <onboarding@resend.dev>',
       to: email,
       subject: `Join ${businessName} as a Team Member`,
       html: `
@@ -74,6 +74,9 @@ serve(async (req) => {
           </p>
         </div>
       `
+    }).catch(error => {
+      console.error('Resend API Error:', error)
+      throw error
     })
 
     console.log('Email sent successfully:', emailResponse)
