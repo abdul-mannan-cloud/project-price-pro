@@ -16,6 +16,7 @@ import { AdminSettings } from "@/components/settings/AdminSettings";
 import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { BrandingColors, AIInstruction } from "@/types/settings";
 import { 
   Building2,
   Users,
@@ -32,17 +33,6 @@ import {
   Users2,
   Settings as SettingsIcon
 } from "lucide-react";
-
-interface AIInstruction {
-  title: string;
-  description: string;
-  instructions: string;
-}
-
-interface BrandingColors {
-  primary: string;
-  secondary: string;
-}
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -136,6 +126,18 @@ const Settings = () => {
     }
   };
 
+  const updateBrandingColors = async (colors: BrandingColors) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No authenticated user");
+
+    const { error } = await supabase
+      .from("contractors")
+      .update({ branding_colors: colors })
+      .eq("id", user.id);
+
+    if (error) throw error;
+  };
+
   const isAdmin = contractor?.contact_email === "cairlbrandon@gmail.com" || 
                  contractor?.contact_email === "brandon@reliablepro.net";
 
@@ -152,18 +154,9 @@ const Settings = () => {
     );
   }
 
-  const handleSaveBrandingColors = async (colors: BrandingColors) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No authenticated user");
-
-    const { error } = await supabase
-      .from("contractors")
-      .update({
-        branding_colors: colors
-      })
-      .eq("id", user.id);
-
-    if (error) throw error;
+  const defaultBrandingColors: BrandingColors = {
+    primary: "#6366F1",
+    secondary: "#4F46E5"
   };
 
   const renderContent = () => {
@@ -226,8 +219,8 @@ const Settings = () => {
       case "branding":
         return (
           <BrandingSettings 
-            initialColors={contractor?.branding_colors || { primary: "#6366F1", secondary: "#4F46E5" }}
-            onSave={handleSaveBrandingColors}
+            initialColors={contractor?.branding_colors as BrandingColors || defaultBrandingColors}
+            onSave={updateBrandingColors}
           />
         );
       case "estimate":
