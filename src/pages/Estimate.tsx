@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
@@ -15,11 +15,6 @@ import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category, CategoryQuestions, AnswersState } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
-import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
-import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
-import { PaintbrushAnimation } from "@/components/EstimateForm/PaintbrushAnimation";
-
-const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
@@ -37,120 +32,54 @@ const EstimatePage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryQuestions | null>(null);
   const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
-  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
-
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { contractorId } = useParams<{ contractorId?: string }>();
-  const location = useLocation();
+  const { contractorId } = useParams();
+  const [isLoading, setIsLoading] = useState(true);
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
-  const [isLoadingData, setIsLoadingData] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const effectiveContractorId = contractorId 
-    ? decodeURIComponent(contractorId).replace(/[?]/g, '')
-    : DEFAULT_CONTRACTOR_ID;
-
-  const { data: contractor, isLoading: isContractorLoading, error: contractorError } = useQuery({
-    queryKey: ["contractor", effectiveContractorId],
+  const { data: contractor, isError: isContractorError } = useQuery({
+    queryKey: ["contractor", contractorId],
     queryFn: async () => {
-      console.log('Fetching contractor data for ID:', effectiveContractorId);
-      try {
-        const { data, error } = await supabase
-          .from("contractors")
-          .select(`
-            *,
-            contractor_settings(*)
-          `)
-          .eq("id", effectiveContractorId)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Error fetching contractor:", error);
-          throw error;
-        }
-
-        if (!data) {
-          console.log('No contractor found, using default values');
-          return {
-            id: effectiveContractorId,
-            business_name: "Example Company",
-            business_logo_url: null,
-            contact_email: "contact@example.com",
-            contact_phone: "(555) 123-4567",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            subscription_status: "trial" as const,
-            branding_colors: {
-              primary: "#6366F1",
-              secondary: "#4F46E5"
-            },
-            business_address: null,
-            website: null,
-            license_number: null,
-            contractor_settings: {
-              id: effectiveContractorId,
-              markup_percentage: 20,
-              tax_rate: 8.5,
-              minimum_project_cost: 1000,
-              ai_preferences: {},
-              excluded_categories: [],
-              ai_instructions: "",
-              ai_prompt_template: "",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }
-          };
-        }
-
-        const settings = data.contractor_settings || {
-          id: data.id,
-          markup_percentage: 20,
-          tax_rate: 8.5,
-          minimum_project_cost: 1000,
-          ai_preferences: {},
-          excluded_categories: [],
-          ai_instructions: "",
-          ai_prompt_template: "",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-
-        return {
-          ...data,
-          contractor_settings: settings
-        };
-      } catch (error) {
-        console.error('Error in contractor fetch:', error);
+      if (!contractorId) {
+        throw new Error("No contractor ID provided");
+      }
+      const { data, error } = await supabase
+        .from("contractors")
+        .select("*, contractor_settings(*)")
+        .eq("id", contractorId)
+        .maybeSingle();
+      if (error) {
+        console.error("Error fetching contractor:", error);
         throw error;
       }
+      if (!data) {
+        throw new Error("Contractor not found");
+      }
+      return data;
     },
-    retry: 1,
-    staleTime: 5 * 60 * 1000 // Cache for 5 minutes
+    enabled: !!contractorId,
   });
 
   useEffect(() => {
-    if (contractorError) {
-      console.error('Contractor fetch error:', contractorError);
+    if (isContractorError) {
       toast({
         title: "Error",
         description: "Unable to load contractor information. Please try again later.",
         variant: "destructive",
       });
     }
-  }, [contractorError, toast]);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsAuthenticated(!!user);
-    };
-    checkAuth();
-  }, []);
+  }, [isContractorError, toast]);
 
   useEffect(() => {
     loadCategories();
   }, []);
+
+  useEffect(() => {
+    if (selectedCategory) {
+      loadQuestionSet(selectedCategory);
+    }
+  }, [selectedCategory]);
 
   const loadCategories = async () => {
     try {
@@ -185,7 +114,7 @@ const EstimatePage = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoadingData(false);
+      setIsLoading(false);
     }
   };
 
@@ -279,12 +208,49 @@ const EstimatePage = () => {
     }
   };
 
-  const handlePhotosSelected = (urls: string[]) => {
-    setUploadedPhotos(urls);
-  };
+  const handleDescriptionSubmit = async () => {
+    setIsProcessing(true);
+    try {
+      const categoriesForMatching: Category[] = categories.map(category => ({
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        icon: category.icon,
+        keywords: category.keywords || [],
+        questions: category.questions || []
+      }));
 
-  const handlePhotoStageNext = () => {
-    setStage('description');
+      console.log("Processing description:", projectDescription);
+      const matches = await findMatchingQuestionSets(projectDescription, categoriesForMatching);
+      console.log("Found matches:", matches);
+      
+      const consolidatedSets = consolidateQuestionSets(matches, projectDescription);
+      console.log("Consolidated sets:", consolidatedSets);
+
+      if (consolidatedSets.length === 0) {
+        console.log("No matches found, showing category grid");
+        setStage('category');
+        return;
+      }
+
+      // Set the first matched category as selected
+      if (consolidatedSets[0]?.category) {
+        setSelectedCategory(consolidatedSets[0].category);
+      }
+
+      setMatchedQuestionSets(consolidatedSets);
+      setStage('questions');
+    } catch (error) {
+      console.error('Error matching question sets:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process your description. Please try again.",
+        variant: "destructive",
+      });
+      setStage('category');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const formatQuestions = (rawQuestions: any[]): Question[] => {
@@ -313,119 +279,6 @@ const EstimatePage = () => {
         next: q.next_question
       };
     });
-  };
-
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000; // 1 second
-
-  const loadCategoryQuestions = async (retryCount = 0) => {
-    if (!selectedCategory) {
-      console.error('No category selected');
-      return;
-    }
-    
-    setIsProcessing(true);
-    try {
-      console.log(`Attempting to load questions for category: ${selectedCategory} (attempt ${retryCount + 1})`);
-      const { data, error } = await supabase
-        .from('Options')
-        .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .single();
-
-      if (error) {
-        console.error('Error fetching options:', error);
-        throw error;
-      }
-
-      if (!data || !data[selectedCategory]) {
-        console.error('No data found for category:', selectedCategory);
-        if (retryCount < MAX_RETRIES) {
-          console.log(`Retrying in ${RETRY_DELAY}ms... (${retryCount + 1}/${MAX_RETRIES})`);
-          setTimeout(() => loadCategoryQuestions(retryCount + 1), RETRY_DELAY);
-          return;
-        }
-        throw new Error(`No questions found for category: ${selectedCategory}`);
-      }
-
-      const categoryData = data[selectedCategory];
-      console.log('Raw category data:', categoryData);
-
-      if (!categoryData || typeof categoryData !== 'object' || !Array.isArray(categoryData.questions)) {
-        console.error('Invalid questions format:', categoryData);
-        if (retryCount < MAX_RETRIES) {
-          console.log(`Invalid data format, retrying in ${RETRY_DELAY}ms... (${retryCount + 1}/${MAX_RETRIES})`);
-          setTimeout(() => loadCategoryQuestions(retryCount + 1), RETRY_DELAY);
-          return;
-        }
-        throw new Error('Invalid questions format');
-      }
-
-      const formattedQuestions = formatQuestions(categoryData.questions);
-      console.log('Final formatted questions:', formattedQuestions);
-      
-      if (formattedQuestions.length === 0) {
-        toast({
-          title: "No questions available",
-          description: "Unable to load questions for this category.",
-          variant: "destructive",
-        });
-        setStage('category');
-        return;
-      }
-
-      setQuestions(formattedQuestions);
-      setTotalStages(formattedQuestions.length);
-      setStage('questions');
-    } catch (error) {
-      console.error('Error loading questions:', error);
-      if (retryCount >= MAX_RETRIES) {
-        toast({
-          title: "Error",
-          description: "Failed to load questions. Please try again.",
-          variant: "destructive",
-        });
-        setStage('category');
-      }
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleDescriptionSubmit = async () => {
-    setIsProcessing(true);
-    try {
-      const categoriesForMatching: Category[] = categories.map(category => ({
-        id: category.id,
-        name: category.name,
-        description: category.description,
-        icon: category.icon,
-        keywords: category.keywords || [],
-        questions: category.questions || []
-      }));
-
-      const matches = await findMatchingQuestionSets(projectDescription, categoriesForMatching);
-      
-      const consolidatedSets = consolidateQuestionSets(matches, projectDescription);
-
-      if (consolidatedSets.length === 0) {
-        setStage('category');
-        return;
-      }
-
-      setMatchedQuestionSets(consolidatedSets);
-      setStage('questions');
-    } catch (error) {
-      console.error('Error matching question sets:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process your description. Please try again.",
-        variant: "destructive",
-      });
-      setStage('category');
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   const handleAnswerSubmit = async (questionId: string, value: string | string[]) => {
@@ -465,9 +318,9 @@ const EstimatePage = () => {
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           projectDescription, 
-          imageUrls: uploadedPhotos, 
+          imageUrl: uploadedImageUrl, 
           answers: formattedAnswers,
-          contractorId: effectiveContractorId,
+          contractorId,
           leadId: currentLeadId,
           category: selectedCategory
         }
@@ -488,7 +341,7 @@ const EstimatePage = () => {
 
   const handleContactSubmit = async (contactData: any) => {
     try {
-      if (!effectiveContractorId || !currentLeadId) {
+      if (!contractorId || !currentLeadId) {
         throw new Error("Missing contractor ID or lead ID");
       }
       setStage('estimate');
@@ -525,7 +378,7 @@ const EstimatePage = () => {
           answers: answersForSupabase,
           project_title: `${selectedCategory || ''} Project`,
           project_description: projectDescription,
-          contractor_id: effectiveContractorId,
+          contractor_id: contractorId,
           status: 'pending'
         })
         .select()
@@ -538,9 +391,9 @@ const EstimatePage = () => {
       const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           projectDescription, 
-          imageUrls: uploadedPhotos, 
+          imageUrl: uploadedImageUrl, 
           answers: answersForSupabase,
-          contractorId: effectiveContractorId,
+          contractorId,
           leadId: lead.id,
           category: selectedCategory
         }
@@ -552,8 +405,7 @@ const EstimatePage = () => {
         .from('leads')
         .update({ 
           estimate_data: estimateData,
-          estimated_cost: estimateData.totalCost || 0,
-          contractor_id: effectiveContractorId
+          estimated_cost: estimateData.totalCost || 0
         })
         .eq('id', lead.id);
 
@@ -610,7 +462,6 @@ const EstimatePage = () => {
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
     loadQuestionSet(categoryId);
-    setStage('questions');
   };
 
   if (isProcessing) {
@@ -625,7 +476,7 @@ const EstimatePage = () => {
     );
   }
 
-  if (isLoadingData && stage === 'questions') {
+  if (isLoading && stage === 'questions') {
     return <LoadingScreen message="Loading questions..." />;
   }
 
@@ -636,51 +487,87 @@ const EstimatePage = () => {
         className="h-8 rounded-none transition-all duration-500 ease-in-out"
       />
       
-      {isAuthenticated && contractor && (
-        <div className="w-full border-b border-gray-200 py-2 px-4">
-          <button 
-            onClick={() => navigate("/dashboard")}
-            className="text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
-          >
-            <ArrowLeft size={20} />
-            Back to Dashboard
-          </button>
-        </div>
+      {contractor && (
+        <button 
+          onClick={() => navigate("/dashboard")}
+          className="absolute top-4 left-4 text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
+        >
+          <ArrowLeft size={20} />
+          Back to Dashboard
+        </button>
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-12">
         {stage === 'photo' && (
-          <div className="animate-fadeIn space-y-8 bg-white rounded-lg shadow-sm border border-gray-100 p-8">
-            <div className="flex items-center gap-4">
-              {contractor?.business_logo_url && (
-                <img 
-                  src={contractor.business_logo_url} 
-                  alt={contractor?.business_name || "Business Logo"} 
-                  className="h-12 w-12 object-contain rounded-lg"
-                />
-              )}
-              <h2 className="text-2xl font-semibold">
-                {contractor?.business_name || "Business"} Estimator
-              </h2>
+          <div className="card p-8 animate-fadeIn">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">
+                  🛠 {contractor?.business_name || "Project"} Estimator
+                </h2>
+                <p className="text-muted-foreground">
+                  Take or upload a photo of what you want to repair or modify
+                </p>
+              </div>
             </div>
-            
-            <p className="text-lg font-semibold text-[#000000e6]">
-              Quickly estimate your project cost in minutes! Simply take or upload a photo of what you want to repair or modify (e.g., "paint this wall").
-            </p>
+            <div className="space-y-4">
+              <label className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  capture="environment"
+                  disabled={isUploading}
+                />
+                <Button 
+                  className="w-full" 
+                  size="lg" 
+                  disabled={isUploading}
+                  asChild
+                >
+                  <div>
+                    <Camera className="mr-2" />
+                    {isUploading ? "UPLOADING..." : "TAKE A PHOTO"}
+                  </div>
+                </Button>
+              </label>
+              <Button 
+                variant="ghost" 
+                className="w-full" 
+                size="lg" 
+                onClick={() => setStage('description')}
+              >
+                <SkipForward className="mr-2" />
+                Skip Photo
+              </Button>
+            </div>
+          </div>
+        )}
 
-            <PhotoUpload
-              onPhotosSelected={handlePhotosSelected}
-              onNext={handlePhotoStageNext}
-              uploadedPhotos={uploadedPhotos}
-            />
-
-            <button
-              onClick={() => setStage('description')}
-              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mx-auto"
+        {stage === 'description' && (
+          <div className="card p-8 animate-fadeIn">
+            <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
+            <div className="space-y-2">
+              <Textarea
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                placeholder="Describe what you need help with (e.g., paint my living room walls)..."
+                className="min-h-[150px]"
+              />
+              {projectDescription.length > 0 && projectDescription.length < 30 && (
+                <p className="text-sm text-destructive">
+                  Please enter at least {30 - projectDescription.length} more characters
+                </p>
+              )}
+            </div>
+            <Button 
+              className="w-full mt-6"
+              onClick={handleDescriptionSubmit}
+              disabled={projectDescription.trim().length < 30}
             >
-              <SkipForward className="h-4 w-4" />
-              Skip photo upload
-            </button>
+              Continue
+            </Button>
           </div>
         )}
 
@@ -692,35 +579,33 @@ const EstimatePage = () => {
               selectedCategory={selectedCategory || undefined}
               onSelectCategory={handleCategorySelect}
               completedCategories={completedCategories}
-              contractorSettings={contractor?.contractor_settings}
-              isCollapsed={stage !== 'category'}
             />
           </div>
         )}
 
-        {stage === 'description' && (
-          <div className="space-y-6 animate-fadeIn">
-            <div className="card p-8">
-              <h2 className="text-2xl font-semibold mb-4">Describe Your Project</h2>
-              <p className="text-muted-foreground mb-6">
-                Please provide a brief description of what you'd like to have done.
-              </p>
-              <Textarea
-                value={projectDescription}
-                onChange={(e) => setProjectDescription(e.target.value)}
-                placeholder="e.g., I need to paint my living room walls..."
-                className="min-h-[120px] mb-6"
-              />
-              <div className="flex gap-4">
-                <Button 
-                  onClick={() => setStage('category')}
-                  disabled={!projectDescription.trim()}
-                  className="w-full"
-                >
-                  Continue
-                </Button>
-              </div>
-            </div>
+        {stage === 'contact' && estimate && (
+          <div className="animate-fadeIn">
+            <EstimateDisplay 
+              groups={estimate.groups} 
+              totalCost={estimate.totalCost} 
+              isBlurred={true}
+              contractor={contractor || undefined}
+            />
+            <ContactForm 
+              onSubmit={handleContactSubmit} 
+              leadId={currentLeadId || undefined}
+              contractorId={contractorId}
+            />
+          </div>
+        )}
+
+        {stage === 'estimate' && estimate && (
+          <div className="animate-fadeIn">
+            <EstimateDisplay 
+              groups={estimate.groups} 
+              totalCost={estimate.totalCost}
+              contractor={contractor || undefined}
+            />
           </div>
         )}
 
@@ -733,42 +618,6 @@ const EstimatePage = () => {
           ) : (
             <LoadingScreen message="Loading your questions..." />
           )
-        )}
-
-        {stage === 'contact' && estimate && (
-          <div className="animate-fadeIn">
-            <EstimateDisplay 
-              groups={estimate.groups} 
-              totalCost={estimate.totalCost} 
-              isBlurred={true}
-              contractor={{
-                business_name: contractor?.business_name,
-                business_logo_url: contractor?.business_logo_url || undefined,
-                branding_colors: contractor?.branding_colors as { primary: string; secondary: string } || undefined
-              }}
-            />
-            <ContactForm 
-              onSubmit={handleContactSubmit} 
-              leadId={currentLeadId || undefined}
-              contractorId={effectiveContractorId}
-              estimate={estimate}
-              contractor={contractor}
-            />
-          </div>
-        )}
-
-        {stage === 'estimate' && estimate && (
-          <div className="animate-fadeIn">
-            <EstimateDisplay 
-              groups={estimate.groups} 
-              totalCost={estimate.totalCost}
-              contractor={{
-                business_name: contractor?.business_name,
-                business_logo_url: contractor?.business_logo_url || undefined,
-                branding_colors: contractor?.branding_colors as { primary: string; secondary: string } || undefined
-              }}
-            />
-          </div>
         )}
       </div>
     </div>
