@@ -8,6 +8,7 @@ import { Question } from "@/types/estimate";
 import { Card } from "@/components/ui/card";
 import { Check, Square, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuestionCardProps {
   question: Question;
@@ -31,7 +32,9 @@ export const QuestionCard = ({
   hasFollowUpQuestion = true,
 }: QuestionCardProps) => {
   const [showNextButton, setShowNextButton] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (question.type === 'multiple_choice') {
@@ -41,14 +44,28 @@ export const QuestionCard = ({
     }
   }, [selectedAnswers, question.type]);
 
-  const handleOptionClick = (value: string) => {
+  const handleOptionClick = async (value: string) => {
     if (question.type === 'multiple_choice') {
       const newSelection = selectedAnswers.includes(value)
         ? selectedAnswers.filter(v => v !== value)
         : [...selectedAnswers, value];
       onSelect(question.id, newSelection);
     } else {
+      if (isProcessing) return;
+      setIsProcessing(true);
+      
       onSelect(question.id, [value]);
+      
+      toast({
+        title: "Please read carefully",
+        description: "Take a moment to review your selection before proceeding",
+        duration: 2000,
+      });
+
+      setTimeout(() => {
+        setIsProcessing(false);
+        if (onNext) onNext();
+      }, 2000);
     }
   };
 
