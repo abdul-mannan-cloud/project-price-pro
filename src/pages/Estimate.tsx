@@ -650,7 +650,7 @@ const EstimatePage = () => {
 
       <div className="max-w-4xl mx-auto px-4 py-12">
         {stage === 'photo' && (
-          <div className="animate-fadeIn space-y-8">
+          <div className="animate-fadeIn space-y-8 bg-white rounded-lg shadow-sm border border-gray-100 p-8">
             <div className="flex items-center gap-4">
               {contractor?.business_logo_url && (
                 <img 
