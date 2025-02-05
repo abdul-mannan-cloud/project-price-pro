@@ -5,6 +5,7 @@ import { Copy, FileDown, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Database } from "@/integrations/supabase/types";
 import { Json } from "@/integrations/supabase/types";
+import { BrandingColors } from "@/types/settings";
 import { toast } from "@/hooks/use-toast";
 import html2pdf from 'html2pdf.js';
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
@@ -193,12 +194,12 @@ ${templateSettings.estimate_footer_text || ''}
 
   const brandingColors = contractor?.branding_colors 
     ? (typeof contractor.branding_colors === 'string' 
-        ? JSON.parse(contractor.branding_colors) 
-        : contractor.branding_colors)
+        ? JSON.parse(contractor.branding_colors) as BrandingColors 
+        : contractor.branding_colors as BrandingColors)
     : null;
 
   const getTemplateStyles = (style: string = 'modern') => {
-    const primaryColor = contractor?.branding_colors?.primary || '#1EAEDB';
+    const primaryColor = brandingColors?.primary || '#1EAEDB';
     const primaryColorLight = `${primaryColor}20`; // 20% opacity
     const primaryColorMedium = `${primaryColor}40`; // 40% opacity
 
