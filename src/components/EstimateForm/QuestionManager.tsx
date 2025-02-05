@@ -37,24 +37,29 @@ export const QuestionManager = ({
 
   useEffect(() => {
     // Calculate and update progress including the final contact screen
-    const totalQuestions = questionSets.reduce((acc, set) => 
-      acc + (Array.isArray(set.questions) ? set.questions.length : 0), 0);
+    const currentSet = questionSets[currentSetIndex];
+    const loadedQuestions = currentSet?.questions?.length || 0;
     
-    const answeredQuestions = Object.values(answers).reduce((acc, categoryAnswers) => 
-      acc + Object.keys(categoryAnswers || {}).length, 0);
+    const answeredQuestions = currentSet ? 
+      Object.keys(answers[currentSet.category] || {}).length : 0;
 
     // Add 2 additional steps for estimate generation and contact info
-    const totalSteps = totalQuestions + 2;
+    const totalSteps = loadedQuestions + 2;
     let currentStep = answeredQuestions;
 
-    // If we're generating the estimate or on contact form, increment progress
+    // If we're generating the estimate, show near completion
     if (isGeneratingEstimate) {
-      currentStep = totalQuestions + 1;
+      currentStep = loadedQuestions + 1;
+    }
+
+    // If we're showing the estimate, show full completion
+    if (stage === 'estimate') {
+      currentStep = totalSteps;
     }
 
     const progress = Math.min((currentStep / totalSteps) * 100, 100);
     onProgressChange(progress);
-  }, [answers, questionSets, onProgressChange, isGeneratingEstimate]);
+  }, [answers, currentSetIndex, questionSets, onProgressChange, isGeneratingEstimate]);
 
   const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {
