@@ -188,6 +188,11 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
                         projectSummary={lead?.project_description}
                         isEditable={isEditing}
                         onEstimateChange={setEditedEstimate}
+                        contractor={{
+                          business_name: lead?.contractor?.business_name,
+                          business_logo_url: lead?.contractor?.business_logo_url || undefined,
+                          branding_colors: lead?.contractor?.branding_colors as { primary: string; secondary: string } || undefined
+                        }}
                       />
                     </div>
                   </>
