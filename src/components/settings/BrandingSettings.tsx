@@ -3,19 +3,14 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { BrandingColors } from "@/types/settings";
 
-interface BrandingColors {
-  primary: string;
-  secondary: string;
+interface BrandingSettingsProps {
+  initialColors: BrandingColors;
+  onSave: (colors: BrandingColors) => Promise<void>;
 }
 
-export const BrandingSettings = ({ 
-  initialColors,
-  onSave 
-}: { 
-  initialColors: BrandingColors;
-  onSave: (colors: BrandingColors) => void;
-}) => {
+export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProps) => {
   const [brandingColors, setBrandingColors] = useState<BrandingColors>(initialColors);
   const { toast } = useToast();
 
