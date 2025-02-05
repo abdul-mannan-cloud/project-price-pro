@@ -199,85 +199,85 @@ ${templateSettings.estimate_footer_text || ''}
     : null;
 
   const getTemplateStyles = (style: string = 'modern') => {
-    const primaryColor = brandingColors?.primary || '#1EAEDB';
-    const primaryColorLight = `${primaryColor}20`; // 20% opacity
-    const primaryColorMedium = `${primaryColor}40`; // 40% opacity
+    const primaryColor = brandingColors?.primary || '#9b87f5'; // Using branded primary purple
+    const primaryColorLight = `${primaryColor}20`;
+    const primaryColorMedium = `${primaryColor}40`;
 
     switch (style) {
       case 'minimal':
         return {
-          card: "bg-white p-12 max-w-4xl mx-auto shadow-sm",
-          header: "flex items-start justify-between mb-12 pb-8",
+          card: "bg-white p-8 max-w-4xl mx-auto shadow-sm",
+          header: "flex items-start justify-between mb-8 pb-6",
           title: "text-2xl font-light tracking-tight",
           text: "text-neutral-600",
-          section: "bg-white p-8 rounded-none border-0 mb-8 space-y-6",
-          table: "w-full divide-y divide-gray-100",
-          tableHeader: "text-xs uppercase tracking-wider text-neutral-500 py-4 text-left",
-          tableRow: "group hover:bg-gray-50 transition-colors",
-          tableCell: "py-4 text-sm text-neutral-600",
-          total: "text-4xl font-light",
+          section: "bg-white p-6 rounded-none border-0 mb-6 space-y-4",
+          table: "w-full border border-gray-200",
+          tableHeader: "text-xs uppercase tracking-wider text-neutral-500 py-3 px-4 text-left border-b bg-gray-50",
+          tableRow: "group hover:bg-gray-50 transition-colors border-b border-gray-200",
+          tableCell: "py-3 px-4 text-sm text-neutral-600",
+          total: "text-3xl font-light",
           button: "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
-          message: "bg-neutral-50 p-8 rounded-none",
-          groupTitle: "text-2xl font-light mb-6 pb-4 border-b",
-          subgroupTitle: "text-xl font-light mb-4",
-          subtotal: "text-right py-4 text-lg font-light",
+          message: "bg-[#F1F0FB] p-6 rounded-lg", // Using soft gray from brand colors
+          groupTitle: "text-2xl font-light mb-4 pb-3 border-b",
+          subgroupTitle: "text-xl font-light mb-3",
+          subtotal: "text-right py-3 text-lg font-light",
         };
 
       case 'classic':
         return {
-          card: `bg-[#F8F6FF] p-12 max-w-4xl mx-auto shadow-lg border-2 border-[${primaryColor}]`,
-          header: `flex items-start justify-between mb-12 pb-8 border-b-2 border-[${primaryColor}]`,
-          title: `text-3xl font-serif font-bold text-[${primaryColor}]`,
+          card: `bg-white p-8 max-w-4xl mx-auto shadow-lg border-2 border-[${primaryColor}]`,
+          header: `flex items-start justify-between mb-8 pb-6 border-b-2 border-[${primaryColor}]`,
+          title: `text-2xl font-serif font-bold text-[${primaryColor}]`,
           text: "text-[#4A4A4A] font-serif",
-          section: `bg-white p-8 rounded-lg border border-[${primaryColorLight}] mb-8 shadow-md space-y-6`,
-          table: `w-full border-collapse border border-[${primaryColorLight}]`,
-          tableHeader: `bg-[${primaryColor}] text-white font-serif py-4 px-6`,
-          tableRow: `border-b border-[${primaryColorLight}] hover:bg-[${primaryColorLight}] transition-colors`,
-          tableCell: "py-4 px-6 text-[#4A4A4A] font-serif",
-          total: `text-4xl font-serif font-bold text-[${primaryColor}]`,
+          section: `bg-white p-6 rounded-lg border border-[${primaryColorLight}] mb-6 shadow-sm space-y-4`,
+          table: "w-full border-collapse border border-gray-300",
+          tableHeader: `bg-[${primaryColor}] text-white font-serif py-3 px-4`,
+          tableRow: `border-b border-gray-300 hover:bg-[${primaryColorLight}] transition-colors`,
+          tableCell: "py-3 px-4 text-[#4A4A4A] font-serif border-r last:border-r-0",
+          total: `text-3xl font-serif font-bold text-[${primaryColor}]`,
           button: `bg-[${primaryColor}] text-white hover:bg-[${primaryColorMedium}]`,
-          message: `bg-[#F8F6FF] p-8 rounded-lg border border-[${primaryColorLight}]`,
-          groupTitle: "text-2xl font-serif font-bold mb-8 text-center",
-          subgroupTitle: "text-xl font-serif font-semibold mb-6 text-center",
-          subtotal: "text-right py-6 text-xl font-serif",
+          message: "bg-[#F1F0FB] p-6 rounded-lg border border-gray-200",
+          groupTitle: "text-2xl font-serif font-bold mb-6 text-center",
+          subgroupTitle: "text-xl font-serif font-semibold mb-4 text-center",
+          subtotal: "text-right py-4 text-xl font-serif",
         };
 
       case 'bold':
         return {
-          card: "bg-[#1A1F2C] p-12 max-w-4xl mx-auto shadow-2xl",
-          header: `flex items-start justify-between mb-12 pb-8 border-b border-[${primaryColor}]`,
-          title: `text-3xl font-black bg-gradient-to-r from-[${primaryColor}] to-white bg-clip-text text-transparent`,
+          card: "bg-[#1A1F2C] p-8 max-w-4xl mx-auto shadow-2xl", // Using Dark Purple from brand colors
+          header: `flex items-start justify-between mb-8 pb-6 border-b border-[${primaryColor}]`,
+          title: `text-2xl font-black bg-gradient-to-r from-[${primaryColor}] to-white bg-clip-text text-transparent`,
           text: "text-gray-300",
-          section: `bg-[#252B3B] p-8 rounded-xl border border-[${primaryColor}] mb-8 space-y-6`,
-          table: "w-full",
-          tableHeader: `bg-[${primaryColor}] text-white font-bold py-6 px-8 rounded-t-lg`,
-          tableRow: "border-b border-[#3A4356] hover:bg-[#2A3346] transition-colors",
-          tableCell: "py-6 px-8 text-gray-300",
-          total: `text-5xl font-black text-[${primaryColor}]`,
+          section: `bg-[#252B3B] p-6 rounded-xl border border-[${primaryColor}] mb-6 space-y-4`,
+          table: "w-full border border-gray-700",
+          tableHeader: `bg-[${primaryColor}] text-white font-bold py-3 px-4 rounded-t-lg`,
+          tableRow: "border-b border-gray-700 hover:bg-[#2A3346] transition-colors",
+          tableCell: "py-3 px-4 text-gray-300 border-r border-gray-700 last:border-r-0",
+          total: `text-4xl font-black text-[${primaryColor}]`,
           button: `bg-gradient-to-r from-[${primaryColor}] to-[${primaryColorMedium}] text-white hover:opacity-90`,
-          message: `bg-[#252B3B] p-8 rounded-xl border border-[${primaryColor}]`,
-          groupTitle: "text-3xl font-black mb-8 bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent",
-          subgroupTitle: "text-2xl font-bold mb-6 text-white",
-          subtotal: "text-right py-6 text-2xl font-bold text-white",
+          message: `bg-[#252B3B] p-6 rounded-xl border border-[${primaryColor}]`,
+          groupTitle: "text-2xl font-black mb-6 bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent",
+          subgroupTitle: "text-xl font-bold mb-4 text-white",
+          subtotal: "text-right py-4 text-xl font-bold text-white",
         };
 
       default: // modern
         return {
-          card: "bg-white p-12 max-w-4xl mx-auto shadow-lg",
-          header: "flex items-start justify-between mb-12 pb-8 border-b border-gray-200",
-          title: `text-3xl font-bold text-[${primaryColor}]`,
+          card: "bg-white p-8 max-w-4xl mx-auto shadow-lg",
+          header: "flex items-start justify-between mb-8 pb-6 border-b border-gray-200",
+          title: `text-2xl font-bold text-[${primaryColor}]`,
           text: "text-gray-600",
-          section: "bg-[#F8FAFC] p-8 rounded-2xl shadow-sm mb-8 space-y-6",
-          table: "w-full",
-          tableHeader: `bg-[${primaryColor}] text-white font-medium py-4 px-6 rounded-t-xl`,
-          tableRow: `border-b border-gray-100 hover:bg-[${primaryColorLight}] transition-colors`,
-          tableCell: "py-4 px-6",
-          total: `text-4xl font-bold text-[${primaryColor}]`,
+          section: "bg-[#F8FAFC] p-6 rounded-lg shadow-sm mb-6 space-y-4",
+          table: "w-full border border-gray-200 rounded-lg overflow-hidden",
+          tableHeader: `bg-[${primaryColor}] text-white font-medium py-3 px-4`,
+          tableRow: `border-b border-gray-200 hover:bg-[${primaryColorLight}] transition-colors`,
+          tableCell: "py-3 px-4 border-r last:border-r-0",
+          total: `text-3xl font-bold text-[${primaryColor}]`,
           button: `bg-[${primaryColor}] text-white hover:opacity-90`,
-          message: "bg-blue-50 p-8 rounded-2xl border border-blue-100",
-          groupTitle: "text-2xl font-bold mb-8",
-          subgroupTitle: "text-xl font-semibold mb-6",
-          subtotal: "text-right py-6 text-xl font-semibold",
+          message: "bg-[#E5DEFF] p-6 rounded-lg border border-[#D6BCFA]", // Using Soft Purple from brand colors
+          groupTitle: "text-2xl font-bold mb-6",
+          subgroupTitle: "text-xl font-semibold mb-4",
+          subtotal: "text-right py-4 text-xl font-semibold",
         };
     }
   };

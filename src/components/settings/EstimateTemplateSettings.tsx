@@ -11,19 +11,24 @@ const templates = [
   {
     id: "modern",
     name: "Modern",
-    description: "Clean and contemporary design with subtle shadows and rounded corners"
+    description: "Clean and contemporary design with distinct table borders and subtle shadows"
   },
   {
     id: "classic",
     name: "Classic",
-    description: "Traditional layout with clear sections and professional typography"
+    description: "Traditional layout with serif fonts and clear table structure"
   },
   {
     id: "minimal",
     name: "Minimal",
-    description: "Streamlined design focusing on essential information"
+    description: "Streamlined design with crisp lines and essential information"
+  },
+  {
+    id: "bold",
+    name: "Bold",
+    description: "High-contrast dark theme with gradient accents and strong typography"
   }
-].reverse(); // Reversed the template order as requested
+];
 
 export const EstimateTemplateSettings = () => {
   const { contractorId } = useParams();
