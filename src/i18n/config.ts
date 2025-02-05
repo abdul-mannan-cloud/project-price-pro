@@ -1,5 +1,6 @@
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import { supabase } from '@/integrations/supabase/client';
 
 const resources = {
   en: {
