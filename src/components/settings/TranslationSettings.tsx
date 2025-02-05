@@ -106,7 +106,7 @@ export const TranslationSettings = () => {
           }
         }
 
-        await i18next.changeLanguage(preferredLanguage);
+        i18next.changeLanguage(preferredLanguage);
       } catch (error) {
         console.error('Error setting up language:', error);
         if (error.message?.includes('JWT')) {

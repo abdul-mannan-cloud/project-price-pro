@@ -138,17 +138,19 @@ const resources = {
 };
 
 // Initialize i18next
-const i18n = i18next.use(initReactI18next).init({
-  resources,
-  lng: localStorage.getItem('preferred_language') || 'en',
-  fallbackLng: 'en',
-  interpolation: {
-    escapeValue: false
-  },
-  react: {
-    useSuspense: false
-  }
-});
+const i18n = i18next
+  .use(initReactI18next)
+  .init({
+    resources,
+    lng: localStorage.getItem('preferred_language') || 'en',
+    fallbackLng: 'en',
+    interpolation: {
+      escapeValue: false
+    },
+    react: {
+      useSuspense: false
+    }
+  });
 
 // Function to apply branding colors
 const applyBrandingColors = (colors: { primary: string; secondary: string }) => {
@@ -191,7 +193,7 @@ export const initializeBranding = async () => {
       .single();
 
     if (contractor?.branding_colors) {
-      applyBrandingColors(contractor.branding_colors);
+      applyBrandingColors(contractor.branding_colors as { primary: string; secondary: string });
     }
   } catch (error) {
     console.error('Error initializing branding:', error);
