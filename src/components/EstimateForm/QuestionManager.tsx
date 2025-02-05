@@ -3,6 +3,7 @@ import { QuestionCard } from "./QuestionCard";
 import { LoadingScreen } from "./LoadingScreen";
 import { Question, CategoryQuestions, AnswersState, QuestionAnswer } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuestionManagerProps {
   questionSets: CategoryQuestions[];
@@ -20,12 +21,19 @@ export const QuestionManager = ({
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [queuedNextQuestions, setQueuedNextQuestions] = useState<string[]>([]);
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
+  const [pendingBranchTransition, setPendingBranchTransition] = useState(false);
 
   useEffect(() => {
     loadCurrentQuestionSet();
   }, [currentSetIndex, questionSets]);
 
-  const loadCurrentQuestionSet = async () => {
+  useEffect(() => {
+    if (!isLoadingQuestions && pendingBranchTransition) {
+      handleBranchTransition();
+    }
+  }, [pendingBranchTransition, isLoadingQuestions, queuedNextQuestions]);
+
+  const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {
       handleComplete();
       return;
@@ -52,66 +60,18 @@ export const QuestionManager = ({
     }
   };
 
-  const findNextQuestionId = (
-    currentQuestion: Question,
-    selectedValue: string
-  ): string | null | 'NEXT_BRANCH' => {
-    const selectedOption = currentQuestion.options.find(
-      (opt) => opt.value.toLowerCase() === selectedValue.toLowerCase()
-    );
-    
-    if (selectedOption?.next) {
-      if (selectedOption.next === 'NEXT_BRANCH') return 'NEXT_BRANCH';
-      if (selectedOption.next === 'END') return null;
-      return selectedOption.next;
-    }
-
-    if (currentQuestion.next === 'NEXT_BRANCH') return 'NEXT_BRANCH';
-    if (currentQuestion.next === 'END' || !currentQuestion.next) return null;
-
-    const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
-    return currentIndex < questionSequence.length - 1
-      ? questionSequence[currentIndex + 1].id
-      : null;
-  };
-
-  const handleMultipleChoiceNext = async () => {
-    const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
-    if (!currentQuestion) return;
-
-    const currentSet = questionSets[currentSetIndex];
-    const currentSetAnswers = answers[currentSet.category] || {};
-    const selectedValues = currentSetAnswers[currentQuestion.id]?.answers || [];
-    if (selectedValues.length === 0) return;
-
-    let nextIDs: string[] = [];
-    for (const option of currentQuestion.options) {
-      if (selectedValues.includes(option.value)) {
-        if (option.next && option.next !== 'END') {
-          nextIDs.push(option.next);
-        }
-      }
-    }
-
-    nextIDs = nextIDs.filter((item, index) => nextIDs.indexOf(item) === index);
-    const validNextIDs = nextIDs.filter(id => id !== 'NEXT_BRANCH');
-    
-    if (validNextIDs.length > 0) {
-      nextIDs = validNextIDs;
-    }
-
-    if (nextIDs.length > 0) {
-      setCurrentQuestionId(nextIDs[0]);
-      if (nextIDs.length > 1) {
-        setQueuedNextQuestions(nextIDs.slice(1));
-      }
+  const handleBranchTransition = () => {
+    if (queuedNextQuestions.length > 0) {
+      setCurrentQuestionId(queuedNextQuestions[0]);
+      setQueuedNextQuestions(prev => prev.slice(1));
+      setPendingBranchTransition(false);
     } else {
       moveToNextQuestionSet();
     }
   };
 
   const moveToNextQuestionSet = () => {
-    setQueuedNextQuestions([]); // Clear queued questions when moving to next set
+    setPendingBranchTransition(false);
     if (currentSetIndex < questionSets.length - 1) {
       setCurrentSetIndex(prev => prev + 1);
       setIsLoadingQuestions(true);
@@ -148,19 +108,67 @@ export const QuestionManager = ({
     }));
 
     if (currentQuestion.type !== 'multiple_choice') {
-      const nextQuestionId = findNextQuestionId(currentQuestion, selectedValues[0]);
-      
-      if (nextQuestionId === 'NEXT_BRANCH') {
-        if (queuedNextQuestions.length > 0) {
-          setCurrentQuestionId(queuedNextQuestions[0]);
-          setQueuedNextQuestions(prev => prev.slice(1));
-        } else {
-          moveToNextQuestionSet();
-        }
-      } else if (!nextQuestionId) {
-        handleComplete();
+      handleSingleChoiceNavigation(currentQuestion, selectedValues[0]);
+    }
+  };
+
+  const handleSingleChoiceNavigation = (currentQuestion: Question, selectedValue: string) => {
+    const selectedOption = currentQuestion.options.find(
+      opt => opt.value.toLowerCase() === selectedValue.toLowerCase()
+    );
+
+    if (selectedOption?.next === 'NEXT_BRANCH') {
+      setPendingBranchTransition(true);
+    } else if (selectedOption?.next === 'END' || !selectedOption?.next) {
+      moveToNextQuestionSet();
+    } else if (selectedOption?.next) {
+      setCurrentQuestionId(selectedOption.next);
+    } else {
+      const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
+      if (currentIndex < questionSequence.length - 1) {
+        setCurrentQuestionId(questionSequence[currentIndex + 1].id);
       } else {
-        setCurrentQuestionId(nextQuestionId);
+        moveToNextQuestionSet();
+      }
+    }
+  };
+
+  const handleMultipleChoiceNext = async () => {
+    const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
+    if (!currentQuestion) return;
+
+    const currentSet = questionSets[currentSetIndex];
+    const currentSetAnswers = answers[currentSet.category] || {};
+    const selectedValues = currentSetAnswers[currentQuestion.id]?.answers || [];
+    
+    if (selectedValues.length === 0) return;
+
+    const nextQuestions = selectedValues.reduce((acc: string[], value: string) => {
+      const option = currentQuestion.options.find(opt => opt.value === value);
+      if (option?.next && option.next !== 'END' && option.next !== 'NEXT_BRANCH') {
+        acc.push(option.next);
+      }
+      return acc;
+    }, []);
+
+    const uniqueNextQuestions = Array.from(new Set(nextQuestions));
+
+    if (uniqueNextQuestions.length > 0) {
+      setCurrentQuestionId(uniqueNextQuestions[0]);
+      if (uniqueNextQuestions.length > 1) {
+        setQueuedNextQuestions(uniqueNextQuestions.slice(1));
+      }
+    } else {
+      // If no specific next questions, check if we should move to next branch
+      const shouldMoveToNextBranch = selectedValues.some(value => {
+        const option = currentQuestion.options.find(opt => opt.value === value);
+        return option?.next === 'NEXT_BRANCH';
+      });
+
+      if (shouldMoveToNextBranch) {
+        setPendingBranchTransition(true);
+      } else {
+        moveToNextQuestionSet();
       }
     }
   };
@@ -168,12 +176,17 @@ export const QuestionManager = ({
   const handleComplete = async () => {
     setIsGeneratingEstimate(true);
     try {
+      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
+        body: { answers }
+      });
+
+      if (error) throw error;
       onComplete(answers);
     } catch (error) {
-      console.error('Error completing questions:', error);
+      console.error('Error generating estimate:', error);
       toast({
         title: "Error",
-        description: "Failed to process your answers. Please try again.",
+        description: "Failed to generate estimate. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -197,13 +210,13 @@ export const QuestionManager = ({
   const currentSet = questionSets[currentSetIndex];
   const currentSetAnswers = answers[currentSet.category] || {};
   const hasFollowUpQuestion = currentSetIndex < questionSets.length - 1 || 
-    queuedNextQuestions.length > 0 || 
+    queuedNextQuestions.length > 0 ||
     (currentQuestion.type === 'multiple_choice' && currentQuestion.options.some(opt => opt.next));
 
   return (
     <QuestionCard
       question={currentQuestion}
-      selectedAnswers={currentSetAnswers[currentQuestion.id]?.answers || []}
+      selectedOptions={currentSetAnswers[currentQuestion.id]?.answers || []}
       onSelect={handleAnswer}
       onNext={currentQuestion.type === 'multiple_choice' ? handleMultipleChoiceNext : undefined}
       isLastQuestion={!hasFollowUpQuestion}
