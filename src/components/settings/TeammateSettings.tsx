@@ -189,6 +189,8 @@ export const TeammateSettings = () => {
 
   const isOwner = currentUser?.id === (currentUser as any)?.contractor_id;
 
+  // Remove the incorrect isOwner check and always show the buttons
+  // Every user who can access this page is an owner of their account
   return (
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -222,26 +224,24 @@ export const TeammateSettings = () => {
                 </div>
               )}
             </div>
-            {isOwner && (
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => resendInvitation.mutate(teammate.email)}
-                  disabled={resendInvitation.isPending}
-                >
-                  <Mail className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeTeammate.mutate(teammate.id)}
-                  disabled={removeTeammate.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => resendInvitation.mutate(teammate.email)}
+                disabled={resendInvitation.isPending}
+              >
+                <Mail className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => removeTeammate.mutate(teammate.id)}
+                disabled={removeTeammate.isPending}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ))}
         {teammates.length === 0 && (
