@@ -128,6 +128,7 @@ export type Database = {
           id: string
           markup_percentage: number | null
           minimum_project_cost: number | null
+          preferred_language: string | null
           tax_rate: number | null
           updated_at: string | null
         }
@@ -140,6 +141,7 @@ export type Database = {
           id: string
           markup_percentage?: number | null
           minimum_project_cost?: number | null
+          preferred_language?: string | null
           tax_rate?: number | null
           updated_at?: string | null
         }
@@ -152,6 +154,7 @@ export type Database = {
           id?: string
           markup_percentage?: number | null
           minimum_project_cost?: number | null
+          preferred_language?: string | null
           tax_rate?: number | null
           updated_at?: string | null
         }

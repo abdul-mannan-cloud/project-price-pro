@@ -21,6 +21,8 @@ import {
   Bot,
   Grid,
   Webhook,
+  Globe2,
+  ShieldAlert
 } from "lucide-react";
 import { useState } from "react";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
@@ -33,6 +35,8 @@ import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings
 import { LogoUpload } from "@/components/settings/LogoUpload";
 import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
 import { BrandingSettings } from "@/components/settings/BrandingSettings";
+import { TranslationSettings } from "@/components/settings/TranslationSettings";
+import { AdminSettings } from "@/components/settings/AdminSettings";
 
 interface AIInstruction {
   title: string;
@@ -208,6 +212,9 @@ const Settings = () => {
     );
   }
 
+  const isAdmin = contractor?.contact_email === "cairlbrandon@gmail.com" || 
+                 contractor?.contact_email === "brandon@reliablepro.net";
+
   const settingsMenuItems = [
     {
       title: "Business Information",
@@ -257,6 +264,18 @@ const Settings = () => {
       icon: <Webhook className="h-5 w-5 text-muted-foreground" />,
       onClick: () => setActiveDialog("webhooks")
     },
+    {
+      title: "Language & Translation",
+      description: "Configure your language preferences and translations",
+      icon: <Globe2 className="h-5 w-5 text-muted-foreground" />,
+      onClick: () => setActiveDialog("translation")
+    },
+    ...(isAdmin ? [{
+      title: "Admin Settings",
+      description: "Access administrative functions and data",
+      icon: <ShieldAlert className="h-5 w-5 text-muted-foreground" />,
+      onClick: () => setActiveDialog("admin")
+    }] : []),
     {
       title: "Log Out",
       description: "Sign out of your account",
@@ -454,6 +473,24 @@ const Settings = () => {
           <WebhookSettings />
         </SettingsDialog>
         
+        <SettingsDialog
+          title="Language & Translation"
+          description="Configure your language preferences and translations"
+          isOpen={activeDialog === "translation"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <TranslationSettings />
+        </SettingsDialog>
+
+        <SettingsDialog
+          title="Admin Settings"
+          description="Access administrative functions and data"
+          isOpen={activeDialog === "admin"}
+          onClose={() => setActiveDialog(null)}
+        >
+          <AdminSettings />
+        </SettingsDialog>
+
         <SettingsDialog
           title="Log Out"
           description="Sign out of your account"
