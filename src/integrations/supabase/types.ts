@@ -415,6 +415,8 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          invitation_sent_at: string | null
+          invitation_status: string
           role: string
           updated_at: string | null
         }
@@ -423,6 +425,8 @@ export type Database = {
           created_at?: string | null
           email: string
           id?: string
+          invitation_sent_at?: string | null
+          invitation_status?: string
           role?: string
           updated_at?: string | null
         }
@@ -431,6 +435,8 @@ export type Database = {
           created_at?: string | null
           email?: string
           id?: string
+          invitation_sent_at?: string | null
+          invitation_status?: string
           role?: string
           updated_at?: string | null
         }
