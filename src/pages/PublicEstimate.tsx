@@ -1,9 +1,12 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { Database } from "@/integrations/supabase/types";
+import { useEffect } from "react";
+import { BrandingColors } from "@/types/settings";
 
 type EstimateData = {
   groups: Array<{
@@ -90,7 +93,6 @@ const PublicEstimate = () => {
         .single();
 
       if (error) {
-        // If the specified contractor is not found, try to fetch the default contractor
         if (lead?.contractor_id !== DEFAULT_CONTRACTOR_ID) {
           const { data: defaultData, error: defaultError } = await supabase
             .from("contractors")
@@ -110,8 +112,38 @@ const PublicEstimate = () => {
       return data as ContractorWithSettings;
     },
     enabled: !!lead,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
+
+  // Apply branding colors when contractor data is loaded
+  useEffect(() => {
+    if (contractor?.branding_colors) {
+      const colors = contractor.branding_colors as BrandingColors;
+      
+      // Apply primary color and its variations
+      document.documentElement.style.setProperty('--primary', colors.primary);
+      document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
+
+      // Convert hex to RGB for creating variations
+      const primaryHex = colors.primary.replace('#', '');
+      const r = parseInt(primaryHex.slice(0, 2), 16);
+      const g = parseInt(primaryHex.slice(2, 4), 16);
+      const b = parseInt(primaryHex.slice(4, 6), 16);
+
+      // Set all primary color variations
+      document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
+      document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
+      document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
+      document.documentElement.style.setProperty('--primary-400', `rgba(${r}, ${g}, ${b}, 0.6)`);
+      document.documentElement.style.setProperty('--primary-500', `rgba(${r}, ${g}, ${b}, 0.8)`);
+      document.documentElement.style.setProperty('--primary-600', colors.primary);
+      document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
+
+      // Set secondary color
+      document.documentElement.style.setProperty('--secondary', colors.secondary);
+      document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
+    }
+  }, [contractor]);
 
   if (isContractorLoading) {
     return <LoadingScreen message="Loading estimate..." />;
