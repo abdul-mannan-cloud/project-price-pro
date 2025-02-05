@@ -1,69 +1,157 @@
-import { useState } from "react";
-import { Check } from "lucide-react";
+import { useState, useEffect } from "react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/3d-button";
 import { Question } from "@/types/estimate";
+import { Card } from "@/components/ui/card";
+import { Check, Square, X } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface QuestionCardProps {
   question: Question;
-  onAnswer: (questionId: string, value: string | string[]) => void;
-  selectedAnswers?: string[];
+  selectedOptions: string[];
+  onSelect: (questionId: string, values: string[]) => void;
+  onNext?: () => void;
+  isLastQuestion?: boolean;
+  currentStage: number;
+  totalStages: number;
+  hasFollowUpQuestion?: boolean;
 }
 
-export const QuestionCard = ({ question, onAnswer, selectedAnswers = [] }: QuestionCardProps) => {
-  const [selected, setSelected] = useState<string[]>(selectedAnswers);
+export const QuestionCard = ({
+  question,
+  selectedOptions,
+  onSelect,
+  onNext,
+  isLastQuestion,
+  currentStage,
+  totalStages,
+  hasFollowUpQuestion = true,
+}: QuestionCardProps) => {
+  const [showNextButton, setShowNextButton] = useState(false);
+  const isMobile = useIsMobile();
 
-  const handleOptionSelect = (value: string) => {
-    let newSelected: string[];
-    
+  useEffect(() => {
     if (question.type === 'multiple_choice') {
-      newSelected = selected.includes(value)
-        ? selected.filter(item => item !== value)
-        : [...selected, value];
+      setShowNextButton(selectedOptions.length > 0);
     } else {
-      newSelected = [value];
+      setShowNextButton(selectedOptions.length === 1);
     }
-    
-    setSelected(newSelected);
-    onAnswer(question.id, newSelected);
+  }, [selectedOptions, question.type]);
+
+  const handleOptionClick = (value: string) => {
+    if (question.type === 'multiple_choice') {
+      const newSelection = selectedOptions.includes(value)
+        ? selectedOptions.filter(v => v !== value)
+        : [...selectedOptions, value];
+      onSelect(question.id, newSelection);
+    } else {
+      onSelect(question.id, [value]);
+    }
   };
 
+  const shouldShowImage = (option: any) => {
+    if (!option.image_url) return false;
+    if (option.image_url.includes('example')) return false;
+    if (!isNaN(option.value)) return false;
+    return true;
+  };
+
+  const options = Array.isArray(question?.options) ? question.options : [];
+
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-2">{question.question}</h3>
-      </div>
-      
-      <div className="space-y-1">
-        {question.options.map((option, index) => (
-          <div
-            key={option.value}
-            className={`
-              flex items-center justify-between p-4 cursor-pointer
-              hover:bg-gray-50 transition-colors
-              ${index !== question.options.length - 1 ? 'border-b border-gray-100' : ''}
-            `}
-            onClick={() => handleOptionSelect(option.value)}
-          >
-            <div className="flex items-center gap-3">
+    <>
+      <Card className="w-full max-w-6xl mx-auto p-6 relative">
+        <h2 className="text-2xl font-semibold mb-6">{question?.question}</h2>
+
+        <div className={cn(
+          "grid gap-4 mb-20 md:mb-6",
+          isMobile ? "grid-cols-1" : question.type === 'multiple_choice' ? "grid-cols-2" : "grid-cols-1"
+        )}>
+          {options.map((option) => {
+            const isSelected = selectedOptions.includes(option.value);
+            const showImage = shouldShowImage(option);
+            
+            return (
               <div
-                className={`
-                  h-6 w-6 rounded-md border-2 flex items-center justify-center
-                  ${selected.includes(option.value)
-                    ? 'bg-primary border-primary'
-                    : 'border-gray-300'
-                  }
-                `}
-              >
-                {selected.includes(option.value) && (
-                  <Check className="w-4 h-4 text-white" />
+                key={option.value}
+                onClick={() => handleOptionClick(option.value)}
+                className={cn(
+                  "cursor-pointer transition-all hover:text-primary border-b border-gray-100 last:border-0 pb-4",
+                  showImage ? "py-4" : "py-3",
                 )}
+              >
+                {showImage && (
+                  <div className="w-full h-32 relative mb-2">
+                    <img
+                      src={option.image_url}
+                      alt={option.label}
+                      className="rounded-md w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center gap-3 w-full">
+                  {question.type === 'multiple_choice' ? (
+                    <div className={cn(
+                      "flex-shrink-0 h-6 w-6 rounded border mt-0.5",
+                      isSelected ? "bg-primary border-primary" : "border-gray-300",
+                      "flex items-center justify-center"
+                    )}>
+                      {isSelected && <Check className="w-4 h-4 text-white" />}
+                    </div>
+                  ) : (
+                    <div className={cn(
+                      "flex-shrink-0 h-6 w-6 rounded-full border mt-0.5",
+                      isSelected ? "bg-primary border-primary" : "border-gray-300"
+                    )}>
+                      {isSelected && (
+                        <div className="w-3 h-3 rounded-full bg-white m-1" />
+                      )}
+                    </div>
+                  )}
+                  <div className="flex flex-col w-full">
+                    <span className={cn(
+                      "text-lg flex-grow",
+                      isSelected && "text-primary font-medium"
+                    )}>{option.label}</span>
+                  </div>
+                </div>
               </div>
-              <span className="text-sm font-medium">
-                {option.label}
-              </span>
+            );
+          })}
+        </div>
+
+        {/* Desktop continue button */}
+        {!isMobile && question.type === 'multiple_choice' && showNextButton && (
+          <div className="hidden md:block w-full">
+            <Button 
+              onClick={onNext}
+              className="button button-primary w-full"
+              size="lg"
+            >
+              {hasFollowUpQuestion ? 'Continue' : 'Complete'}
+            </Button>
+          </div>
+        )}
+
+        {/* Bottom button bar - only show on mobile */}
+        {isMobile && question.type === 'multiple_choice' && showNextButton && (
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">
+            <div className="container max-w-6xl mx-auto">
+              <Button 
+                onClick={onNext}
+                disabled={!showNextButton}
+                className="button button-primary w-full"
+                size="lg"
+              >
+                {hasFollowUpQuestion ? 'Continue' : 'Complete'}
+              </Button>
             </div>
           </div>
-        ))}
-      </div>
-    </div>
+        )}
+      </Card>
+    </>
   );
 };
