@@ -10,6 +10,20 @@ interface CategoryGridProps {
   selectedCategory: string | null;
   onSelectCategory: (categoryId: string) => void;
   description?: string;
+  completedCategories?: string[];
+  contractorSettings?: {
+    ai_instructions: string;
+    ai_preferences: any;
+    ai_prompt_template: string;
+    created_at: string;
+    excluded_categories: string[];
+    id: string;
+    markup_percentage: number;
+    minimum_project_cost: number;
+    tax_rate: number;
+    updated_at: string;
+  };
+  isCollapsed?: boolean;
 }
 
 export const CategoryGrid = ({
@@ -17,6 +31,9 @@ export const CategoryGrid = ({
   selectedCategory,
   onSelectCategory,
   description,
+  completedCategories = [],
+  contractorSettings,
+  isCollapsed = false,
 }: CategoryGridProps) => {
   const [matchedCategory, setMatchedCategory] = useState<string | null>(null);
 
@@ -55,7 +72,8 @@ export const CategoryGrid = ({
                 "p-6 cursor-pointer transition-all duration-200",
                 "hover:shadow-lg hover:scale-[1.02] hover:border-primary/50",
                 "relative overflow-hidden group",
-                selectedCategory === category.id && "border-primary bg-primary/5"
+                selectedCategory === category.id && "border-primary bg-primary/5",
+                isCollapsed && "opacity-50 pointer-events-none"
               )}
               onClick={() => onSelectCategory(category.id)}
             >
