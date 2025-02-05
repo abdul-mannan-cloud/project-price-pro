@@ -305,51 +305,61 @@ const Settings = () => {
         );
       case "estimate":
         return (
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            const data = Object.fromEntries(formData.entries());
-            updateSettings.mutate(data);
-          }} className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label className="text-sm font-medium">Minimum Project Cost ($)</label>
-              <Input
-                name="minimumProjectCost"
-                type="number"
-                defaultValue={contractor?.contractor_settings?.minimum_project_cost}
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                The minimum cost you're willing to take on for any project
+              <h3 className="text-lg font-medium">Estimate Configuration</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Configure your pricing settings, including minimum project costs, markup percentages, and tax rates. 
+                These settings will be automatically applied to all AI-generated estimates.
               </p>
             </div>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const data = Object.fromEntries(formData.entries());
+              updateSettings.mutate(data);
+            }} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Minimum Project Cost ($)</label>
+                <Input
+                  name="minimumProjectCost"
+                  type="number"
+                  defaultValue={contractor?.contractor_settings?.minimum_project_cost}
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  The minimum cost you're willing to take on for any project
+                </p>
+              </div>
 
-            <div>
-              <label className="text-sm font-medium">Markup Percentage (%)</label>
-              <Input
-                name="markupPercentage"
-                type="number"
-                defaultValue={contractor?.contractor_settings?.markup_percentage}
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                This markup is applied in the background and is not visible to customers
-              </p>
-            </div>
+              <div>
+                <label className="text-sm font-medium">Markup Percentage (%)</label>
+                <Input
+                  name="markupPercentage"
+                  type="number"
+                  defaultValue={contractor?.contractor_settings?.markup_percentage}
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  This markup is automatically applied to all AI-generated estimates
+                </p>
+              </div>
 
-            <div>
-              <label className="text-sm font-medium">Tax Rate (%)</label>
-              <Input
-                name="taxRate"
-                type="number"
-                defaultValue={contractor?.contractor_settings?.tax_rate}
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Local tax rate applied to estimates
-              </p>
-            </div>
-            <Button type="submit" disabled={updateSettings.isPending}>
-              {updateSettings.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </form>
+              <div>
+                <label className="text-sm font-medium">Tax Rate (%)</label>
+                <Input
+                  name="taxRate"
+                  type="number"
+                  defaultValue={contractor?.contractor_settings?.tax_rate}
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Local tax rate automatically applied to all estimates
+                </p>
+              </div>
+              <Button type="submit" disabled={updateSettings.isPending}>
+                {updateSettings.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </form>
+          </div>
         );
       case "ai":
         return (
