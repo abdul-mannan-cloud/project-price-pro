@@ -138,7 +138,7 @@ const resources = {
 };
 
 // Initialize i18next
-const i18n = i18next
+i18next
   .use(initReactI18next)
   .init({
     resources,
@@ -208,4 +208,4 @@ supabase.auth.onAuthStateChange((event, session) => {
 });
 
 export { applyBrandingColors };
-export default i18n;
+export default i18next;
