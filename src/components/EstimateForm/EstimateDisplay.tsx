@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy, FileDown, Settings } from "lucide-react";
@@ -8,7 +9,6 @@ import { toast } from "@/hooks/use-toast";
 import html2pdf from 'html2pdf.js';
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplateSettings";
-import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -77,7 +77,7 @@ export const EstimateDisplay = ({
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     checkContractorAccess();
   }, [contractorId]);
 
