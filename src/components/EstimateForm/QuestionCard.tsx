@@ -65,7 +65,7 @@ export const QuestionCard = ({
     <>
       <Card className={cn(
         "w-full max-w-6xl mx-auto relative bg-white",
-        isMobile ? "py-4 rounded-none" : "p-6 rounded-xl"
+        isMobile ? "px-0 py-4 rounded-none" : "p-6 rounded-xl"
       )}>
         <h2 className={cn(
           "font-semibold mb-6",
