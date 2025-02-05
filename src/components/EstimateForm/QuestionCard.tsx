@@ -33,17 +33,15 @@ export const QuestionCard = ({
 }: QuestionCardProps) => {
   const [showNextButton, setShowNextButton] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const lastClickTime = useRef<number>(0);
+  const questionLoadTime = useRef<number>(Date.now());
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (question.type === 'multiple_choice') {
-      setShowNextButton(selectedAnswers.length > 0);
-    } else {
-      setShowNextButton(selectedAnswers.length === 1);
-    }
-  }, [selectedAnswers, question.type]);
+    // Update the load time whenever the question changes
+    questionLoadTime.current = Date.now();
+    setShowNextButton(question.type === 'multiple_choice' ? selectedAnswers.length > 0 : selectedAnswers.length === 1);
+  }, [question, selectedAnswers]);
 
   const handleOptionClick = async (value: string) => {
     if (question.type === 'multiple_choice') {
@@ -56,9 +54,9 @@ export const QuestionCard = ({
       setIsProcessing(true);
       
       const currentTime = Date.now();
-      const timeSinceLastClick = currentTime - lastClickTime.current;
+      const timeSinceQuestionLoad = currentTime - questionLoadTime.current;
       
-      if (timeSinceLastClick < 400) {
+      if (timeSinceQuestionLoad < 400) {
         toast({
           title: "Please read carefully",
           description: (
@@ -85,7 +83,6 @@ export const QuestionCard = ({
         });
       }
       
-      lastClickTime.current = currentTime;
       onSelect(question.id, [value]);
       
       setTimeout(() => {
