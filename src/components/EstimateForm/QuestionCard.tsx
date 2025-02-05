@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -33,6 +33,7 @@ export const QuestionCard = ({
 }: QuestionCardProps) => {
   const [showNextButton, setShowNextButton] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const lastClickTime = useRef<number>(0);
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
@@ -54,17 +55,39 @@ export const QuestionCard = ({
       if (isProcessing) return;
       setIsProcessing(true);
       
+      const currentTime = Date.now();
+      const timeSinceLastClick = currentTime - lastClickTime.current;
+      
+      if (timeSinceLastClick < 20) {
+        toast({
+          title: "Please read carefully",
+          description: (
+            <div className="flex flex-col items-center gap-4">
+              <p>Take a moment to review your selection before proceeding</p>
+              <Button 
+                onClick={() => {
+                  const toastElement = document.querySelector('[role="status"]');
+                  if (toastElement) {
+                    toastElement.remove();
+                  }
+                }}
+                variant="outline"
+                size="sm"
+              >
+                OK
+              </Button>
+            </div>
+          ),
+          duration: 200,
+          className: "fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-50",
+          variant: "warning",
+          icon: <AlertTriangle className="h-5 w-5 text-yellow-500" />,
+        });
+      }
+      
+      lastClickTime.current = currentTime;
       onSelect(question.id, [value]);
       
-      toast({
-        title: "Please read carefully",
-        description: "Take a moment to review your selection before proceeding",
-        duration: 200,
-        className: "fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-50",
-        variant: "warning",
-        icon: <AlertTriangle className="h-5 w-5 text-yellow-500" />,
-      });
-
       setTimeout(() => {
         setIsProcessing(false);
         if (onNext) onNext();
