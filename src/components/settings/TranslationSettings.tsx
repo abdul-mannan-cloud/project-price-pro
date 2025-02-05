@@ -20,17 +20,22 @@ export const TranslationSettings = () => {
   const { data: settings, isLoading } = useQuery({
     queryKey: ["contractorSettings"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
 
-      const { data, error } = await supabase
-        .from("contractor_settings")
-        .select("preferred_language")
-        .eq("id", user.id)
-        .single();
+        const { data, error } = await supabase
+          .from("contractor_settings")
+          .select("preferred_language")
+          .eq("id", user.id)
+          .single();
 
-      if (error) throw error;
-      return data;
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+        return null;
+      }
     },
   });
 
@@ -47,7 +52,7 @@ export const TranslationSettings = () => {
       if (error) throw error;
       
       // Update i18n language
-      i18n.changeLanguage(language);
+      await i18n.changeLanguage(language);
       
       // Store in localStorage for persistence
       localStorage.setItem('preferred_language', language);
@@ -88,11 +93,11 @@ export const TranslationSettings = () => {
       }
 
       // Set the language
-      i18n.changeLanguage(preferredLanguage);
+      await i18n.changeLanguage(preferredLanguage);
     };
 
     setupLanguage();
-  }, [settings, i18n]);
+  }, [settings, i18n, updateLanguage]);
 
   if (isLoading) {
     return (
@@ -104,7 +109,7 @@ export const TranslationSettings = () => {
 
   return (
     <Card className="p-8 space-y-6">
-      <div className="space-y-2">
+      <div className="space-y-4">
         <h2 className="text-3xl font-bold tracking-tight">{t("Language Settings")}</h2>
         <p className="text-lg text-muted-foreground">
           {t("Choose your preferred language")}

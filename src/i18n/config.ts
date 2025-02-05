@@ -1,10 +1,10 @@
 
-import i18n from 'i18next';
+import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 const resources = {
   en: {
-    translations: {
+    translation: {
       "Language Settings": "Language Settings",
       "Choose your preferred language": "Choose your preferred language",
       "This will be the default language used throughout the application": "This will be the default language used throughout the application",
@@ -18,7 +18,7 @@ const resources = {
     }
   },
   es: {
-    translations: {
+    translation: {
       "Language Settings": "Configuración de idioma",
       "Choose your preferred language": "Elige tu idioma preferido",
       "This will be the default language used throughout the application": "Este será el idioma predeterminado utilizado en toda la aplicación",
@@ -32,7 +32,7 @@ const resources = {
     }
   },
   fr: {
-    translations: {
+    translation: {
       "Language Settings": "Paramètres de langue",
       "Choose your preferred language": "Choisissez votre langue préférée",
       "This will be the default language used throughout the application": "Ce sera la langue par défaut utilisée dans toute l'application",
@@ -47,14 +47,14 @@ const resources = {
   }
 };
 
+const i18n = i18next.createInstance();
+
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'en', // default language
+    lng: 'en',
     fallbackLng: 'en',
-    ns: ['translations'],
-    defaultNS: 'translations',
     interpolation: {
       escapeValue: false
     }
