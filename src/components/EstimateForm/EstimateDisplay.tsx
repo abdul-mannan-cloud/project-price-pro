@@ -217,6 +217,24 @@ ${templateSettings.estimate_footer_text || ''}
     };
 
     switch (style) {
+      case 'excel':
+        return {
+          card: "bg-white p-4 md:p-8 max-w-4xl mx-auto shadow-sm",
+          header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 space-y-4 md:space-y-0",
+          title: "text-xl md:text-2xl font-medium text-gray-900",
+          text: "text-gray-600 text-sm",
+          section: "bg-white rounded-none border-0 mb-4 space-y-3",
+          table: "w-full",
+          tableHeader: "bg-transparent",
+          tableRow: "border-none odd:bg-muted/50 hover:bg-transparent odd:hover:bg-muted/50",
+          tableCell: "py-2.5 px-3 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-0.5",
+          total: "text-2xl md:text-3xl font-medium text-gray-900",
+          button: "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
+          message: "bg-muted/50 p-4 rounded-lg text-sm", 
+          groupTitle: "text-xl font-medium mb-3 w-full text-gray-900",
+          subtotal: "text-right py-2 text-base font-medium",
+        };
+
       case 'minimal':
         return {
           card: "bg-white p-4 md:p-8 max-w-4xl mx-auto shadow-sm",
