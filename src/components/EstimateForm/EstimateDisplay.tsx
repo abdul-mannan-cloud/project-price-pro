@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Database } from "@/integrations/supabase/types";
+import { Json } from "@/integrations/supabase/types";
 
 interface LineItem {
   title: string;
@@ -28,10 +29,7 @@ type ContractorDisplay = {
   business_logo_url?: string | null;
   contact_email?: string;
   contact_phone?: string | null;
-  branding_colors?: {
-    primary: string;
-    secondary: string;
-  } | null;
+  branding_colors?: Json | null;
 };
 
 interface EstimateDisplayProps {
@@ -65,6 +63,13 @@ export const EstimateDisplay = ({
     if (!unit) return title;
     return `${title} (${unit})`;
   };
+
+  // Parse branding colors from Json type
+  const brandingColors = contractor?.branding_colors 
+    ? (typeof contractor.branding_colors === 'string' 
+        ? JSON.parse(contractor.branding_colors) 
+        : contractor.branding_colors)
+    : null;
 
   return (
     <Card className={cn(
