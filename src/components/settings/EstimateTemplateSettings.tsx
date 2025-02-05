@@ -4,26 +4,26 @@ import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { FilePdf, FileText, FileType } from "lucide-react";
+import { FileText, Layout, Minimize2 } from "lucide-react";
 
 const templates = [
   {
     id: "modern",
     name: "Modern",
     description: "A clean, contemporary design with a focus on readability and visual hierarchy.",
-    icon: <FileText className="h-8 w-8" />,
+    icon: <Layout className="h-8 w-8" />,
   },
   {
     id: "classic",
     name: "Classic",
     description: "Traditional estimate layout with a professional and timeless appearance.",
-    icon: <FilePdf className="h-8 w-8" />,
+    icon: <FileText className="h-8 w-8" />,
   },
   {
     id: "minimal",
     name: "Minimal",
     description: "Simplified design focusing on essential information with minimal styling.",
-    icon: <FileType className="h-8 w-8" />,
+    icon: <Minimize2 className="h-8 w-8" />,
   },
 ];
 
