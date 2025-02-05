@@ -210,7 +210,7 @@ const Settings = () => {
               const formData = new FormData(e.currentTarget);
               const data = Object.fromEntries(formData.entries());
               updateSettings.mutate(data);
-            }} className="space-y-4">
+            }} className="space-y-2">
               <Input
                 label={t("Business Name")}
                 name="businessName"
@@ -246,7 +246,7 @@ const Settings = () => {
                 name="licenseNumber"
                 defaultValue={contractor?.license_number}
               />
-              <Button type="submit" className="w-full" disabled={updateSettings.isPending}>
+              <Button type="submit" className="w-full mt-4" disabled={updateSettings.isPending}>
                 {updateSettings.isPending ? t("Saving...") : t("Save Changes")}
               </Button>
             </form>
