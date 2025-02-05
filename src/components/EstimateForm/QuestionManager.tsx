@@ -220,8 +220,8 @@ export const QuestionManager = ({
   return (
     <QuestionCard
       question={currentQuestion}
-      selectedAnswers={currentSetAnswers[currentQuestion.id]?.answers || []}
-      onAnswer={handleAnswer}
+      selectedOptions={currentSetAnswers[currentQuestion.id]?.answers || []}
+      onSelect={handleAnswer}
       onNext={currentQuestion.type === 'multiple_choice' ? handleMultipleChoiceNext : undefined}
       isLastQuestion={currentSetIndex === questionSets.length - 1}
       currentStage={currentSetIndex + 1}
