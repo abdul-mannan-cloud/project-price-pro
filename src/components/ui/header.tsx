@@ -1,62 +1,36 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { motion } from "framer-motion";
 
 export function Header1() {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsLoggedIn(!!session);
-    };
-    checkAuth();
-  }, []);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-sm border-b">
-      <div className="container mx-auto">
+      <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              className="text-foreground hover:bg-transparent hover:text-primary"
-              onClick={() => navigate("/")}
-            >
-              Lovable
-            </Button>
-          </div>
-
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h1 className="text-xl font-bold text-primary">EstimateAI</h1>
+          </motion.div>
           <div className="flex items-center gap-4">
-            {!isLoggedIn && (
-              <>
-                <Button 
-                  variant="ghost"
-                  className="text-foreground hover:bg-transparent hover:text-primary"
-                  onClick={() => navigate("/login")}
-                >
-                  Sign In
-                </Button>
-                <Button 
-                  variant="ghost"
-                  className="text-foreground hover:bg-transparent hover:text-primary"
-                  onClick={() => navigate("/estimate")}
-                >
-                  Get Started
-                </Button>
-              </>
-            )}
-            {isLoggedIn && (
-              <Button 
-                variant="ghost"
-                className="text-foreground hover:bg-transparent hover:text-primary"
-                onClick={() => navigate("/dashboard")}
-              >
-                Dashboard
-              </Button>
-            )}
+            <Button
+              onClick={() => navigate("/signup")}
+              variant="outline"
+              className="text-gray-800 hover:text-gray-600"
+            >
+              Sign Up
+            </Button>
+            <Button
+              onClick={() => navigate("/login")}
+              variant="outline"
+              className="text-gray-800 hover:text-gray-600"
+            >
+              Sign In
+            </Button>
           </div>
         </div>
       </div>
