@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Database } from "@/integrations/supabase/types";
-import { useEffect } from "react";
 
 interface LineItem {
   title: string;
@@ -24,22 +23,35 @@ interface ItemGroup {
   subgroups: SubGroup[];
 }
 
+type ContractorDisplay = {
+  business_name?: string;
+  business_logo_url?: string | null;
+  contact_email?: string;
+  contact_phone?: string | null;
+  branding_colors?: {
+    primary: string;
+    secondary: string;
+  } | null;
+};
+
 interface EstimateDisplayProps {
   groups: ItemGroup[];
   totalCost: number;
   isBlurred?: boolean;
-  contractor?: Database['public']['Tables']['contractors']['Row'] & {
-    contractor_settings?: Database['public']['Tables']['contractor_settings']['Row'] | null;
-  };
+  contractor?: ContractorDisplay;
   projectSummary?: string;
+  isEditable?: boolean;
+  onEstimateChange?: (estimate: any) => void;
 }
 
 export const EstimateDisplay = ({ 
-  groups = [], // Add default empty array
-  totalCost = 0, // Add default value
+  groups, 
+  totalCost, 
   isBlurred = false,
   contractor,
-  projectSummary
+  projectSummary,
+  isEditable = false,
+  onEstimateChange
 }: EstimateDisplayProps) => {
   const defaultCompany = {
     business_name: "Example Company",
@@ -49,26 +61,10 @@ export const EstimateDisplay = ({
 
   const companyInfo = contractor || defaultCompany;
 
-  useEffect(() => {
-    if (contractor?.branding_colors) {
-      const colors = contractor.branding_colors as { primary: string; secondary: string };
-      if (colors.primary && colors.secondary) {
-        document.documentElement.style.setProperty('--primary', colors.primary);
-        document.documentElement.style.setProperty('--secondary', colors.secondary);
-      }
-    }
-  }, [contractor?.branding_colors]);
-
   const formatItemTitle = (title: string, unit?: string) => {
     if (!unit) return title;
     return `${title} (${unit})`;
   };
-
-  // Add safety check for groups
-  if (!Array.isArray(groups)) {
-    console.warn('EstimateDisplay: groups prop is not an array', groups);
-    return null;
-  }
 
   return (
     <Card className={cn(
@@ -87,8 +83,12 @@ export const EstimateDisplay = ({
           )}
           <div>
             <h1 className="text-2xl font-bold">{companyInfo.business_name}</h1>
-            <p className="text-sm text-muted-foreground">{companyInfo.contact_email}</p>
-            <p className="text-sm text-muted-foreground">{companyInfo.contact_phone}</p>
+            {companyInfo.contact_email && (
+              <p className="text-sm text-muted-foreground">{companyInfo.contact_email}</p>
+            )}
+            {companyInfo.contact_phone && (
+              <p className="text-sm text-muted-foreground">{companyInfo.contact_phone}</p>
+            )}
           </div>
         </div>
         <div className="text-right">
@@ -118,7 +118,7 @@ export const EstimateDisplay = ({
 
             {/* Subgroups */}
             <div className="space-y-6">
-              {Array.isArray(group.subgroups) && group.subgroups.map((subgroup, subIndex) => (
+              {group.subgroups.map((subgroup, subIndex) => (
                 <div key={subIndex} className="bg-white p-4 rounded-md shadow-sm">
                   <h4 className="font-medium mb-3 text-primary">{subgroup.name}</h4>
                   
@@ -135,23 +135,15 @@ export const EstimateDisplay = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {Array.isArray(subgroup.items) ? (
-                          subgroup.items.map((item, itemIndex) => (
-                            <tr key={itemIndex} className="border-b border-gray-100">
-                              <td className="py-3 px-4 font-medium">{formatItemTitle(item.title, item.unit)}</td>
-                              <td className="py-3 px-4 text-sm text-muted-foreground">{item.description}</td>
-                              <td className="py-3 px-4 text-right">{item.quantity}</td>
-                              <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
-                              <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={5} className="py-3 px-4 text-center text-muted-foreground">
-                              No items available
-                            </td>
+                        {subgroup.items.map((item, itemIndex) => (
+                          <tr key={itemIndex} className="border-b border-gray-100">
+                            <td className="py-3 px-4 font-medium">{formatItemTitle(item.title, item.unit)}</td>
+                            <td className="py-3 px-4 text-sm text-muted-foreground">{item.description}</td>
+                            <td className="py-3 px-4 text-right">{item.quantity}</td>
+                            <td className="py-3 px-4 text-right">${item.unitAmount.toFixed(2)}</td>
+                            <td className="py-3 px-4 text-right font-medium">${item.totalPrice.toFixed(2)}</td>
                           </tr>
-                        )}
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -159,7 +151,7 @@ export const EstimateDisplay = ({
                   {/* Subgroup Subtotal */}
                   <div className="mt-4 pt-4 border-t flex justify-between items-center">
                     <p className="font-medium">Subtotal for {subgroup.name}</p>
-                    <p className="font-semibold">${(subgroup.subtotal || 0).toFixed(2)}</p>
+                    <p className="font-semibold">${subgroup.subtotal.toFixed(2)}</p>
                   </div>
                 </div>
               ))}
@@ -169,10 +161,7 @@ export const EstimateDisplay = ({
             <div className="mt-6 pt-4 border-t flex justify-between items-center">
               <p className="font-medium">Subtotal for {group.name}</p>
               <p className="font-semibold">
-                ${(Array.isArray(group.subgroups) ? 
-                  group.subgroups.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0) : 
-                  0
-                ).toFixed(2)}
+                ${group.subgroups.reduce((sum, subgroup) => sum + subgroup.subtotal, 0).toFixed(2)}
               </p>
             </div>
           </div>
