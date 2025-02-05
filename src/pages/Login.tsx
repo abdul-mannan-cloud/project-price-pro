@@ -126,7 +126,7 @@ const Login = () => {
       <div className="absolute inset-0 w-full h-full bg-slate-900 z-20 [mask-image:radial-gradient(transparent,white)] pointer-events-none" />
       <Boxes />
       
-      <Card className="w-full max-w-md p-8 relative z-30">
+      <Card className="w-full max-w-md p-8 relative z-30 bg-white">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold">
             {isSignUp ? "Create Account" : "Welcome Back"}
@@ -137,6 +137,7 @@ const Login = () => {
               : "Sign in to your account"}
           </p>
         </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {isSignUp && (
             <>
