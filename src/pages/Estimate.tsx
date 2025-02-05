@@ -45,6 +45,7 @@ const EstimatePage = () => {
   const location = useLocation();
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const effectiveContractorId = contractorId 
     ? decodeURIComponent(contractorId).replace(/[?]/g, '')
@@ -138,6 +139,14 @@ const EstimatePage = () => {
       });
     }
   }, [contractorError, toast]);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+    };
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     loadCategories();
@@ -627,7 +636,7 @@ const EstimatePage = () => {
         className="h-8 rounded-none transition-all duration-500 ease-in-out"
       />
       
-      {contractor && (
+      {isAuthenticated && contractor && (
         <div className="w-full border-b border-gray-200 py-2 px-4">
           <button 
             onClick={() => navigate("/dashboard")}
