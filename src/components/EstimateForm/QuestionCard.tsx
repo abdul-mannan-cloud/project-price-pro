@@ -74,7 +74,7 @@ export const QuestionCard = ({
         )}
         <h2 className="text-2xl font-semibold mb-6">{question?.question}</h2>
 
-        <div className="grid grid-cols-1 gap-4 mb-20 md:mb-24">
+        <div className="grid grid-cols-1 gap-4 mb-20 md:mb-6">
           {options.map((option) => {
             const isSelected = selectedOptions.includes(option.value);
             const showImage = shouldShowImage(option);
@@ -117,18 +117,33 @@ export const QuestionCard = ({
                       )}
                     </div>
                   )}
-                  <span className={cn(
-                    "text-lg flex-grow",
-                    isSelected && "text-primary font-medium"
-                  )}>{option.label}</span>
+                  <div className="flex flex-col w-full">
+                    <span className={cn(
+                      "text-lg flex-grow",
+                      isSelected && "text-primary font-medium"
+                    )}>{option.label}</span>
+                    {!isMobile && isSelected && question.type === 'multiple_choice' && showNextButton && (
+                      <Button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onNext?.();
+                        }}
+                        className="mt-4 w-full md:w-auto"
+                        variant="default"
+                        size="lg"
+                      >
+                        {hasFollowUpQuestion ? 'Continue' : 'Complete'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Bottom button bar */}
-        {question.type === 'multiple_choice' && showNextButton && (
+        {/* Bottom button bar - only show on mobile */}
+        {isMobile && question.type === 'multiple_choice' && showNextButton && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">
             <div className="container max-w-6xl mx-auto">
               <Button 
