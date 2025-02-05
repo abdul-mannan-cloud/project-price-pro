@@ -38,7 +38,6 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
           continue;
         }
 
-        // Compress image before upload
         const compressedFile = await compressImage(file);
         const fileExt = file.name.split('.').pop();
         const fileName = `${crypto.randomUUID()}.${fileExt}`;
@@ -81,7 +80,6 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d')!;
 
-          // Calculate new dimensions (max 1200px width/height)
           let width = img.width;
           let height = img.height;
           if (width > height && width > 1200) {
@@ -99,7 +97,7 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
           canvas.toBlob(
             (blob) => resolve(blob!),
             'image/jpeg',
-            0.8 // compression quality
+            0.8
           );
         };
         img.src = e.target?.result as string;

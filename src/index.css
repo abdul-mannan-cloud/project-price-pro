@@ -94,18 +94,15 @@
     @apply bg-background border border-input rounded-xl shadow-sm;
   }
 
-  /* Default button style (Apple-style) */
   .button {
     @apply rounded-lg px-4 py-2 font-medium transition-colors;
     @apply bg-white text-foreground border border-input hover:bg-muted;
   }
 
-  /* Primary button style - only one per container */
   .button-primary {
     @apply bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-700)] border-transparent;
   }
 
-  /* Select/dropdown buttons should be unaffected by color schema */
   .select-button {
     @apply bg-background text-foreground border border-input hover:bg-background;
   }
