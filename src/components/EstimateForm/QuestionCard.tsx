@@ -89,8 +89,8 @@ export const QuestionCard = ({
         toast({
           title: "Please read carefully",
           description: (
-            <div className="flex flex-col items-center gap-4">
-              <p>Take a moment to review your selection before proceeding</p>
+            <div className="bg-white rounded-lg p-6 shadow-lg text-center">
+              <p className="text-gray-700 mb-4">Take a moment to review your selection before proceeding</p>
               <Button 
                 onClick={() => {
                   const toastElement = document.querySelector('[role="status"]');
@@ -100,6 +100,7 @@ export const QuestionCard = ({
                 }}
                 variant="outline"
                 size="sm"
+                className="mx-auto"
               >
                 OK
               </Button>
