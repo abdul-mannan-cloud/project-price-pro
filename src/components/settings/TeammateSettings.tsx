@@ -1,10 +1,11 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2, Mail, Clock, RefreshCw } from "lucide-react";
+import { Trash2, Mail, Clock } from "lucide-react";
 
 export const TeammateSettings = () => {
   const [email, setEmail] = useState("");
@@ -100,6 +101,8 @@ export const TeammateSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
+      console.log('Resending invitation to:', teammateEmail);
+
       const { error } = await supabase.functions.invoke('send-teammate-invitation', {
         body: { 
           email: teammateEmail,
@@ -110,6 +113,7 @@ export const TeammateSettings = () => {
 
       if (error) throw error;
 
+      // Update the invitation_sent_at timestamp
       const { error: updateError } = await supabase
         .from("teammates")
         .update({ invitation_sent_at: new Date().toISOString() })
@@ -119,6 +123,7 @@ export const TeammateSettings = () => {
       if (updateError) throw updateError;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teammates"] });
       toast({
         title: "Invitation resent",
         description: "The invitation email has been resent.",
@@ -187,10 +192,6 @@ export const TeammateSettings = () => {
     }
   };
 
-  const isOwner = currentUser?.id === (currentUser as any)?.contractor_id;
-
-  // Remove the incorrect isOwner check and always show the buttons
-  // Every user who can access this page is an owner of their account
   return (
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="space-y-4">
