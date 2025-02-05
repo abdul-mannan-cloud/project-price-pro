@@ -37,6 +37,7 @@ import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section
 import { BrandingSettings } from "@/components/settings/BrandingSettings";
 import { TranslationSettings } from "@/components/settings/TranslationSettings";
 import { AdminSettings } from "@/components/settings/AdminSettings";
+import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
 
 interface AIInstruction {
   title: string;
@@ -215,7 +216,7 @@ const Settings = () => {
   const isAdmin = contractor?.contact_email === "cairlbrandon@gmail.com" || 
                  contractor?.contact_email === "brandon@reliablepro.net";
 
-  const settingsMenuItems = [
+  const generalSettingsMenuItems = [
     {
       title: "Business Information",
       description: "Update your business details and contact information",
@@ -240,6 +241,9 @@ const Settings = () => {
       icon: <Palette className="h-5 w-5 text-muted-foreground" />,
       onClick: () => setActiveDialog("branding")
     },
+  ];
+
+  const estimateSettingsMenuItems = [
     {
       title: "Estimate Settings",
       description: "Configure your pricing and cost calculations",
@@ -258,12 +262,18 @@ const Settings = () => {
       icon: <Grid className="h-5 w-5 text-muted-foreground" />,
       onClick: () => setActiveDialog("categories")
     },
+  ];
+
+  const integrationSettingsMenuItems = [
     {
       title: "Webhooks",
       description: "Configure external integrations and automation",
       icon: <Webhook className="h-5 w-5 text-muted-foreground" />,
       onClick: () => setActiveDialog("webhooks")
     },
+  ];
+
+  const systemSettingsMenuItems = [
     {
       title: "Language & Translation",
       description: "Configure your language preferences and translations",
@@ -301,7 +311,43 @@ const Settings = () => {
             }}
           />
         ) : (
-          <FeaturesSectionWithHoverEffects setActiveDialog={setActiveDialog} />
+          <div className="grid gap-8">
+            <div>
+              <h2 className="text-lg font-medium mb-4">General Settings</h2>
+              <div className="grid gap-4">
+                {generalSettingsMenuItems.map((item) => (
+                  <SettingsMenuItem key={item.title} {...item} />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-medium mb-4">Estimate Configuration</h2>
+              <div className="grid gap-4">
+                {estimateSettingsMenuItems.map((item) => (
+                  <SettingsMenuItem key={item.title} {...item} />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-medium mb-4">Integrations</h2>
+              <div className="grid gap-4">
+                {integrationSettingsMenuItems.map((item) => (
+                  <SettingsMenuItem key={item.title} {...item} />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-medium mb-4">System</h2>
+              <div className="grid gap-4">
+                {systemSettingsMenuItems.map((item) => (
+                  <SettingsMenuItem key={item.title} {...item} />
+                ))}
+              </div>
+            </div>
+          </div>
         )}
 
         <SettingsDialog
