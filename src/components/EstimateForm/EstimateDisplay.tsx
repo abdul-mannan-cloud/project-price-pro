@@ -1,7 +1,10 @@
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Database } from "@/integrations/supabase/types";
 import { Json } from "@/integrations/supabase/types";
+import { toast } from "@/hooks/use-toast";
 
 interface LineItem {
   title: string;
@@ -64,6 +67,41 @@ export const EstimateDisplay = ({
     return `${title} (${unit})`;
   };
 
+  const handleCopyEstimate = () => {
+    const estimateText = `
+${companyInfo.business_name}
+${companyInfo.contact_email}
+${companyInfo.contact_phone || ''}
+
+Project Overview:
+${projectSummary || ''}
+
+Estimate Details:
+${groups.map(group => `
+${group.name}
+${group.subgroups.map(subgroup => `
+  ${subgroup.name}
+  ${subgroup.items.map(item => `
+    - ${formatItemTitle(item.title, item.unit)}
+      Quantity: ${item.quantity}
+      Unit Price: $${item.unitAmount.toFixed(2)}
+      Total: $${item.totalPrice.toFixed(2)}
+  `).join('')}
+  Subtotal: $${subgroup.subtotal.toFixed(2)}
+`).join('')}
+`).join('')}
+
+Total Estimate: $${totalCost.toFixed(2)}
+    `.trim();
+
+    navigator.clipboard.writeText(estimateText).then(() => {
+      toast({
+        title: "Copied to clipboard",
+        description: "The estimate has been copied to your clipboard",
+      });
+    });
+  };
+
   // Parse branding colors from Json type
   const brandingColors = contractor?.branding_colors 
     ? (typeof contractor.branding_colors === 'string' 
@@ -96,9 +134,20 @@ export const EstimateDisplay = ({
             )}
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-muted-foreground">Date</p>
-          <p className="font-medium">{new Date().toLocaleDateString()}</p>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={handleCopyEstimate}
+          >
+            <Copy className="h-4 w-4" />
+            Copy Estimate
+          </Button>
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">Date</p>
+            <p className="font-medium">{new Date().toLocaleDateString()}</p>
+          </div>
         </div>
       </div>
 
