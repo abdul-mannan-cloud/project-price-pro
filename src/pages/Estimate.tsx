@@ -38,6 +38,7 @@ const EstimatePage = () => {
   const { contractorId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
 
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
@@ -484,7 +485,7 @@ const EstimatePage = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <Progress 
-        value={getProgressValue()} 
+        value={progress} 
         className="h-8 rounded-none transition-all duration-500 ease-in-out"
       />
       
@@ -616,6 +617,7 @@ const EstimatePage = () => {
             <QuestionManager
               questionSets={matchedQuestionSets}
               onComplete={handleQuestionComplete}
+              onProgressChange={setProgress}
             />
           ) : (
             <LoadingScreen message="Loading your questions..." />
