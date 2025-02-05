@@ -4,7 +4,7 @@ import { Question } from "@/types/estimate";
 
 interface QuestionCardProps {
   question: Question;
-  onAnswer: (questionId: string, value: string | string[]) => void;
+  onAnswer: (questionId: string, value: string[]) => void;
   selectedAnswers?: string[];
   onNext?: () => void;
   isLastQuestion?: boolean;
