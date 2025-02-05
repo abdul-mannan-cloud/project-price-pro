@@ -297,6 +297,35 @@ function generateDescription(workType: string, itemLabel: string, type: 'labor' 
   return `${description} ${itemLabel.toLowerCase()}`;
 }
 
+function generateEstimateGroups(answers: Record<string, any>, location: any, settings: any, aiRates: any[]) {
+  const groups: any[] = [];
+  let totalCost = 0;
+
+  // Process each category's answers
+  Object.entries(answers).forEach(([category, categoryAnswers]) => {
+    const groupItems: any[] = [];
+    
+    // Process each question's answers within the category
+    Object.entries(categoryAnswers).forEach(([_, answer]) => {
+      const items = generateLineItems(answer, location, settings, aiRates);
+      groupItems.push(...items);
+    });
+
+    if (groupItems.length > 0) {
+      const groupTotal = groupItems.reduce((sum, item) => sum + item.totalPrice, 0);
+      totalCost += groupTotal;
+
+      groups.push({
+        category,
+        items: groupItems,
+        totalPrice: groupTotal
+      });
+    }
+  });
+
+  return { groups, totalCost };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
