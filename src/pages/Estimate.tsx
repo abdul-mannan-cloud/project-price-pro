@@ -482,7 +482,7 @@ const EstimatePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Progress 
         value={getProgressValue()} 
         className="h-8 rounded-none transition-all duration-500 ease-in-out"
