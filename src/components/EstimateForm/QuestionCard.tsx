@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/3d-button";
 import { Question } from "@/types/estimate";
 import { Card } from "@/components/ui/card";
-import { Check, Square, X } from "lucide-react";
+import { Check, AlertTriangle, Square, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 
@@ -60,6 +60,9 @@ export const QuestionCard = ({
         title: "Please read carefully",
         description: "Take a moment to review your selection before proceeding",
         duration: 200,
+        className: "fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-50",
+        variant: "warning",
+        icon: <AlertTriangle className="h-5 w-5 text-yellow-500" />,
       });
 
       setTimeout(() => {
