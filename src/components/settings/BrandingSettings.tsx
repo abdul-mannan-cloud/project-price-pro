@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { BrandingColors } from "@/types/settings";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BrandingSettingsProps {
   initialColors: BrandingColors;
@@ -13,7 +14,36 @@ interface BrandingSettingsProps {
 export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProps) => {
   const [brandingColors, setBrandingColors] = useState<BrandingColors>(initialColors);
   const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
 
+  // Load and apply saved colors on component mount
+  useEffect(() => {
+    const loadSavedColors = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: contractor, error } = await supabase
+          .from('contractors')
+          .select('branding_colors')
+          .eq('id', user.id)
+          .single();
+
+        if (error) throw error;
+
+        if (contractor?.branding_colors) {
+          setBrandingColors(contractor.branding_colors);
+          applyGlobalColors(contractor.branding_colors);
+        }
+      } catch (error) {
+        console.error('Error loading branding colors:', error);
+      }
+    };
+
+    loadSavedColors();
+  }, []);
+
+  // Apply colors whenever they change
   useEffect(() => {
     if (initialColors) {
       setBrandingColors(initialColors);
@@ -57,17 +87,33 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
 
   const handleSave = async () => {
     try {
+      setIsSaving(true);
       await onSave(brandingColors);
+      
+      // Update the colors in Supabase directly
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { error } = await supabase
+        .from('contractors')
+        .update({ branding_colors: brandingColors })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
       toast({
         title: "Branding colors updated",
-        description: "Your brand colors have been updated successfully.",
+        description: "Your brand colors have been updated and saved successfully.",
       });
     } catch (error) {
+      console.error('Error saving branding colors:', error);
       toast({
         title: "Error",
         description: "Failed to update branding colors. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -94,8 +140,8 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
               onChange={(color) => handleColorChange('secondary', color)}
             />
           </div>
-          <Button onClick={handleSave}>
-            Save Changes
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
 
