@@ -342,7 +342,7 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block rounded-md border">
+      <div className="hidden md:block rounded-md border bg-white">
         <Table>
           <TableHeader>
             <TableRow>
