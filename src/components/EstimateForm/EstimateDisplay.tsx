@@ -11,6 +11,7 @@ import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplateSettings";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface LineItem {
   title: string;
@@ -70,6 +71,22 @@ export const EstimateDisplay = ({
   const { contractorId } = useParams();
   const [isContractor, setIsContractor] = useState(false);
 
+  // Add query for real-time settings updates
+  const { data: settings } = useQuery({
+    queryKey: ["contractor-settings", contractorId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contractor_settings")
+        .select("*")
+        .eq("id", contractorId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!contractorId
+  });
+
   const checkContractorAccess = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user && contractorId === user.id) {
@@ -88,7 +105,8 @@ export const EstimateDisplay = ({
   };
 
   const companyInfo = contractor || defaultCompany;
-  const settings = contractor?.contractor_settings || {};
+  // Use settings from the query instead of contractor
+  const templateSettings = settings || {};
 
   const formatItemTitle = (title: string, unit?: string) => {
     if (!unit) return title;
@@ -132,7 +150,7 @@ ${companyInfo.contact_phone || ''}
 Project Overview:
 ${projectSummary || ''}
 
-${settings.estimate_client_message || ''}
+${templateSettings.estimate_client_message || ''}
 
 Estimate Details:
 ${groups.map(group => `
@@ -151,7 +169,7 @@ ${group.subgroups.map(subgroup => `
 
 Total Estimate: $${totalCost.toFixed(2)}
 
-${settings.estimate_footer_text || ''}
+${templateSettings.estimate_footer_text || ''}
     `.trim();
 
     navigator.clipboard.writeText(estimateText).then(() => {
@@ -168,7 +186,7 @@ ${settings.estimate_footer_text || ''}
         : contractor.branding_colors)
     : null;
 
-  const templateStyle = settings.estimate_template_style || 'modern';
+  const templateStyle = templateSettings.estimate_template_style || 'modern';
 
   return (
     <>
@@ -238,9 +256,9 @@ ${settings.estimate_footer_text || ''}
           </div>
 
           {/* Client Message */}
-          {settings.estimate_client_message && (
+          {templateSettings.estimate_client_message && (
             <div className="mb-8 bg-muted/50 p-4 rounded-lg">
-              <p className="text-sm text-muted-foreground">{settings.estimate_client_message}</p>
+              <p className="text-sm text-muted-foreground">{templateSettings.estimate_client_message}</p>
             </div>
           )}
 
@@ -331,7 +349,7 @@ ${settings.estimate_footer_text || ''}
         </div>
 
         {/* Signature Section */}
-        {settings.estimate_signature_enabled && (
+        {templateSettings.estimate_signature_enabled && (
           <div className="mt-8 pt-6 border-t space-y-6">
             <h3 className="text-lg font-semibold">Signatures</h3>
             <div className="grid grid-cols-2 gap-8">
@@ -350,10 +368,10 @@ ${settings.estimate_footer_text || ''}
         )}
 
         {/* Footer Text */}
-        {settings.estimate_footer_text && (
+        {templateSettings.estimate_footer_text && (
           <div className="mt-8 pt-6 border-t">
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {settings.estimate_footer_text}
+              {templateSettings.estimate_footer_text}
             </p>
           </div>
         )}
