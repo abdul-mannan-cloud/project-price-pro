@@ -39,30 +39,38 @@ export const CategoryGrid = ({
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.3 }}
-          className="flex flex-col gap-4"
+          className="space-y-6"
         >
-          {availableCategories.map((category) => (
-            <motion.div
-              key={category.id}
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card
-                className={cn(
-                  "p-6 cursor-pointer hover:shadow-lg transition-shadow",
-                  selectedCategory === category.id && "border-primary"
-                )}
-                onClick={() => onSelectCategory(category.id)}
+          <div className="text-center">
+            <p className="text-lg text-muted-foreground">
+              We couldn't determine what you were trying to say. Please select a category that you need help with.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            {availableCategories.map((category) => (
+              <motion.div
+                key={category.id}
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ duration: 0.2 }}
               >
-                <h3 className="font-medium mb-2">{category.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {category.description || "Select this option"}
-                </p>
-              </Card>
-            </motion.div>
-          ))}
+                <Card
+                  className={cn(
+                    "p-6 cursor-pointer hover:shadow-lg transition-shadow",
+                    selectedCategory === category.id && "border-primary"
+                  )}
+                  onClick={() => onSelectCategory(category.id)}
+                >
+                  <h3 className="font-medium mb-2">{category.name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {category.description || "Select this option"}
+                  </p>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
