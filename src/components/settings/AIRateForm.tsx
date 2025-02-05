@@ -23,7 +23,7 @@ import {
 interface AIRate {
   title: string;
   description: string | null;
-  rate: number;  // Changed from string to number
+  rate: number;  // Changed from string to number to match database
   unit: string;
   type: string;
   instructions?: string;
@@ -169,7 +169,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
               label="Rate"
               type="number"
               value={newRate.rate}
-              onChange={(e) => setNewRate({ ...newRate, rate: parseFloat(e.target.value) || 0 })}  // Ensure we store as number
+              onChange={(e) => setNewRate({ ...newRate, rate: parseFloat(e.target.value) || 0 })}  // Parse as number
               placeholder="e.g., 75"
             />
             <div className="space-y-2">
