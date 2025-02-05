@@ -18,7 +18,6 @@ import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
 import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
 import { PaintbrushAnimation } from "@/components/EstimateForm/PaintbrushAnimation";
-import type { Database } from "@/integrations/supabase/types";
 
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
@@ -594,6 +593,7 @@ const EstimatePage = () => {
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
     loadQuestionSet(categoryId);
+    setStage('questions');
   };
 
   if (isProcessing) {
@@ -632,59 +632,6 @@ const EstimatePage = () => {
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-12">
-        {stage === 'photo' && (
-          <div className="card p-8 animate-fadeIn text-center">
-            <div className="flex flex-col items-center gap-6 mb-6">
-              <PaintbrushAnimation />
-              <h2 className="text-2xl font-semibold mb-2">
-                {contractor?.business_name || "Project"} Estimator
-              </h2>
-              {contractor?.business_logo_url && (
-                <img 
-                  src={contractor.business_logo_url}
-                  alt={`${contractor?.business_name || 'Business'} logo`}
-                  className="w-24 h-24 object-contain rounded-lg"
-                />
-              )}
-              <p className="text-muted-foreground max-w-lg">
-                Quickly estimate your project cost in minutes! Take or upload photos of what you want to repair or modify.
-              </p>
-            </div>
-            
-            <PhotoUpload
-              onPhotosSelected={setUploadedPhotos}
-              onNext={() => setStage('description')}
-              uploadedPhotos={uploadedPhotos}
-            />
-          </div>
-        )}
-
-        {stage === 'description' && !selectedCategory && (
-          <div className="card p-8 animate-fadeIn">
-            <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
-            <div className="space-y-2">
-              <Textarea
-                value={projectDescription}
-                onChange={(e) => setProjectDescription(e.target.value)}
-                placeholder="Describe what you need help with (minimum 30 characters)..."
-                className="min-h-[150px]"
-              />
-              {projectDescription.length > 0 && projectDescription.length < 30 && (
-                <p className="text-sm text-destructive">
-                  Please enter at least {30 - projectDescription.length} more characters
-                </p>
-              )}
-            </div>
-            <Button 
-              className="w-full mt-6"
-              onClick={handleDescriptionSubmit}
-              disabled={projectDescription.trim().length < 30}
-            >
-              Continue
-            </Button>
-          </div>
-        )}
-
         {stage === 'category' && (
           <div className="animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
@@ -693,6 +640,8 @@ const EstimatePage = () => {
               selectedCategory={selectedCategory || undefined}
               onSelectCategory={handleCategorySelect}
               completedCategories={completedCategories}
+              contractorSettings={contractor?.contractor_settings}
+              isCollapsed={stage !== 'category'}
             />
           </div>
         )}
