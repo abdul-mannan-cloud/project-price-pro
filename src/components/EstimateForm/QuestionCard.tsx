@@ -65,16 +65,16 @@ export const QuestionCard = ({
     <>
       <Card className={cn(
         "w-full max-w-6xl mx-auto relative bg-white",
-        isMobile ? "p-4 rounded-none" : "p-6 rounded-xl"
+        isMobile ? "px-0 py-4 rounded-none" : "p-6 rounded-xl"
       )}>
         <h2 className={cn(
           "font-semibold mb-6",
-          isMobile ? "text-lg" : "text-xl"
+          isMobile ? "text-lg px-4" : "text-xl"
         )}>{question?.question}</h2>
 
         <div className={cn(
           "grid gap-4 mb-20 md:mb-6",
-          isMobile ? "grid-cols-1" : question.type === 'multiple_choice' ? "grid-cols-2" : "grid-cols-1"
+          isMobile ? "grid-cols-1 px-4" : question.type === 'multiple_choice' ? "grid-cols-2" : "grid-cols-1"
         )}>
           {options.map((option) => {
             const isSelected = selectedAnswers.includes(option.value);
