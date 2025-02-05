@@ -1,146 +1,133 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from '../_shared/cors.ts'
+import "https://deno.land/x/xhr@0.1.0/mod.ts"
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+interface QuestionAnswer {
+  question: string;
+  type: string;
+  answers: string[];
+  options: {
+    label: string;
+    value: string;
+    next?: string;
+  }[];
+}
+
+interface CategoryAnswers {
+  [questionId: string]: QuestionAnswer;
+}
+
+interface AnswersState {
+  [category: string]: CategoryAnswers;
+}
 
 interface RequestBody {
-  projectDescription: string;
-  imageUrls?: string[];
-  answers: Record<string, any>;
-  contractorId?: string;
-  leadId?: string;
+  answers: AnswersState;
+  projectDescription?: string;
   category?: string;
 }
 
-interface LineItem {
-  title: string;
-  description: string;
-  qty: number;
-  unitprice: number;
-}
-
-interface Subcategory {
-  subcategoryTitle: string;
-  lineItems: LineItem[];
-}
-
-interface Category {
-  category: string;
-  subcategories: Subcategory[];
-}
-
-interface EstimateOutput {
-  projectTitle: string;
-  projectDescription: string;
-  categories: Category[];
-}
-
-function generateProjectTitle(category: string): string {
-  return `Complete ${category} Project`;
-}
-
-function generateProjectDescription(category: string, description: string): string {
-  return `This project covers the full scope of ${category.toLowerCase()}. ${description} Each phase is broken down into specific tasks and costed accordingly.`;
-}
-
-function determineUnit(workType: string): string {
-  const unitMap: Record<string, string> = {
-    flooring: 'SF',
-    painting: 'SF',
-    electrical: 'EA',
-    plumbing: 'EA',
-    carpentry: 'LF',
-    demolition: 'SF',
-    installation: 'EA',
-    labor: 'HR',
-    materials: 'EA'
-  };
-
-  return unitMap[workType.toLowerCase()] || 'EA';
-}
-
-function generateLineItems(answer: any, workType: string): LineItem[] {
-  const unit = determineUnit(workType);
-  const { question, answers: selectedAnswers, options } = answer;
-
-  return selectedAnswers.map((selected: string) => {
-    const option = options.find((opt: any) => opt.value === selected);
-    if (!option) return null;
-
-    return {
-      title: `${option.label} (${unit})`,
-      description: `${option.label} - ${workType} - Material + Labor`,
-      qty: Math.ceil(Math.random() * 100),
-      unitprice: Math.ceil(Math.random() * 100)
-    };
-  }).filter(Boolean);
-}
-
-function generateEstimate(
-  category: string,
-  answers: Record<string, any>,
-  projectDescription: string
-): EstimateOutput {
-  const categories: Category[] = [];
-  
-  // Process each category's answers
-  Object.entries(answers).forEach(([categoryKey, categoryAnswers]) => {
-    const subcategories: Subcategory[] = [];
-    const groupedAnswers = new Map<string, any[]>();
-
-    // Group answers by type
-    Object.entries(categoryAnswers).forEach(([_, answer]) => {
-      const type = answer.type || 'general';
-      if (!groupedAnswers.has(type)) {
-        groupedAnswers.set(type, []);
-      }
-      groupedAnswers.get(type)?.push(answer);
-    });
-
-    // Generate subcategories based on answer types
-    groupedAnswers.forEach((answers, type) => {
-      const subcategory: Subcategory = {
-        subcategoryTitle: type.charAt(0).toUpperCase() + type.slice(1),
-        lineItems: []
-      };
-
-      answers.forEach(answer => {
-        const items = generateLineItems(answer, type);
-        subcategory.lineItems.push(...items);
-      });
-
-      if (subcategory.lineItems.length > 0) {
-        subcategories.push(subcategory);
-      }
-    });
-
-    if (subcategories.length > 0) {
-      categories.push({
-        category: categoryKey,
-        subcategories
-      });
-    }
-  });
-
-  return {
-    projectTitle: generateProjectTitle(category),
-    projectDescription: generateProjectDescription(category, projectDescription),
-    categories
-  };
-}
-
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { projectDescription, answers, category } = await req.json() as RequestBody;
-    console.log('Generating estimate for:', { projectDescription, category });
+    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
+    if (!llamaApiKey) {
+      throw new Error('Missing LLAMA_API_KEY');
+    }
 
-    const estimate = generateEstimate(category || 'Project', answers, projectDescription);
-    console.log('Generated estimate:', estimate);
+    const { answers, projectDescription, category } = await req.json() as RequestBody;
+    console.log('Generating estimate for:', { category, projectDescription });
+
+    // Format answers into a more readable format for the AI
+    const formattedAnswers = Object.entries(answers).map(([category, categoryAnswers]) => {
+      const questions = Object.values(categoryAnswers).map(qa => ({
+        question: qa.question,
+        answer: qa.answers.map(ans => {
+          const option = qa.options.find(opt => opt.value === ans);
+          return option ? option.label : ans;
+        }).join(', ')
+      }));
+      return { category, questions };
+    });
+
+    // Create the prompt for the AI
+    const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format.
+    
+Project Category: ${category || 'General Construction'}
+${projectDescription ? `Project Description: ${projectDescription}` : ''}
+
+Questions and Answers:
+${formattedAnswers.map(cat => `
+Category: ${cat.category}
+${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}
+
+Generate a detailed estimate with the following JSON structure:
+{
+  "groups": [
+    {
+      "name": "string",
+      "items": [
+        {
+          "description": "string",
+          "quantity": number,
+          "unit": "string",
+          "unitPrice": number,
+          "total": number
+        }
+      ],
+      "subtotal": number
+    }
+  ],
+  "totalCost": number
+}
+
+Make sure to:
+1. Break down costs into logical groups
+2. Include labor and materials separately
+3. Use realistic market prices
+4. Include appropriate units (SF, EA, HR, etc.)
+5. Calculate accurate subtotals and total cost`;
+
+    console.log('Sending prompt to Llama:', prompt);
+
+    const response = await fetch('https://api.llama-api.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${llamaApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: [{
+          role: 'system',
+          content: 'You are a construction cost estimator that generates detailed estimates in JSON format.'
+        }, {
+          role: 'user',
+          content: prompt
+        }],
+        temperature: 0.2,
+        response_format: { type: "json_object" }
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to generate estimate with Llama');
+    }
+
+    const aiResponse = await response.json();
+    const estimateJson = JSON.parse(aiResponse.choices[0].message.content);
+
+    console.log('Generated estimate:', estimateJson);
 
     return new Response(
-      JSON.stringify(estimate),
+      JSON.stringify(estimateJson),
       { 
         headers: { 
           ...corsHeaders,
