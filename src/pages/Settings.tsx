@@ -35,6 +35,7 @@ import {
   Users2,
   Settings as SettingsIcon
 } from "lucide-react";
+import { AIRateForm } from "@/components/settings/AIRateForm";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -317,6 +318,13 @@ const Settings = () => {
                 updateSettings.mutate({
                   aiInstructions: instructions
                 });
+              }}
+            />
+            <AIRateForm
+              rates={[]} // You'll need to implement fetching and saving rates
+              onSave={(rates) => {
+                // Implement saving rates to Supabase
+                console.log('Saving rates:', rates);
               }}
             />
           </div>
