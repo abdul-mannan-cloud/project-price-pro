@@ -59,7 +59,7 @@ export const AdminSettings = () => {
                   <TableCell>{contractor.business_name}</TableCell>
                   <TableCell>{contractor.contact_email}</TableCell>
                   <TableCell>{contractor.contact_phone}</TableCell>
-                  <TableCell>{contractor.leads?.count || 0}</TableCell>
+                  <TableCell>{contractor.leads?.[0]?.count || 0}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
