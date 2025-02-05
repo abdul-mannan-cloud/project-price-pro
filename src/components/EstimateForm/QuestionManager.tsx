@@ -159,7 +159,6 @@ export const QuestionManager = ({
         setQueuedNextQuestions(uniqueNextQuestions.slice(1));
       }
     } else {
-      // If no specific next questions, check if we should move to next branch
       const shouldMoveToNextBranch = selectedValues.some(value => {
         const option = currentQuestion.options.find(opt => opt.value === value);
         return option?.next === 'NEXT_BRANCH';
@@ -216,7 +215,7 @@ export const QuestionManager = ({
   return (
     <QuestionCard
       question={currentQuestion}
-      selectedOptions={currentSetAnswers[currentQuestion.id]?.answers || []}
+      selectedAnswers={currentSetAnswers[currentQuestion.id]?.answers || []}
       onSelect={handleAnswer}
       onNext={currentQuestion.type === 'multiple_choice' ? handleMultipleChoiceNext : undefined}
       isLastQuestion={!hasFollowUpQuestion}
