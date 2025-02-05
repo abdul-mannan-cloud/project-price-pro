@@ -134,7 +134,7 @@ export const QuestionCard = ({
           <div className="hidden md:block w-full">
             <Button 
               onClick={onNext}
-              className="w-full button-primary"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary-700"
               size="lg"
             >
               {hasFollowUpQuestion ? 'Continue' : 'Complete'}
@@ -149,7 +149,7 @@ export const QuestionCard = ({
               <Button 
                 onClick={onNext}
                 disabled={!showNextButton}
-                className="w-full button-primary"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary-700"
                 size="lg"
               >
                 {hasFollowUpQuestion ? 'Continue' : 'Complete'}
