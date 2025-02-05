@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { FileText, Layout, Minimize2 } from "lucide-react";
+import { Layout, FileText, Minimize2 } from "lucide-react";
 
 const templates = [
   {
