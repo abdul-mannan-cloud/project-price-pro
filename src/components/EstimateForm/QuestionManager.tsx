@@ -24,6 +24,7 @@ export const QuestionManager = ({
   const [queuedNextQuestions, setQueuedNextQuestions] = useState<string[]>([]);
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
   const [pendingBranchTransition, setPendingBranchTransition] = useState(false);
+  const [showingEstimate, setShowingEstimate] = useState(false);
 
   useEffect(() => {
     loadCurrentQuestionSet();
@@ -53,13 +54,13 @@ export const QuestionManager = ({
     }
 
     // If we're showing the estimate, show full completion
-    if (stage === 'estimate') {
+    if (showingEstimate) {
       currentStep = totalSteps;
     }
 
     const progress = Math.min((currentStep / totalSteps) * 100, 100);
     onProgressChange(progress);
-  }, [answers, currentSetIndex, questionSets, onProgressChange, isGeneratingEstimate]);
+  }, [answers, currentSetIndex, questionSets, onProgressChange, isGeneratingEstimate, showingEstimate]);
 
   const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {
@@ -95,37 +96,6 @@ export const QuestionManager = ({
       setPendingBranchTransition(false);
     } else {
       moveToNextQuestionSet();
-    }
-  };
-
-  const findNextQuestionId = (
-    currentQuestion: Question,
-    selectedValue: string
-  ): string | null | 'NEXT_BRANCH' => {
-    const selectedOption = currentQuestion.options.find(
-      (opt) => opt.value.toLowerCase() === selectedValue.toLowerCase()
-    );
-    
-    if (selectedOption?.next) {
-      if (selectedOption.next === 'NEXT_BRANCH') return 'NEXT_BRANCH';
-      if (selectedOption.next === 'END') return null;
-      return selectedOption.next;
-    }
-
-    if (currentQuestion.next === 'NEXT_BRANCH') return 'NEXT_BRANCH';
-    if (currentQuestion.next === 'END' || !currentQuestion.next) return null;
-
-    const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
-    return currentIndex < questionSequence.length - 1
-      ? questionSequence[currentIndex + 1].id
-      : null;
-  };
-
-  const moveToNextQuestionSet = () => {
-    if (currentSetIndex < questionSets.length - 1) {
-      setCurrentSetIndex(prev => prev + 1);
-    } else {
-      handleComplete();
     }
   };
 
@@ -182,6 +152,40 @@ export const QuestionManager = ({
     }
   };
 
+  const moveToNextQuestionSet = () => {
+    if (currentSetIndex < questionSets.length - 1) {
+      setCurrentSetIndex(prev => prev + 1);
+    } else {
+      handleComplete();
+    }
+  };
+
+  const handleComplete = async () => {
+    if (currentSetIndex < questionSets.length - 1) {
+      moveToNextQuestionSet();
+    } else {
+      setIsGeneratingEstimate(true);
+      try {
+        const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
+          body: { answers }
+        });
+
+        if (error) throw error;
+        setShowingEstimate(true);
+        onComplete(answers);
+      } catch (error) {
+        console.error('Error generating estimate:', error);
+        toast({
+          title: "Error",
+          description: "Failed to generate estimate. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsGeneratingEstimate(false);
+      }
+    }
+  };
+
   const handleMultipleChoiceNext = async () => {
     const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
     if (!currentQuestion) return;
@@ -217,31 +221,6 @@ export const QuestionManager = ({
         setPendingBranchTransition(true);
       } else {
         moveToNextQuestionSet();
-      }
-    }
-  };
-
-  const handleComplete = async () => {
-    if (currentSetIndex < questionSets.length - 1) {
-      moveToNextQuestionSet();
-    } else {
-      setIsGeneratingEstimate(true);
-      try {
-        const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
-          body: { answers }
-        });
-
-        if (error) throw error;
-        onComplete(answers);
-      } catch (error) {
-        console.error('Error generating estimate:', error);
-        toast({
-          title: "Error",
-          description: "Failed to generate estimate. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsGeneratingEstimate(false);
       }
     }
   };
