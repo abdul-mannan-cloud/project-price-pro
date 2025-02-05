@@ -143,26 +143,18 @@ export const TeammateSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
-      // Only the owner can remove teammates
-      const { data: contractor } = await supabase
-        .from("contractors")
-        .select("id")
-        .eq("id", user.id)
-        .single();
-
-      if (!contractor) {
-        throw new Error("Only the owner can remove team members");
-      }
-
       const { error } = await supabase
         .from("teammates")
         .delete()
-        .eq("id", teammateId);
+        .eq("id", teammateId)
+        .eq("contractor_id", user.id);
 
       if (error) throw error;
+
+      // After successful deletion, immediately refetch the teammates list
+      await queryClient.invalidateQueries({ queryKey: ["teammates"] });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["teammates"] });
       toast({
         title: "Teammate removed",
         description: "The teammate has been removed from your account.",
