@@ -12,6 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+type Contractor = Database['public']['Tables']['contractors']['Row'];
 
 interface QuestionCardProps {
   question: Question;
@@ -52,12 +55,15 @@ export const QuestionCard = ({
         .eq("id", contractorId)
         .single();
       if (error) throw error;
-      return data;
+      return data as Contractor;
     },
     enabled: !!contractorId
   });
 
-  const primaryColor = contractor?.branding_colors?.primary || "#9b87f5";
+  // Safely extract primary color from branding_colors
+  const primaryColor = typeof contractor?.branding_colors === 'object' && contractor?.branding_colors !== null
+    ? (contractor.branding_colors as { primary?: string })?.primary
+    : "#9b87f5";
 
   useEffect(() => {
     // Reset the load time whenever the question changes
