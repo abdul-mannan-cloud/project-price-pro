@@ -1,337 +1,180 @@
+import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Card } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Layout, FileText, Minimize2, Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 const templates = [
   {
     id: "modern",
     name: "Modern",
-    icon: <Layout className="h-8 w-8" />,
-    preview: ({ contractor }: { contractor: any }) => (
-      <div className="space-y-4 p-4">
-        <div className="flex items-center space-x-4 mb-6">
-          {contractor?.business_logo_url && (
-            <img 
-              src={contractor.business_logo_url} 
-              alt="Business Logo" 
-              className="w-16 h-16 object-contain rounded-lg"
-            />
-          )}
-          <div>
-            <h3 className="text-lg font-semibold">{contractor?.business_name || 'Sample Company'}</h3>
-            <p className="text-sm text-muted-foreground">{contractor?.contact_email}</p>
-            <p className="text-sm text-muted-foreground">{contractor?.contact_phone}</p>
-            <p className="text-sm text-muted-foreground">{contractor?.business_address}</p>
-          </div>
-        </div>
-        <div className="bg-primary-100 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold">Project Estimate</h3>
-        </div>
-        <div className="space-y-2">
-          <div className="flex justify-between p-2 bg-secondary rounded">
-            <span>Labor Cost</span>
-            <span>$2,500</span>
-          </div>
-          <div className="flex justify-between p-2 bg-secondary rounded">
-            <span>Materials</span>
-            <span>$1,500</span>
-          </div>
-        </div>
-        <div className="mt-4 p-4 border-t">
-          <div className="mt-4">
-            <p className="text-sm">Digital Signature Area</p>
-          </div>
-        </div>
-      </div>
-    )
+    description: "Clean and contemporary design with subtle shadows and rounded corners"
   },
   {
     id: "classic",
     name: "Classic",
-    icon: <FileText className="h-8 w-8" />,
-    preview: ({ contractor }: { contractor: any }) => (
-      <div className="space-y-4 p-4 border rounded">
-        <div className="border-b pb-4">
-          <div className="flex items-center space-x-4 mb-4">
-            {contractor?.business_logo_url && (
-              <img 
-                src={contractor.business_logo_url} 
-                alt="Business Logo" 
-                className="w-16 h-16 object-contain rounded-lg"
-              />
-            )}
-            <div>
-              <h3 className="text-lg font-semibold">{contractor?.business_name || 'Sample Company'}</h3>
-              <p className="text-sm text-muted-foreground">{contractor?.contact_email}</p>
-              <p className="text-sm text-muted-foreground">{contractor?.contact_phone}</p>
-              <p className="text-sm text-muted-foreground">{contractor?.business_address}</p>
-            </div>
-          </div>
-        </div>
-        <table className="w-full">
-          <tbody>
-            <tr className="border-b">
-              <td className="py-2">Labor Cost</td>
-              <td className="py-2 text-right">$2,500</td>
-            </tr>
-            <tr className="border-b">
-              <td className="py-2">Materials</td>
-              <td className="py-2 text-right">$1,500</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    )
+    description: "Traditional layout with clear sections and professional typography"
   },
   {
     id: "minimal",
     name: "Minimal",
-    icon: <Minimize2 className="h-8 w-8" />,
-    preview: ({ contractor }: { contractor: any }) => (
-      <div className="space-y-4 p-4">
-        <div className="flex items-center space-x-4 mb-4">
-          {contractor?.business_logo_url && (
-            <img 
-              src={contractor.business_logo_url} 
-              alt="Business Logo" 
-              className="w-16 h-16 object-contain rounded-lg"
-            />
-          )}
-          <div>
-            <h3 className="text-lg font-semibold">{contractor?.business_name || 'Sample Company'}</h3>
-            <p className="text-sm text-muted-foreground">{contractor?.contact_email}</p>
-            <p className="text-sm text-muted-foreground">{contractor?.contact_phone}</p>
-            <p className="text-sm text-muted-foreground">{contractor?.business_address}</p>
-          </div>
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold">Project Estimate</h3>
-        </div>
-        <div className="space-y-1">
-          <div className="flex justify-between">
-            <span>Labor Cost</span>
-            <span>$2,500</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Materials</span>
-            <span>$1,500</span>
-          </div>
-        </div>
-      </div>
-    )
-  },
+    description: "Streamlined design focusing on essential information"
+  }
 ];
 
 export const EstimateTemplateSettings = () => {
-  const { toast } = useToast();
+  const { contractorId } = useParams();
   const queryClient = useQueryClient();
 
   const { data: settings, isLoading } = useQuery({
-    queryKey: ["contractor_settings"],
+    queryKey: ["contractor-settings", contractorId],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
       const { data, error } = await supabase
         .from("contractor_settings")
-        .select("estimate_template_style, estimate_signature_enabled, estimate_client_message, estimate_footer_text")
-        .eq("id", user.id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: contractor } = useQuery({
-    queryKey: ["contractor"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
-      const { data, error } = await supabase
-        .from("contractors")
         .select("*")
-        .eq("id", user.id)
+        .eq("id", contractorId)
         .single();
 
       if (error) throw error;
       return data;
     },
+    enabled: !!contractorId
   });
 
   const updateSettings = useMutation({
-    mutationFn: async (updates: any) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
+    mutationFn: async (updates: Partial<typeof settings>) => {
       const { error } = await supabase
         .from("contractor_settings")
         .update(updates)
-        .eq("id", user.id);
+        .eq("id", contractorId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["contractor_settings"] });
+      queryClient.invalidateQueries({ queryKey: ["contractor-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["estimate"] });
       toast({
         title: "Settings updated",
-        description: "Your estimate settings have been updated successfully.",
+        description: "Your estimate template settings have been saved.",
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Error",
         description: "Failed to update settings. Please try again.",
         variant: "destructive",
       });
-    },
+    }
   });
-
-  // Sample estimate data for preview
-  const sampleEstimate = {
-    groups: [
-      {
-        name: "Sample Project",
-        description: "This is a sample project to preview your estimate template",
-        subgroups: [
-          {
-            name: "Labor",
-            items: [
-              {
-                title: "Sample Work",
-                description: "Example work item",
-                quantity: 1,
-                unitAmount: 100,
-                totalPrice: 100
-              }
-            ],
-            subtotal: 100
-          }
-        ]
-      }
-    ],
-    totalCost: 100
-  };
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
   return (
-    <Card className="p-6">
-      <div className="space-y-8">
-        <div>
-          <h3 className="text-lg font-medium">Estimate Template</h3>
-        </div>
-
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium mb-4">Template Style</h3>
         <RadioGroup
           value={settings?.estimate_template_style || "modern"}
-          onValueChange={(value) => updateSettings.mutate({ estimate_template_style: value })}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          onValueChange={(value) => 
+            updateSettings.mutate({ estimate_template_style: value })
+          }
+          className="grid grid-cols-1 gap-4"
         >
           {templates.map((template) => (
-            <div key={template.id} className="relative flex flex-col space-y-2">
+            <div key={template.id} className="space-y-2">
               <Label
-                className={`flex flex-col items-center justify-between rounded-lg border-2 p-6 hover:bg-accent cursor-pointer transition-all ${
-                  settings?.estimate_template_style === template.id
-                    ? "border-primary bg-primary"
-                    : "border-muted"
-                }`}
+                htmlFor={template.id}
+                className="flex items-start space-x-3 space-y-0 cursor-pointer"
               >
-                <RadioGroupItem
-                  value={template.id}
-                  id={template.id}
-                  className="sr-only"
-                />
-                <div className="flex flex-col items-center text-center">
-                  <div className={`mb-2 p-2 rounded-full ${
-                    settings?.estimate_template_style === template.id
-                      ? "bg-primary-foreground/20 text-primary-foreground"
-                      : "bg-primary/10 text-primary"
-                  }`}>
-                    {template.icon}
-                  </div>
-                  <div className={settings?.estimate_template_style === template.id ? "text-primary-foreground" : ""}>
-                    {template.name}
+                <RadioGroupItem value={template.id} id={template.id} />
+                <div className="flex-1">
+                  <div className="font-medium">{template.name}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {template.description}
                   </div>
                 </div>
               </Label>
             </div>
           ))}
         </RadioGroup>
+      </div>
 
-        <div className="space-y-6 pt-6 border-t">
-          <div>
-            <h3 className="text-lg font-medium mb-4">Additional Settings</h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Enable Digital Signature</Label>
-                </div>
-                <Switch
-                  checked={settings?.estimate_signature_enabled}
-                  onCheckedChange={(checked) => 
-                    updateSettings.mutate({ estimate_signature_enabled: checked })
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-medium mb-4">Additional Options</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="signature" className="flex-1">
+                Enable Signature Section
+                <span className="block text-sm text-muted-foreground">
+                  Add a signature section at the bottom of estimates
+                </span>
+              </Label>
+              <Switch
+                id="signature"
+                checked={settings?.estimate_signature_enabled || false}
+                onCheckedChange={(checked) =>
+                  updateSettings.mutate({ estimate_signature_enabled: checked })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Client Message</Label>
+              <div className="flex gap-2">
+                <Textarea
+                  placeholder="Enter a message to display on all estimates..."
+                  value={settings?.estimate_client_message || ""}
+                  onChange={(e) => 
+                    updateSettings.mutate({ estimate_client_message: e.target.value })
                   }
+                  className="min-h-[100px]"
                 />
+                <Button 
+                  variant="outline"
+                  onClick={() => 
+                    updateSettings.mutate({ 
+                      estimate_client_message: settings?.estimate_client_message || "" 
+                    })
+                  }
+                >
+                  Save
+                </Button>
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label>Client Message</Label>
-                <div className="flex gap-2">
-                  <Textarea
-                    placeholder="Enter a message to display on all estimates..."
-                    value={settings?.estimate_client_message || ""}
-                    onChange={(e) => 
-                      updateSettings.mutate({ estimate_client_message: e.target.value })
-                    }
-                    className="min-h-[100px]"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Footer Text</Label>
-                <div className="flex gap-2">
-                  <Textarea
-                    placeholder="Enter footer text (terms, conditions, etc.)..."
-                    value={settings?.estimate_footer_text || ""}
-                    onChange={(e) => 
-                      updateSettings.mutate({ estimate_footer_text: e.target.value })
-                    }
-                    className="min-h-[100px]"
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label>Footer Text</Label>
+              <div className="flex gap-2">
+                <Textarea
+                  placeholder="Enter footer text (terms, conditions, etc.)..."
+                  value={settings?.estimate_footer_text || ""}
+                  onChange={(e) => 
+                    updateSettings.mutate({ estimate_footer_text: e.target.value })
+                  }
+                  className="min-h-[100px]"
+                />
+                <Button 
+                  variant="outline"
+                  onClick={() => 
+                    updateSettings.mutate({ 
+                      estimate_footer_text: settings?.estimate_footer_text || "" 
+                    })
+                  }
+                >
+                  Save
+                </Button>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Live Preview */}
-        <div className="pt-6 border-t">
-          <h3 className="text-lg font-medium mb-4">Live Preview</h3>
-          <div className="bg-background rounded-lg border p-4">
-            <EstimateDisplay
-              groups={sampleEstimate.groups}
-              totalCost={sampleEstimate.totalCost}
-              contractor={contractor}
-              projectSummary="This is a sample project summary to preview your estimate template."
-              isEditable={false}
-            />
-          </div>
-        </div>
       </div>
-    </Card>
+    </div>
   );
 };
