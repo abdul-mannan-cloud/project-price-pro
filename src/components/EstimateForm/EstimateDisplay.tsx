@@ -58,6 +58,14 @@ interface EstimateDisplayProps {
   onEstimateChange?: (estimate: any) => void;
 }
 
+interface ContractorSettings {
+  id: string;
+  estimate_template_style: string;
+  estimate_signature_enabled: boolean;
+  estimate_client_message: string;
+  estimate_footer_text: string;
+}
+
 export const EstimateDisplay = ({ 
   groups = [], 
   totalCost = 0, 
@@ -71,8 +79,7 @@ export const EstimateDisplay = ({
   const { contractorId } = useParams();
   const [isContractor, setIsContractor] = useState(false);
 
-  // Add query for real-time settings updates
-  const { data: settings } = useQuery({
+  const { data: settings } = useQuery<ContractorSettings>({
     queryKey: ["contractor-settings", contractorId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -82,7 +89,7 @@ export const EstimateDisplay = ({
         .single();
 
       if (error) throw error;
-      return data;
+      return data as ContractorSettings;
     },
     enabled: !!contractorId
   });
@@ -105,8 +112,12 @@ export const EstimateDisplay = ({
   };
 
   const companyInfo = contractor || defaultCompany;
-  // Use settings from the query instead of contractor
-  const templateSettings = settings || {};
+  const templateSettings = settings || {
+    estimate_template_style: 'modern',
+    estimate_signature_enabled: false,
+    estimate_client_message: '',
+    estimate_footer_text: ''
+  };
 
   const formatItemTitle = (title: string, unit?: string) => {
     if (!unit) return title;
