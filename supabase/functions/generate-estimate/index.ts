@@ -6,31 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface QuestionAnswer {
-  question: string;
-  type: string;
-  answers: string[];
-  options: {
-    label: string;
-    value: string;
-    next?: string;
-  }[];
-}
-
-interface CategoryAnswers {
-  [questionId: string]: QuestionAnswer;
-}
-
-interface AnswersState {
-  [category: string]: CategoryAnswers;
-}
-
-interface RequestBody {
-  answers: AnswersState;
-  projectDescription?: string;
-  category?: string;
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -43,7 +18,7 @@ serve(async (req) => {
       throw new Error('Missing LLAMA_API_KEY');
     }
 
-    const { answers, projectDescription, category } = await req.json() as RequestBody;
+    const { answers, projectDescription, category } = await req.json();
     console.log('Generating estimate for:', { category, projectDescription });
 
     // Format answers into a more readable format for the AI
@@ -101,7 +76,8 @@ Make sure to:
 2. Include labor and materials separately
 3. Use realistic market prices
 4. Include appropriate units (SF, EA, HR, etc.)
-5. Calculate accurate subtotals and total cost`;
+5. Calculate accurate subtotals and total cost
+6. Return ONLY valid JSON, no additional text`;
 
     console.log('Sending prompt to Llama:', prompt);
 
@@ -114,7 +90,7 @@ Make sure to:
       body: JSON.stringify({
         messages: [{
           role: 'system',
-          content: 'You are a construction cost estimator that generates detailed estimates in JSON format.'
+          content: 'You are a construction cost estimator that generates detailed estimates in JSON format. Only respond with valid JSON.'
         }, {
           role: 'user',
           content: prompt
@@ -142,7 +118,7 @@ Make sure to:
       const content = aiResponse.choices[0].message.content.trim();
       console.log('Parsing content:', content);
       
-      // Validate that the content starts with { and ends with }
+      // Ensure content is a JSON object
       if (!content.startsWith('{') || !content.endsWith('}')) {
         throw new Error('Invalid JSON format: content must be a JSON object');
       }
@@ -160,7 +136,7 @@ Make sure to:
       }
 
       // Validate each group and subgroup
-      estimateJson.groups.forEach((group: any, groupIndex: number) => {
+      estimateJson.groups.forEach((group, groupIndex) => {
         if (!group.name || typeof group.name !== 'string') {
           throw new Error(`Invalid group name at index ${groupIndex}`);
         }
@@ -169,7 +145,7 @@ Make sure to:
           throw new Error(`Invalid subgroups array in group ${group.name}`);
         }
 
-        group.subgroups.forEach((subgroup: any, subgroupIndex: number) => {
+        group.subgroups.forEach((subgroup, subgroupIndex) => {
           if (!subgroup.name || typeof subgroup.name !== 'string') {
             throw new Error(`Invalid subgroup name in group ${group.name} at index ${subgroupIndex}`);
           }
@@ -182,7 +158,7 @@ Make sure to:
             throw new Error(`Invalid subtotal in subgroup ${subgroup.name}`);
           }
 
-          subgroup.items.forEach((item: any, itemIndex: number) => {
+          subgroup.items.forEach((item, itemIndex) => {
             if (!item.title || typeof item.title !== 'string') {
               throw new Error(`Invalid item title in subgroup ${subgroup.name} at index ${itemIndex}`);
             }

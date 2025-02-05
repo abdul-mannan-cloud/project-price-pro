@@ -41,8 +41,9 @@ export const QuestionCard = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const questionLoadTime = useRef<number>(0);
   const isMobile = useIsMobile();
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
   const { contractorId } = useParams();
+  const toastRef = useRef<string | null>(null);
 
   // Fetch contractor data to get branding colors
   const { data: contractor } = useQuery({
@@ -86,7 +87,13 @@ export const QuestionCard = ({
       const timeSinceQuestionLoad = currentTime - questionLoadTime.current;
       
       if (timeSinceQuestionLoad < 400) {
-        toast({
+        // Dismiss previous toast if it exists
+        if (toastRef.current) {
+          dismiss(toastRef.current);
+        }
+
+        // Show new toast and store its ID
+        const { id } = toast({
           title: "Please read carefully",
           description: (
             <div className="bg-white rounded-lg p-6 shadow-lg text-center">
@@ -97,9 +104,9 @@ export const QuestionCard = ({
                 </p>
                 <Button 
                   onClick={() => {
-                    const toastElement = document.querySelector('[role="status"]');
-                    if (toastElement) {
-                      toastElement.remove();
+                    if (toastRef.current) {
+                      dismiss(toastRef.current);
+                      toastRef.current = null;
                     }
                   }}
                   variant="outline"
@@ -115,6 +122,8 @@ export const QuestionCard = ({
           className: "fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-50",
           variant: "warning",
         });
+        
+        toastRef.current = id;
         setIsProcessing(false);
         return;
       }
