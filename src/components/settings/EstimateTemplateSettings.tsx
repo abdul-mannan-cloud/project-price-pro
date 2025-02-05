@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 
 const templates = [
@@ -24,7 +23,7 @@ const templates = [
     name: "Minimal",
     description: "Streamlined design focusing on essential information"
   }
-];
+].reverse(); // Reversed the template order as requested
 
 export const EstimateTemplateSettings = () => {
   const { contractorId } = useParams();
@@ -56,7 +55,6 @@ export const EstimateTemplateSettings = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contractor-settings"] });
-      queryClient.invalidateQueries({ queryKey: ["estimate"] });
       toast({
         title: "Settings updated",
         description: "Your estimate template settings have been saved.",
@@ -127,50 +125,26 @@ export const EstimateTemplateSettings = () => {
 
             <div className="space-y-2">
               <Label>Client Message</Label>
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder="Enter a message to display on all estimates..."
-                  value={settings?.estimate_client_message || ""}
-                  onChange={(e) => 
-                    updateSettings.mutate({ estimate_client_message: e.target.value })
-                  }
-                  className="min-h-[100px]"
-                />
-                <Button 
-                  variant="outline"
-                  onClick={() => 
-                    updateSettings.mutate({ 
-                      estimate_client_message: settings?.estimate_client_message || "" 
-                    })
-                  }
-                >
-                  Save
-                </Button>
-              </div>
+              <Textarea
+                placeholder="Enter a message to display on all estimates..."
+                value={settings?.estimate_client_message || ""}
+                onChange={(e) => 
+                  updateSettings.mutate({ estimate_client_message: e.target.value })
+                }
+                className="min-h-[100px]"
+              />
             </div>
 
             <div className="space-y-2">
               <Label>Footer Text</Label>
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder="Enter footer text (terms, conditions, etc.)..."
-                  value={settings?.estimate_footer_text || ""}
-                  onChange={(e) => 
-                    updateSettings.mutate({ estimate_footer_text: e.target.value })
-                  }
-                  className="min-h-[100px]"
-                />
-                <Button 
-                  variant="outline"
-                  onClick={() => 
-                    updateSettings.mutate({ 
-                      estimate_footer_text: settings?.estimate_footer_text || "" 
-                    })
-                  }
-                >
-                  Save
-                </Button>
-              </div>
+              <Textarea
+                placeholder="Enter footer text (terms, conditions, etc.)..."
+                value={settings?.estimate_footer_text || ""}
+                onChange={(e) => 
+                  updateSettings.mutate({ estimate_footer_text: e.target.value })
+                }
+                className="min-h-[100px]"
+              />
             </div>
           </div>
         </div>
