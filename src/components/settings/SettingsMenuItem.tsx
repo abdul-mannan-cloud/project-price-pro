@@ -12,7 +12,6 @@ interface SettingsMenuItemProps {
 export const SettingsMenuItem = ({ 
   icon, 
   title, 
-  description, 
   onClick,
   isActive = false 
 }: SettingsMenuItemProps) => {
@@ -27,7 +26,6 @@ export const SettingsMenuItem = ({
       </div>
       <div className="flex-grow text-left">
         <h3 className="font-medium">{title}</h3>
-        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
     </button>
   );
