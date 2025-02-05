@@ -130,10 +130,10 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
   // Check if the current user is a contractor
   const isContractor = !!contractorId;
 
-  // Get contractor's primary color or use default
+  // Get contractor's primary color from branding_colors
   const buttonStyle = contractor?.branding_colors?.primary 
     ? { backgroundColor: contractor.branding_colors.primary }
-    : { backgroundColor: '#9b87f5' }; // Default primary purple
+    : undefined; // Let the default button styling handle it if no color is set
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
