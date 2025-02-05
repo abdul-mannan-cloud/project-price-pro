@@ -16,51 +16,71 @@ const TeamOnboarding = () => {
   const [loading, setLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
   const contractorId = searchParams.get("contractor_id");
+  const invitedEmail = searchParams.get("email");
 
   useEffect(() => {
     const verifyInvitation = async () => {
-      if (!contractorId) {
+      if (!contractorId || !invitedEmail) {
+        console.error("Missing required params:", { contractorId, invitedEmail });
         toast({
-          title: "Invalid invitation",
-          description: "This invitation link is invalid or has expired.",
+          title: "Invalid invitation link",
+          description: "The invitation link is missing required parameters.",
           variant: "destructive",
         });
         navigate("/");
         return;
       }
 
-      const { data: invitation, error } = await supabase
-        .from("teammates")
-        .select("*")
-        .eq("contractor_id", contractorId)
-        .eq("email", searchParams.get("email"))
-        .eq("invitation_status", "pending")
-        .single();
+      try {
+        console.log("Verifying invitation for:", { contractorId, invitedEmail });
+        
+        // Query the teammates table to verify the invitation
+        const { data: invitation, error } = await supabase
+          .from("teammates")
+          .select("*")
+          .eq("contractor_id", contractorId)
+          .eq("email", invitedEmail)
+          .eq("invitation_status", "pending")
+          .single();
 
-      if (error || !invitation) {
+        console.log("Invitation verification result:", { invitation, error });
+
+        if (error || !invitation) {
+          console.error("Invitation verification failed:", error || "No invitation found");
+          toast({
+            title: "Invalid invitation",
+            description: "This invitation link is invalid or has expired. Please request a new invitation.",
+            variant: "destructive",
+          });
+          navigate("/");
+          return;
+        }
+
+        setEmail(invitedEmail);
+        setIsVerifying(false);
+      } catch (error: any) {
+        console.error("Error during invitation verification:", error);
         toast({
-          title: "Invalid invitation",
-          description: "This invitation link is invalid or has expired.",
+          title: "Verification error",
+          description: "An error occurred while verifying your invitation. Please try again.",
           variant: "destructive",
         });
         navigate("/");
-        return;
       }
-
-      setEmail(searchParams.get("email") || "");
-      setIsVerifying(false);
     };
 
     verifyInvitation();
-  }, [contractorId, navigate, searchParams, toast]);
+  }, [contractorId, navigate, invitedEmail, toast]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    if (!email || !password || !contractorId) return;
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log("Creating account for teammate:", { email, contractorId });
+
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -71,9 +91,9 @@ const TeamOnboarding = () => {
         },
       });
 
-      if (error) throw error;
+      if (signUpError) throw signUpError;
 
-      // Update teammate status
+      // Update teammate status to accepted
       const { error: updateError } = await supabase
         .from("teammates")
         .update({ invitation_status: "accepted" })
@@ -82,13 +102,17 @@ const TeamOnboarding = () => {
 
       if (updateError) throw updateError;
 
+      console.log("Account created successfully");
+      
       toast({
         title: "Account created",
-        description: "Welcome to the team! You can now log in.",
+        description: "Welcome to the team! Please check your email to verify your account before logging in.",
       });
 
-      navigate("/dashboard");
+      // Redirect to login page instead of dashboard since they need to verify email first
+      navigate("/login");
     } catch (error: any) {
+      console.error("Error during signup:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -118,20 +142,29 @@ const TeamOnboarding = () => {
         </div>
 
         <form onSubmit={handleSignUp} className="space-y-4">
-          <Input
-            type="email"
-            value={email}
-            disabled
-            label="Email"
-          />
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Create a password"
-            label="Password"
-            required
-          />
+          <div className="space-y-2">
+            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Email
+            </label>
+            <Input
+              type="email"
+              value={email}
+              disabled
+              className="bg-muted"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Password
+            </label>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Create a password"
+              required
+            />
+          </div>
           <Button
             type="submit"
             className="w-full"
