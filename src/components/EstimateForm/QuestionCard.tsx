@@ -59,13 +59,13 @@ export const QuestionCard = ({
       toast({
         title: "Please read carefully",
         description: "Take a moment to review your selection before proceeding",
-        duration: 2000,
+        duration: 200,
       });
 
       setTimeout(() => {
         setIsProcessing(false);
         if (onNext) onNext();
-      }, 2000);
+      }, 200);
     }
   };
 
