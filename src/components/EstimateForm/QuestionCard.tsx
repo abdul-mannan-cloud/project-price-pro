@@ -58,7 +58,7 @@ export const QuestionCard = ({
       const currentTime = Date.now();
       const timeSinceLastClick = currentTime - lastClickTime.current;
       
-      if (timeSinceLastClick < 20) {
+      if (timeSinceLastClick < 400) {
         toast({
           title: "Please read carefully",
           description: (
