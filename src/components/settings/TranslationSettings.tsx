@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,7 @@ export const TranslationSettings = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["contractorSettings"],
@@ -65,6 +66,9 @@ export const TranslationSettings = () => {
       
       // Store in localStorage for persistence
       localStorage.setItem('preferred_language', language);
+
+      // Invalidate and refetch all queries to get fresh translations
+      await queryClient.invalidateQueries();
     },
     onSuccess: () => {
       toast({
