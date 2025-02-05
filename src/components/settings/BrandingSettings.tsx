@@ -2,10 +2,7 @@ import { useState, useEffect } from "react";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Json } from "@/integrations/supabase/types";
 
 interface BrandingColors {
   primary: string;
@@ -22,39 +19,12 @@ export const BrandingSettings = ({
   const [brandingColors, setBrandingColors] = useState<BrandingColors>(initialColors);
   const { toast } = useToast();
 
-  const { data: currentColors, isLoading } = useQuery({
-    queryKey: ["brandingColors"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
-      const { data, error } = await supabase
-        .from("contractors")
-        .select("branding_colors")
-        .eq("id", user.id)
-        .single();
-
-      if (error) throw error;
-      
-      const colors = data?.branding_colors as { primary: string; secondary: string } | null;
-      return colors || initialColors;
-    },
-  });
-
-  // Apply colors whenever they change from the query
   useEffect(() => {
-    if (currentColors) {
-      setBrandingColors(currentColors);
-      applyGlobalColors(currentColors);
-    }
-  }, [currentColors]);
-
-  // Apply initial colors on mount
-  useEffect(() => {
-    if (!isLoading && !currentColors) {
+    if (initialColors) {
+      setBrandingColors(initialColors);
       applyGlobalColors(initialColors);
     }
-  }, [isLoading]);
+  }, [initialColors]);
 
   const applyGlobalColors = (colors: BrandingColors) => {
     document.documentElement.style.setProperty('--primary', colors.primary);
@@ -77,42 +47,21 @@ export const BrandingSettings = ({
     document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
   };
 
-  const updateBrandingColors = useMutation({
-    mutationFn: async (colors: BrandingColors) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
-      const brandingColorsJson: Json = {
-        primary: colors.primary,
-        secondary: colors.secondary
-      };
-
-      const { error } = await supabase
-        .from("contractors")
-        .update({
-          branding_colors: brandingColorsJson
-        })
-        .eq("id", user.id);
-
-      if (error) throw error;
-      
-      applyGlobalColors(colors);
-    },
-    onSuccess: () => {
+  const handleSave = async () => {
+    try {
+      await onSave(brandingColors);
       toast({
         title: "Branding colors updated",
         description: "Your brand colors have been updated successfully.",
       });
-      onSave(brandingColors);
-    },
-    onError: (error: any) => {
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update branding colors. Please try again.",
         variant: "destructive",
       });
-    },
-  });
+    }
+  };
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -141,12 +90,8 @@ export const BrandingSettings = ({
               }}
             />
           </div>
-          <Button 
-            onClick={() => updateBrandingColors.mutate(brandingColors)}
-            disabled={updateBrandingColors.isPending}
-            variant="default"
-          >
-            {updateBrandingColors.isPending ? "Saving..." : "Save Changes"}
+          <Button onClick={handleSave}>
+            Save Changes
           </Button>
         </div>
 
@@ -156,23 +101,14 @@ export const BrandingSettings = ({
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Buttons</h3>
               <div className="space-y-2">
-                <Button 
-                  className="w-full"
-                  variant="default"
-                >
+                <Button className="w-full">
                   Primary Button
                 </Button>
-                <Button 
-                  variant="secondary"
-                  className="w-full"
-                >
+                <Button variant="secondary" className="w-full">
                   Secondary Button
                 </Button>
-                <Button 
-                  variant="select"
-                  className="w-full"
-                >
-                  Dropdown Button (Unaffected)
+                <Button variant="outline" className="w-full">
+                  Outline Button
                 </Button>
               </div>
             </Card>
