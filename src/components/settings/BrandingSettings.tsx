@@ -22,7 +22,7 @@ export const BrandingSettings = ({
   const [brandingColors, setBrandingColors] = useState<BrandingColors>(initialColors);
   const { toast } = useToast();
 
-  const { data: currentColors } = useQuery({
+  const { data: currentColors, isLoading } = useQuery({
     queryKey: ["brandingColors"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -36,19 +36,25 @@ export const BrandingSettings = ({
 
       if (error) throw error;
       
-      // Safely type cast the branding_colors from Json to BrandingColors
       const colors = data?.branding_colors as { primary: string; secondary: string } | null;
       return colors || initialColors;
     },
   });
 
-  // Apply colors whenever they change
+  // Apply colors whenever they change from the query
   useEffect(() => {
     if (currentColors) {
       setBrandingColors(currentColors);
       applyGlobalColors(currentColors);
     }
   }, [currentColors]);
+
+  // Apply initial colors on mount
+  useEffect(() => {
+    if (!isLoading && !currentColors) {
+      applyGlobalColors(initialColors);
+    }
+  }, [isLoading]);
 
   const applyGlobalColors = (colors: BrandingColors) => {
     document.documentElement.style.setProperty('--primary', colors.primary);
