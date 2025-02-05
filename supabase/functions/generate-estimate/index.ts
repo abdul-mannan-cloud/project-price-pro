@@ -4,20 +4,36 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts"
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    // Validate request method
+    if (req.method !== 'POST') {
+      throw new Error('Method not allowed');
+    }
+
     const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
     if (!llamaApiKey) {
       throw new Error('Missing LLAMA_API_KEY');
     }
 
-    const { answers, projectDescription, category } = await req.json();
+    // Parse request body with error handling
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (error) {
+      console.error('Error parsing request body:', error);
+      throw new Error('Invalid request body');
+    }
+
+    const { answers, projectDescription, category } = requestData;
     console.log('Generating estimate for:', { category, projectDescription });
 
     // Format answers for better readability
@@ -98,7 +114,8 @@ Important:
     });
 
     if (!response.ok) {
-      console.error('Llama API error:', await response.text());
+      const errorText = await response.text();
+      console.error('Llama API error:', errorText);
       throw new Error(`Llama API error: ${response.status} ${response.statusText}`);
     }
 
@@ -112,15 +129,10 @@ Important:
     let content = aiResponse.choices[0].message.content.trim();
     console.log('Parsing content:', content);
 
-    // Ensure content is a JSON string
-    if (typeof content !== 'string') {
-      throw new Error('Invalid content type from Llama API');
-    }
-
     // Remove any potential markdown code block markers
     content = content.replace(/```json\n?|\n?```/g, '').trim();
 
-    // Validate JSON structure
+    // Parse and validate JSON structure
     let estimateJson;
     try {
       estimateJson = JSON.parse(content);
