@@ -22,7 +22,7 @@ import {
 
 interface AIRate {
   title: string;
-  description: string;
+  description: string | null;
   rate: string;
   unit: string;
   type: string;
@@ -161,7 +161,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
             />
             <Input
               label="Description"
-              value={newRate.description}
+              value={newRate.description || ""}
               onChange={(e) => setNewRate({ ...newRate, description: e.target.value })}
               placeholder="Brief description of the rate"
             />
