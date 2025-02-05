@@ -47,9 +47,7 @@ const resources = {
   }
 };
 
-const i18n = i18next.createInstance();
-
-i18n
+i18next
   .use(initReactI18next)
   .init({
     resources,
@@ -60,4 +58,4 @@ i18n
     }
   });
 
-export default i18n;
+export default i18next;
