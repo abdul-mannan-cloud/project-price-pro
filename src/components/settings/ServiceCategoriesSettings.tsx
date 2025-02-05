@@ -104,8 +104,8 @@ export const ServiceCategoriesSettings = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
+    <div className="space-y-4">
+      <div>
         <h3 className="text-lg font-medium">Service Categories</h3>
         <p className="text-sm text-muted-foreground">
           Select which service categories you want to offer to your customers. 
@@ -113,11 +113,11 @@ export const ServiceCategoriesSettings = () => {
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {optionsCategories.map((category) => (
           <div 
             key={category.id} 
-            className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+            className="flex items-start space-x-2 p-2 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
           >
             <Checkbox
               id={category.id}
@@ -125,19 +125,18 @@ export const ServiceCategoriesSettings = () => {
               onCheckedChange={(checked) => {
                 handleCategoryToggle(category.id, checked as boolean);
               }}
+              className="mt-1"
             />
-            <div className="space-y-1">
+            <div>
               <label 
                 htmlFor={category.id} 
                 className="text-sm font-medium leading-none cursor-pointer"
               >
                 {category.name}
               </label>
-              {category.description && (
-                <p className="text-sm text-muted-foreground">
-                  {category.description}
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {category.description}
+              </p>
             </div>
           </div>
         ))}
