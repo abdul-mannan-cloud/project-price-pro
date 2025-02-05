@@ -8,11 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 interface QuestionManagerProps {
   questionSets: CategoryQuestions[];
   onComplete: (answers: AnswersState) => void;
+  onProgressChange: (progress: number) => void;
 }
 
 export const QuestionManager = ({
   questionSets,
   onComplete,
+  onProgressChange,
 }: QuestionManagerProps) => {
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
@@ -28,10 +30,16 @@ export const QuestionManager = ({
   }, [currentSetIndex, questionSets]);
 
   useEffect(() => {
-    if (!isLoadingQuestions && pendingBranchTransition) {
-      handleBranchTransition();
-    }
-  }, [pendingBranchTransition, isLoadingQuestions, queuedNextQuestions]);
+    // Calculate and update progress
+    const totalQuestions = questionSets.reduce((acc, set) => 
+      acc + (Array.isArray(set.questions) ? set.questions.length : 0), 0);
+    
+    const answeredQuestions = Object.values(answers).reduce((acc, categoryAnswers) => 
+      acc + Object.keys(categoryAnswers || {}).length, 0);
+
+    const progress = Math.min((answeredQuestions / totalQuestions) * 100, 100);
+    onProgressChange(progress);
+  }, [answers, questionSets]);
 
   const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {
