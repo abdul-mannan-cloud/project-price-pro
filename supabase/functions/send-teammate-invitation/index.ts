@@ -17,10 +17,7 @@ serve(async (req) => {
     const { email, contractorId, businessName } = await req.json()
 
     if (!email || !contractorId || !businessName) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+      throw new Error('Missing required fields')
     }
 
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'))

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2, Clock } from "lucide-react";
+import { Trash2, Clock, RefreshCw } from "lucide-react";
 
 export const TeammateSettings = () => {
   const [email, setEmail] = useState("");
@@ -27,6 +27,23 @@ export const TeammateSettings = () => {
     },
   });
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { data, error } = await supabase
+        .from("contractors")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const addTeammate = useMutation({
     mutationFn: async (email: string) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -37,7 +54,7 @@ export const TeammateSettings = () => {
           body: { 
             email,
             contractorId: user.id,
-            businessName: user.user_metadata?.business_name || 'Our Company'
+            businessName: currentUser?.business_name || 'Our Company'
           }
         });
 
@@ -48,7 +65,8 @@ export const TeammateSettings = () => {
           .insert([{ 
             contractor_id: user.id, 
             email,
-            invitation_status: 'pending'
+            invitation_status: 'pending',
+            role: 'member'
           }]);
 
         if (dbError) {
@@ -78,8 +96,60 @@ export const TeammateSettings = () => {
     },
   });
 
+  const resendInvitation = useMutation({
+    mutationFn: async (teammateEmail: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { error } = await supabase.functions.invoke('send-teammate-invitation', {
+        body: { 
+          email: teammateEmail,
+          contractorId: user.id,
+          businessName: currentUser?.business_name || 'Our Company'
+        }
+      });
+
+      if (error) throw error;
+
+      const { error: updateError } = await supabase
+        .from("teammates")
+        .update({ invitation_sent_at: new Date().toISOString() })
+        .eq("email", teammateEmail)
+        .eq("contractor_id", user.id);
+
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Invitation resent",
+        description: "The invitation email has been resent.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const removeTeammate = useMutation({
     mutationFn: async (teammateId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      // Only the owner can remove teammates
+      const { data: contractor } = await supabase
+        .from("contractors")
+        .select("id")
+        .eq("id", user.id)
+        .single();
+
+      if (!contractor) {
+        throw new Error("Only the owner can remove team members");
+      }
+
       const { error } = await supabase
         .from("teammates")
         .delete()
@@ -118,6 +188,8 @@ export const TeammateSettings = () => {
     }
   };
 
+  const isOwner = currentUser?.id === (currentUser as any)?.contractor_id;
+
   return (
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -151,14 +223,28 @@ export const TeammateSettings = () => {
                 </div>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => removeTeammate.mutate(teammate.id)}
-              disabled={removeTeammate.isPending}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center space-x-2">
+              {isOwner && teammate.invitation_status === 'pending' && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => resendInvitation.mutate(teammate.email)}
+                  disabled={resendInvitation.isPending}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              )}
+              {isOwner && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeTeammate.mutate(teammate.id)}
+                  disabled={removeTeammate.isPending}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         ))}
         {teammates.length === 0 && (
