@@ -1,12 +1,9 @@
 import { useState, useEffect } from "react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/3d-button";
 import { Question } from "@/types/estimate";
 import { Card } from "@/components/ui/card";
-import { Check, Square, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface QuestionCardProps {
@@ -102,7 +99,7 @@ export const QuestionCard = ({
                   {question.type === 'multiple_choice' ? (
                     <div className={cn(
                       "flex-shrink-0 h-5 w-5 rounded border mt-0.5",
-                      isSelected ? "bg-primary border-primary" : "border-gray-300",
+                      isSelected ? "bg-[var(--primary)] border-[var(--primary)]" : "border-gray-300",
                       "flex items-center justify-center"
                     )}>
                       {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -110,7 +107,7 @@ export const QuestionCard = ({
                   ) : (
                     <div className={cn(
                       "flex-shrink-0 h-5 w-5 rounded-full border mt-0.5",
-                      isSelected ? "bg-primary border-primary" : "border-gray-300"
+                      isSelected ? "bg-[var(--primary)] border-[var(--primary)]" : "border-gray-300"
                     )}>
                       {isSelected && (
                         <div className="w-2.5 h-2.5 rounded-full bg-white m-1" />
@@ -120,7 +117,7 @@ export const QuestionCard = ({
                   <div className="flex flex-col w-full">
                     <span className={cn(
                       "text-lg flex-grow",
-                      isSelected && "text-primary font-medium"
+                      isSelected && "text-[var(--primary)] font-medium"
                     )}>{option.label}</span>
                   </div>
                 </div>
