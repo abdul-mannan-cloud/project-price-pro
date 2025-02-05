@@ -69,7 +69,7 @@ export const QuestionCard = ({
       )}>
         <h2 className={cn(
           "font-semibold mb-6",
-          isMobile ? "text-lg px-4" : "text-xl"
+          isMobile ? "text-base px-4" : "text-xl"
         )}>{question?.question}</h2>
 
         <div className={cn(
