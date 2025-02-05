@@ -22,7 +22,7 @@ interface QuestionCardProps {
 
 export const QuestionCard = ({
   question,
-  selectedAnswers,
+  selectedAnswers = [], // Provide default empty array
   onSelect,
   onNext,
   isLastQuestion,
