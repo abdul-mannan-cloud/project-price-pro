@@ -35,8 +35,8 @@ interface EstimateDisplayProps {
 }
 
 export const EstimateDisplay = ({ 
-  groups, 
-  totalCost, 
+  groups = [], // Add default empty array
+  totalCost = 0, // Add default value
   isBlurred = false,
   contractor,
   projectSummary,
@@ -70,6 +70,12 @@ export const EstimateDisplay = ({
     }
   }, [contractor?.branding_colors]);
 
+  // Add safety check for groups
+  if (!Array.isArray(groups)) {
+    console.warn('EstimateDisplay: groups prop is not an array', groups);
+    return null;
+  }
+
   return (
     <div className={`estimate-display ${isBlurred ? 'blurred' : ''}`}>
       <h1 className="text-2xl font-bold">Estimate Summary</h1>
@@ -77,18 +83,22 @@ export const EstimateDisplay = ({
       {groups.map((group, index) => (
         <div key={index} className="estimate-group">
           <h2 className="text-xl font-semibold">{group.name}</h2>
-          {group.subgroups.map((subgroup, subIndex) => (
+          {Array.isArray(group.subgroups) && group.subgroups.map((subgroup, subIndex) => (
             <div key={subIndex} className="estimate-subgroup">
               <h3 className="text-lg font-medium">{subgroup.name}</h3>
-              <ul>
-                {subgroup.items.map((item, itemIndex) => (
-                  <li key={itemIndex} className="estimate-item">
-                    <span>{item.title}</span>
-                    <span>{item.quantity} x ${item.unitAmount.toFixed(2)} = ${item.totalPrice.toFixed(2)}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="subtotal">Subtotal: ${subgroup.subtotal.toFixed(2)}</p>
+              {Array.isArray(subgroup.items) ? (
+                <ul>
+                  {subgroup.items.map((item, itemIndex) => (
+                    <li key={itemIndex} className="estimate-item">
+                      <span>{item.title}</span>
+                      <span>{item.quantity} x ${item.unitAmount.toFixed(2)} = ${item.totalPrice.toFixed(2)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No items available</p>
+              )}
+              <p className="subtotal">Subtotal: ${(subgroup.subtotal || 0).toFixed(2)}</p>
             </div>
           ))}
         </div>
