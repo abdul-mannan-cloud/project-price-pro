@@ -37,20 +37,60 @@ export const QuestionManager = ({
   }, [pendingBranchTransition, isLoadingQuestions]);
 
   useEffect(() => {
-    // Calculate total number of questions across all sets
-    const totalQuestions = questionSets.reduce((acc, set) => 
-      acc + (Array.isArray(set.questions) ? set.questions.length : 0), 0);
+    // Calculate progress based on answered questions and potential follow-ups
+    const calculateProgress = () => {
+      if (questionSets.length === 0) return 0;
 
-    // Count total answered questions across all categories
-    const answeredQuestions = Object.values(answers).reduce((acc, categoryAnswers) => 
-      acc + Object.keys(categoryAnswers || {}).length, 0);
+      let answeredCount = 0;
+      let totalQuestions = 0;
 
-    // Calculate progress percentage
-    const progressPercentage = totalQuestions > 0 
-      ? (answeredQuestions / totalQuestions) * 100 
-      : 0;
+      // Count answered questions and their follow-ups
+      Object.entries(answers).forEach(([category, categoryAnswers]) => {
+        Object.entries(categoryAnswers || {}).forEach(([questionId, answer]) => {
+          answeredCount++;
+          
+          // Find the question in the sequence
+          const currentSet = questionSets.find(set => set.category === category);
+          const question = currentSet?.questions.find(q => q.id === questionId);
+          
+          if (question) {
+            // Count potential follow-up questions based on selected answers
+            const selectedOptions = question.options.filter(opt => 
+              answer.answers.includes(opt.value)
+            );
+            
+            selectedOptions.forEach(opt => {
+              if (opt.next && opt.next !== 'END' && opt.next !== 'NEXT_BRANCH') {
+                totalQuestions++;
+              }
+            });
+          }
+        });
+      });
 
-    onProgressChange(Math.min(progressPercentage, 100));
+      // Add current unanswered questions to total
+      questionSets.forEach(set => {
+        if (Array.isArray(set.questions)) {
+          totalQuestions += set.questions.length;
+        }
+      });
+
+      // Calculate progress percentage
+      const progress = totalQuestions > 0 
+        ? (answeredCount / totalQuestions) * 100 
+        : 0;
+
+      console.log('Progress calculation:', {
+        answeredCount,
+        totalQuestions,
+        progress: Math.min(progress, 100)
+      });
+
+      return Math.min(progress, 100);
+    };
+
+    const progress = calculateProgress();
+    onProgressChange(progress);
   }, [answers, questionSets, onProgressChange]);
 
   const loadCurrentQuestionSet = () => {
