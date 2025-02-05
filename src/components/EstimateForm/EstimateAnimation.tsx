@@ -3,6 +3,7 @@ import * as THREE from 'three';
 
 export const EstimateAnimation = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -10,6 +11,7 @@ export const EstimateAnimation = () => {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ alpha: true });
+    rendererRef.current = renderer;
     
     renderer.setSize(200, 200);
     containerRef.current.appendChild(renderer.domElement);
@@ -35,9 +37,10 @@ export const EstimateAnimation = () => {
 
     let paperRotation = 0;
     let paperY = 2;
+    let animationFrameId: number;
 
     const animate = () => {
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
 
       // Animate paper
       paperRotation += 0.02;
@@ -54,9 +57,16 @@ export const EstimateAnimation = () => {
     animate();
 
     return () => {
-      if (containerRef.current) {
-        containerRef.current.removeChild(renderer.domElement);
+      cancelAnimationFrame(animationFrameId);
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current = null;
       }
+      // Clean up geometries and materials
+      mailboxGeometry.dispose();
+      mailboxMaterial.dispose();
+      paperGeometry.dispose();
+      paperMaterial.dispose();
     };
   }, []);
 

@@ -3,6 +3,7 @@ import * as THREE from 'three';
 
 export const PaintbrushAnimation = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -10,6 +11,7 @@ export const PaintbrushAnimation = () => {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ alpha: true });
+    rendererRef.current = renderer;
     
     renderer.setSize(200, 200);
     containerRef.current.appendChild(renderer.domElement);
@@ -40,8 +42,10 @@ export const PaintbrushAnimation = () => {
     camera.position.z = 5;
 
     let frame = 0;
+    let animationFrameId: number;
+
     const animate = () => {
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
 
       frame += 0.02;
       
@@ -59,9 +63,16 @@ export const PaintbrushAnimation = () => {
     animate();
 
     return () => {
-      if (containerRef.current) {
-        containerRef.current.removeChild(renderer.domElement);
+      cancelAnimationFrame(animationFrameId);
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current = null;
       }
+      // Clean up geometries and materials
+      handleGeometry.dispose();
+      handleMaterial.dispose();
+      brushGeometry.dispose();
+      brushMaterial.dispose();
     };
   }, []);
 
