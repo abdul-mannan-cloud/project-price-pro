@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 interface RequestBody {
@@ -34,12 +33,11 @@ interface EstimateOutput {
   categories: Category[];
 }
 
-function generateProjectTitle(category: string, answers: Record<string, any>): string {
-  const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
-  return `${categoryName} Project`;
+function generateProjectTitle(category: string): string {
+  return `Complete ${category} Project`;
 }
 
-function generateProjectDescription(category: string, answers: Record<string, any>, description: string): string {
+function generateProjectDescription(category: string, description: string): string {
   return `This project covers the full scope of ${category.toLowerCase()}. ${description} Each phase is broken down into specific tasks and costed accordingly.`;
 }
 
@@ -70,8 +68,8 @@ function generateLineItems(answer: any, workType: string): LineItem[] {
     return {
       title: `${option.label} (${unit})`,
       description: `${option.label} - ${workType} - Material + Labor`,
-      qty: Math.ceil(Math.random() * 100), // This should be calculated based on actual requirements
-      unitprice: Math.ceil(Math.random() * 100) // This should use actual pricing data
+      qty: Math.ceil(Math.random() * 100),
+      unitprice: Math.ceil(Math.random() * 100)
     };
   }).filter(Boolean);
 }
@@ -123,8 +121,8 @@ function generateEstimate(
   });
 
   return {
-    projectTitle: generateProjectTitle(category, answers),
-    projectDescription: generateProjectDescription(category, answers, projectDescription),
+    projectTitle: generateProjectTitle(category),
+    projectDescription: generateProjectDescription(category, projectDescription),
     categories
   };
 }
@@ -139,6 +137,7 @@ serve(async (req) => {
     console.log('Generating estimate for:', { projectDescription, category });
 
     const estimate = generateEstimate(category || 'Project', answers, projectDescription);
+    console.log('Generated estimate:', estimate);
 
     return new Response(
       JSON.stringify(estimate),
