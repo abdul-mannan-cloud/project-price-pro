@@ -37,6 +37,7 @@ import {
   Settings as SettingsIcon
 } from "lucide-react";
 import { AIRateForm } from "@/components/settings/AIRateForm";
+import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplateSettings";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -317,6 +318,10 @@ const Settings = () => {
                 {updateSettings.isPending ? t("Saving...") : t("Save Changes")}
               </Button>
             </form>
+
+            <div className="pt-6 border-t">
+              <EstimateTemplateSettings />
+            </div>
           </div>
         );
       case "ai":
