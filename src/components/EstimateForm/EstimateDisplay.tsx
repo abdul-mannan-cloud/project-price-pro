@@ -46,6 +46,8 @@ type ContractorDisplay = {
     estimate_client_message?: string;
     estimate_footer_text?: string;
     estimate_signature_enabled?: boolean;
+    estimate_hide_subtotals?: boolean;
+    estimate_compact_view?: boolean;
   };
 };
 
@@ -65,6 +67,8 @@ interface ContractorSettings {
   estimate_signature_enabled: boolean;
   estimate_client_message: string;
   estimate_footer_text: string;
+  estimate_hide_subtotals: boolean;
+  estimate_compact_view: boolean;
 }
 
 export const EstimateDisplay = ({ 
@@ -117,7 +121,9 @@ export const EstimateDisplay = ({
     estimate_template_style: 'modern',
     estimate_signature_enabled: false,
     estimate_client_message: '',
-    estimate_footer_text: ''
+    estimate_footer_text: '',
+    estimate_hide_subtotals: false,
+    estimate_compact_view: true
   };
 
   const formatItemTitle = (title: string, unit?: string) => {
