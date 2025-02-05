@@ -650,13 +650,37 @@ const EstimatePage = () => {
 
       <div className="max-w-4xl mx-auto px-4 py-12">
         {stage === 'photo' && (
-          <div className="animate-fadeIn">
-            <h2 className="text-2xl font-semibold mb-6">Upload Project Photos</h2>
+          <div className="animate-fadeIn space-y-8">
+            <div className="flex items-center gap-4">
+              {contractor?.business_logo_url && (
+                <img 
+                  src={contractor.business_logo_url} 
+                  alt={contractor?.business_name || "Business Logo"} 
+                  className="h-12 w-12 object-contain rounded-lg"
+                />
+              )}
+              <h2 className="text-2xl font-semibold">
+                {contractor?.business_name || "Business"} Estimator
+              </h2>
+            </div>
+            
+            <p className="text-lg font-semibold text-[#000000e6]">
+              Quickly estimate your project cost in minutes! Simply take or upload a photo of what you want to repair or modify (e.g., "paint this wall").
+            </p>
+
             <PhotoUpload
               onPhotosSelected={handlePhotosSelected}
               onNext={handlePhotoStageNext}
               uploadedPhotos={uploadedPhotos}
             />
+
+            <button
+              onClick={() => setStage('description')}
+              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mx-auto"
+            >
+              <SkipForward className="h-4 w-4" />
+              Skip photo upload
+            </button>
           </div>
         )}
 

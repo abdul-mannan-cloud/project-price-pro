@@ -109,8 +109,8 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="space-y-6 w-full">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
         {uploadedPhotos.map((url, index) => (
           <div key={url} className="relative aspect-square">
             <img
@@ -127,7 +127,7 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
           </div>
         ))}
         {uploadedPhotos.length < 12 && (
-          <label className="cursor-pointer aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg hover:border-primary transition-colors">
+          <label className="cursor-pointer aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg hover:border-primary transition-colors w-full">
             <input
               type="file"
               accept="image/*"
