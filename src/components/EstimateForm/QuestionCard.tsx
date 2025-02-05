@@ -64,14 +64,6 @@ export const QuestionCard = ({
   return (
     <>
       <Card className="w-full max-w-6xl mx-auto p-6 relative">
-        {isMobile && (
-          <button
-            onClick={() => window.history.back()}
-            className="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-50"
-          >
-            <X className="h-5 w-5 text-gray-500" />
-          </button>
-        )}
         <h2 className="text-2xl font-semibold mb-6">{question?.question}</h2>
 
         <div className={cn(
