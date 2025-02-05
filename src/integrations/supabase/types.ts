@@ -127,6 +127,7 @@ export type Database = {
           ai_preferences: Json | null
           ai_prompt_template: string | null
           created_at: string | null
+          estimate_template_style: string | null
           excluded_categories: string[] | null
           id: string
           markup_percentage: number | null
@@ -140,6 +141,7 @@ export type Database = {
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
           created_at?: string | null
+          estimate_template_style?: string | null
           excluded_categories?: string[] | null
           id: string
           markup_percentage?: number | null
@@ -153,6 +155,7 @@ export type Database = {
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
           created_at?: string | null
+          estimate_template_style?: string | null
           excluded_categories?: string[] | null
           id?: string
           markup_percentage?: number | null
