@@ -79,9 +79,8 @@ export const QuestionCard = ({
                 key={option.value}
                 onClick={() => handleOptionClick(option.value)}
                 className={cn(
-                  "cursor-pointer transition-all hover:text-primary",
+                  "cursor-pointer transition-all hover:text-primary border-b border-gray-100 last:border-0 pb-4",
                   showImage ? "py-4" : "py-3",
-                  "flex items-start gap-3 relative group border-b border-gray-100 last:border-0"
                 )}
               >
                 {showImage && (
@@ -96,19 +95,19 @@ export const QuestionCard = ({
                 <div className="flex items-center gap-3 w-full">
                   {question.type === 'multiple_choice' ? (
                     <div className={cn(
-                      "flex-shrink-0 h-5 w-5 rounded border mt-0.5",
+                      "flex-shrink-0 h-6 w-6 rounded border mt-0.5",
                       isSelected ? "bg-primary border-primary" : "border-gray-300",
                       "flex items-center justify-center"
                     )}>
-                      {isSelected && <Check className="w-3 h-3 text-white" />}
+                      {isSelected && <Check className="w-4 h-4 text-white" />}
                     </div>
                   ) : (
                     <div className={cn(
-                      "flex-shrink-0 h-5 w-5 rounded-full border mt-0.5",
+                      "flex-shrink-0 h-6 w-6 rounded-full border mt-0.5",
                       isSelected ? "bg-primary border-primary" : "border-gray-300"
                     )}>
                       {isSelected && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-white m-1" />
+                        <div className="w-3 h-3 rounded-full bg-white m-1" />
                       )}
                     </div>
                   )}
