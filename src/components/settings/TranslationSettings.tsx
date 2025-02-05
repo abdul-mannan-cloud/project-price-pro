@@ -19,7 +19,7 @@ export const TranslationSettings = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const { data: settings } = useQuery({
+  const { data: settings, isLoading } = useQuery({
     queryKey: ["contractorSettings"],
     queryFn: async () => {
       try {
@@ -34,7 +34,7 @@ export const TranslationSettings = () => {
           .from("contractor_settings")
           .select("preferred_language")
           .eq("id", user.id)
-          .maybeSingle();
+          .single();
 
         if (error) throw error;
         return data;
@@ -117,6 +117,10 @@ export const TranslationSettings = () => {
 
     setupLanguage();
   }, [settings, navigate]);
+
+  if (isLoading) {
+    return <div>{t("Loading language preferences...")}</div>;
+  }
 
   return (
     <Card className="p-8 space-y-6">
