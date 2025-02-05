@@ -135,6 +135,8 @@ export const QuestionCard = ({
                 onClick={onNext}
                 disabled={!showNextButton}
                 className="w-full"
+                variant="default"
+                size="lg"
               >
                 {hasFollowUpQuestion ? 'Continue' : 'Complete'}
               </Button>
