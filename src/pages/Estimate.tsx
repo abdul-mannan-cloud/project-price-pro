@@ -270,6 +270,14 @@ const EstimatePage = () => {
     }
   };
 
+  const handlePhotosSelected = (urls: string[]) => {
+    setUploadedPhotos(urls);
+  };
+
+  const handlePhotoStageNext = () => {
+    setStage('description');
+  };
+
   const formatQuestions = (rawQuestions: any[]): Question[] => {
     if (!Array.isArray(rawQuestions)) {
       console.error('Invalid questions format:', rawQuestions);
@@ -632,6 +640,17 @@ const EstimatePage = () => {
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-12">
+        {stage === 'photo' && (
+          <div className="animate-fadeIn">
+            <h2 className="text-2xl font-semibold mb-6">Upload Project Photos</h2>
+            <PhotoUpload
+              onPhotosSelected={handlePhotosSelected}
+              onNext={handlePhotoStageNext}
+              uploadedPhotos={uploadedPhotos}
+            />
+          </div>
+        )}
+
         {stage === 'category' && (
           <div className="animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
@@ -644,6 +663,43 @@ const EstimatePage = () => {
               isCollapsed={stage !== 'category'}
             />
           </div>
+        )}
+
+        {stage === 'description' && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="card p-8">
+              <h2 className="text-2xl font-semibold mb-4">Describe Your Project</h2>
+              <p className="text-muted-foreground mb-6">
+                Please provide a brief description of what you'd like to have done.
+              </p>
+              <Textarea
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                placeholder="e.g., I need to paint my living room walls..."
+                className="min-h-[120px] mb-6"
+              />
+              <div className="flex gap-4">
+                <Button 
+                  onClick={() => setStage('category')}
+                  disabled={!projectDescription.trim()}
+                  className="w-full"
+                >
+                  Continue
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {stage === 'questions' && (
+          matchedQuestionSets.length > 0 ? (
+            <QuestionManager
+              questionSets={matchedQuestionSets}
+              onComplete={handleQuestionComplete}
+            />
+          ) : (
+            <LoadingScreen message="Loading your questions..." />
+          )
         )}
 
         {stage === 'contact' && estimate && (
@@ -680,17 +736,6 @@ const EstimatePage = () => {
               }}
             />
           </div>
-        )}
-
-        {stage === 'questions' && (
-          matchedQuestionSets.length > 0 ? (
-            <QuestionManager
-              questionSets={matchedQuestionSets}
-              onComplete={handleQuestionComplete}
-            />
-          ) : (
-            <LoadingScreen message="Loading your questions..." />
-          )
         )}
       </div>
     </div>
