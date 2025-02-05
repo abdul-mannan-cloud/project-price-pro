@@ -36,16 +36,25 @@ export const QuestionManager = ({
   }, [pendingBranchTransition, isLoadingQuestions]);
 
   useEffect(() => {
-    // Calculate and update progress
+    // Calculate and update progress including the final contact screen
     const totalQuestions = questionSets.reduce((acc, set) => 
       acc + (Array.isArray(set.questions) ? set.questions.length : 0), 0);
     
     const answeredQuestions = Object.values(answers).reduce((acc, categoryAnswers) => 
       acc + Object.keys(categoryAnswers || {}).length, 0);
 
-    const progress = Math.min((answeredQuestions / totalQuestions) * 100, 100);
+    // Add 2 additional steps for estimate generation and contact info
+    const totalSteps = totalQuestions + 2;
+    let currentStep = answeredQuestions;
+
+    // If we're generating the estimate or on contact form, increment progress
+    if (isGeneratingEstimate) {
+      currentStep = totalQuestions + 1;
+    }
+
+    const progress = Math.min((currentStep / totalSteps) * 100, 100);
     onProgressChange(progress);
-  }, [answers, questionSets, onProgressChange]);
+  }, [answers, questionSets, onProgressChange, isGeneratingEstimate]);
 
   const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {
@@ -257,7 +266,7 @@ export const QuestionManager = ({
       selectedAnswers={currentSetAnswers[currentQuestion.id]?.answers || []}
       onSelect={handleAnswer}
       onNext={currentQuestion.type === 'multiple_choice' ? handleMultipleChoiceNext : undefined}
-      isLastQuestion={!hasFollowUpQuestion}
+      isLastQuestion={currentSetIndex === questionSets.length - 1}
       currentStage={currentSetIndex + 1}
       totalStages={questionSets.length}
       hasFollowUpQuestion={hasFollowUpQuestion}
