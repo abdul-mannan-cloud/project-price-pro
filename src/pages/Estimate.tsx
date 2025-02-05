@@ -20,8 +20,6 @@ import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
 import { PaintbrushAnimation } from "@/components/EstimateForm/PaintbrushAnimation";
 import type { Database } from "@/integrations/supabase/types";
 
-type Json = Database['public']['Tables']['contractors']['Row']['branding_colors'];
-
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
 const EstimatePage = () => {
@@ -39,17 +37,14 @@ const EstimatePage = () => {
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryQuestions | null>(null);
-  const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
-  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { contractorId: rawContractorId } = useParams<{ contractorId: string }>();
+
+  const { contractorId } = useParams<{ contractorId?: string }>();
   const location = useLocation();
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
-  const effectiveContractorId = rawContractorId 
-    ? decodeURIComponent(rawContractorId).replace(/[?]/g, '')
+  const effectiveContractorId = contractorId 
+    ? decodeURIComponent(contractorId).replace(/[?]/g, '')
     : DEFAULT_CONTRACTOR_ID;
 
   const { data: contractor, isLoading: isContractorLoading, error: contractorError } = useQuery({
@@ -85,7 +80,7 @@ const EstimatePage = () => {
             branding_colors: {
               primary: "#6366F1",
               secondary: "#4F46E5"
-            } as Json,
+            },
             business_address: null,
             website: null,
             license_number: null,
@@ -94,8 +89,8 @@ const EstimatePage = () => {
               markup_percentage: 20,
               tax_rate: 8.5,
               minimum_project_cost: 1000,
-              ai_preferences: {} as Json,
-              excluded_categories: [] as string[],
+              ai_preferences: {},
+              excluded_categories: [],
               ai_instructions: "",
               ai_prompt_template: "",
               created_at: new Date().toISOString(),
@@ -109,8 +104,8 @@ const EstimatePage = () => {
           markup_percentage: 20,
           tax_rate: 8.5,
           minimum_project_cost: 1000,
-          ai_preferences: {} as Json,
-          excluded_categories: [] as string[],
+          ai_preferences: {},
+          excluded_categories: [],
           ai_instructions: "",
           ai_prompt_template: "",
           created_at: new Date().toISOString(),
