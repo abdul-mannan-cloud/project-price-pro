@@ -21,27 +21,10 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
     }
   }, [initialColors]);
 
-  const isLightColor = (color: string) => {
-    // Remove the hash if it exists
-    const hex = color.replace('#', '');
-    const r = parseInt(hex.slice(0, 2), 16);
-    const g = parseInt(hex.slice(2, 4), 16);
-    const b = parseInt(hex.slice(4, 6), 16);
-    
-    // Calculate relative luminance using the formula
-    // Luminance = (0.299*R + 0.587*G + 0.114*B) / 255
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    
-    // Return true if the color is light (luminance > 0.5)
-    return luminance > 0.5;
-  };
-
   const applyGlobalColors = (colors: BrandingColors) => {
     // Set primary color and its variations
     document.documentElement.style.setProperty('--primary', colors.primary);
-    document.documentElement.style.setProperty('--primary-foreground', 
-      isLightColor(colors.primary) ? '#1d1d1f' : '#FFFFFF'
-    );
+    document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
 
     // Convert hex to RGB for creating variations
     const primaryHex = colors.primary.replace('#', '');
@@ -60,9 +43,7 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
 
     // Set secondary color
     document.documentElement.style.setProperty('--secondary', colors.secondary);
-    document.documentElement.style.setProperty('--secondary-foreground',
-      isLightColor(colors.secondary) ? '#1d1d1f' : '#FFFFFF'
-    );
+    document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
   };
 
   const handleColorChange = (type: 'primary' | 'secondary', color: string) => {
@@ -140,20 +121,14 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
               <h3 className="text-lg font-semibold mb-4">Background Colors</h3>
               <div className="space-y-2">
                 <div 
-                  className="h-20 rounded-lg flex items-center justify-center"
-                  style={{ 
-                    backgroundColor: brandingColors.primary,
-                    color: isLightColor(brandingColors.primary) ? '#1d1d1f' : '#FFFFFF'
-                  }}
+                  className="h-20 rounded-lg flex items-center justify-center text-white"
+                  style={{ backgroundColor: brandingColors.primary }}
                 >
                   Primary Background
                 </div>
                 <div 
                   className="h-20 rounded-lg flex items-center justify-center"
-                  style={{ 
-                    backgroundColor: brandingColors.secondary,
-                    color: isLightColor(brandingColors.secondary) ? '#1d1d1f' : '#FFFFFF'
-                  }}
+                  style={{ backgroundColor: brandingColors.secondary }}
                 >
                   Secondary Background
                 </div>
