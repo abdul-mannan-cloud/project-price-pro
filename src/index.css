@@ -30,6 +30,8 @@
     --border: #d2d2d7;
     --input: #d2d2d7;
     --ring: var(--primary);
+    --warning: #fbbf24;
+    --warning-foreground: #1d1d1f;
   }
 
   * {
