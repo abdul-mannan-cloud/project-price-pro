@@ -23,7 +23,7 @@ import {
 interface AIRate {
   title: string;
   description: string | null;
-  rate: string;
+  rate: number;  // Changed from string to number
   unit: string;
   type: string;
   instructions?: string;
@@ -68,7 +68,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
   const [newRate, setNewRate] = useState<AIRate>({
     title: "",
     description: "",
-    rate: "",
+    rate: 0,  // Changed initial value to number
     unit: "",
     type: "material_labor",
     instructions: ""
@@ -80,7 +80,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
     setNewRate({
       title: "",
       description: "",
-      rate: "",
+      rate: 0,  // Changed initial value to number
       unit: "",
       type: "material_labor",
       instructions: ""
@@ -169,7 +169,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
               label="Rate"
               type="number"
               value={newRate.rate}
-              onChange={(e) => setNewRate({ ...newRate, rate: e.target.value })}
+              onChange={(e) => setNewRate({ ...newRate, rate: parseFloat(e.target.value) || 0 })}  // Ensure we store as number
               placeholder="e.g., 75"
             />
             <div className="space-y-2">
