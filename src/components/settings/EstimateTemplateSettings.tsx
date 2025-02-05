@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Layout, FileText, Minimize2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 const templates = [
   {
@@ -16,6 +18,15 @@ const templates = [
     icon: <Layout className="h-8 w-8" />,
     preview: (
       <div className="space-y-4 p-4">
+        <div className="flex items-center space-x-4 mb-6">
+          <div className="w-16 h-16 bg-primary/10 rounded-lg"></div>
+          <div>
+            <h3 className="text-lg font-semibold">Sample Company</h3>
+            <p className="text-sm text-muted-foreground">contact@example.com</p>
+            <p className="text-sm text-muted-foreground">(555) 123-4567</p>
+            <p className="text-sm text-muted-foreground">123 Business St, City, State</p>
+          </div>
+        </div>
         <div className="bg-primary-100 p-4 rounded-lg">
           <h3 className="text-lg font-semibold">Project Estimate</h3>
           <p className="text-sm text-muted-foreground">Modern Template Preview</p>
@@ -28,6 +39,12 @@ const templates = [
           <div className="flex justify-between p-2 bg-secondary rounded">
             <span>Materials</span>
             <span>$1,500</span>
+          </div>
+        </div>
+        <div className="mt-4 p-4 border-t">
+          <p className="text-sm italic">Client Message Preview</p>
+          <div className="mt-4">
+            <p className="text-sm">Digital Signature Area</p>
           </div>
         </div>
       </div>
@@ -97,7 +114,7 @@ export const EstimateTemplateSettings = () => {
 
       const { data, error } = await supabase
         .from("contractor_settings")
-        .select("estimate_template_style")
+        .select("estimate_template_style, estimate_signature_enabled, estimate_client_message, estimate_footer_text")
         .eq("id", user.id)
         .single();
 
@@ -106,14 +123,14 @@ export const EstimateTemplateSettings = () => {
     },
   });
 
-  const updateTemplate = useMutation({
-    mutationFn: async (template: string) => {
+  const updateSettings = useMutation({
+    mutationFn: async (updates: any) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       const { error } = await supabase
         .from("contractor_settings")
-        .update({ estimate_template_style: template })
+        .update(updates)
         .eq("id", user.id);
 
       if (error) throw error;
@@ -121,14 +138,14 @@ export const EstimateTemplateSettings = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contractor_settings"] });
       toast({
-        title: "Template updated",
-        description: "Your estimate template style has been updated successfully.",
+        title: "Settings updated",
+        description: "Your estimate settings have been updated successfully.",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to update template style. Please try again.",
+        description: "Failed to update settings. Please try again.",
         variant: "destructive",
       });
     },
@@ -140,25 +157,25 @@ export const EstimateTemplateSettings = () => {
 
   return (
     <Card className="p-6">
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div>
           <h3 className="text-lg font-medium">Estimate Template</h3>
           <p className="text-sm text-muted-foreground">
-            Choose how your estimates will look when downloaded as PDF.
+            Choose how your estimates will look when shared with clients.
           </p>
         </div>
 
         <RadioGroup
           value={settings?.estimate_template_style || "modern"}
-          onValueChange={(value) => updateTemplate.mutate(value)}
-          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          onValueChange={(value) => updateSettings.mutate({ estimate_template_style: value })}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
           {templates.map((template) => (
             <div key={template.id} className="relative">
               <Label
-                className={`flex flex-col items-center justify-between rounded-lg border-2 p-4 hover:bg-accent cursor-pointer transition-all ${
+                className={`flex flex-col items-center justify-between rounded-lg border-2 p-6 hover:bg-accent cursor-pointer transition-all ${
                   settings?.estimate_template_style === template.id
-                    ? "border-primary bg-primary text-primary-foreground"
+                    ? "border-primary bg-primary"
                     : "border-muted"
                 }`}
               >
@@ -175,7 +192,9 @@ export const EstimateTemplateSettings = () => {
                   }`}>
                     {template.icon}
                   </div>
-                  <div className="font-medium">{template.name}</div>
+                  <div className={settings?.estimate_template_style === template.id ? "text-primary-foreground" : ""}>
+                    {template.name}
+                  </div>
                   <div className={`text-sm ${
                     settings?.estimate_template_style === template.id
                       ? "text-primary-foreground/80"
@@ -190,13 +209,13 @@ export const EstimateTemplateSettings = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="absolute bottom-2 right-2"
+                    className="w-full mt-2"
                   >
                     <Eye className="h-4 w-4 mr-1" />
-                    Preview
+                    Preview Template
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-3xl">
                   <DialogHeader>
                     <DialogTitle>{template.name} Template Preview</DialogTitle>
                   </DialogHeader>
@@ -206,6 +225,56 @@ export const EstimateTemplateSettings = () => {
             </div>
           ))}
         </RadioGroup>
+
+        <div className="space-y-6 pt-6 border-t">
+          <div>
+            <h3 className="text-lg font-medium mb-4">Additional Settings</h3>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable Digital Signature</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Allow clients to sign estimates digitally
+                  </p>
+                </div>
+                <Switch
+                  checked={settings?.estimate_signature_enabled}
+                  onCheckedChange={(checked) => 
+                    updateSettings.mutate({ estimate_signature_enabled: checked })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Client Message</Label>
+                <Textarea
+                  placeholder="Enter a message to display on all estimates..."
+                  value={settings?.estimate_client_message || ""}
+                  onChange={(e) => 
+                    updateSettings.mutate({ estimate_client_message: e.target.value })
+                  }
+                  className="min-h-[100px]"
+                />
+                <p className="text-sm text-muted-foreground">
+                  This message will appear at the bottom of every estimate
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Footer Text</Label>
+                <Textarea
+                  placeholder="Enter footer text (terms, conditions, etc.)..."
+                  value={settings?.estimate_footer_text || ""}
+                  onChange={(e) => 
+                    updateSettings.mutate({ estimate_footer_text: e.target.value })
+                  }
+                  className="min-h-[100px]"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </Card>
   );

@@ -358,13 +358,13 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-secondary">
       <NavBar items={navItems} />
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-8 min-h-[calc(100vh-4rem)]">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold">{t("Settings")}</h1>
         </div>
         
         <div className="flex gap-6">
-          <div className="w-80 space-y-2">
+          <div className="w-80 space-y-2 flex-shrink-0">
             <SettingsMenuItem
               icon={<Building2 className="h-5 w-5" />}
               title={t("Business Information")}
@@ -454,7 +454,7 @@ const Settings = () => {
               {renderContent()}
             </SettingsDialog>
           ) : (
-            <div className="flex-1 bg-background rounded-lg border p-6">
+            <div className="flex-1 bg-background rounded-lg border p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
               {renderContent()}
             </div>
           )}
