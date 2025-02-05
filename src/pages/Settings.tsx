@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
 import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
 import { AIInstructionsForm } from "@/components/settings/AIInstructionsForm";
@@ -40,14 +41,15 @@ import { AIRateForm } from "@/components/settings/AIRateForm";
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState("business");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const isMobile = useIsMobile();
 
   const navItems = [
-    { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { name: "Leads", url: "/leads", icon: Users2 },
-    { name: "Settings", url: "/settings", icon: SettingsIcon }
+    { name: t("Dashboard"), url: "/dashboard", icon: LayoutDashboard },
+    { name: t("Leads"), url: "/leads", icon: Users2 },
+    { name: t("Settings"), url: "/settings", icon: SettingsIcon }
   ];
 
   const { data: contractor, isLoading: contractorLoading } = useQuery({
@@ -66,31 +68,6 @@ const Settings = () => {
       return data;
     },
   });
-
-  const { data: aiRates, isLoading: isLoadingRates } = useQuery({
-    queryKey: ['aiRates'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
-      const { data, error } = await supabase
-        .from('ai_rates')
-        .select('*')
-        .eq('contractor_id', user.id);
-
-      if (error) throw error;
-    
-    // Transform data to match AIRate interface
-    return data.map(rate => ({
-      title: rate.title,
-      description: rate.description, // Include description property
-      rate: rate.rate,
-      unit: rate.unit,
-      type: rate.type,
-      instructions: rate.instructions || ""
-    }));
-  },
-});
 
   const updateSettings = useMutation({
     mutationFn: async (formData: any) => {
@@ -124,59 +101,18 @@ const Settings = () => {
     },
     onSuccess: () => {
       toast({
-        title: "Settings saved",
-        description: "Your settings have been updated successfully.",
+        title: t("Settings saved"),
+        description: t("Your settings have been updated successfully."),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: "Failed to save settings. Please try again.",
+        title: t("Error"),
+        description: t("Failed to save settings. Please try again."),
         variant: "destructive",
       });
     },
   });
-
-  const saveRates = useMutation({
-    mutationFn: async (rates: any[]) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
-      const { error } = await supabase
-        .from('ai_rates')
-        .upsert(
-          rates.map(rate => ({
-            ...rate,
-            contractor_id: user.id,
-          }))
-        );
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: "AI rates saved",
-        description: "Your AI rates have been updated successfully.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: "Failed to save AI rates. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSectionChange = (section: string) => {
-    setActiveSection(section);
-    if (isMobile) {
-      setIsDialogOpen(true);
-    }
-  };
-
-  const isAdmin = contractor?.contact_email === "cairlbrandon@gmail.com" || 
-                 contractor?.contact_email === "brandon@reliablepro.net";
 
   const handleLogout = async () => {
     try {
@@ -185,13 +121,13 @@ const Settings = () => {
       
       navigate("/");
       toast({
-        title: "Logged out successfully",
-        description: "You have been logged out of your account.",
+        title: t("Logged out successfully"),
+        description: t("You have been logged out of your account."),
       });
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to log out. Please try again.",
+        title: t("Error"),
+        description: t("Failed to log out. Please try again."),
         variant: "destructive",
       });
     }
@@ -210,31 +146,54 @@ const Settings = () => {
       if (error) throw error;
 
       toast({
-        title: "Branding colors updated",
-        description: "Your brand colors have been saved successfully.",
+        title: t("Branding colors updated"),
+        description: t("Your brand colors have been saved successfully."),
       });
     } catch (error) {
       console.error('Error updating branding colors:', error);
       toast({
-        title: "Error",
-        description: "Failed to update branding colors. Please try again.",
+        title: t("Error"),
+        description: t("Failed to update branding colors. Please try again."),
         variant: "destructive",
       });
     }
   };
 
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section);
+    if (isMobile) {
+      setIsDialogOpen(true);
+    }
+  };
+
+  const isAdmin = contractor?.contact_email === "cairlbrandon@gmail.com" || 
+                 contractor?.contact_email === "brandon@reliablepro.net";
+
+  if (contractorLoading) {
+    return (
+      <div className="min-h-screen bg-secondary">
+        <NavBar items={navItems} />
+        <div className="container mx-auto py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-muted-foreground">{t("Loading settings...")}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const getSectionTitle = () => {
     switch (activeSection) {
-      case "business": return "Business Information";
-      case "team": return "Team Members";
-      case "subscription": return "Subscription";
-      case "branding": return "Branding";
-      case "estimate": return "Estimate Settings";
-      case "ai": return "AI Preferences";
-      case "categories": return "Service Categories";
-      case "webhooks": return "Webhooks";
-      case "translation": return "Language & Translation";
-      case "admin": return "Admin Settings";
+      case "business": return t("Business Information");
+      case "team": return t("Team Members");
+      case "subscription": return t("Subscription");
+      case "branding": return t("Branding");
+      case "estimate": return t("Estimate Settings");
+      case "ai": return t("AI Preferences");
+      case "categories": return t("Service Categories");
+      case "webhooks": return t("Webhooks");
+      case "translation": return t("Language & Translation");
+      case "admin": return t("Admin Settings");
       default: return "";
     }
   };
@@ -252,42 +211,42 @@ const Settings = () => {
               updateSettings.mutate(data);
             }} className="space-y-4">
               <Input
-                label="Business Name"
+                label={t("Business Name")}
                 name="businessName"
                 defaultValue={contractor?.business_name}
                 required
               />
               <Input
-                label="Contact Email"
+                label={t("Contact Email")}
                 name="contactEmail"
                 type="email"
                 defaultValue={contractor?.contact_email}
                 required
               />
               <Input
-                label="Contact Phone"
+                label={t("Contact Phone")}
                 name="contactPhone"
                 type="tel"
                 defaultValue={contractor?.contact_phone}
               />
               <Input
-                label="Business Address"
+                label={t("Business Address")}
                 name="businessAddress"
                 defaultValue={contractor?.business_address}
               />
               <Input
-                label="Website"
+                label={t("Website")}
                 name="website"
                 type="url"
                 defaultValue={contractor?.website}
               />
               <Input
-                label="License Number"
+                label={t("License Number")}
                 name="licenseNumber"
                 defaultValue={contractor?.license_number}
               />
               <Button type="submit" className="w-full" disabled={updateSettings.isPending}>
-                {updateSettings.isPending ? "Saving..." : "Save Changes"}
+                {updateSettings.isPending ? t("Saving...") : t("Save Changes")}
               </Button>
             </form>
           </div>
@@ -307,10 +266,9 @@ const Settings = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-medium">Estimate Configuration</h3>
+              <h3 className="text-lg font-medium">{t("Estimate Configuration")}</h3>
               <p className="text-sm text-muted-foreground mb-6">
-                Configure your pricing settings, including minimum project costs, markup percentages, and tax rates. 
-                These settings will be automatically applied to all AI-generated estimates.
+                {t("Configure your pricing settings, including minimum project costs, markup percentages, and tax rates.")}
               </p>
             </div>
             
@@ -321,42 +279,42 @@ const Settings = () => {
               updateSettings.mutate(data);
             }} className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Minimum Project Cost ($)</label>
+                <label className="text-sm font-medium">{t("Minimum Project Cost ($)")}</label>
                 <Input
                   name="minimumProjectCost"
                   type="number"
                   defaultValue={contractor?.contractor_settings?.minimum_project_cost}
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  The minimum cost you're willing to take on for any project
+                  {t("The minimum cost you're willing to take on for any project")}
                 </p>
               </div>
 
               <div>
-                <label className="text-sm font-medium">Markup Percentage (%)</label>
+                <label className="text-sm font-medium">{t("Markup Percentage (%)")}</label>
                 <Input
                   name="markupPercentage"
                   type="number"
                   defaultValue={contractor?.contractor_settings?.markup_percentage}
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  This markup is automatically applied to all AI-generated estimates
+                  {t("This markup is automatically applied to all AI-generated estimates")}
                 </p>
               </div>
 
               <div>
-                <label className="text-sm font-medium">Tax Rate (%)</label>
+                <label className="text-sm font-medium">{t("Tax Rate (%)")}</label>
                 <Input
                   name="taxRate"
                   type="number"
                   defaultValue={contractor?.contractor_settings?.tax_rate}
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  Local tax rate automatically applied to all estimates
+                  {t("Local tax rate automatically applied to all estimates")}
                 </p>
               </div>
               <Button type="submit" disabled={updateSettings.isPending}>
-                {updateSettings.isPending ? "Saving..." : "Save Changes"}
+                {updateSettings.isPending ? t("Saving...") : t("Save Changes")}
               </Button>
             </form>
           </div>
@@ -374,10 +332,8 @@ const Settings = () => {
               }}
             />
             <AIRateForm
-              rates={aiRates || []}
-              onSave={(rates) => {
-                saveRates.mutate(rates);
-              }}
+              rates={[]}
+              onSave={() => {}}
             />
           </div>
         );
@@ -394,105 +350,92 @@ const Settings = () => {
     }
   };
 
-  if (contractorLoading || isLoadingRates) {
-    return (
-      <div className="min-h-screen bg-secondary">
-        <NavBar items={navItems} />
-        <div className="container mx-auto py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-muted-foreground">Loading settings...</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-secondary">
       <NavBar items={navItems} />
       <div className="container mx-auto py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold">Settings</h1>
+          <h1 className="text-2xl font-semibold">{t("Settings")}</h1>
         </div>
         
         <div className="flex gap-6">
           <div className="w-80 space-y-2">
             <SettingsMenuItem
               icon={<Building2 className="h-5 w-5" />}
-              title="Business Information"
-              description="Update your business details and contact information"
+              title={t("Business Information")}
+              description={t("Update your business details and contact information")}
               onClick={() => handleSectionChange("business")}
               isActive={activeSection === "business"}
             />
             <SettingsMenuItem
               icon={<Users className="h-5 w-5" />}
-              title="Team Members"
-              description="Manage your team members and their access"
+              title={t("Team Members")}
+              description={t("Manage your team members and their access")}
               onClick={() => handleSectionChange("team")}
               isActive={activeSection === "team"}
             />
             <SettingsMenuItem
               icon={<CreditCard className="h-5 w-5" />}
-              title="Subscription"
-              description="Manage your subscription and billing"
+              title={t("Subscription")}
+              description={t("Manage your subscription and billing")}
               onClick={() => handleSectionChange("subscription")}
               isActive={activeSection === "subscription"}
             />
             <SettingsMenuItem
               icon={<Palette className="h-5 w-5" />}
-              title="Branding"
-              description="Customize your brand colors and appearance"
+              title={t("Branding")}
+              description={t("Customize your brand colors and appearance")}
               onClick={() => handleSectionChange("branding")}
               isActive={activeSection === "branding"}
             />
             <SettingsMenuItem
               icon={<Calculator className="h-5 w-5" />}
-              title="Estimate Settings"
-              description="Configure your pricing and cost calculations"
+              title={t("Estimate Settings")}
+              description={t("Configure your pricing and cost calculations")}
               onClick={() => handleSectionChange("estimate")}
               isActive={activeSection === "estimate"}
             />
             <SettingsMenuItem
               icon={<Bot className="h-5 w-5" />}
-              title="AI Preferences"
-              description="Configure how AI generates estimates and manages rates"
+              title={t("AI Preferences")}
+              description={t("Configure how AI generates estimates and manages rates")}
               onClick={() => handleSectionChange("ai")}
               isActive={activeSection === "ai"}
             />
             <SettingsMenuItem
               icon={<Grid className="h-5 w-5" />}
-              title="Service Categories"
-              description="Select which services you offer and customize your estimate workflow"
+              title={t("Service Categories")}
+              description={t("Select which services you offer and customize your estimate workflow")}
               onClick={() => handleSectionChange("categories")}
               isActive={activeSection === "categories"}
             />
             <SettingsMenuItem
               icon={<Webhook className="h-5 w-5" />}
-              title="Webhooks"
-              description="Configure external integrations and automation"
+              title={t("Webhooks")}
+              description={t("Configure external integrations and automation")}
               onClick={() => handleSectionChange("webhooks")}
               isActive={activeSection === "webhooks"}
             />
             <SettingsMenuItem
               icon={<Globe2 className="h-5 w-5" />}
-              title="Language & Translation"
-              description="Configure your language preferences and translations"
+              title={t("Language & Translation")}
+              description={t("Configure your language preferences and translations")}
               onClick={() => handleSectionChange("translation")}
               isActive={activeSection === "translation"}
             />
             {isAdmin && (
               <SettingsMenuItem
                 icon={<ShieldAlert className="h-5 w-5" />}
-                title="Admin Settings"
-                description="Access administrative functions and data"
+                title={t("Admin Settings")}
+                description={t("Access administrative functions and data")}
                 onClick={() => handleSectionChange("admin")}
                 isActive={activeSection === "admin"}
               />
             )}
             <SettingsMenuItem
               icon={<LogOut className="h-5 w-5" />}
-              title="Log Out"
-              description="Sign out of your account"
+              title={t("Log Out")}
+              description={t("Sign out of your account")}
               onClick={handleLogout}
             />
           </div>
