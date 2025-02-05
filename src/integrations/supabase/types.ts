@@ -51,6 +51,7 @@ export type Database = {
         Row: {
           contractor_id: string
           created_at: string | null
+          description: string | null
           id: string
           instructions: string | null
           rate: number
@@ -62,6 +63,7 @@ export type Database = {
         Insert: {
           contractor_id: string
           created_at?: string | null
+          description?: string | null
           id?: string
           instructions?: string | null
           rate: number
@@ -73,6 +75,7 @@ export type Database = {
         Update: {
           contractor_id?: string
           created_at?: string | null
+          description?: string | null
           id?: string
           instructions?: string | null
           rate?: number
