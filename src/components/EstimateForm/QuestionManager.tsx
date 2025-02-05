@@ -21,17 +21,17 @@ export const QuestionManager = ({
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [queuedNextQuestions, setQueuedNextQuestions] = useState<string[]>([]);
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
+  const [branchingQueue, setBranchingQueue] = useState<string[]>([]);
 
   useEffect(() => {
     console.log("Loading question set for index:", currentSetIndex);
-    console.log("Question sets:", questionSets);
     loadCurrentQuestionSet();
   }, [currentSetIndex, questionSets]);
 
   const loadCurrentQuestionSet = async () => {
     if (!questionSets[currentSetIndex]) {
       console.log("No more question sets, completing...");
-      onComplete(answers);
+      handleComplete();
       return;
     }
 
@@ -66,7 +66,7 @@ export const QuestionManager = ({
     selectedValue: string
   ): string | null | 'NEXT_BRANCH' => {
     const selectedOption = currentQuestion.options.find(
-      (opt) => opt.value.toLowerCase() === selectedValue.toLowerCase()
+      (opt) => opt.value === selectedValue
     );
     
     if (selectedOption?.next) {
@@ -75,21 +75,16 @@ export const QuestionManager = ({
       return selectedOption.next;
     }
 
-    if (currentQuestion.next === 'NEXT_BRANCH') return 'NEXT_BRANCH';
-    if (currentQuestion.next === 'END' || !currentQuestion.next) return null;
+    // Check if there are any questions in the branching queue
+    if (branchingQueue.length > 0) {
+      return branchingQueue[0];
+    }
 
+    // If no specific navigation is defined, move to the next question in sequence
     const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
     return currentIndex < questionSequence.length - 1
       ? questionSequence[currentIndex + 1].id
-      : null;
-  };
-
-  const moveToNextQuestionSet = () => {
-    if (currentSetIndex < questionSets.length - 1) {
-      setCurrentSetIndex(prev => prev + 1);
-    } else {
-      handleComplete();
-    }
+      : 'NEXT_BRANCH';
   };
 
   const handleAnswer = async (questionId: string, selectedValues: string[]) => {
@@ -98,7 +93,7 @@ export const QuestionManager = ({
 
     const currentSet = questionSets[currentSetIndex];
     
-    // Create the answer object with both question and answer data
+    // Create the answer object
     const questionAnswer: QuestionAnswer = {
       question: currentQuestion.question,
       type: currentQuestion.type,
@@ -112,7 +107,7 @@ export const QuestionManager = ({
         }))
     };
     
-    // Update the answers state with the new format
+    // Update answers state
     setAnswers(prev => ({
       ...prev,
       [currentSet.category]: {
@@ -121,81 +116,65 @@ export const QuestionManager = ({
       }
     }));
 
-    if (currentQuestion.type !== 'multiple_choice') {
+    if (currentQuestion.type === 'multiple_choice') {
+      // For multiple choice, collect all the next questions from selected options
+      const nextQuestions = selectedValues
+        .map(value => {
+          const option = currentQuestion.options.find(opt => opt.value === value);
+          return option?.next;
+        })
+        .filter((next): next is string => next !== undefined && next !== 'END' && next !== 'NEXT_BRANCH');
+
+      setBranchingQueue(prev => [...prev, ...nextQuestions]);
+      
+      if (nextQuestions.length > 0) {
+        setCurrentQuestionId(nextQuestions[0]);
+        setBranchingQueue(prev => prev.slice(1));
+      } else {
+        moveToNextQuestionSet();
+      }
+    } else {
+      // For single choice questions
       const nextQuestionId = findNextQuestionId(currentQuestion, selectedValues[0]);
       
       if (nextQuestionId === 'NEXT_BRANCH') {
-        if (queuedNextQuestions.length > 0) {
-          setCurrentQuestionId(queuedNextQuestions[0]);
-          setQueuedNextQuestions(queuedNextQuestions.slice(1));
+        if (branchingQueue.length > 0) {
+          setCurrentQuestionId(branchingQueue[0]);
+          setBranchingQueue(prev => prev.slice(1));
         } else {
           moveToNextQuestionSet();
         }
       } else if (!nextQuestionId) {
-        await handleComplete();
+        handleComplete();
       } else {
         setCurrentQuestionId(nextQuestionId);
       }
     }
   };
 
-  const handleComplete = async () => {
+  const moveToNextQuestionSet = () => {
+    setBranchingQueue([]); // Clear branching queue when moving to next set
     if (currentSetIndex < questionSets.length - 1) {
-      moveToNextQuestionSet();
+      setCurrentSetIndex(prev => prev + 1);
+      setIsLoadingQuestions(true);
     } else {
-      setIsGeneratingEstimate(true);
-      try {
-        const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
-          body: { answers }
-        });
-
-        if (error) throw error;
-        onComplete(answers);
-      } catch (error) {
-        console.error('Error generating estimate:', error);
-        toast({
-          title: "Error",
-          description: "Failed to generate estimate. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsGeneratingEstimate(false);
-      }
+      handleComplete();
     }
   };
 
-  const handleMultipleChoiceNext = async () => {
-    const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
-    if (!currentQuestion) return;
-
-    const currentSet = questionSets[currentSetIndex];
-    const currentSetAnswers = answers[currentSet.category] || {};
-    const selectedValues = currentSetAnswers[currentQuestion.id]?.answers || [];
-    if (selectedValues.length === 0) return;
-
-    let nextIDs: string[] = [];
-    for (const option of currentQuestion.options) {
-      if (selectedValues.includes(option.value)) {
-        if (option.next && option.next !== 'END') {
-          nextIDs.push(option.next);
-        }
-      }
-    }
-
-    nextIDs = nextIDs.filter((item, index) => nextIDs.indexOf(item) === index);
-    const validNextIDs = nextIDs.filter(id => id !== 'NEXT_BRANCH');
-    
-    if (validNextIDs.length > 0) {
-      nextIDs = validNextIDs;
-    }
-
-    if (nextIDs.length > 0) {
-      setCurrentQuestionId(nextIDs[0]);
-      if (nextIDs.length > 1) {
-        setQueuedNextQuestions(nextIDs.slice(1));
-      }
-    } else {
-      moveToNextQuestionSet();
+  const handleComplete = async () => {
+    setIsGeneratingEstimate(true);
+    try {
+      onComplete(answers);
+    } catch (error) {
+      console.error('Error completing questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process your answers. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingEstimate(false);
     }
   };
 
@@ -215,6 +194,7 @@ export const QuestionManager = ({
   const currentSet = questionSets[currentSetIndex];
   const currentSetAnswers = answers[currentSet.category] || {};
   const hasFollowUpQuestion = currentSetIndex < questionSets.length - 1 || 
+    branchingQueue.length > 0 || 
     (currentQuestion.type === 'multiple_choice' && currentQuestion.options.some(opt => opt.next));
 
   return (
@@ -222,8 +202,8 @@ export const QuestionManager = ({
       question={currentQuestion}
       selectedAnswers={currentSetAnswers[currentQuestion.id]?.answers || []}
       onSelect={handleAnswer}
-      onNext={currentQuestion.type === 'multiple_choice' ? handleMultipleChoiceNext : undefined}
-      isLastQuestion={currentSetIndex === questionSets.length - 1}
+      onNext={currentQuestion.type === 'multiple_choice' ? () => handleAnswer(currentQuestion.id, currentSetAnswers[currentQuestion.id]?.answers || []) : undefined}
+      isLastQuestion={!hasFollowUpQuestion}
       currentStage={currentSetIndex + 1}
       totalStages={questionSets.length}
       hasFollowUpQuestion={hasFollowUpQuestion}
