@@ -198,69 +198,85 @@ ${templateSettings.estimate_footer_text || ''}
     : null;
 
   const getTemplateStyles = (style: string = 'modern') => {
+    const primaryColor = contractor?.branding_colors?.primary || '#1EAEDB';
+    const primaryColorLight = `${primaryColor}20`; // 20% opacity
+    const primaryColorMedium = `${primaryColor}40`; // 40% opacity
+
     switch (style) {
       case 'minimal':
         return {
-          card: "bg-white p-8 max-w-4xl mx-auto shadow-sm",
-          header: "flex items-start justify-between mb-8 pb-6",
+          card: "bg-white p-12 max-w-4xl mx-auto shadow-sm",
+          header: "flex items-start justify-between mb-12 pb-8",
           title: "text-2xl font-light tracking-tight",
           text: "text-neutral-600",
-          section: "bg-white p-4 rounded-none border-0 mb-6",
+          section: "bg-white p-8 rounded-none border-0 mb-8 space-y-6",
           table: "w-full divide-y divide-gray-100",
-          tableHeader: "text-xs uppercase tracking-wider text-neutral-500 py-3 text-left",
-          tableRow: "hover:bg-gray-50",
-          tableCell: "py-3 text-sm text-neutral-600",
-          total: "text-3xl font-light",
+          tableHeader: "text-xs uppercase tracking-wider text-neutral-500 py-4 text-left",
+          tableRow: "group hover:bg-gray-50 transition-colors",
+          tableCell: "py-4 text-sm text-neutral-600",
+          total: "text-4xl font-light",
           button: "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
-          message: "bg-neutral-50 p-4 rounded-none",
+          message: "bg-neutral-50 p-8 rounded-none",
+          groupTitle: "text-2xl font-light mb-6 pb-4 border-b",
+          subgroupTitle: "text-xl font-light mb-4",
+          subtotal: "text-right py-4 text-lg font-light",
         };
 
       case 'classic':
         return {
-          card: "bg-[#F8F6FF] p-8 max-w-4xl mx-auto shadow-lg border-2 border-[#7E69AB]",
-          header: "flex items-start justify-between mb-8 pb-6 border-b-2 border-[#7E69AB]",
-          title: "text-2xl font-serif font-bold text-[#6E59A5]",
+          card: `bg-[#F8F6FF] p-12 max-w-4xl mx-auto shadow-lg border-2 border-[${primaryColor}]`,
+          header: `flex items-start justify-between mb-12 pb-8 border-b-2 border-[${primaryColor}]`,
+          title: `text-3xl font-serif font-bold text-[${primaryColor}]`,
           text: "text-[#4A4A4A] font-serif",
-          section: "bg-white p-6 rounded-lg border border-[#D6BCFA] mb-8 shadow-md",
-          table: "w-full border-collapse border border-[#D6BCFA]",
-          tableHeader: "bg-[#7E69AB] text-white font-serif py-3 px-4",
-          tableRow: "border-b border-[#D6BCFA]",
-          tableCell: "py-4 px-4 text-[#4A4A4A]",
-          total: "text-3xl font-serif font-bold text-[#6E59A5]",
-          button: "bg-[#7E69AB] text-white hover:bg-[#6E59A5]",
-          message: "bg-[#F8F6FF] p-6 rounded-lg border border-[#D6BCFA]",
+          section: `bg-white p-8 rounded-lg border border-[${primaryColorLight}] mb-8 shadow-md space-y-6`,
+          table: `w-full border-collapse border border-[${primaryColorLight}]`,
+          tableHeader: `bg-[${primaryColor}] text-white font-serif py-4 px-6`,
+          tableRow: `border-b border-[${primaryColorLight}] hover:bg-[${primaryColorLight}] transition-colors`,
+          tableCell: "py-4 px-6 text-[#4A4A4A] font-serif",
+          total: `text-4xl font-serif font-bold text-[${primaryColor}]`,
+          button: `bg-[${primaryColor}] text-white hover:bg-[${primaryColorMedium}]`,
+          message: `bg-[#F8F6FF] p-8 rounded-lg border border-[${primaryColorLight}]`,
+          groupTitle: "text-2xl font-serif font-bold mb-8 text-center",
+          subgroupTitle: "text-xl font-serif font-semibold mb-6 text-center",
+          subtotal: "text-right py-6 text-xl font-serif",
         };
 
       case 'bold':
         return {
-          card: "bg-[#1A1F2C] p-8 max-w-4xl mx-auto shadow-2xl",
-          header: "flex items-start justify-between mb-8 pb-6 border-b border-[#8B5CF6]",
-          title: "text-3xl font-black bg-gradient-to-r from-[#8B5CF6] to-[#D946EF] bg-clip-text text-transparent",
+          card: "bg-[#1A1F2C] p-12 max-w-4xl mx-auto shadow-2xl",
+          header: `flex items-start justify-between mb-12 pb-8 border-b border-[${primaryColor}]`,
+          title: `text-3xl font-black bg-gradient-to-r from-[${primaryColor}] to-white bg-clip-text text-transparent`,
           text: "text-gray-300",
-          section: "bg-[#252B3B] p-6 rounded-xl border border-[#8B5CF6] mb-8",
+          section: `bg-[#252B3B] p-8 rounded-xl border border-[${primaryColor}] mb-8 space-y-6`,
           table: "w-full",
-          tableHeader: "bg-[#8B5CF6] text-white font-bold py-4 px-6 rounded-t-lg",
-          tableRow: "border-b border-[#3A4356]",
-          tableCell: "py-4 px-6 text-gray-300",
-          total: "text-4xl font-black text-[#F97316]",
-          button: "bg-gradient-to-r from-[#8B5CF6] to-[#D946EF] text-white hover:from-[#7C4DEF] hover:to-[#C935DE]",
-          message: "bg-[#252B3B] p-6 rounded-xl border border-[#8B5CF6]",
+          tableHeader: `bg-[${primaryColor}] text-white font-bold py-6 px-8 rounded-t-lg`,
+          tableRow: "border-b border-[#3A4356] hover:bg-[#2A3346] transition-colors",
+          tableCell: "py-6 px-8 text-gray-300",
+          total: `text-5xl font-black text-[${primaryColor}]`,
+          button: `bg-gradient-to-r from-[${primaryColor}] to-[${primaryColorMedium}] text-white hover:opacity-90`,
+          message: `bg-[#252B3B] p-8 rounded-xl border border-[${primaryColor}]`,
+          groupTitle: "text-3xl font-black mb-8 bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent",
+          subgroupTitle: "text-2xl font-bold mb-6 text-white",
+          subtotal: "text-right py-6 text-2xl font-bold text-white",
         };
 
       default: // modern
         return {
-          card: "bg-white p-8 max-w-4xl mx-auto shadow-lg",
-          header: "flex items-start justify-between mb-8 pb-6 border-b border-gray-200",
-          title: "text-2xl font-bold text-[#1EAEDB]",
+          card: "bg-white p-12 max-w-4xl mx-auto shadow-lg",
+          header: "flex items-start justify-between mb-12 pb-8 border-b border-gray-200",
+          title: `text-3xl font-bold text-[${primaryColor}]`,
           text: "text-gray-600",
-          section: "bg-[#F8FAFC] p-6 rounded-xl shadow-sm mb-6",
+          section: "bg-[#F8FAFC] p-8 rounded-2xl shadow-sm mb-8 space-y-6",
           table: "w-full",
-          tableHeader: "bg-[#1EAEDB] text-white font-medium py-3 px-4 rounded-t-lg",
-          tableRow: "border-b border-gray-100 hover:bg-blue-50/50",
-          tableCell: "py-3 px-4",
-          total: "text-3xl font-bold text-[#1EAEDB]",
-          button: "bg-[#1EAEDB] text-white hover:bg-[#33C3F0]",
-          message: "bg-blue-50 p-6 rounded-xl border border-blue-100",
+          tableHeader: `bg-[${primaryColor}] text-white font-medium py-4 px-6 rounded-t-xl`,
+          tableRow: `border-b border-gray-100 hover:bg-[${primaryColorLight}] transition-colors`,
+          tableCell: "py-4 px-6",
+          total: `text-4xl font-bold text-[${primaryColor}]`,
+          button: `bg-[${primaryColor}] text-white hover:opacity-90`,
+          message: "bg-blue-50 p-8 rounded-2xl border border-blue-100",
+          groupTitle: "text-2xl font-bold mb-8",
+          subgroupTitle: "text-xl font-semibold mb-6",
+          subtotal: "text-right py-6 text-xl font-semibold",
         };
     }
   };
@@ -277,12 +293,12 @@ ${templateSettings.estimate_footer_text || ''}
         <div id="estimate-content">
           {/* Company Header */}
           <div className={styles.header}>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               {contractor?.business_logo_url && (
                 <img 
                   src={contractor.business_logo_url} 
                   alt={`${companyInfo.business_name} logo`}
-                  className="w-16 h-16 object-contain"
+                  className="w-20 h-20 object-contain rounded-lg"
                 />
               )}
               <div>
@@ -295,7 +311,7 @@ ${templateSettings.estimate_footer_text || ''}
                 )}
               </div>
             </div>
-            <div id="estimate-actions" className="flex items-center gap-4">
+            <div id="estimate-actions" className="flex items-center gap-6">
               {isContractor && (
                 <Button
                   variant="ghost"
@@ -333,15 +349,15 @@ ${templateSettings.estimate_footer_text || ''}
 
           {/* Client Message */}
           {templateSettings?.estimate_client_message && (
-            <div className={cn(styles.message, "mb-8")}>
+            <div className={cn(styles.message, "mb-12")}>
               <p className={styles.text}>{templateSettings.estimate_client_message}</p>
             </div>
           )}
 
           {/* Project Summary */}
           {projectSummary && (
-            <div className={cn(styles.message, "mb-8")}>
-              <h2 className={cn(styles.title, "mb-2 !text-xl")}>Project Overview</h2>
+            <div className={cn(styles.message, "mb-12")}>
+              <h2 className={cn(styles.title, "!text-2xl mb-4")}>Project Overview</h2>
               <p className={styles.text}>{projectSummary}</p>
             </div>
           )}
@@ -349,18 +365,16 @@ ${templateSettings.estimate_footer_text || ''}
           {/* Estimate Groups */}
           {groups?.map((group, index) => (
             <div key={index} className={styles.section}>
-              <div className="mb-4">
-                <h3 className={cn(styles.title, "!text-xl")}>{group.name}</h3>
-                {group.description && (
-                  <p className={styles.text}>{group.description}</p>
-                )}
-              </div>
+              <h3 className={styles.groupTitle}>{group.name}</h3>
+              {group.description && (
+                <p className={cn(styles.text, "mb-8")}>{group.description}</p>
+              )}
 
               {/* Subgroups */}
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {group.subgroups?.map((subgroup, subIndex) => (
                   <div key={subIndex} className={styles.section}>
-                    <h4 className={cn(styles.title, "!text-lg mb-3")}>{subgroup.name}</h4>
+                    <h4 className={styles.subgroupTitle}>{subgroup.name}</h4>
                     
                     {/* Line Items Table */}
                     <div className="overflow-x-auto">
@@ -389,36 +403,36 @@ ${templateSettings.estimate_footer_text || ''}
                     </div>
 
                     {/* Subgroup Subtotal */}
-                    <div className="mt-4 pt-4 border-t flex justify-between items-center">
-                      <p className={cn(styles.text, "font-medium")}>Subtotal for {subgroup.name}</p>
-                      <p className="font-semibold">${subgroup.subtotal.toFixed(2)}</p>
+                    <div className={styles.subtotal}>
+                      <span className={styles.text}>Subtotal for {subgroup.name}</span>
+                      <span className="font-semibold ml-4">${subgroup.subtotal.toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* Group Subtotal */}
-              <div className="mt-6 pt-4 border-t flex justify-between items-center">
-                <p className={cn(styles.text, "font-medium")}>Subtotal for {group.name}</p>
-                <p className="font-semibold">
+              <div className={cn(styles.subtotal, "mt-8 pt-6 border-t")}>
+                <span className={styles.text}>Subtotal for {group.name}</span>
+                <span className="font-semibold ml-4">
                   ${group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0).toFixed(2)}
-                </p>
+                </span>
               </div>
             </div>
           ))}
           
           {/* Total */}
-          <div className="mt-8 pt-6 border-t space-y-4">
+          <div className="mt-12 pt-8 border-t space-y-6">
             <div className="flex justify-between items-center">
               <p className={styles.text}>Subtotal</p>
-              <p className={styles.text}>${totalCost.toFixed(2)}</p>
+              <p className={cn(styles.text, "text-xl")}>${totalCost.toFixed(2)}</p>
             </div>
             <div className="flex justify-between items-center">
               <p className={styles.text}>Tax (8.5%)</p>
-              <p className={styles.text}>${(totalCost * 0.085).toFixed(2)}</p>
+              <p className={cn(styles.text, "text-xl")}>${(totalCost * 0.085).toFixed(2)}</p>
             </div>
-            <div className="flex justify-between items-center pt-4 border-t">
-              <p className={cn(styles.title, "!text-xl")}>Total Estimate</p>
+            <div className="flex justify-between items-center pt-6 border-t">
+              <p className={cn(styles.title, "!text-2xl")}>Total Estimate</p>
               <p className={styles.total}>${(totalCost * 1.085).toFixed(2)}</p>
             </div>
           </div>
@@ -426,17 +440,17 @@ ${templateSettings.estimate_footer_text || ''}
 
         {/* Signature Section */}
         {templateSettings?.estimate_signature_enabled && (
-          <div className={cn("mt-8 pt-6 border-t space-y-6", styles.text)}>
-            <h3 className={cn(styles.title, "!text-xl")}>Signatures</h3>
-            <div className="grid grid-cols-2 gap-8">
-              <div className="space-y-2">
+          <div className={cn("mt-12 pt-8 border-t space-y-8", styles.text)}>
+            <h3 className={cn(styles.title, "!text-2xl")}>Signatures</h3>
+            <div className="grid grid-cols-2 gap-12">
+              <div className="space-y-4">
                 <p className="text-sm font-medium">Client Signature</p>
-                <div className={cn("h-32 rounded-lg", styles.message)}></div>
+                <div className={cn("h-40 rounded-lg", styles.message)}></div>
                 <p className="text-sm">Sign above to approve this estimate</p>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <p className="text-sm font-medium">Contractor Signature</p>
-                <div className={cn("h-32 rounded-lg", styles.message)}></div>
+                <div className={cn("h-40 rounded-lg", styles.message)}></div>
                 <p className="text-sm">Contractor approval</p>
               </div>
             </div>
@@ -445,7 +459,7 @@ ${templateSettings.estimate_footer_text || ''}
 
         {/* Footer Text */}
         {templateSettings?.estimate_footer_text && (
-          <div className={cn("mt-8 pt-6 border-t", styles.text)}>
+          <div className={cn("mt-12 pt-8 border-t", styles.text)}>
             <p className="whitespace-pre-wrap">
               {templateSettings.estimate_footer_text}
             </p>
