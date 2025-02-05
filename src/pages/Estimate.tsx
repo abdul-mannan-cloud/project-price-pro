@@ -503,6 +503,21 @@ const EstimatePage = () => {
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-12">
+        {stage === 'category' && (
+          <div className="animate-fadeIn">
+            <h2 className="text-2xl font-semibold mb-2">Select Service Category</h2>
+            <p className="text-muted-foreground mb-6">
+              Sorry, we did not understand the scope of your project. Please select the category for which you need help with.
+            </p>
+            <CategoryGrid 
+              categories={categories}
+              selectedCategory={selectedCategory || undefined}
+              onSelectCategory={handleCategorySelect}
+              completedCategories={completedCategories}
+            />
+          </div>
+        )}
+
         {stage === 'photo' && (
           <div className="card p-8 animate-fadeIn">
             <div className="flex flex-col items-start gap-6">
@@ -567,18 +582,6 @@ const EstimatePage = () => {
             >
               Continue
             </Button>
-          </div>
-        )}
-
-        {stage === 'category' && (
-          <div className="animate-fadeIn">
-            <h2 className="text-2xl font-semibold mb-6">Select Service Category</h2>
-            <CategoryGrid 
-              categories={categories}
-              selectedCategory={selectedCategory || undefined}
-              onSelectCategory={handleCategorySelect}
-              completedCategories={completedCategories}
-            />
           </div>
         )}
 
