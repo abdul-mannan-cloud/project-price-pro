@@ -23,33 +23,30 @@ export const QuestionManager = ({
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
 
   useEffect(() => {
+    console.log("Loading question set for index:", currentSetIndex);
+    console.log("Question sets:", questionSets);
     loadCurrentQuestionSet();
   }, [currentSetIndex, questionSets]);
 
-  useEffect(() => {
-    if (!isLoadingQuestions && !questionSequence.find(q => q.id === currentQuestionId)) {
-      if (queuedNextQuestions.length > 0) {
-        setCurrentQuestionId(queuedNextQuestions[0]);
-        setQueuedNextQuestions(queuedNextQuestions.slice(1));
-      } else {
-        handleComplete();
-      }
-    }
-  }, [currentQuestionId, isLoadingQuestions, questionSequence, queuedNextQuestions]);
-
-  const loadCurrentQuestionSet = () => {
+  const loadCurrentQuestionSet = async () => {
     if (!questionSets[currentSetIndex]) {
+      console.log("No more question sets, completing...");
       onComplete(answers);
       return;
     }
 
     try {
       const currentSet = questionSets[currentSetIndex];
+      console.log("Current set:", currentSet);
+
       if (!currentSet?.questions?.length) {
+        console.error('No questions available for category:', currentSet?.category);
         throw new Error('No questions available for this category');
       }
 
       const sortedQuestions = currentSet.questions.sort((a, b) => a.order - b.order);
+      console.log("Sorted questions:", sortedQuestions);
+      
       setQuestionSequence(sortedQuestions);
       setCurrentQuestionId(sortedQuestions[0].id);
       setIsLoadingQuestions(false);
