@@ -69,6 +69,9 @@ export const TranslationSettings = () => {
 
       // Invalidate and refetch all queries to get fresh translations
       await queryClient.invalidateQueries();
+
+      // Force reload the page to ensure all components are re-rendered with new translations
+      window.location.reload();
     },
     onSuccess: () => {
       toast({
