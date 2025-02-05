@@ -14,9 +14,10 @@ import { BrandingSettings } from "@/components/settings/BrandingSettings";
 import { TranslationSettings } from "@/components/settings/TranslationSettings";
 import { AdminSettings } from "@/components/settings/AdminSettings";
 import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
+import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { BrandingColors, AIInstruction } from "@/types/settings";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   Building2,
   Users,
@@ -38,6 +39,8 @@ const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState("business");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -107,6 +110,16 @@ const Settings = () => {
     },
   });
 
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section);
+    if (isMobile) {
+      setIsDialogOpen(true);
+    }
+  };
+
+  const isAdmin = contractor?.contact_email === "cairlbrandon@gmail.com" || 
+                 contractor?.contact_email === "brandon@reliablepro.net";
+
   const handleLogout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -126,21 +139,6 @@ const Settings = () => {
     }
   };
 
-  const updateBrandingColors = async (colors: BrandingColors) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("No authenticated user");
-
-    const { error } = await supabase
-      .from("contractors")
-      .update({ branding_colors: colors })
-      .eq("id", user.id);
-
-    if (error) throw error;
-  };
-
-  const isAdmin = contractor?.contact_email === "cairlbrandon@gmail.com" || 
-                 contractor?.contact_email === "brandon@reliablepro.net";
-
   if (contractorLoading) {
     return (
       <div className="min-h-screen bg-secondary">
@@ -154,9 +152,20 @@ const Settings = () => {
     );
   }
 
-  const defaultBrandingColors: BrandingColors = {
-    primary: "#6366F1",
-    secondary: "#4F46E5"
+  const getSectionTitle = () => {
+    switch (activeSection) {
+      case "business": return "Business Information";
+      case "team": return "Team Members";
+      case "subscription": return "Subscription";
+      case "branding": return "Branding";
+      case "estimate": return "Estimate Settings";
+      case "ai": return "AI Preferences";
+      case "categories": return "Service Categories";
+      case "webhooks": return "Webhooks";
+      case "translation": return "Language & Translation";
+      case "admin": return "Admin Settings";
+      default: return "";
+    }
   };
 
   const renderContent = () => {
@@ -219,7 +228,7 @@ const Settings = () => {
       case "branding":
         return (
           <BrandingSettings 
-            initialColors={contractor?.branding_colors as BrandingColors || defaultBrandingColors}
+            initialColors={contractor?.branding_colors || { primary: "#6366F1", secondary: "#4F46E5" }}
             onSave={updateBrandingColors}
           />
         );
@@ -312,63 +321,63 @@ const Settings = () => {
               icon={<Building2 className="h-5 w-5" />}
               title="Business Information"
               description="Update your business details and contact information"
-              onClick={() => setActiveSection("business")}
+              onClick={() => handleSectionChange("business")}
               isActive={activeSection === "business"}
             />
             <SettingsMenuItem
               icon={<Users className="h-5 w-5" />}
               title="Team Members"
               description="Manage your team members and their access"
-              onClick={() => setActiveSection("team")}
+              onClick={() => handleSectionChange("team")}
               isActive={activeSection === "team"}
             />
             <SettingsMenuItem
               icon={<CreditCard className="h-5 w-5" />}
               title="Subscription"
               description="Manage your subscription and billing"
-              onClick={() => setActiveSection("subscription")}
+              onClick={() => handleSectionChange("subscription")}
               isActive={activeSection === "subscription"}
             />
             <SettingsMenuItem
               icon={<Palette className="h-5 w-5" />}
               title="Branding"
               description="Customize your brand colors and appearance"
-              onClick={() => setActiveSection("branding")}
+              onClick={() => handleSectionChange("branding")}
               isActive={activeSection === "branding"}
             />
             <SettingsMenuItem
               icon={<Calculator className="h-5 w-5" />}
               title="Estimate Settings"
               description="Configure your pricing and cost calculations"
-              onClick={() => setActiveSection("estimate")}
+              onClick={() => handleSectionChange("estimate")}
               isActive={activeSection === "estimate"}
             />
             <SettingsMenuItem
               icon={<Bot className="h-5 w-5" />}
               title="AI Preferences"
               description="Configure how AI generates estimates and manages rates"
-              onClick={() => setActiveSection("ai")}
+              onClick={() => handleSectionChange("ai")}
               isActive={activeSection === "ai"}
             />
             <SettingsMenuItem
               icon={<Grid className="h-5 w-5" />}
               title="Service Categories"
               description="Select which services you offer and customize your estimate workflow"
-              onClick={() => setActiveSection("categories")}
+              onClick={() => handleSectionChange("categories")}
               isActive={activeSection === "categories"}
             />
             <SettingsMenuItem
               icon={<Webhook className="h-5 w-5" />}
               title="Webhooks"
               description="Configure external integrations and automation"
-              onClick={() => setActiveSection("webhooks")}
+              onClick={() => handleSectionChange("webhooks")}
               isActive={activeSection === "webhooks"}
             />
             <SettingsMenuItem
               icon={<Globe2 className="h-5 w-5" />}
               title="Language & Translation"
               description="Configure your language preferences and translations"
-              onClick={() => setActiveSection("translation")}
+              onClick={() => handleSectionChange("translation")}
               isActive={activeSection === "translation"}
             />
             {isAdmin && (
@@ -376,7 +385,7 @@ const Settings = () => {
                 icon={<ShieldAlert className="h-5 w-5" />}
                 title="Admin Settings"
                 description="Access administrative functions and data"
-                onClick={() => setActiveSection("admin")}
+                onClick={() => handleSectionChange("admin")}
                 isActive={activeSection === "admin"}
               />
             )}
@@ -388,9 +397,19 @@ const Settings = () => {
             />
           </div>
           
-          <div className="flex-1 bg-background rounded-lg border p-6">
-            {renderContent()}
-          </div>
+          {isMobile ? (
+            <SettingsDialog
+              title={getSectionTitle()}
+              isOpen={isDialogOpen}
+              onClose={() => setIsDialogOpen(false)}
+            >
+              {renderContent()}
+            </SettingsDialog>
+          ) : (
+            <div className="flex-1 bg-background rounded-lg border p-6">
+              {renderContent()}
+            </div>
+          )}
         </div>
       </div>
     </div>
