@@ -127,6 +127,9 @@ export type Database = {
           ai_preferences: Json | null
           ai_prompt_template: string | null
           created_at: string | null
+          estimate_client_message: string | null
+          estimate_footer_text: string | null
+          estimate_signature_enabled: boolean | null
           estimate_template_style: string | null
           excluded_categories: string[] | null
           id: string
@@ -141,6 +144,9 @@ export type Database = {
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
           created_at?: string | null
+          estimate_client_message?: string | null
+          estimate_footer_text?: string | null
+          estimate_signature_enabled?: boolean | null
           estimate_template_style?: string | null
           excluded_categories?: string[] | null
           id: string
@@ -155,6 +161,9 @@ export type Database = {
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
           created_at?: string | null
+          estimate_client_message?: string | null
+          estimate_footer_text?: string | null
+          estimate_signature_enabled?: boolean | null
           estimate_template_style?: string | null
           excluded_categories?: string[] | null
           id?: string
