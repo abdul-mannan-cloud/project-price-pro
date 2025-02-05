@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import i18next from "@/i18n/config";
+import { useNavigate } from "react-router-dom";
 
 const languages = [
   { code: "en", name: "English", nativeName: "English" },
@@ -17,13 +17,18 @@ const languages = [
 export const TranslationSettings = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const { data: settings } = useQuery({
     queryKey: ["contractorSettings"],
     queryFn: async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return null;
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError) throw authError;
+        if (!user) {
+          navigate("/login");
+          return null;
+        }
 
         const { data, error } = await supabase
           .from("contractor_settings")
@@ -35,6 +40,9 @@ export const TranslationSettings = () => {
         return data;
       } catch (error) {
         console.error('Error fetching settings:', error);
+        if (error.message?.includes('JWT')) {
+          navigate("/login");
+        }
         return null;
       }
     },
@@ -76,10 +84,15 @@ export const TranslationSettings = () => {
   useEffect(() => {
     const setupLanguage = async () => {
       try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          navigate("/login");
+          return;
+        }
+
         const storedPreference = localStorage.getItem('preferred_language');
         const systemLanguage = navigator.language.split('-')[0];
         
-        // Use this order of precedence: settings > localStorage > system > default
         let preferredLanguage = 'en';
 
         if (settings?.preferred_language) {
@@ -88,7 +101,6 @@ export const TranslationSettings = () => {
           preferredLanguage = storedPreference;
         } else if (languages.some(lang => lang.code === systemLanguage)) {
           preferredLanguage = systemLanguage;
-          // Save system language preference if it's the first time
           if (!storedPreference) {
             localStorage.setItem('preferred_language', systemLanguage);
           }
@@ -97,11 +109,14 @@ export const TranslationSettings = () => {
         await i18next.changeLanguage(preferredLanguage);
       } catch (error) {
         console.error('Error setting up language:', error);
+        if (error.message?.includes('JWT')) {
+          navigate("/login");
+        }
       }
     };
 
     setupLanguage();
-  }, [settings]);
+  }, [settings, navigate]);
 
   return (
     <Card className="p-8 space-y-6">
