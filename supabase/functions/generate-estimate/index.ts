@@ -118,13 +118,25 @@ Make sure to:
     });
 
     if (!response.ok) {
+      console.error('Llama API error:', await response.text());
       throw new Error('Failed to generate estimate with Llama');
     }
 
     const aiResponse = await response.json();
-    const estimateJson = JSON.parse(aiResponse.choices[0].message.content);
+    console.log('Raw AI response:', aiResponse);
 
-    console.log('Generated estimate:', estimateJson);
+    if (!aiResponse.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response format from Llama API');
+    }
+
+    let estimateJson;
+    try {
+      estimateJson = JSON.parse(aiResponse.choices[0].message.content);
+      console.log('Parsed estimate:', estimateJson);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error('Failed to parse estimate JSON from Llama API');
+    }
 
     return new Response(
       JSON.stringify(estimateJson),
