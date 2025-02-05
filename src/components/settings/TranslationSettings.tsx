@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
+import i18next from "@/i18n/config";
 
 const languages = [
   { code: "en", name: "English", nativeName: "English" },
@@ -14,7 +15,7 @@ const languages = [
 ];
 
 export const TranslationSettings = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { toast } = useToast();
 
   const { data: settings, isLoading } = useQuery({
@@ -52,7 +53,7 @@ export const TranslationSettings = () => {
       if (error) throw error;
       
       // Update i18n language
-      await i18n.changeLanguage(language);
+      await i18next.changeLanguage(language);
       
       // Store in localStorage for persistence
       localStorage.setItem('preferred_language', language);
@@ -74,30 +75,34 @@ export const TranslationSettings = () => {
 
   useEffect(() => {
     const setupLanguage = async () => {
-      // Get system language
-      const systemLanguage = navigator.language.split('-')[0];
-      
-      // Check if we have a stored preference
-      const storedPreference = localStorage.getItem('preferred_language');
-      
-      let preferredLanguage = 'en';
+      try {
+        // Get system language
+        const systemLanguage = navigator.language.split('-')[0];
+        
+        // Check if we have a stored preference
+        const storedPreference = localStorage.getItem('preferred_language');
+        
+        let preferredLanguage = 'en';
 
-      if (settings?.preferred_language) {
-        preferredLanguage = settings.preferred_language;
-      } else if (storedPreference) {
-        preferredLanguage = storedPreference;
-      } else if (languages.some(lang => lang.code === systemLanguage)) {
-        preferredLanguage = systemLanguage;
-        // If we're using system language, save it as the user's preference
-        updateLanguage.mutate(systemLanguage);
+        if (settings?.preferred_language) {
+          preferredLanguage = settings.preferred_language;
+        } else if (storedPreference) {
+          preferredLanguage = storedPreference;
+        } else if (languages.some(lang => lang.code === systemLanguage)) {
+          preferredLanguage = systemLanguage;
+          // If we're using system language, save it as the user's preference
+          await updateLanguage.mutateAsync(systemLanguage);
+        }
+
+        // Set the language
+        await i18next.changeLanguage(preferredLanguage);
+      } catch (error) {
+        console.error('Error setting up language:', error);
       }
-
-      // Set the language
-      await i18n.changeLanguage(preferredLanguage);
     };
 
     setupLanguage();
-  }, [settings, i18n, updateLanguage]);
+  }, [settings, updateLanguage]);
 
   if (isLoading) {
     return (
@@ -125,7 +130,7 @@ export const TranslationSettings = () => {
             {t("Preferred Language")}
           </label>
           <Select
-            value={settings?.preferred_language || i18n.language || 'en'}
+            value={settings?.preferred_language || localStorage.getItem('preferred_language') || 'en'}
             onValueChange={(value) => updateLanguage.mutate(value)}
           >
             <SelectTrigger className="w-full mt-2">
