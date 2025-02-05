@@ -136,7 +136,7 @@ const EstimatePage = () => {
         category: categoryId,
         keywords: Array.isArray(rawCategoryData.keywords) ? rawCategoryData.keywords : [],
         questions: Array.isArray(rawCategoryData.questions) ? rawCategoryData.questions.map((q: any) => ({
-          id: q.id || `q-${q.order}`,
+          id: q.id || crypto.randomUUID(),
           question: q.question,
           type: q.type || 'single_choice',
           order: q.order || 0,
@@ -482,7 +482,7 @@ const EstimatePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-secondary">
       <Progress 
         value={getProgressValue()} 
         className="h-8 rounded-none transition-all duration-500 ease-in-out"
@@ -491,43 +491,52 @@ const EstimatePage = () => {
       {contractor && (
         <button 
           onClick={() => navigate("/dashboard")}
-          className="absolute top-4 left-4 text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
+          className="absolute top-4 left-4 text-muted-foreground hover:text-foreground flex items-center gap-2 p-2 z-10"
         >
           <ArrowLeft size={20} />
           Back to Dashboard
         </button>
       )}
 
-      <div className="max-w-4xl mx-auto px-4 py-12">
+      <div className="container max-w-4xl mx-auto px-4 py-12">
         {stage === 'photo' && (
           <div className="card p-8 animate-fadeIn">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col items-start gap-6">
+              <div className="flex items-center gap-6 w-full">
                 {contractor?.business_logo_url && (
                   <img 
                     src={contractor.business_logo_url} 
                     alt={contractor.business_name}
-                    className="h-12 w-12 object-contain rounded-lg"
+                    className="h-16 w-16 object-contain rounded-lg"
                   />
                 )}
-                <div>
-                  <h2 className="text-2xl font-semibold mb-2">
-                    {contractor?.business_name || "Project"} Estimator
-                  </h2>
-                  <p className="text-muted-foreground font-semibold">
-                    Quickly estimate your project cost in minutes! Simply take or upload a photo of what you want to repair or modify (e.g., "paint this wall").
-                  </p>
-                </div>
+                <h2 className="text-2xl font-semibold">
+                  {contractor?.business_name || "Project"} Estimator
+                </h2>
               </div>
+              <p className="text-muted-foreground font-semibold">
+                Quickly estimate your project cost in minutes! Simply take or upload a photo of what you want to repair or modify (e.g., "paint this wall").
+              </p>
             </div>
-            <PhotoUpload 
-              onPhotosSelected={(urls) => {
-                setUploadedImageUrl(urls[0]);
-                setStage('description');
-              }}
-              onNext={() => setStage('description')}
-              uploadedPhotos={uploadedImageUrl ? [uploadedImageUrl] : []}
-            />
+            <div className="mt-8">
+              <PhotoUpload 
+                onPhotosSelected={(urls) => {
+                  setUploadedImageUrl(urls[0]);
+                  setStage('description');
+                }}
+                onNext={() => setStage('description')}
+                uploadedPhotos={uploadedImageUrl ? [uploadedImageUrl] : []}
+              />
+              <Button 
+                variant="ghost" 
+                className="w-full mt-4" 
+                size="lg" 
+                onClick={() => setStage('description')}
+              >
+                <SkipForward className="mr-2" />
+                Skip Photo
+              </Button>
+            </div>
           </div>
         )}
 
