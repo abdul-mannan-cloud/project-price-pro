@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Json } from "@/integrations/supabase/types";
+import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
 import { 
   LogOut, 
   LayoutDashboard as LayoutDashboardIcon, 
