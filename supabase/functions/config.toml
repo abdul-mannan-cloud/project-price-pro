@@ -1,0 +1,9 @@
+
+project_id = "sflysnodxcufeszuymxk"
+
+[global.build]
+command = "esbuild --bundle --format=esm --platform=node --external:__STATIC_CONTENT_MANIFEST --outfile=dist/index.js dist/index.js"
+
+[[global.functions]]
+name = "send-teammate-invitation"
+verify_jwt = true
