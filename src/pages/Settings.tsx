@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { WebhookSettings } from "@/components/settings/WebhookSettings";
 import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
 import { AIInstructionsForm } from "@/components/settings/AIInstructionsForm";
@@ -33,6 +32,17 @@ import {
   Users2,
   Settings as SettingsIcon
 } from "lucide-react";
+
+interface AIInstruction {
+  title: string;
+  description: string;
+  instructions: string;
+}
+
+interface BrandingColors {
+  primary: string;
+  secondary: string;
+}
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -76,10 +86,6 @@ const Settings = () => {
           business_address: formData.businessAddress,
           website: formData.website,
           license_number: formData.licenseNumber,
-          branding_colors: {
-            primary: formData.primaryColor,
-            secondary: formData.secondaryColor
-          }
         })
         .eq("id", user.id);
 
@@ -91,23 +97,16 @@ const Settings = () => {
           minimum_project_cost: formData.minimumProjectCost,
           markup_percentage: formData.markupPercentage,
           tax_rate: formData.taxRate,
-          ai_instructions: JSON.stringify(formData.aiInstructions || [])
         })
         .eq("id", user.id);
 
       if (settingsError) throw settingsError;
-
-      document.documentElement.style.setProperty('--primary', formData.primaryColor);
-      document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
-      document.documentElement.style.setProperty('--secondary', formData.secondaryColor);
-      document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
     },
     onSuccess: () => {
       toast({
         title: "Settings saved",
         description: "Your settings have been updated successfully.",
       });
-      setActiveDialog(null);
     },
     onError: (error: any) => {
       toast({
@@ -152,6 +151,20 @@ const Settings = () => {
       </div>
     );
   }
+
+  const handleSaveBrandingColors = async (colors: BrandingColors) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No authenticated user");
+
+    const { error } = await supabase
+      .from("contractors")
+      .update({
+        branding_colors: colors
+      })
+      .eq("id", user.id);
+
+    if (error) throw error;
+  };
 
   const renderContent = () => {
     switch (activeSection) {
@@ -211,7 +224,12 @@ const Settings = () => {
       case "subscription":
         return <SubscriptionSettings />;
       case "branding":
-        return <BrandingSettings />;
+        return (
+          <BrandingSettings 
+            initialColors={contractor?.branding_colors || { primary: "#6366F1", secondary: "#4F46E5" }}
+            onSave={handleSaveBrandingColors}
+          />
+        );
       case "estimate":
         return (
           <form onSubmit={(e) => {
@@ -264,7 +282,8 @@ const Settings = () => {
         return (
           <div className="space-y-6">
             <AIInstructionsForm
-              instructions={contractor?.contractor_settings?.ai_instructions || []}
+              instructions={contractor?.contractor_settings?.ai_instructions ? 
+                JSON.parse(contractor.contractor_settings.ai_instructions) : []}
               onSave={(instructions) => {
                 updateSettings.mutate({
                   aiInstructions: instructions
