@@ -9,6 +9,9 @@ import { Card } from "@/components/ui/card";
 import { Check, AlertTriangle, Square, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
+import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuestionCardProps {
   question: Question;
@@ -36,13 +39,32 @@ export const QuestionCard = ({
   const questionLoadTime = useRef<number>(0);
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { contractorId } = useParams();
+
+  // Fetch contractor data to get branding colors
+  const { data: contractor } = useQuery({
+    queryKey: ["contractor", contractorId],
+    queryFn: async () => {
+      if (!contractorId) return null;
+      const { data, error } = await supabase
+        .from("contractors")
+        .select("*")
+        .eq("id", contractorId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!contractorId
+  });
+
+  const primaryColor = contractor?.branding_colors?.primary || "#9b87f5";
 
   useEffect(() => {
     // Reset the load time whenever the question changes
     questionLoadTime.current = Date.now();
     setShowNextButton(question.type === 'multiple_choice' ? selectedAnswers.length > 0 : selectedAnswers.length === 1);
-    setIsProcessing(false); // Reset processing state for new question
-  }, [question.id, selectedAnswers]); // Add question.id to dependencies
+    setIsProcessing(false);
+  }, [question.id, selectedAnswers]);
 
   const handleOptionClick = async (value: string) => {
     if (question.type === 'multiple_choice') {
@@ -103,6 +125,14 @@ export const QuestionCard = ({
   };
 
   const options = Array.isArray(question?.options) ? question.options : [];
+
+  const buttonStyle = {
+    backgroundColor: primaryColor,
+    borderColor: primaryColor,
+    borderBottomColor: `${primaryColor}dd`,
+    "--tw-border-opacity": "1",
+    borderBottomWidth: "4px",
+  } as React.CSSProperties;
 
   return (
     <>
@@ -178,6 +208,7 @@ export const QuestionCard = ({
             <Button 
               onClick={onNext}
               className="button button-primary w-full"
+              style={buttonStyle}
               size="lg"
             >
               {hasFollowUpQuestion ? 'Continue' : 'Complete'}
@@ -193,6 +224,7 @@ export const QuestionCard = ({
                 onClick={onNext}
                 disabled={!showNextButton}
                 className="button button-primary w-full"
+                style={buttonStyle}
                 size="lg"
               >
                 {hasFollowUpQuestion ? 'Continue' : 'Complete'}
