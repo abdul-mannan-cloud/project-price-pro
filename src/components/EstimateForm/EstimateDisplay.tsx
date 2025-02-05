@@ -45,8 +45,8 @@ interface EstimateDisplayProps {
 }
 
 export const EstimateDisplay = ({ 
-  groups, 
-  totalCost, 
+  groups = [], 
+  totalCost = 0, 
   isBlurred = false,
   contractor,
   projectSummary,
@@ -107,7 +107,7 @@ export const EstimateDisplay = ({
 
       {/* Estimate Groups */}
       <div className="space-y-8">
-        {groups.map((group, index) => (
+        {groups?.map((group, index) => (
           <div key={index} className="bg-gray-50 p-6 rounded-lg">
             <div className="mb-4">
               <h3 className="text-lg font-semibold">{group.name}</h3>
@@ -118,7 +118,7 @@ export const EstimateDisplay = ({
 
             {/* Subgroups */}
             <div className="space-y-6">
-              {group.subgroups.map((subgroup, subIndex) => (
+              {group.subgroups?.map((subgroup, subIndex) => (
                 <div key={subIndex} className="bg-white p-4 rounded-md shadow-sm">
                   <h4 className="font-medium mb-3 text-primary">{subgroup.name}</h4>
                   
@@ -135,7 +135,7 @@ export const EstimateDisplay = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {subgroup.items.map((item, itemIndex) => (
+                        {subgroup.items?.map((item, itemIndex) => (
                           <tr key={itemIndex} className="border-b border-gray-100">
                             <td className="py-3 px-4 font-medium">{formatItemTitle(item.title, item.unit)}</td>
                             <td className="py-3 px-4 text-sm text-muted-foreground">{item.description}</td>
