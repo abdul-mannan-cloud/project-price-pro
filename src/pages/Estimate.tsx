@@ -466,6 +466,8 @@ const EstimatePage = () => {
     loadQuestionSet(categoryId);
   };
 
+  const showProgressBar = stage !== 'estimate' && stage !== 'contact';
+
   if (isProcessing) {
     return (
       <LoadingScreen
@@ -484,10 +486,12 @@ const EstimatePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Progress 
-        value={progress} 
-        className="h-8 rounded-none transition-all duration-500 ease-in-out"
-      />
+      {showProgressBar && (
+        <Progress 
+          value={progress} 
+          className="h-8 rounded-none transition-all duration-500 ease-in-out"
+        />
+      )}
       
       {contractor && contractor.id === contractorId && (
         <div className="w-full border-b border-gray-200">
