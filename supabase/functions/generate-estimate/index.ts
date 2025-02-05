@@ -125,36 +125,83 @@ Make sure to:
     });
 
     if (!response.ok) {
-      console.error('Llama API error:', await response.text());
-      throw new Error('Failed to generate estimate with Llama');
+      console.error('Llama API error response:', await response.text());
+      throw new Error(`Llama API error: ${response.status} ${response.statusText}`);
     }
 
     const aiResponse = await response.json();
     console.log('Raw AI response:', aiResponse);
 
     if (!aiResponse.choices?.[0]?.message?.content) {
+      console.error('Invalid response format from Llama API:', aiResponse);
       throw new Error('Invalid response format from Llama API');
     }
 
     let estimateJson;
     try {
-      const content = aiResponse.choices[0].message.content;
+      const content = aiResponse.choices[0].message.content.trim();
       console.log('Parsing content:', content);
+      
+      // Validate that the content starts with { and ends with }
+      if (!content.startsWith('{') || !content.endsWith('}')) {
+        throw new Error('Invalid JSON format: content must be a JSON object');
+      }
+      
       estimateJson = JSON.parse(content);
       console.log('Parsed estimate:', estimateJson);
 
       // Validate the structure
       if (!estimateJson.groups || !Array.isArray(estimateJson.groups)) {
-        throw new Error('Invalid estimate structure: missing groups array');
+        throw new Error('Invalid estimate structure: missing or invalid groups array');
       }
 
       if (typeof estimateJson.totalCost !== 'number') {
         throw new Error('Invalid estimate structure: missing or invalid totalCost');
       }
 
+      // Validate each group and subgroup
+      estimateJson.groups.forEach((group: any, groupIndex: number) => {
+        if (!group.name || typeof group.name !== 'string') {
+          throw new Error(`Invalid group name at index ${groupIndex}`);
+        }
+        
+        if (!group.subgroups || !Array.isArray(group.subgroups)) {
+          throw new Error(`Invalid subgroups array in group ${group.name}`);
+        }
+
+        group.subgroups.forEach((subgroup: any, subgroupIndex: number) => {
+          if (!subgroup.name || typeof subgroup.name !== 'string') {
+            throw new Error(`Invalid subgroup name in group ${group.name} at index ${subgroupIndex}`);
+          }
+
+          if (!subgroup.items || !Array.isArray(subgroup.items)) {
+            throw new Error(`Invalid items array in subgroup ${subgroup.name}`);
+          }
+
+          if (typeof subgroup.subtotal !== 'number') {
+            throw new Error(`Invalid subtotal in subgroup ${subgroup.name}`);
+          }
+
+          subgroup.items.forEach((item: any, itemIndex: number) => {
+            if (!item.title || typeof item.title !== 'string') {
+              throw new Error(`Invalid item title in subgroup ${subgroup.name} at index ${itemIndex}`);
+            }
+            if (typeof item.quantity !== 'number') {
+              throw new Error(`Invalid quantity in item ${item.title}`);
+            }
+            if (typeof item.unitAmount !== 'number') {
+              throw new Error(`Invalid unitAmount in item ${item.title}`);
+            }
+            if (typeof item.totalPrice !== 'number') {
+              throw new Error(`Invalid totalPrice in item ${item.title}`);
+            }
+          });
+        });
+      });
+
     } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      throw new Error('Failed to parse estimate JSON from Llama API');
+      console.error('JSON parse or validation error:', parseError);
+      throw new Error(`Failed to parse or validate estimate JSON: ${parseError.message}`);
     }
 
     return new Response(
