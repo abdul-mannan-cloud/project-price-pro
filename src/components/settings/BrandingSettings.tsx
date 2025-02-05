@@ -32,8 +32,10 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
         if (error) throw error;
 
         if (contractor?.branding_colors) {
-          setBrandingColors(contractor.branding_colors);
-          applyGlobalColors(contractor.branding_colors);
+          // Type assertion to ensure the data matches BrandingColors type
+          const colors = contractor.branding_colors as BrandingColors;
+          setBrandingColors(colors);
+          applyGlobalColors(colors);
         }
       } catch (error) {
         console.error('Error loading branding colors:', error);
