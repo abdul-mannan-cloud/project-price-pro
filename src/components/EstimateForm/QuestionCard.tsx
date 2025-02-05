@@ -74,7 +74,10 @@ export const QuestionCard = ({
         )}
         <h2 className="text-2xl font-semibold mb-6">{question?.question}</h2>
 
-        <div className="grid grid-cols-1 gap-4 mb-20 md:mb-6">
+        <div className={cn(
+          "grid gap-4 mb-20 md:mb-6",
+          isMobile ? "grid-cols-1" : question.type === 'multiple_choice' ? "grid-cols-2" : "grid-cols-1"
+        )}>
           {options.map((option) => {
             const isSelected = selectedOptions.includes(option.value);
             const showImage = shouldShowImage(option);
