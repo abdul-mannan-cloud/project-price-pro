@@ -652,7 +652,11 @@ const EstimatePage = () => {
               groups={estimate.groups} 
               totalCost={estimate.totalCost} 
               isBlurred={true}
-              contractor={contractor || undefined}
+              contractor={{
+                business_name: contractor?.business_name,
+                business_logo_url: contractor?.business_logo_url || undefined,
+                branding_colors: contractor?.branding_colors as { primary: string; secondary: string } || undefined
+              }}
             />
             <ContactForm 
               onSubmit={handleContactSubmit} 
@@ -669,7 +673,11 @@ const EstimatePage = () => {
             <EstimateDisplay 
               groups={estimate.groups} 
               totalCost={estimate.totalCost}
-              contractor={contractor || undefined}
+              contractor={{
+                business_name: contractor?.business_name,
+                business_logo_url: contractor?.business_logo_url || undefined,
+                branding_colors: contractor?.branding_colors as { primary: string; secondary: string } || undefined
+              }}
             />
           </div>
         )}
