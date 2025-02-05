@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
 
   // Load and apply saved colors on component mount
   useEffect(() => {
-    const loadSavedColors = async () => {
+    const loadAndApplyColors = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
@@ -27,12 +28,11 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
           .from('contractors')
           .select('branding_colors')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
 
         if (contractor?.branding_colors) {
-          // Type assertion to ensure the data matches BrandingColors type
           const colors = contractor.branding_colors as BrandingColors;
           setBrandingColors(colors);
           applyGlobalColors(colors);
@@ -42,7 +42,7 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
       }
     };
 
-    loadSavedColors();
+    loadAndApplyColors();
   }, []);
 
   // Apply colors whenever they change
