@@ -74,16 +74,23 @@ Generate a detailed estimate with the following JSON structure:
   "groups": [
     {
       "name": "string",
-      "items": [
+      "description": "string",
+      "subgroups": [
         {
-          "description": "string",
-          "quantity": number,
-          "unit": "string",
-          "unitPrice": number,
-          "total": number
+          "name": "string",
+          "items": [
+            {
+              "title": "string",
+              "description": "string",
+              "quantity": number,
+              "unit": "string",
+              "unitAmount": number,
+              "totalPrice": number
+            }
+          ],
+          "subtotal": number
         }
-      ],
-      "subtotal": number
+      ]
     }
   ],
   "totalCost": number
@@ -131,8 +138,20 @@ Make sure to:
 
     let estimateJson;
     try {
-      estimateJson = JSON.parse(aiResponse.choices[0].message.content);
+      const content = aiResponse.choices[0].message.content;
+      console.log('Parsing content:', content);
+      estimateJson = JSON.parse(content);
       console.log('Parsed estimate:', estimateJson);
+
+      // Validate the structure
+      if (!estimateJson.groups || !Array.isArray(estimateJson.groups)) {
+        throw new Error('Invalid estimate structure: missing groups array');
+      }
+
+      if (typeof estimateJson.totalCost !== 'number') {
+        throw new Error('Invalid estimate structure: missing or invalid totalCost');
+      }
+
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       throw new Error('Failed to parse estimate JSON from Llama API');
