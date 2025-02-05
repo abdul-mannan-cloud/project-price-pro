@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2, Clock, RefreshCw } from "lucide-react";
+import { Trash2, Mail, Clock, RefreshCw } from "lucide-react";
 
 export const TeammateSettings = () => {
   const [email, setEmail] = useState("");
@@ -223,18 +222,16 @@ export const TeammateSettings = () => {
                 </div>
               )}
             </div>
-            <div className="flex items-center space-x-2">
-              {isOwner && teammate.invitation_status === 'pending' && (
+            {isOwner && (
+              <div className="flex items-center space-x-2">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => resendInvitation.mutate(teammate.email)}
                   disabled={resendInvitation.isPending}
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <Mail className="h-4 w-4" />
                 </Button>
-              )}
-              {isOwner && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -243,8 +240,8 @@ export const TeammateSettings = () => {
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         ))}
         {teammates.length === 0 && (
@@ -261,3 +258,5 @@ export const TeammateSettings = () => {
     </div>
   );
 };
+
+export default TeammateSettings;
