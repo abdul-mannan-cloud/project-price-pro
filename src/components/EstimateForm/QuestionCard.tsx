@@ -11,7 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 interface QuestionCardProps {
   question: Question;
-  selectedOptions: string[];
+  selectedAnswers: string[];
   onSelect: (questionId: string, values: string[]) => void;
   onNext?: () => void;
   isLastQuestion?: boolean;
@@ -22,7 +22,7 @@ interface QuestionCardProps {
 
 export const QuestionCard = ({
   question,
-  selectedOptions,
+  selectedAnswers,
   onSelect,
   onNext,
   isLastQuestion,
@@ -35,17 +35,17 @@ export const QuestionCard = ({
 
   useEffect(() => {
     if (question.type === 'multiple_choice') {
-      setShowNextButton(selectedOptions.length > 0);
+      setShowNextButton(selectedAnswers.length > 0);
     } else {
-      setShowNextButton(selectedOptions.length === 1);
+      setShowNextButton(selectedAnswers.length === 1);
     }
-  }, [selectedOptions, question.type]);
+  }, [selectedAnswers, question.type]);
 
   const handleOptionClick = (value: string) => {
     if (question.type === 'multiple_choice') {
-      const newSelection = selectedOptions.includes(value)
-        ? selectedOptions.filter(v => v !== value)
-        : [...selectedOptions, value];
+      const newSelection = selectedAnswers.includes(value)
+        ? selectedAnswers.filter(v => v !== value)
+        : [...selectedAnswers, value];
       onSelect(question.id, newSelection);
     } else {
       onSelect(question.id, [value]);
@@ -63,7 +63,7 @@ export const QuestionCard = ({
 
   return (
     <>
-      <Card className="w-full max-w-6xl mx-auto p-6 relative">
+      <Card className="w-full max-w-6xl mx-auto p-6 relative bg-white">
         <h2 className="text-2xl font-semibold mb-6">{question?.question}</h2>
 
         <div className={cn(
@@ -71,7 +71,7 @@ export const QuestionCard = ({
           isMobile ? "grid-cols-1" : question.type === 'multiple_choice' ? "grid-cols-2" : "grid-cols-1"
         )}>
           {options.map((option) => {
-            const isSelected = selectedOptions.includes(option.value);
+            const isSelected = selectedAnswers.includes(option.value);
             const showImage = shouldShowImage(option);
             
             return (
