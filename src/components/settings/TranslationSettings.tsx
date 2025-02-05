@@ -1,8 +1,10 @@
+
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
 const languages = [
   { code: "en", name: "English" },
@@ -14,7 +16,8 @@ export const TranslationSettings = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
-  const { data: settings } = useQuery({
+  // Fetch user's language settings
+  const { data: settings, isLoading } = useQuery({
     queryKey: ["contractorSettings"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -31,40 +34,88 @@ export const TranslationSettings = () => {
     },
   });
 
+  // Update language preference mutation
   const updateLanguage = useMutation({
     mutationFn: async (language: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
+      // Update the database preference
       const { error } = await supabase
         .from("contractor_settings")
         .update({ preferred_language: language })
         .eq("id", user.id);
 
       if (error) throw error;
+
+      // Update i18n language
       await i18n.changeLanguage(language);
+      
+      // Store in localStorage for persistence
+      localStorage.setItem('preferred_language', language);
     },
     onSuccess: () => {
       toast({
-        title: "Language updated",
-        description: "Your language preference has been saved.",
+        title: t("Language updated"),
+        description: t("Your language preference has been saved."),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update language preference.",
+        title: t("Error"),
+        description: t("Failed to update language preference."),
         variant: "destructive",
       });
     },
   });
 
+  // Effect to handle initial language setup
+  useEffect(() => {
+    const setupLanguage = async () => {
+      // Get system language
+      const systemLanguage = navigator.language.split('-')[0];
+      
+      // Check if we have a stored preference
+      const storedPreference = localStorage.getItem('preferred_language');
+      
+      // Use the first available option in this order:
+      // 1. User's stored database preference
+      // 2. Local storage preference
+      // 3. Browser system language (if supported)
+      // 4. Default to English
+      let preferredLanguage = 'en';
+
+      if (settings?.preferred_language) {
+        preferredLanguage = settings.preferred_language;
+      } else if (storedPreference) {
+        preferredLanguage = storedPreference;
+      } else if (languages.some(lang => lang.code === systemLanguage)) {
+        preferredLanguage = systemLanguage;
+        // If we're using system language, save it as the user's preference
+        updateLanguage.mutate(systemLanguage);
+      }
+
+      // Set the language
+      await i18n.changeLanguage(preferredLanguage);
+    };
+
+    setupLanguage();
+  }, [settings, i18n]);
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center p-4">
+      <div className="text-sm text-muted-foreground">Loading language preferences...</div>
+    </div>;
+  }
+
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium">Preferred Language</label>
+        <label className="text-sm font-medium">
+          {t("Preferred Language")}
+        </label>
         <Select
-          value={settings?.preferred_language || "en"}
+          value={settings?.preferred_language || i18n.language || 'en'}
           onValueChange={(value) => updateLanguage.mutate(value)}
         >
           <SelectTrigger>
@@ -78,6 +129,9 @@ export const TranslationSettings = () => {
             ))}
           </SelectContent>
         </Select>
+        <p className="text-sm text-muted-foreground mt-2">
+          {t("Choose your preferred language. This will be used across the entire application.")}
+        </p>
       </div>
     </div>
   );
