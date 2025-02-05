@@ -22,17 +22,17 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
   }, [initialColors]);
 
   const applyGlobalColors = (colors: BrandingColors) => {
+    // Set primary color and its variations
     document.documentElement.style.setProperty('--primary', colors.primary);
     document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
-    document.documentElement.style.setProperty('--secondary', colors.secondary);
-    document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
 
-    // Update primary color variations
+    // Convert hex to RGB for creating variations
     const primaryHex = colors.primary.replace('#', '');
     const r = parseInt(primaryHex.slice(0, 2), 16);
     const g = parseInt(primaryHex.slice(2, 4), 16);
     const b = parseInt(primaryHex.slice(4, 6), 16);
 
+    // Set all primary color variations
     document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
     document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
     document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
@@ -40,6 +40,19 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
     document.documentElement.style.setProperty('--primary-500', `rgba(${r}, ${g}, ${b}, 0.8)`);
     document.documentElement.style.setProperty('--primary-600', colors.primary);
     document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
+
+    // Set secondary color
+    document.documentElement.style.setProperty('--secondary', colors.secondary);
+    document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
+  };
+
+  const handleColorChange = (type: 'primary' | 'secondary', color: string) => {
+    const newColors = {
+      ...brandingColors,
+      [type]: color
+    };
+    setBrandingColors(newColors);
+    applyGlobalColors(newColors);
   };
 
   const handleSave = async () => {
@@ -69,9 +82,7 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
             </label>
             <ColorPicker
               color={brandingColors.primary}
-              onChange={(color) => {
-                setBrandingColors(prev => ({ ...prev, primary: color }));
-              }}
+              onChange={(color) => handleColorChange('primary', color)}
             />
           </div>
           <div>
@@ -80,9 +91,7 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
             </label>
             <ColorPicker
               color={brandingColors.secondary}
-              onChange={(color) => {
-                setBrandingColors(prev => ({ ...prev, secondary: color }));
-              }}
+              onChange={(color) => handleColorChange('secondary', color)}
             />
           </div>
           <Button onClick={handleSave}>
