@@ -90,26 +90,30 @@ export const QuestionCard = ({
           title: "Please read carefully",
           description: (
             <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-              <p className="text-gray-700 mb-4">Take a moment to review your selection before proceeding</p>
-              <Button 
-                onClick={() => {
-                  const toastElement = document.querySelector('[role="status"]');
-                  if (toastElement) {
-                    toastElement.remove();
-                  }
-                }}
-                variant="outline"
-                size="sm"
-                className="mx-auto"
-              >
-                OK
-              </Button>
+              <div className="flex flex-col items-center gap-4">
+                <AlertTriangle className="h-12 w-12 text-yellow-500" />
+                <p className="text-gray-700">
+                  Take a moment to review your selection before proceeding
+                </p>
+                <Button 
+                  onClick={() => {
+                    const toastElement = document.querySelector('[role="status"]');
+                    if (toastElement) {
+                      toastElement.remove();
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="mx-auto"
+                >
+                  OK
+                </Button>
+              </div>
             </div>
           ),
           duration: 2000,
           className: "fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-50",
           variant: "warning",
-          icon: <AlertTriangle className="h-5 w-5 text-yellow-500" />,
         });
         setIsProcessing(false);
         return;
