@@ -77,6 +77,11 @@ export default {
         shimmer: {
           "0%": { backgroundPosition: "200% 0" },
           "100%": { backgroundPosition: "-200% 0" }
+        },
+        scan: {
+          "0%": { transform: "translateY(0%)" },
+          "50%": { transform: "translateY(400%)" },
+          "100%": { transform: "translateY(0%)" }
         }
       },
       animation: {
@@ -84,7 +89,8 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         fadeIn: "fadeIn 0.5s ease-out",
         slideUp: "slideUp 0.5s ease-out",
-        shimmer: "shimmer 2s infinite linear"
+        shimmer: "shimmer 2s infinite linear",
+        scan: "scan 2s infinite ease-in-out"
       },
       fontFamily: {
         sans: ["Open Sans", "-apple-system", "SF Pro Text", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
