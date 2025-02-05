@@ -6,24 +6,33 @@ import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
 import { Loader2 } from "lucide-react";
 
-type CategoryFromDB = Database["public"]["Tables"]["categories"]["Row"];
 type ContractorSettings = Database["public"]["Tables"]["contractor_settings"]["Row"];
 
 export const ServiceCategoriesSettings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch all available categories
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ["categories"],
+  // Fetch all available options/categories
+  const { data: optionsCategories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ["options"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("categories")
+        .from("Options")
         .select("*")
-        .order("name");
+        .single();
       
       if (error) throw error;
-      return data as CategoryFromDB[];
+      
+      // Transform the Options row into an array of categories
+      const categories = Object.entries(data)
+        .filter(([key]) => key !== "Key Options") // Exclude the primary key
+        .map(([name]) => ({
+          id: name,
+          name: name,
+          description: `Projects related to ${name.toLowerCase()}`
+        }));
+      
+      return categories;
     }
   });
 
@@ -105,7 +114,7 @@ export const ServiceCategoriesSettings = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {categories.map((category) => (
+        {optionsCategories.map((category) => (
           <div 
             key={category.id} 
             className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
