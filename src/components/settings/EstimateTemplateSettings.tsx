@@ -14,22 +14,26 @@ const templates = [
   {
     id: "modern",
     name: "Modern",
-    description: "A clean, contemporary design with a focus on readability and visual hierarchy.",
     icon: <Layout className="h-8 w-8" />,
-    preview: (
+    preview: ({ contractor }: { contractor: any }) => (
       <div className="space-y-4 p-4">
         <div className="flex items-center space-x-4 mb-6">
-          <div className="w-16 h-16 bg-primary/10 rounded-lg"></div>
+          {contractor?.business_logo_url && (
+            <img 
+              src={contractor.business_logo_url} 
+              alt="Business Logo" 
+              className="w-16 h-16 object-contain rounded-lg"
+            />
+          )}
           <div>
-            <h3 className="text-lg font-semibold">Sample Company</h3>
-            <p className="text-sm text-muted-foreground">contact@example.com</p>
-            <p className="text-sm text-muted-foreground">(555) 123-4567</p>
-            <p className="text-sm text-muted-foreground">123 Business St, City, State</p>
+            <h3 className="text-lg font-semibold">{contractor?.business_name || 'Sample Company'}</h3>
+            <p className="text-sm text-muted-foreground">{contractor?.contact_email}</p>
+            <p className="text-sm text-muted-foreground">{contractor?.contact_phone}</p>
+            <p className="text-sm text-muted-foreground">{contractor?.business_address}</p>
           </div>
         </div>
         <div className="bg-primary-100 p-4 rounded-lg">
           <h3 className="text-lg font-semibold">Project Estimate</h3>
-          <p className="text-sm text-muted-foreground">Modern Template Preview</p>
         </div>
         <div className="space-y-2">
           <div className="flex justify-between p-2 bg-secondary rounded">
@@ -42,7 +46,6 @@ const templates = [
           </div>
         </div>
         <div className="mt-4 p-4 border-t">
-          <p className="text-sm italic">Client Message Preview</p>
           <div className="mt-4">
             <p className="text-sm">Digital Signature Area</p>
           </div>
@@ -53,13 +56,25 @@ const templates = [
   {
     id: "classic",
     name: "Classic",
-    description: "Traditional estimate layout with a professional and timeless appearance.",
     icon: <FileText className="h-8 w-8" />,
-    preview: (
+    preview: ({ contractor }: { contractor: any }) => (
       <div className="space-y-4 p-4 border rounded">
         <div className="border-b pb-4">
-          <h3 className="text-lg font-semibold">Project Estimate</h3>
-          <p className="text-sm text-muted-foreground">Classic Template Preview</p>
+          <div className="flex items-center space-x-4 mb-4">
+            {contractor?.business_logo_url && (
+              <img 
+                src={contractor.business_logo_url} 
+                alt="Business Logo" 
+                className="w-16 h-16 object-contain rounded-lg"
+              />
+            )}
+            <div>
+              <h3 className="text-lg font-semibold">{contractor?.business_name || 'Sample Company'}</h3>
+              <p className="text-sm text-muted-foreground">{contractor?.contact_email}</p>
+              <p className="text-sm text-muted-foreground">{contractor?.contact_phone}</p>
+              <p className="text-sm text-muted-foreground">{contractor?.business_address}</p>
+            </div>
+          </div>
         </div>
         <table className="w-full">
           <tbody>
@@ -79,13 +94,26 @@ const templates = [
   {
     id: "minimal",
     name: "Minimal",
-    description: "Simplified design focusing on essential information with minimal styling.",
     icon: <Minimize2 className="h-8 w-8" />,
-    preview: (
+    preview: ({ contractor }: { contractor: any }) => (
       <div className="space-y-4 p-4">
+        <div className="flex items-center space-x-4 mb-4">
+          {contractor?.business_logo_url && (
+            <img 
+              src={contractor.business_logo_url} 
+              alt="Business Logo" 
+              className="w-16 h-16 object-contain rounded-lg"
+            />
+          )}
+          <div>
+            <h3 className="text-lg font-semibold">{contractor?.business_name || 'Sample Company'}</h3>
+            <p className="text-sm text-muted-foreground">{contractor?.contact_email}</p>
+            <p className="text-sm text-muted-foreground">{contractor?.contact_phone}</p>
+            <p className="text-sm text-muted-foreground">{contractor?.business_address}</p>
+          </div>
+        </div>
         <div>
           <h3 className="text-lg font-semibold">Project Estimate</h3>
-          <p className="text-sm text-muted-foreground">Minimal Template Preview</p>
         </div>
         <div className="space-y-1">
           <div className="flex justify-between">
@@ -115,6 +143,23 @@ export const EstimateTemplateSettings = () => {
       const { data, error } = await supabase
         .from("contractor_settings")
         .select("estimate_template_style, estimate_signature_enabled, estimate_client_message, estimate_footer_text")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: contractor } = useQuery({
+    queryKey: ["contractor"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { data, error } = await supabase
+        .from("contractors")
+        .select("*")
         .eq("id", user.id)
         .single();
 
@@ -160,9 +205,6 @@ export const EstimateTemplateSettings = () => {
       <div className="space-y-8">
         <div>
           <h3 className="text-lg font-medium">Estimate Template</h3>
-          <p className="text-sm text-muted-foreground">
-            Choose how your estimates will look when shared with clients.
-          </p>
         </div>
 
         <RadioGroup
@@ -171,7 +213,7 @@ export const EstimateTemplateSettings = () => {
           className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
           {templates.map((template) => (
-            <div key={template.id} className="relative">
+            <div key={template.id} className="relative flex flex-col space-y-2">
               <Label
                 className={`flex flex-col items-center justify-between rounded-lg border-2 p-6 hover:bg-accent cursor-pointer transition-all ${
                   settings?.estimate_template_style === template.id
@@ -184,7 +226,7 @@ export const EstimateTemplateSettings = () => {
                   id={template.id}
                   className="sr-only"
                 />
-                <div className="flex flex-col items-center text-center space-y-2">
+                <div className="flex flex-col items-center text-center">
                   <div className={`mb-2 p-2 rounded-full ${
                     settings?.estimate_template_style === template.id
                       ? "bg-primary-foreground/20 text-primary-foreground"
@@ -195,13 +237,6 @@ export const EstimateTemplateSettings = () => {
                   <div className={settings?.estimate_template_style === template.id ? "text-primary-foreground" : ""}>
                     {template.name}
                   </div>
-                  <div className={`text-sm ${
-                    settings?.estimate_template_style === template.id
-                      ? "text-primary-foreground/80"
-                      : "text-muted-foreground"
-                  }`}>
-                    {template.description}
-                  </div>
                 </div>
               </Label>
               <Dialog>
@@ -209,7 +244,7 @@ export const EstimateTemplateSettings = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="w-full mt-2"
+                    className="w-full"
                   >
                     <Eye className="h-4 w-4 mr-1" />
                     Preview Template
@@ -219,7 +254,7 @@ export const EstimateTemplateSettings = () => {
                   <DialogHeader>
                     <DialogTitle>{template.name} Template Preview</DialogTitle>
                   </DialogHeader>
-                  {template.preview}
+                  {template.preview({ contractor })}
                 </DialogContent>
               </Dialog>
             </div>
@@ -234,9 +269,6 @@ export const EstimateTemplateSettings = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Enable Digital Signature</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow clients to sign estimates digitally
-                  </p>
                 </div>
                 <Switch
                   checked={settings?.estimate_signature_enabled}
@@ -256,9 +288,6 @@ export const EstimateTemplateSettings = () => {
                   }
                   className="min-h-[100px]"
                 />
-                <p className="text-sm text-muted-foreground">
-                  This message will appear at the bottom of every estimate
-                </p>
               </div>
 
               <div className="space-y-2">
