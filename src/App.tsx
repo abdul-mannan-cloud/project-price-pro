@@ -12,6 +12,7 @@ import Estimate from "@/pages/Estimate";
 import PublicEstimate from "@/pages/PublicEstimate";
 import NotFound from "@/pages/NotFound";
 import Onboarding from "@/pages/Onboarding";
+import TeamOnboarding from "@/pages/TeamOnboarding";
 import "./App.css";
 
 // Create a client
@@ -82,6 +83,7 @@ function App() {
           <Route path="/estimate/:contractorId?" element={<Estimate />} />
           <Route path="/e/:id" element={<PublicEstimate />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/team-onboarding" element={<TeamOnboarding />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />
