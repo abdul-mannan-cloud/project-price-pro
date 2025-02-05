@@ -18,6 +18,7 @@ import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { BrandingColors } from "@/types/settings";
 import { 
   Building2,
   Users,
@@ -139,6 +140,32 @@ const Settings = () => {
     }
   };
 
+  const handleUpdateBrandingColors = async (colors: BrandingColors) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { error } = await supabase
+        .from('contractors')
+        .update({ branding_colors: colors })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Branding colors updated",
+        description: "Your brand colors have been saved successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating branding colors:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update branding colors. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (contractorLoading) {
     return (
       <div className="min-h-screen bg-secondary">
@@ -228,8 +255,8 @@ const Settings = () => {
       case "branding":
         return (
           <BrandingSettings 
-            initialColors={contractor?.branding_colors || { primary: "#6366F1", secondary: "#4F46E5" }}
-            onSave={updateBrandingColors}
+            initialColors={contractor?.branding_colors as BrandingColors || { primary: "#6366F1", secondary: "#4F46E5" }}
+            onSave={handleUpdateBrandingColors}
           />
         );
       case "estimate":
