@@ -242,7 +242,7 @@ const Settings = () => {
                 name="licenseNumber"
                 defaultValue={contractor?.license_number}
               />
-              <Button type="submit" disabled={updateSettings.isPending}>
+              <Button type="submit" className="w-full" disabled={updateSettings.isPending}>
                 {updateSettings.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </form>
