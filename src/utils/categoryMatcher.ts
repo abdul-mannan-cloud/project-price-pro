@@ -19,7 +19,6 @@ const getKeywordsFromOptions = async () => {
 
   const keywords: Record<string, string[]> = {};
   
-  // Process each category column
   Object.entries(optionsData).forEach(([key, value]) => {
     if (key !== 'Key Options' && value && typeof value === 'object') {
       try {
@@ -37,26 +36,22 @@ const getKeywordsFromOptions = async () => {
   return keywords;
 };
 
-// Helper function to calculate word position weight
 const getPositionWeight = (text: string, keyword: string): number => {
   const index = text.toLowerCase().indexOf(keyword.toLowerCase());
   if (index === -1) return 0;
-  // Words at the start get higher weight (max 1.5, min 1.0)
   return 1.5 - (index / text.length * 0.5);
 };
 
-// Helper function to check if a word is part of another matched word
 const isSubstringOfMatch = (word: string, matches: string[]): boolean => {
   return matches.some(match => 
     match !== word && match.toLowerCase().includes(word.toLowerCase())
   );
 };
 
-// Helper function to normalize and split text into words
 const normalizeText = (text: string): string[] => {
   return text.toLowerCase()
-    .replace(/[^\w\s-]/g, '') // Remove special characters except hyphens
-    .split(/\s+/); // Split on whitespace
+    .replace(/[^\w\s-]/g, '')
+    .split(/\s+/);
 };
 
 export const findBestMatchingCategory = async (description: string): Promise<CategoryMatch | null> => {
@@ -76,18 +71,16 @@ export const findBestMatchingCategory = async (description: string): Promise<Cat
     let categoryMatches: string[] = [];
 
     keywords.forEach(keyword => {
-      // Check for exact matches
       if (description.toLowerCase().includes(keyword.toLowerCase())) {
         if (!isSubstringOfMatch(keyword, categoryMatches)) {
           categoryMatches.push(keyword);
           const positionWeight = getPositionWeight(description, keyword);
-          const lengthWeight = 1 + (keyword.length / 20); // max 2.0 for very long keywords
+          const lengthWeight = 1 + (keyword.length / 20);
           totalWeight += positionWeight * lengthWeight;
           matchCount++;
         }
       }
 
-      // Check for partial matches in individual words
       const keywordParts = normalizeText(keyword);
       const partialMatches = words.filter(word => 
         keywordParts.some(part => word.includes(part))
@@ -100,7 +93,6 @@ export const findBestMatchingCategory = async (description: string): Promise<Cat
       }
     });
 
-    // Calculate confidence score (0 to 1)
     const confidence = matchCount > 0 
       ? (totalWeight / matchCount) * (matchCount / Math.sqrt(keywords.length))
       : 0;
@@ -113,7 +105,6 @@ export const findBestMatchingCategory = async (description: string): Promise<Cat
     }
   });
 
-  // Only return a match if confidence is above threshold
   const match = bestMatch && bestMatch.confidence >= 0.2 ? bestMatch : null;
   console.log('Best match found:', match);
   return match;
