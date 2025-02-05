@@ -80,8 +80,7 @@ export default {
         },
         scan: {
           "0%": { transform: "translateY(0%)" },
-          "50%": { transform: "translateY(400%)" },
-          "100%": { transform: "translateY(0%)" }
+          "100%": { transform: "translateY(400%)" }
         }
       },
       animation: {
@@ -90,7 +89,7 @@ export default {
         fadeIn: "fadeIn 0.5s ease-out",
         slideUp: "slideUp 0.5s ease-out",
         shimmer: "shimmer 2s infinite linear",
-        scan: "scan 2s infinite ease-in-out"
+        scan: "scan 2s infinite linear"
       },
       fontFamily: {
         sans: ["Open Sans", "-apple-system", "SF Pro Text", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
