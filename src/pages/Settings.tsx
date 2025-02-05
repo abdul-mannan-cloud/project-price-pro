@@ -33,11 +33,10 @@ import { AIInstructionsForm } from "@/components/settings/AIInstructionsForm";
 import { TeammateSettings } from "@/components/settings/TeammateSettings";
 import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
 import { LogoUpload } from "@/components/settings/LogoUpload";
-import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
 import { BrandingSettings } from "@/components/settings/BrandingSettings";
 import { TranslationSettings } from "@/components/settings/TranslationSettings";
 import { AdminSettings } from "@/components/settings/AdminSettings";
-import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AIInstruction {
   title: string;
@@ -311,43 +310,61 @@ const Settings = () => {
             }}
           />
         ) : (
-          <div className="grid gap-8">
-            <div>
-              <h2 className="text-lg font-medium mb-4">General Settings</h2>
-              <div className="grid gap-4">
+          <Tabs defaultValue="general" orientation="vertical" className="flex w-full gap-2">
+            <TabsList className="flex-col gap-1 rounded-none bg-transparent px-1 py-0 text-foreground w-64">
+              <TabsTrigger
+                value="general"
+                className="relative w-full justify-start after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent"
+              >
+                <Building2 className="-ms-0.5 me-1.5 opacity-60" size={16} strokeWidth={2} />
+                General Settings
+              </TabsTrigger>
+              <TabsTrigger
+                value="estimate"
+                className="relative w-full justify-start after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent"
+              >
+                <Calculator className="-ms-0.5 me-1.5 opacity-60" size={16} strokeWidth={2} />
+                Estimate Configuration
+              </TabsTrigger>
+              <TabsTrigger
+                value="integrations"
+                className="relative w-full justify-start after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent"
+              >
+                <Webhook className="-ms-0.5 me-1.5 opacity-60" size={16} strokeWidth={2} />
+                Integrations
+              </TabsTrigger>
+              <TabsTrigger
+                value="system"
+                className="relative w-full justify-start after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent"
+              >
+                <Globe2 className="-ms-0.5 me-1.5 opacity-60" size={16} strokeWidth={2} />
+                System
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="grow rounded-lg border border-border text-start p-4">
+              <TabsContent value="general" className="space-y-4">
                 {generalSettingsMenuItems.map((item) => (
                   <SettingsMenuItem key={item.title} {...item} />
                 ))}
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-lg font-medium mb-4">Estimate Configuration</h2>
-              <div className="grid gap-4">
+              </TabsContent>
+              <TabsContent value="estimate" className="space-y-4">
                 {estimateSettingsMenuItems.map((item) => (
                   <SettingsMenuItem key={item.title} {...item} />
                 ))}
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-lg font-medium mb-4">Integrations</h2>
-              <div className="grid gap-4">
+              </TabsContent>
+              <TabsContent value="integrations" className="space-y-4">
                 {integrationSettingsMenuItems.map((item) => (
                   <SettingsMenuItem key={item.title} {...item} />
                 ))}
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-lg font-medium mb-4">System</h2>
-              <div className="grid gap-4">
+              </TabsContent>
+              <TabsContent value="system" className="space-y-4">
                 {systemSettingsMenuItems.map((item) => (
                   <SettingsMenuItem key={item.title} {...item} />
                 ))}
-              </div>
+              </TabsContent>
             </div>
-          </div>
+          </Tabs>
         )}
 
         <SettingsDialog
