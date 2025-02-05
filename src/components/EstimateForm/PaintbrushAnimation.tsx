@@ -4,11 +4,14 @@ import * as THREE from 'three';
 export const PaintbrushAnimation = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const animationFrameIdRef = useRef<number>();
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     const scene = new THREE.Scene();
+    sceneRef.current = scene;
     const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ alpha: true });
     rendererRef.current = renderer;
@@ -42,10 +45,11 @@ export const PaintbrushAnimation = () => {
     camera.position.z = 5;
 
     let frame = 0;
-    let animationFrameId: number;
 
     const animate = () => {
-      animationFrameId = requestAnimationFrame(animate);
+      if (!rendererRef.current || !sceneRef.current) return;
+      
+      animationFrameIdRef.current = requestAnimationFrame(animate);
 
       frame += 0.02;
       
@@ -57,22 +61,34 @@ export const PaintbrushAnimation = () => {
       handle.position.y = Math.sin(frame * 0.5) * 0.1;
       brush.position.y = 1.2 + Math.sin(frame * 0.5) * 0.1;
 
-      renderer.render(scene, camera);
+      rendererRef.current.render(sceneRef.current, camera);
     };
 
     animate();
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
-      if (rendererRef.current) {
-        rendererRef.current.dispose();
-        rendererRef.current = null;
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
       }
-      // Clean up geometries and materials
+
+      // Clean up Three.js resources
       handleGeometry.dispose();
       handleMaterial.dispose();
       brushGeometry.dispose();
       brushMaterial.dispose();
+
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        if (containerRef.current?.contains(rendererRef.current.domElement)) {
+          containerRef.current.removeChild(rendererRef.current.domElement);
+        }
+        rendererRef.current = null;
+      }
+
+      if (sceneRef.current) {
+        sceneRef.current.clear();
+        sceneRef.current = null;
+      }
     };
   }, []);
 
