@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 
 const templates = [
   {
@@ -196,6 +197,32 @@ export const EstimateTemplateSettings = () => {
     },
   });
 
+  // Sample estimate data for preview
+  const sampleEstimate = {
+    groups: [
+      {
+        name: "Sample Project",
+        description: "This is a sample project to preview your estimate template",
+        subgroups: [
+          {
+            name: "Labor",
+            items: [
+              {
+                title: "Sample Work",
+                description: "Example work item",
+                quantity: 1,
+                unitAmount: 100,
+                totalPrice: 100
+              }
+            ],
+            subtotal: 100
+          }
+        ]
+      }
+    ],
+    totalCost: 100
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -239,24 +266,6 @@ export const EstimateTemplateSettings = () => {
                   </div>
                 </div>
               </Label>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="w-full"
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    Preview Template
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-3xl">
-                  <DialogHeader>
-                    <DialogTitle>{template.name} Template Preview</DialogTitle>
-                  </DialogHeader>
-                  {template.preview({ contractor })}
-                </DialogContent>
-              </Dialog>
             </div>
           ))}
         </RadioGroup>
@@ -280,28 +289,46 @@ export const EstimateTemplateSettings = () => {
 
               <div className="space-y-2">
                 <Label>Client Message</Label>
-                <Textarea
-                  placeholder="Enter a message to display on all estimates..."
-                  value={settings?.estimate_client_message || ""}
-                  onChange={(e) => 
-                    updateSettings.mutate({ estimate_client_message: e.target.value })
-                  }
-                  className="min-h-[100px]"
-                />
+                <div className="flex gap-2">
+                  <Textarea
+                    placeholder="Enter a message to display on all estimates..."
+                    value={settings?.estimate_client_message || ""}
+                    onChange={(e) => 
+                      updateSettings.mutate({ estimate_client_message: e.target.value })
+                    }
+                    className="min-h-[100px]"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label>Footer Text</Label>
-                <Textarea
-                  placeholder="Enter footer text (terms, conditions, etc.)..."
-                  value={settings?.estimate_footer_text || ""}
-                  onChange={(e) => 
-                    updateSettings.mutate({ estimate_footer_text: e.target.value })
-                  }
-                  className="min-h-[100px]"
-                />
+                <div className="flex gap-2">
+                  <Textarea
+                    placeholder="Enter footer text (terms, conditions, etc.)..."
+                    value={settings?.estimate_footer_text || ""}
+                    onChange={(e) => 
+                      updateSettings.mutate({ estimate_footer_text: e.target.value })
+                    }
+                    className="min-h-[100px]"
+                  />
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Live Preview */}
+        <div className="pt-6 border-t">
+          <h3 className="text-lg font-medium mb-4">Live Preview</h3>
+          <div className="bg-background rounded-lg border p-4">
+            <EstimateDisplay
+              groups={sampleEstimate.groups}
+              totalCost={sampleEstimate.totalCost}
+              contractor={contractor}
+              projectSummary="This is a sample project summary to preview your estimate template."
+              isEditable={false}
+            />
           </div>
         </div>
       </div>
