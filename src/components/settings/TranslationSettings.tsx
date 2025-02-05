@@ -17,7 +17,6 @@ export const TranslationSettings = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
-  // Fetch user's language settings
   const { data: settings, isLoading } = useQuery({
     queryKey: ["contractorSettings"],
     queryFn: async () => {
@@ -35,7 +34,6 @@ export const TranslationSettings = () => {
     },
   });
 
-  // Update language preference mutation
   const updateLanguage = useMutation({
     mutationFn: async (language: string) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -47,9 +45,9 @@ export const TranslationSettings = () => {
         .eq("id", user.id);
 
       if (error) throw error;
-
+      
       // Update i18n language
-      await i18n.changeLanguage(language);
+      i18n.changeLanguage(language);
       
       // Store in localStorage for persistence
       localStorage.setItem('preferred_language', language);
@@ -69,7 +67,6 @@ export const TranslationSettings = () => {
     },
   });
 
-  // Effect to handle initial language setup
   useEffect(() => {
     const setupLanguage = async () => {
       // Get system language
@@ -91,7 +88,7 @@ export const TranslationSettings = () => {
       }
 
       // Set the language
-      await i18n.changeLanguage(preferredLanguage);
+      i18n.changeLanguage(preferredLanguage);
     };
 
     setupLanguage();
