@@ -67,6 +67,22 @@ const Settings = () => {
     },
   });
 
+  const { data: aiRates, isLoading: isLoadingRates } = useQuery({
+    queryKey: ['aiRates'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { data, error } = await supabase
+        .from('ai_rates')
+        .select('*')
+        .eq('contractor_id', user.id);
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const updateSettings = useMutation({
     mutationFn: async (formData: any) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -107,6 +123,37 @@ const Settings = () => {
       toast({
         title: "Error",
         description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const saveRates = useMutation({
+    mutationFn: async (rates: any[]) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { error } = await supabase
+        .from('ai_rates')
+        .upsert(
+          rates.map(rate => ({
+            ...rate,
+            contractor_id: user.id,
+          }))
+        );
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "AI rates saved",
+        description: "Your AI rates have been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to save AI rates. Please try again.",
         variant: "destructive",
       });
     },
@@ -166,19 +213,6 @@ const Settings = () => {
       });
     }
   };
-
-  if (contractorLoading) {
-    return (
-      <div className="min-h-screen bg-secondary">
-        <NavBar items={navItems} />
-        <div className="container mx-auto py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-muted-foreground">Loading settings...</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const getSectionTitle = () => {
     switch (activeSection) {
@@ -321,10 +355,9 @@ const Settings = () => {
               }}
             />
             <AIRateForm
-              rates={[]} // You'll need to implement fetching and saving rates
+              rates={aiRates || []}
               onSave={(rates) => {
-                // Implement saving rates to Supabase
-                console.log('Saving rates:', rates);
+                saveRates.mutate(rates);
               }}
             />
           </div>
@@ -341,6 +374,19 @@ const Settings = () => {
         return null;
     }
   };
+
+  if (contractorLoading || isLoadingRates) {
+    return (
+      <div className="min-h-screen bg-secondary">
+        <NavBar items={navItems} />
+        <div className="container mx-auto py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-muted-foreground">Loading settings...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-secondary">
