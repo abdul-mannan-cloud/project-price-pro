@@ -37,7 +37,11 @@ const EstimatePage = () => {
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryQuestions | null>(null);
+  const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
 
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const { contractorId } = useParams<{ contractorId?: string }>();
   const location = useLocation();
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
