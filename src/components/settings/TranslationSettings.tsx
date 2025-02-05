@@ -61,7 +61,7 @@ export const TranslationSettings = () => {
       if (error) throw error;
       
       // Update i18n language
-      await i18next.changeLanguage(language);
+      i18next.changeLanguage(language);
       
       // Store in localStorage for persistence
       localStorage.setItem('preferred_language', language);
