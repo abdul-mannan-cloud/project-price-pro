@@ -15,6 +15,7 @@ import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
 import { Question, Category, CategoryQuestions, AnswersState } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
+import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
@@ -501,47 +502,32 @@ const EstimatePage = () => {
         {stage === 'photo' && (
           <div className="card p-8 animate-fadeIn">
             <div className="flex items-start justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-semibold mb-2">
-                  🛠 {contractor?.business_name || "Project"} Estimator
-                </h2>
-                <p className="text-muted-foreground">
-                  Take or upload a photo of what you want to repair or modify
-                </p>
+              <div className="flex items-center gap-4">
+                {contractor?.business_logo_url && (
+                  <img 
+                    src={contractor.business_logo_url} 
+                    alt={contractor.business_name}
+                    className="h-12 w-12 object-contain rounded-lg"
+                  />
+                )}
+                <div>
+                  <h2 className="text-2xl font-semibold mb-2">
+                    {contractor?.business_name || "Project"} Estimator
+                  </h2>
+                  <p className="text-muted-foreground font-semibold">
+                    Quickly estimate your project cost in minutes! Simply take or upload a photo of what you want to repair or modify (e.g., "paint this wall").
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="space-y-4">
-              <label className="relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  capture="environment"
-                  disabled={isUploading}
-                />
-                <Button 
-                  className="w-full" 
-                  size="lg" 
-                  disabled={isUploading}
-                  asChild
-                >
-                  <div>
-                    <Camera className="mr-2" />
-                    {isUploading ? "UPLOADING..." : "TAKE A PHOTO"}
-                  </div>
-                </Button>
-              </label>
-              <Button 
-                variant="ghost" 
-                className="w-full" 
-                size="lg" 
-                onClick={() => setStage('description')}
-              >
-                <SkipForward className="mr-2" />
-                Skip Photo
-              </Button>
-            </div>
+            <PhotoUpload 
+              onPhotosSelected={(urls) => {
+                setUploadedImageUrl(urls[0]);
+                setStage('description');
+              }}
+              onNext={() => setStage('description')}
+              uploadedPhotos={uploadedImageUrl ? [uploadedImageUrl] : []}
+            />
           </div>
         )}
 
