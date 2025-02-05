@@ -1,7 +1,27 @@
-import { useEffect } from "react";
+import { useEffect, Dispatch, SetStateAction } from "react";
+import { Json } from "@/integrations/supabase/types";
+
+interface EstimateGroup {
+  name: string;
+  subgroups: Array<{
+    name: string;
+    items: Array<{
+      title: string;
+      quantity: number;
+      unitAmount: number;
+      totalPrice: number;
+    }>;
+    subtotal: number;
+  }>;
+}
+
+export interface EstimateData {
+  groups: EstimateGroup[];
+  totalCost: number;
+}
 
 interface EstimateDisplayProps {
-  groups: any[];
+  groups: EstimateGroup[];
   totalCost: number;
   isBlurred?: boolean;
   contractor?: {
@@ -13,6 +33,8 @@ interface EstimateDisplayProps {
     };
   };
   projectSummary?: string;
+  isEditable?: boolean;
+  onEstimateChange?: Dispatch<SetStateAction<EstimateData | null>>;
 }
 
 export const EstimateDisplay = ({ 
@@ -20,7 +42,9 @@ export const EstimateDisplay = ({
   totalCost, 
   isBlurred = false,
   contractor,
-  projectSummary 
+  projectSummary,
+  isEditable = false,
+  onEstimateChange 
 }: EstimateDisplayProps) => {
   useEffect(() => {
     if (contractor?.branding_colors) {

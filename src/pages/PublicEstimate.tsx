@@ -139,7 +139,11 @@ const PublicEstimate = () => {
           groups={estimateData?.groups || []}
           totalCost={lead?.estimated_cost || 0}
           projectSummary={lead?.project_description}
-          contractor={contractor}
+          contractor={{
+            business_name: contractor?.business_name,
+            business_logo_url: contractor?.business_logo_url || undefined,
+            branding_colors: contractor?.branding_colors as { primary: string; secondary: string } || undefined
+          }}
         />
       </div>
     </div>
