@@ -33,15 +33,16 @@ export const QuestionCard = ({
 }: QuestionCardProps) => {
   const [showNextButton, setShowNextButton] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const questionLoadTime = useRef<number>(Date.now());
+  const questionLoadTime = useRef<number>(0);
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Update the load time whenever the question changes
+    // Reset the load time whenever the question changes
     questionLoadTime.current = Date.now();
     setShowNextButton(question.type === 'multiple_choice' ? selectedAnswers.length > 0 : selectedAnswers.length === 1);
-  }, [question, selectedAnswers]);
+    setIsProcessing(false); // Reset processing state for new question
+  }, [question.id, selectedAnswers]); // Add question.id to dependencies
 
   const handleOptionClick = async (value: string) => {
     if (question.type === 'multiple_choice') {
@@ -76,11 +77,13 @@ export const QuestionCard = ({
               </Button>
             </div>
           ),
-          duration: 200,
+          duration: 2000,
           className: "fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-50",
           variant: "warning",
           icon: <AlertTriangle className="h-5 w-5 text-yellow-500" />,
         });
+        setIsProcessing(false);
+        return;
       }
       
       onSelect(question.id, [value]);
