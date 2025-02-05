@@ -152,7 +152,7 @@ export const QuestionCard = ({
         )}>{question?.question}</h2>
 
         <div className={cn(
-          "grid gap-4 mb-20 md:mb-6",
+          "grid gap-4 mb-12", // Changed from mb-20 to mb-12 to reduce space before button
           isMobile ? "grid-cols-1 px-4" : question.type === 'multiple_choice' ? "grid-cols-2" : "grid-cols-1"
         )}>
           {options.map((option) => {
@@ -210,7 +210,7 @@ export const QuestionCard = ({
 
         {/* Desktop continue button */}
         {!isMobile && question.type === 'multiple_choice' && showNextButton && (
-          <div className="hidden md:block w-full">
+          <div className="hidden md:block w-full mt-8"> {/* Added mt-8 for top margin */}
             <Button 
               onClick={onNext}
               className="button button-primary w-full"
