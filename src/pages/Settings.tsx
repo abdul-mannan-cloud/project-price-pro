@@ -1,19 +1,23 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { SettingsDialog } from "@/components/settings/SettingsDialog";
+import { WebhookSettings } from "@/components/settings/WebhookSettings";
+import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
+import { AIInstructionsForm } from "@/components/settings/AIInstructionsForm";
+import { TeammateSettings } from "@/components/settings/TeammateSettings";
+import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
+import { LogoUpload } from "@/components/settings/LogoUpload";
+import { BrandingSettings } from "@/components/settings/BrandingSettings";
+import { TranslationSettings } from "@/components/settings/TranslationSettings";
+import { AdminSettings } from "@/components/settings/AdminSettings";
+import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ColorPicker } from "@/components/ui/color-picker";
-import { Json } from "@/integrations/supabase/types";
-import { SettingsMenuItem } from "@/components/settings/SettingsMenuItem";
 import { 
-  LogOut, 
-  LayoutDashboard as LayoutDashboardIcon, 
-  Users as Users2, 
-  Settings as SettingsIcon,
   Building2,
   Users,
   CreditCard,
@@ -23,40 +27,20 @@ import {
   Grid,
   Webhook,
   Globe2,
-  ShieldAlert
+  ShieldAlert,
+  LogOut,
+  LayoutDashboard,
+  Users2,
+  Settings as SettingsIcon
 } from "lucide-react";
-import { useState } from "react";
-import { SettingsDialog } from "@/components/settings/SettingsDialog";
-import { WebhookSettings } from "@/components/settings/WebhookSettings";
-import { ServiceCategoriesSettings } from "@/components/settings/ServiceCategoriesSettings";
-import { AIRateForm } from "@/components/settings/AIRateForm";
-import { AIInstructionsForm } from "@/components/settings/AIInstructionsForm";
-import { TeammateSettings } from "@/components/settings/TeammateSettings";
-import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
-import { LogoUpload } from "@/components/settings/LogoUpload";
-import { BrandingSettings } from "@/components/settings/BrandingSettings";
-import { TranslationSettings } from "@/components/settings/TranslationSettings";
-import { AdminSettings } from "@/components/settings/AdminSettings";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-interface AIInstruction {
-  title: string;
-  description: string;
-  instructions: string;
-}
-
-interface BrandingColors {
-  primary: string;
-  secondary: string;
-}
 
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [activeDialog, setActiveDialog] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState("business");
 
   const navItems = [
-    { name: "Dashboard", url: "/dashboard", icon: LayoutDashboardIcon },
+    { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { name: "Leads", url: "/leads", icon: Users2 },
     { name: "Settings", url: "/settings", icon: SettingsIcon }
   ];
@@ -77,35 +61,6 @@ const Settings = () => {
       return data;
     },
   });
-
-  const defaultBrandingColors: BrandingColors = {
-    primary: "#6366F1",
-    secondary: "#4F46E5"
-  };
-
-  const [brandingColors, setBrandingColors] = useState<BrandingColors>(() => {
-    const colors = contractor?.branding_colors as { primary: string; secondary: string } | null;
-    return colors || defaultBrandingColors;
-  });
-
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      navigate("/");
-      toast({
-        title: "Logged out successfully",
-        description: "You have been logged out of your account.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to log out. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const updateSettings = useMutation({
     mutationFn: async (formData: any) => {
@@ -163,42 +118,27 @@ const Settings = () => {
     },
   });
 
-  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    updateSettings.mutate(data);
-  };
-
-  const parsedInstructions = (): AIInstruction[] => {
+  const handleLogout = async () => {
     try {
-      if (!contractor?.contractor_settings?.ai_instructions) return [];
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       
-      if (Array.isArray(contractor.contractor_settings.ai_instructions)) {
-        return contractor.contractor_settings.ai_instructions.map(instruction => ({
-          title: String(instruction.title || ''),
-          description: String(instruction.description || ''),
-          instructions: String(instruction.instructions || '')
-        }));
-      }
-      
-      if (typeof contractor.contractor_settings.ai_instructions === 'string') {
-        const parsed = JSON.parse(contractor.contractor_settings.ai_instructions);
-        if (Array.isArray(parsed)) {
-          return parsed.map(instruction => ({
-            title: String(instruction.title || ''),
-            description: String(instruction.description || ''),
-            instructions: String(instruction.instructions || '')
-          }));
-        }
-      }
-      
-      return [];
-    } catch (e) {
-      console.error('Error parsing AI instructions:', e);
-      return [];
+      navigate("/");
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive",
+      });
     }
   };
+
+  const isAdmin = contractor?.contact_email === "cairlbrandon@gmail.com" || 
+                 contractor?.contact_email === "brandon@reliablepro.net";
 
   if (contractorLoading) {
     return (
@@ -213,235 +153,73 @@ const Settings = () => {
     );
   }
 
-  const isAdmin = contractor?.contact_email === "cairlbrandon@gmail.com" || 
-                 contractor?.contact_email === "brandon@reliablepro.net";
-
-  const generalSettingsMenuItems = [
-    {
-      title: "Business Information",
-      description: "Update your business details and contact information",
-      icon: <Building2 className="h-5 w-5 text-muted-foreground" />,
-      onClick: () => setActiveDialog("business")
-    },
-    {
-      title: "Team Members",
-      description: "Manage your team members and their access",
-      icon: <Users className="h-5 w-5 text-muted-foreground" />,
-      onClick: () => setActiveDialog("team")
-    },
-    {
-      title: "Subscription",
-      description: "Manage your subscription and billing",
-      icon: <CreditCard className="h-5 w-5 text-muted-foreground" />,
-      onClick: () => setActiveDialog("subscription")
-    },
-    {
-      title: "Branding",
-      description: "Customize your brand colors and appearance",
-      icon: <Palette className="h-5 w-5 text-muted-foreground" />,
-      onClick: () => setActiveDialog("branding")
-    },
-  ];
-
-  const estimateSettingsMenuItems = [
-    {
-      title: "Estimate Settings",
-      description: "Configure your pricing and cost calculations",
-      icon: <Calculator className="h-5 w-5 text-muted-foreground" />,
-      onClick: () => setActiveDialog("estimate")
-    },
-    {
-      title: "AI Preferences",
-      description: "Configure how AI generates estimates and manages rates",
-      icon: <Bot className="h-5 w-5 text-muted-foreground" />,
-      onClick: () => setActiveDialog("ai")
-    },
-    {
-      title: "Service Categories",
-      description: "Select which services you offer and customize your estimate workflow",
-      icon: <Grid className="h-5 w-5 text-muted-foreground" />,
-      onClick: () => setActiveDialog("categories")
-    },
-  ];
-
-  const integrationSettingsMenuItems = [
-    {
-      title: "Webhooks",
-      description: "Configure external integrations and automation",
-      icon: <Webhook className="h-5 w-5 text-muted-foreground" />,
-      onClick: () => setActiveDialog("webhooks")
-    },
-  ];
-
-  const systemSettingsMenuItems = [
-    {
-      title: "Language & Translation",
-      description: "Configure your language preferences and translations",
-      icon: <Globe2 className="h-5 w-5 text-muted-foreground" />,
-      onClick: () => setActiveDialog("translation")
-    },
-    ...(isAdmin ? [{
-      title: "Admin Settings",
-      description: "Access administrative functions and data",
-      icon: <ShieldAlert className="h-5 w-5 text-muted-foreground" />,
-      onClick: () => setActiveDialog("admin")
-    }] : []),
-    {
-      title: "Log Out",
-      description: "Sign out of your account",
-      icon: <LogOut className="h-5 w-5 text-muted-foreground" />,
-      onClick: () => setActiveDialog("logout")
-    }
-  ];
-
-  return (
-    <div className="min-h-screen bg-secondary">
-      <NavBar items={navItems} />
-      <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold">Settings</h1>
-        </div>
-        
-        {activeDialog === "branding" ? (
-          <BrandingSettings
-            initialColors={brandingColors}
-            onSave={(colors) => {
-              setBrandingColors(colors);
-              setActiveDialog(null);
-            }}
-          />
-        ) : (
-          <Tabs defaultValue="general" orientation="vertical" className="flex w-full gap-2">
-            <TabsList className="flex-col gap-1 rounded-none bg-transparent px-1 py-0 text-foreground w-64">
-              <TabsTrigger
-                value="general"
-                className="relative w-full justify-start after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent"
-              >
-                <Building2 className="-ms-0.5 me-1.5 opacity-60" size={16} strokeWidth={2} />
-                General Settings
-              </TabsTrigger>
-              <TabsTrigger
-                value="estimate"
-                className="relative w-full justify-start after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent"
-              >
-                <Calculator className="-ms-0.5 me-1.5 opacity-60" size={16} strokeWidth={2} />
-                Estimate Configuration
-              </TabsTrigger>
-              <TabsTrigger
-                value="integrations"
-                className="relative w-full justify-start after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent"
-              >
-                <Webhook className="-ms-0.5 me-1.5 opacity-60" size={16} strokeWidth={2} />
-                Integrations
-              </TabsTrigger>
-              <TabsTrigger
-                value="system"
-                className="relative w-full justify-start after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent"
-              >
-                <Globe2 className="-ms-0.5 me-1.5 opacity-60" size={16} strokeWidth={2} />
-                System
-              </TabsTrigger>
-            </TabsList>
-
-            <div className="grow rounded-lg border border-border text-start p-4">
-              <TabsContent value="general" className="space-y-4">
-                {generalSettingsMenuItems.map((item) => (
-                  <SettingsMenuItem key={item.title} {...item} />
-                ))}
-              </TabsContent>
-              <TabsContent value="estimate" className="space-y-4">
-                {estimateSettingsMenuItems.map((item) => (
-                  <SettingsMenuItem key={item.title} {...item} />
-                ))}
-              </TabsContent>
-              <TabsContent value="integrations" className="space-y-4">
-                {integrationSettingsMenuItems.map((item) => (
-                  <SettingsMenuItem key={item.title} {...item} />
-                ))}
-              </TabsContent>
-              <TabsContent value="system" className="space-y-4">
-                {systemSettingsMenuItems.map((item) => (
-                  <SettingsMenuItem key={item.title} {...item} />
-                ))}
-              </TabsContent>
-            </div>
-          </Tabs>
-        )}
-
-        <SettingsDialog
-          title="Business Information"
-          description="Update your business details and contact information"
-          isOpen={activeDialog === "business"}
-          onClose={() => setActiveDialog(null)}
-        >
-          <form onSubmit={handleFormSubmit} className="space-y-4">
+  const renderContent = () => {
+    switch (activeSection) {
+      case "business":
+        return (
+          <div className="space-y-4">
             <LogoUpload currentLogo={contractor?.business_logo_url} />
-            <Input
-              label="Business Name"
-              name="businessName"
-              defaultValue={contractor?.business_name}
-              required
-            />
-            <Input
-              label="Contact Email"
-              name="contactEmail"
-              type="email"
-              defaultValue={contractor?.contact_email}
-              required
-            />
-            <Input
-              label="Contact Phone"
-              name="contactPhone"
-              type="tel"
-              defaultValue={contractor?.contact_phone}
-            />
-            <Input
-              label="Business Address"
-              name="businessAddress"
-              defaultValue={contractor?.business_address}
-            />
-            <Input
-              label="Website"
-              name="website"
-              type="url"
-              defaultValue={contractor?.website}
-            />
-            <Input
-              label="License Number"
-              name="licenseNumber"
-              defaultValue={contractor?.license_number}
-            />
-            <Button type="submit" disabled={updateSettings.isPending}>
-              {updateSettings.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </form>
-        </SettingsDialog>
-
-        <SettingsDialog
-          title="Team Members"
-          description="Manage your team members and their access"
-          isOpen={activeDialog === "team"}
-          onClose={() => setActiveDialog(null)}
-        >
-          <TeammateSettings />
-        </SettingsDialog>
-
-        <SettingsDialog
-          title="Subscription"
-          description="Manage your subscription and billing"
-          isOpen={activeDialog === "subscription"}
-          onClose={() => setActiveDialog(null)}
-        >
-          <SubscriptionSettings />
-        </SettingsDialog>
-
-        <SettingsDialog
-          title="Estimate Settings"
-          description="Configure your pricing and cost calculations"
-          isOpen={activeDialog === "estimate"}
-          onClose={() => setActiveDialog(null)}
-        >
-          <form onSubmit={handleFormSubmit} className="space-y-4">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const data = Object.fromEntries(formData.entries());
+              updateSettings.mutate(data);
+            }} className="space-y-4">
+              <Input
+                label="Business Name"
+                name="businessName"
+                defaultValue={contractor?.business_name}
+                required
+              />
+              <Input
+                label="Contact Email"
+                name="contactEmail"
+                type="email"
+                defaultValue={contractor?.contact_email}
+                required
+              />
+              <Input
+                label="Contact Phone"
+                name="contactPhone"
+                type="tel"
+                defaultValue={contractor?.contact_phone}
+              />
+              <Input
+                label="Business Address"
+                name="businessAddress"
+                defaultValue={contractor?.business_address}
+              />
+              <Input
+                label="Website"
+                name="website"
+                type="url"
+                defaultValue={contractor?.website}
+              />
+              <Input
+                label="License Number"
+                name="licenseNumber"
+                defaultValue={contractor?.license_number}
+              />
+              <Button type="submit" disabled={updateSettings.isPending}>
+                {updateSettings.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </form>
+          </div>
+        );
+      case "team":
+        return <TeammateSettings />;
+      case "subscription":
+        return <SubscriptionSettings />;
+      case "branding":
+        return <BrandingSettings />;
+      case "estimate":
+        return (
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const data = Object.fromEntries(formData.entries());
+            updateSettings.mutate(data);
+          }} className="space-y-4">
             <div>
               <label className="text-sm font-medium">Minimum Project Cost ($)</label>
               <Input
@@ -462,8 +240,7 @@ const Settings = () => {
                 defaultValue={contractor?.contractor_settings?.markup_percentage}
               />
               <p className="text-sm text-muted-foreground mt-1">
-                This markup is applied in the background and is not visible to customers. 
-                It helps cover overhead costs and maintain profit margins.
+                This markup is applied in the background and is not visible to customers
               </p>
             </div>
 
@@ -482,99 +259,127 @@ const Settings = () => {
               {updateSettings.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </form>
-        </SettingsDialog>
-
-        <SettingsDialog
-          title="AI Preferences"
-          description="Configure how AI generates estimates and manages rates"
-          isOpen={activeDialog === "ai"}
-          onClose={() => setActiveDialog(null)}
-        >
+        );
+      case "ai":
+        return (
           <div className="space-y-6">
             <AIInstructionsForm
-              instructions={parsedInstructions()}
+              instructions={contractor?.contractor_settings?.ai_instructions || []}
               onSave={(instructions) => {
                 updateSettings.mutate({
                   aiInstructions: instructions
                 });
               }}
             />
-            
-            <AIRateForm
-              rates={(contractor?.contractor_settings?.ai_preferences as any)?.rates || []}
-              onSave={(rates) => {
-                updateSettings.mutate({
-                  aiPreferences: {
-                    rates
-                  }
-                });
-              }}
+          </div>
+        );
+      case "categories":
+        return <ServiceCategoriesSettings />;
+      case "webhooks":
+        return <WebhookSettings />;
+      case "translation":
+        return <TranslationSettings />;
+      case "admin":
+        return isAdmin ? <AdminSettings /> : null;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-secondary">
+      <NavBar items={navItems} />
+      <div className="container mx-auto py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold">Settings</h1>
+        </div>
+        
+        <div className="flex gap-6">
+          <div className="w-80 space-y-2">
+            <SettingsMenuItem
+              icon={<Building2 className="h-5 w-5" />}
+              title="Business Information"
+              description="Update your business details and contact information"
+              onClick={() => setActiveSection("business")}
+              isActive={activeSection === "business"}
+            />
+            <SettingsMenuItem
+              icon={<Users className="h-5 w-5" />}
+              title="Team Members"
+              description="Manage your team members and their access"
+              onClick={() => setActiveSection("team")}
+              isActive={activeSection === "team"}
+            />
+            <SettingsMenuItem
+              icon={<CreditCard className="h-5 w-5" />}
+              title="Subscription"
+              description="Manage your subscription and billing"
+              onClick={() => setActiveSection("subscription")}
+              isActive={activeSection === "subscription"}
+            />
+            <SettingsMenuItem
+              icon={<Palette className="h-5 w-5" />}
+              title="Branding"
+              description="Customize your brand colors and appearance"
+              onClick={() => setActiveSection("branding")}
+              isActive={activeSection === "branding"}
+            />
+            <SettingsMenuItem
+              icon={<Calculator className="h-5 w-5" />}
+              title="Estimate Settings"
+              description="Configure your pricing and cost calculations"
+              onClick={() => setActiveSection("estimate")}
+              isActive={activeSection === "estimate"}
+            />
+            <SettingsMenuItem
+              icon={<Bot className="h-5 w-5" />}
+              title="AI Preferences"
+              description="Configure how AI generates estimates and manages rates"
+              onClick={() => setActiveSection("ai")}
+              isActive={activeSection === "ai"}
+            />
+            <SettingsMenuItem
+              icon={<Grid className="h-5 w-5" />}
+              title="Service Categories"
+              description="Select which services you offer and customize your estimate workflow"
+              onClick={() => setActiveSection("categories")}
+              isActive={activeSection === "categories"}
+            />
+            <SettingsMenuItem
+              icon={<Webhook className="h-5 w-5" />}
+              title="Webhooks"
+              description="Configure external integrations and automation"
+              onClick={() => setActiveSection("webhooks")}
+              isActive={activeSection === "webhooks"}
+            />
+            <SettingsMenuItem
+              icon={<Globe2 className="h-5 w-5" />}
+              title="Language & Translation"
+              description="Configure your language preferences and translations"
+              onClick={() => setActiveSection("translation")}
+              isActive={activeSection === "translation"}
+            />
+            {isAdmin && (
+              <SettingsMenuItem
+                icon={<ShieldAlert className="h-5 w-5" />}
+                title="Admin Settings"
+                description="Access administrative functions and data"
+                onClick={() => setActiveSection("admin")}
+                isActive={activeSection === "admin"}
+              />
+            )}
+            <SettingsMenuItem
+              icon={<LogOut className="h-5 w-5" />}
+              title="Log Out"
+              description="Sign out of your account"
+              onClick={handleLogout}
             />
           </div>
-        </SettingsDialog>
-
-        <SettingsDialog
-          title="Service Categories"
-          description="Select which services you offer and customize your estimate workflow"
-          isOpen={activeDialog === "categories"}
-          onClose={() => setActiveDialog(null)}
-        >
-          <ServiceCategoriesSettings />
-        </SettingsDialog>
-
-        <SettingsDialog
-          title="Webhooks"
-          description="Configure external integrations and automation"
-          isOpen={activeDialog === "webhooks"}
-          onClose={() => setActiveDialog(null)}
-        >
-          <div className="mb-4">
-            <p className="text-sm text-muted-foreground">
-              Webhooks allow you to receive real-time notifications when new leads are created. 
-              You can configure external services to receive these notifications and automate your workflow.
-            </p>
+          
+          <div className="flex-1 bg-background rounded-lg border p-6">
+            {renderContent()}
           </div>
-          <WebhookSettings />
-        </SettingsDialog>
-        
-        <SettingsDialog
-          title="Language & Translation"
-          description="Configure your language preferences and translations"
-          isOpen={activeDialog === "translation"}
-          onClose={() => setActiveDialog(null)}
-        >
-          <TranslationSettings />
-        </SettingsDialog>
-
-        <SettingsDialog
-          title="Admin Settings"
-          description="Access administrative functions and data"
-          isOpen={activeDialog === "admin"}
-          onClose={() => setActiveDialog(null)}
-        >
-          <AdminSettings />
-        </SettingsDialog>
-
-        <SettingsDialog
-          title="Log Out"
-          description="Sign out of your account"
-          isOpen={activeDialog === "logout"}
-          onClose={() => setActiveDialog(null)}
-        >
-          <div className="space-y-4">
-            <p className="text-muted-foreground">
-              Are you sure you want to log out? You will need to sign in again to access your account.
-            </p>
-            <Button
-              variant="destructive"
-              onClick={handleLogout}
-              className="w-full"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Log Out
-            </Button>
-          </div>
-        </SettingsDialog>
+        </div>
       </div>
     </div>
   );
