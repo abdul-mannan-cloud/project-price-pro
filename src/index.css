@@ -100,9 +100,7 @@
   }
 
   .button-primary {
-    @apply bg-[var(--primary)] text-[var(--primary-foreground)] border-transparent;
-    @apply hover:bg-[var(--primary-700)];
-    @apply border-b-4 border-b-[var(--primary-700)];
+    @apply bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-700)] border-transparent border-b-4 border-b-[var(--primary-700)];
   }
 
   .select-button {
