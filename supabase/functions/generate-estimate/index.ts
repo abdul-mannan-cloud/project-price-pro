@@ -7,7 +7,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -21,7 +20,7 @@ serve(async (req) => {
     const { answers, projectDescription, category } = await req.json();
     console.log('Generating estimate for:', { category, projectDescription });
 
-    // Format answers into a more readable format for the AI
+    // Format answers for better readability
     const formattedAnswers = Object.entries(answers).map(([category, categoryAnswers]) => {
       const questions = Object.values(categoryAnswers).map(qa => ({
         question: qa.question,
@@ -33,7 +32,6 @@ serve(async (req) => {
       return { category, questions };
     });
 
-    // Create the prompt for the AI
     const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format.
     
 Project Category: ${category || 'General Construction'}
@@ -71,15 +69,14 @@ Generate a detailed estimate with the following JSON structure:
   "totalCost": number
 }
 
-Make sure to:
-1. Break down costs into logical groups
-2. Include labor and materials separately
-3. Use realistic market prices
-4. Include appropriate units (SF, EA, HR, etc.)
-5. Calculate accurate subtotals and total cost
-6. Return ONLY valid JSON, no additional text`;
+Important:
+1. Return ONLY valid JSON, no additional text or markdown
+2. Ensure all numbers are valid and calculations are accurate
+3. Include realistic market prices
+4. Break down costs into logical groups
+5. Include both labor and materials`;
 
-    console.log('Sending prompt to Llama:', prompt);
+    console.log('Sending prompt to Llama API...');
 
     const response = await fetch('https://api.llama-api.com/chat/completions', {
       method: 'POST',
@@ -90,7 +87,7 @@ Make sure to:
       body: JSON.stringify({
         messages: [{
           role: 'system',
-          content: 'You are a construction cost estimator that generates detailed estimates in JSON format. Only respond with valid JSON.'
+          content: 'You are a construction cost estimator. Generate detailed estimates in JSON format only.'
         }, {
           role: 'user',
           content: prompt
@@ -101,85 +98,91 @@ Make sure to:
     });
 
     if (!response.ok) {
-      console.error('Llama API error response:', await response.text());
+      console.error('Llama API error:', await response.text());
       throw new Error(`Llama API error: ${response.status} ${response.statusText}`);
     }
 
     const aiResponse = await response.json();
-    console.log('Raw AI response:', aiResponse);
+    console.log('Received AI response:', aiResponse);
 
     if (!aiResponse.choices?.[0]?.message?.content) {
-      console.error('Invalid response format from Llama API:', aiResponse);
       throw new Error('Invalid response format from Llama API');
     }
 
-    let estimateJson;
-    try {
-      const content = aiResponse.choices[0].message.content.trim();
-      console.log('Parsing content:', content);
-      
-      // Ensure content is a JSON object
-      if (!content.startsWith('{') || !content.endsWith('}')) {
-        throw new Error('Invalid JSON format: content must be a JSON object');
-      }
-      
-      estimateJson = JSON.parse(content);
-      console.log('Parsed estimate:', estimateJson);
+    let content = aiResponse.choices[0].message.content.trim();
+    console.log('Parsing content:', content);
 
-      // Validate the structure
-      if (!estimateJson.groups || !Array.isArray(estimateJson.groups)) {
-        throw new Error('Invalid estimate structure: missing or invalid groups array');
-      }
-
-      if (typeof estimateJson.totalCost !== 'number') {
-        throw new Error('Invalid estimate structure: missing or invalid totalCost');
-      }
-
-      // Validate each group and subgroup
-      estimateJson.groups.forEach((group, groupIndex) => {
-        if (!group.name || typeof group.name !== 'string') {
-          throw new Error(`Invalid group name at index ${groupIndex}`);
-        }
-        
-        if (!group.subgroups || !Array.isArray(group.subgroups)) {
-          throw new Error(`Invalid subgroups array in group ${group.name}`);
-        }
-
-        group.subgroups.forEach((subgroup, subgroupIndex) => {
-          if (!subgroup.name || typeof subgroup.name !== 'string') {
-            throw new Error(`Invalid subgroup name in group ${group.name} at index ${subgroupIndex}`);
-          }
-
-          if (!subgroup.items || !Array.isArray(subgroup.items)) {
-            throw new Error(`Invalid items array in subgroup ${subgroup.name}`);
-          }
-
-          if (typeof subgroup.subtotal !== 'number') {
-            throw new Error(`Invalid subtotal in subgroup ${subgroup.name}`);
-          }
-
-          subgroup.items.forEach((item, itemIndex) => {
-            if (!item.title || typeof item.title !== 'string') {
-              throw new Error(`Invalid item title in subgroup ${subgroup.name} at index ${itemIndex}`);
-            }
-            if (typeof item.quantity !== 'number') {
-              throw new Error(`Invalid quantity in item ${item.title}`);
-            }
-            if (typeof item.unitAmount !== 'number') {
-              throw new Error(`Invalid unitAmount in item ${item.title}`);
-            }
-            if (typeof item.totalPrice !== 'number') {
-              throw new Error(`Invalid totalPrice in item ${item.title}`);
-            }
-          });
-        });
-      });
-
-    } catch (parseError) {
-      console.error('JSON parse or validation error:', parseError);
-      throw new Error(`Failed to parse or validate estimate JSON: ${parseError.message}`);
+    // Ensure content is a JSON string
+    if (typeof content !== 'string') {
+      throw new Error('Invalid content type from Llama API');
     }
 
+    // Remove any potential markdown code block markers
+    content = content.replace(/```json\n?|\n?```/g, '').trim();
+
+    // Validate JSON structure
+    let estimateJson;
+    try {
+      estimateJson = JSON.parse(content);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error(`Failed to parse JSON: ${parseError.message}`);
+    }
+
+    // Validate estimate structure
+    if (!estimateJson || typeof estimateJson !== 'object') {
+      throw new Error('Invalid estimate format: must be an object');
+    }
+
+    if (!Array.isArray(estimateJson.groups)) {
+      throw new Error('Invalid estimate structure: groups must be an array');
+    }
+
+    if (typeof estimateJson.totalCost !== 'number') {
+      throw new Error('Invalid estimate structure: totalCost must be a number');
+    }
+
+    // Validate each group and subgroup
+    estimateJson.groups.forEach((group, groupIndex) => {
+      if (!group.name || typeof group.name !== 'string') {
+        throw new Error(`Invalid group name at index ${groupIndex}`);
+      }
+
+      if (!Array.isArray(group.subgroups)) {
+        throw new Error(`Invalid subgroups array in group ${group.name}`);
+      }
+
+      group.subgroups.forEach((subgroup, subgroupIndex) => {
+        if (!subgroup.name || typeof subgroup.name !== 'string') {
+          throw new Error(`Invalid subgroup name in group ${group.name}`);
+        }
+
+        if (!Array.isArray(subgroup.items)) {
+          throw new Error(`Invalid items array in subgroup ${subgroup.name}`);
+        }
+
+        if (typeof subgroup.subtotal !== 'number') {
+          throw new Error(`Invalid subtotal in subgroup ${subgroup.name}`);
+        }
+
+        subgroup.items.forEach((item, itemIndex) => {
+          if (!item.title || typeof item.title !== 'string') {
+            throw new Error(`Invalid item title in subgroup ${subgroup.name}`);
+          }
+          if (typeof item.quantity !== 'number') {
+            throw new Error(`Invalid quantity in item ${item.title}`);
+          }
+          if (typeof item.unitAmount !== 'number') {
+            throw new Error(`Invalid unitAmount in item ${item.title}`);
+          }
+          if (typeof item.totalPrice !== 'number') {
+            throw new Error(`Invalid totalPrice in item ${item.title}`);
+          }
+        });
+      });
+    });
+
+    console.log('Estimate validation successful');
     return new Response(
       JSON.stringify(estimateJson),
       { 
@@ -191,7 +194,6 @@ Make sure to:
     );
   } catch (error) {
     console.error('Error generating estimate:', error);
-    
     return new Response(
       JSON.stringify({ 
         error: 'Failed to generate estimate',
