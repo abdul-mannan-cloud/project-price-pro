@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/3d-button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -30,10 +30,14 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
   const [isCurrentUserContractor, setIsCurrentUserContractor] = useState(false);
 
   // Check if current user is the contractor
-  const checkCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setIsCurrentUserContractor(user?.id === contractorId);
-  };
+  useEffect(() => {
+    const checkCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsCurrentUserContractor(user?.id === contractorId);
+    };
+    
+    checkCurrentUser();
+  }, [contractorId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
