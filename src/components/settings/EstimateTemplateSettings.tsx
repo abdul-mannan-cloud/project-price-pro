@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 const templates = [
   {
@@ -38,26 +40,43 @@ const templates = [
 ];
 
 export const EstimateTemplateSettings = () => {
-  const { contractorId } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [clientMessage, setClientMessage] = useState("");
   const [footerText, setFooterText] = useState("");
   const [hasClientMessageChanges, setHasClientMessageChanges] = useState(false);
   const [hasFooterTextChanges, setHasFooterTextChanges] = useState(false);
 
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ["contractor-settings", contractorId],
+  // First, fetch the authenticated user
+  const { data: user, isLoading: userLoading, error: userError } = useQuery({
+    queryKey: ["auth-user"],
     queryFn: async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (!user) {
+        navigate("/login");
+        return null;
+      }
+      return user;
+    },
+  });
+
+  // Then, fetch settings only if we have a user
+  const { data: settings, isLoading: settingsLoading } = useQuery({
+    queryKey: ["contractor-settings", user?.id],
+    queryFn: async () => {
+      if (!user?.id) throw new Error("No authenticated user");
+
       const { data, error } = await supabase
         .from("contractor_settings")
         .select("*")
-        .eq("id", contractorId)
-        .single();
+        .eq("id", user.id)
+        .maybeSingle();
 
       if (error) throw error;
       return data;
     },
-    enabled: !!contractorId
+    enabled: !!user?.id // Only run this query if we have a user ID
   });
 
   useEffect(() => {
@@ -69,10 +88,12 @@ export const EstimateTemplateSettings = () => {
 
   const updateSettings = useMutation({
     mutationFn: async (updates: Partial<typeof settings>) => {
+      if (!user?.id) throw new Error("No authenticated user");
+
       const { error } = await supabase
         .from("contractor_settings")
         .update(updates)
-        .eq("id", contractorId);
+        .eq("id", user.id);
 
       if (error) throw error;
     },
@@ -94,8 +115,23 @@ export const EstimateTemplateSettings = () => {
     }
   });
 
-  if (isLoading) {
-    return <div>Loading...</div>;
+  // Handle authentication error
+  if (userError) {
+    navigate("/login");
+    return null;
+  }
+
+  if (userLoading || settingsLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="ml-2">Loading template settings...</span>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
   }
 
   const handleClientMessageChange = (value: string) => {
