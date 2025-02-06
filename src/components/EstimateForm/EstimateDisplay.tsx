@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, FileDown, Settings, Phone, Mail } from "lucide-react";
+import { Copy, FileDown, Settings, Phone, Mail, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Database } from "@/integrations/supabase/types";
 import { Json } from "@/integrations/supabase/types";
@@ -101,6 +101,7 @@ export const EstimateDisplay = ({
   estimate // Added to access AI generated title and message
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
+  const [showAIPreferences, setShowAIPreferences] = useState(false);
   const { contractorId } = useParams();
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
@@ -131,6 +132,48 @@ export const EstimateDisplay = ({
   useEffect(() => {
     checkContractorAccess();
   }, [contractorId]);
+
+  const handleRefreshEstimate = async () => {
+    try {
+      toast({
+        title: "Refreshing estimate...",
+        description: "Please wait while we regenerate your estimate.",
+      });
+      
+      // Trigger estimate regeneration
+      const response = await fetch(`/api/generate-estimate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          leadId: estimate.id,
+          contractorId: contractorId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh estimate');
+      }
+
+      const data = await response.json();
+      
+      if (onEstimateChange) {
+        onEstimateChange(data);
+      }
+
+      toast({
+        title: "Estimate refreshed",
+        description: "Your estimate has been successfully regenerated.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to refresh the estimate. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const defaultCompany = {
     business_name: "Example Company",
@@ -384,14 +427,35 @@ ${templateSettings.estimate_footer_text || ''}
               </div>
               <div className={getTemplateStyles(templateSettings.estimate_template_style).buttonsContainer} id="estimate-actions">
                 {isContractor && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowSettings(true)}
-                    className={getTemplateStyles(templateSettings.estimate_template_style).button}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleRefreshEstimate}
+                      className={getTemplateStyles(templateSettings.estimate_template_style).button}
+                      title="Refresh estimate"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowAIPreferences(true)}
+                      className={getTemplateStyles(templateSettings.estimate_template_style).button}
+                      title="AI Preferences"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowSettings(true)}
+                      className={getTemplateStyles(templateSettings.estimate_template_style).button}
+                      title="Template Settings"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </>
                 )}
                 <Button
                   variant="ghost"
@@ -633,14 +697,24 @@ ${templateSettings.estimate_footer_text || ''}
       />
 
       {isContractor && (
-        <SettingsDialog
-          title="Estimate Settings"
-          description="Customize how your estimates appear to clients"
-          isOpen={showSettings}
-          onClose={() => setShowSettings(false)}
-        >
-          <EstimateTemplateSettings />
-        </SettingsDialog>
+        <>
+          <SettingsDialog
+            title="Estimate Settings"
+            description="Customize how your estimates appear to clients"
+            isOpen={showSettings}
+            onClose={() => setShowSettings(false)}
+          >
+            <EstimateTemplateSettings />
+          </SettingsDialog>
+          <SettingsDialog
+            title="AI Preferences"
+            description="Configure AI settings for estimate generation"
+            isOpen={showAIPreferences}
+            onClose={() => setShowAIPreferences(false)}
+          >
+            <AIPreferencesSettings />
+          </SettingsDialog>
+        </>
       )}
     </>
   );
