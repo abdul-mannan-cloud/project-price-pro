@@ -248,7 +248,8 @@ ${templateSettings.estimate_footer_text || ''}
       totalsRow: "flex justify-between items-center py-2",
       buttonsContainer: "flex items-center gap-2 ml-auto",
       signatureBox: "h-32 rounded-lg transition-colors",
-      contactLink: "hover:underline text-primary transition-colors inline-flex items-center gap-2",
+      signatureText: "font-['Dancing_Script'] text-2xl font-bold text-gray-800",
+      signatureDate: "text-sm text-gray-500 mt-1",
     };
 
     switch (style) {
@@ -262,7 +263,7 @@ ${templateSettings.estimate_footer_text || ''}
           table: "w-full border-t border-gray-200",
           tableHeader: "text-xs uppercase tracking-wide py-4 px-4 text-left text-gray-600 font-light",
           tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
-          tableCell: "py-4 px-4 text-sm break-words text-gray-800 font-light",
+          tableCell: "py-4 px-4 text-sm border border-gray-300 break-words text-gray-800 font-light",
           total: "text-2xl md:text-3xl font-light",
           message: "bg-gray-50/50 p-6 rounded-none text-sm font-light",
           groupTitle: "text-base font-light mb-4 w-full uppercase tracking-wide",
@@ -550,15 +551,21 @@ ${templateSettings.estimate_footer_text || ''}
                 <div 
                   className={cn(
                     getTemplateStyles(templateSettings.estimate_template_style).signatureBox,
-                    !signature && "bg-yellow-50 hover:bg-yellow-100 cursor-pointer flex items-center justify-center"
+                    !signature ? "bg-yellow-50 hover:bg-yellow-100 cursor-pointer flex items-center justify-center" : "bg-white"
                   )}
                   onClick={() => !signature && setShowSignatureDialog(true)}
                 >
                   {signature ? (
                     <div className="p-4">
-                      <p className="font-medium">Signed by: {signature}</p>
-                      <p className="text-sm text-gray-500">
-                        {new Date().toLocaleDateString()}
+                      <p className={getTemplateStyles(templateSettings.estimate_template_style).signatureText}>
+                        {signature}
+                      </p>
+                      <p className={getTemplateStyles(templateSettings.estimate_template_style).signatureDate}>
+                        {new Date().toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
                       </p>
                     </div>
                   ) : (
