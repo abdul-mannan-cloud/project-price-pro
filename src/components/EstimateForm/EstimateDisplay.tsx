@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, FileDown, Settings } from "lucide-react";
+import { Copy, FileDown, Settings, Phone, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Database } from "@/integrations/supabase/types";
 import { Json } from "@/integrations/supabase/types";
@@ -13,6 +13,7 @@ import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplate
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { SignatureDialog } from "./SignatureDialog";
 
 interface LineItem {
   title: string;
@@ -59,6 +60,7 @@ interface EstimateDisplayProps {
   projectSummary?: string;
   isEditable?: boolean;
   onEstimateChange?: (estimate: any) => void;
+  onSignatureComplete?: (initials: string) => void;
 }
 
 interface ContractorSettings {
@@ -91,11 +93,14 @@ export const EstimateDisplay = ({
   contractor,
   projectSummary,
   isEditable = false,
-  onEstimateChange
+  onEstimateChange,
+  onSignatureComplete
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const { contractorId } = useParams();
   const [isContractor, setIsContractor] = useState(false);
+  const [showSignatureDialog, setShowSignatureDialog] = useState(false);
+  const [signature, setSignature] = useState<string | null>(null);
 
   const { data: settings } = useQuery<ContractorSettings>({
     queryKey: ["contractor-settings", contractorId],
@@ -239,7 +244,9 @@ ${templateSettings.estimate_footer_text || ''}
       subtotal: "text-right py-2 px-4 text-sm font-medium text-black",
       totalsSection: "space-y-4 mt-8 pt-6 border-t",
       totalsRow: "flex justify-between items-center py-2",
-      buttonsContainer: "flex items-center gap-2 ml-auto"
+      buttonsContainer: "flex items-center gap-2 ml-auto",
+      signatureBox: "h-32 rounded-lg transition-colors",
+      contactLink: "hover:underline text-primary transition-colors inline-flex items-center gap-2",
     };
 
     switch (style) {
@@ -327,10 +334,22 @@ ${templateSettings.estimate_footer_text || ''}
                 <div>
                   <h1 className={getTemplateStyles(templateSettings.estimate_template_style).companyInfo}>{companyInfo.business_name}</h1>
                   {companyInfo.contact_email && (
-                    <p className={getTemplateStyles(templateSettings.estimate_template_style).contactInfo}>{companyInfo.contact_email}</p>
+                    <a 
+                      href={`mailto:${companyInfo.contact_email}`}
+                      className={getTemplateStyles(templateSettings.estimate_template_style).contactLink}
+                    >
+                      <Mail className="h-4 w-4" />
+                      {companyInfo.contact_email}
+                    </a>
                   )}
                   {companyInfo.contact_phone && (
-                    <p className={getTemplateStyles(templateSettings.estimate_template_style).contactInfo}>{companyInfo.contact_phone}</p>
+                    <a 
+                      href={`tel:${companyInfo.contact_phone}`}
+                      className={getTemplateStyles(templateSettings.estimate_template_style).contactLink}
+                    >
+                      <Phone className="h-4 w-4" />
+                      {companyInfo.contact_phone}
+                    </a>
                   )}
                 </div>
               </div>
@@ -368,9 +387,11 @@ ${templateSettings.estimate_footer_text || ''}
           </div>
 
           {/* Client Message */}
-          {templateSettings?.estimate_client_message && (
+          {(templateSettings?.estimate_client_message || lead?.ai_generated_message) && (
             <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).message, "mb-6")}>
-              <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>{templateSettings.estimate_client_message}</p>
+              <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>
+                {templateSettings.estimate_client_message || lead?.ai_generated_message}
+              </p>
             </div>
           )}
 
@@ -505,12 +526,29 @@ ${templateSettings.estimate_footer_text || ''}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <p className="text-sm font-medium">Client Signature</p>
-                <div className={cn("h-32 rounded-lg", getTemplateStyles(templateSettings.estimate_template_style).message)}></div>
+                <div 
+                  className={cn(
+                    getTemplateStyles(templateSettings.estimate_template_style).signatureBox,
+                    !signature && "bg-yellow-50 hover:bg-yellow-100 cursor-pointer flex items-center justify-center"
+                  )}
+                  onClick={() => !signature && setShowSignatureDialog(true)}
+                >
+                  {signature ? (
+                    <div className="p-4">
+                      <p className="font-medium">Signed by: {signature}</p>
+                      <p className="text-sm text-gray-500">
+                        {new Date().toLocaleDateString()}
+                      </p>
+                    </div>
+                  ) : (
+                    <Button variant="ghost">Sign Here</Button>
+                  )}
+                </div>
                 <p className="text-sm">Sign above to approve this estimate</p>
               </div>
               <div className="space-y-3">
                 <p className="text-sm font-medium">Contractor Signature</p>
-                <div className={cn("h-32 rounded-lg", getTemplateStyles(templateSettings.estimate_template_style).message)}></div>
+                <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).signatureBox, "bg-gray-50")}></div>
                 <p className="text-sm">Contractor approval</p>
               </div>
             </div>
@@ -526,6 +564,12 @@ ${templateSettings.estimate_footer_text || ''}
           </div>
         )}
       </Card>
+
+      <SignatureDialog
+        isOpen={showSignatureDialog}
+        onClose={() => setShowSignatureDialog(false)}
+        onSign={handleSignature}
+      />
 
       {isContractor && (
         <SettingsDialog

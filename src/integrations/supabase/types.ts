@@ -242,6 +242,8 @@ export type Database = {
       }
       leads: {
         Row: {
+          ai_generated_message: string | null
+          ai_generated_title: string | null
           answers: Json | null
           category: string | null
           contractor_id: string | null
@@ -262,6 +264,8 @@ export type Database = {
           user_phone: string | null
         }
         Insert: {
+          ai_generated_message?: string | null
+          ai_generated_title?: string | null
           answers?: Json | null
           category?: string | null
           contractor_id?: string | null
@@ -282,6 +286,8 @@ export type Database = {
           user_phone?: string | null
         }
         Update: {
+          ai_generated_message?: string | null
+          ai_generated_title?: string | null
           answers?: Json | null
           category?: string | null
           contractor_id?: string | null
