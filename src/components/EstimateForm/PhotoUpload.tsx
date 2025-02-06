@@ -151,7 +151,7 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
       </div>
 
       {uploadedPhotos.length > 0 && (
-        <div className="space-y-4">
+        <div className="mt-6">
           <Button
             className="w-full"
             size="lg"
