@@ -123,8 +123,8 @@ serve(async (req) => {
     const aiTitle = titleData.choices?.[0]?.message?.content?.trim() || 'Project Estimate';
     const aiMessage = messageData.choices?.[0]?.message?.content?.trim() || 'Custom project estimate based on provided specifications.';
 
-    const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format.
-    
+    const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format only. Do not include any markdown or text before or after the JSON:
+
 Project Category: ${category || 'General Construction'}
 Project Description: ${projectDescription || 'Project estimate'}
 
@@ -133,7 +133,7 @@ ${formattedAnswers.map(cat => `
 Category: ${cat.category}
 ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}
 
-Generate a detailed estimate with the following JSON structure:
+Response must be valid JSON with this structure:
 {
   "groups": [
     {
@@ -160,14 +160,7 @@ Generate a detailed estimate with the following JSON structure:
   "totalCost": number,
   "ai_generated_title": string,
   "ai_generated_message": string
-}
-
-Important:
-1. Return ONLY valid JSON, no additional text
-2. Ensure all numbers are valid and calculations are accurate
-3. Include realistic market prices
-4. Break down costs into logical groups
-5. Include both labor and materials`;
+}`;
 
     console.log('Sending estimate prompt to Llama API');
 
@@ -180,7 +173,7 @@ Important:
       body: JSON.stringify({
         messages: [{
           role: 'system',
-          content: 'You are a construction cost estimator. Generate detailed estimates in JSON format only.'
+          content: 'You are a construction cost estimator. Generate estimates in JSON format only. Do not include any markdown formatting or additional text.'
         }, {
           role: 'user',
           content: prompt
@@ -212,7 +205,7 @@ Important:
       parsedEstimate = typeof content === 'string' ? JSON.parse(content) : content;
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
-      throw new Error(`Failed to parse JSON: ${parseError.message}`);
+      throw new Error('Failed to parse estimate response. Expected valid JSON.');
     }
 
     if (!parsedEstimate || typeof parsedEstimate !== 'object') {
