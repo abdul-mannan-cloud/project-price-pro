@@ -234,64 +234,12 @@ ${templateSettings.estimate_footer_text || ''}
     };
 
     switch (style) {
-      case 'excel':
-        return {
-          card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-sm",
-          header: "w-full border border-gray-300",
-          headerContent: "grid grid-cols-[1fr_auto-auto] gap-4 p-4 bg-[#E8EAED]",
-          title: "text-base font-medium text-gray-900",
-          text: "text-gray-600 text-sm",
-          section: "bg-white rounded-none border-0 mb-0",
-          table: "w-full md:min-w-[900px] border border-gray-300",
-          tableHeader: "bg-[#E8EAED] text-left text-xs font-medium text-gray-700 py-2 px-4 border-b border-r",
-          tableRow: "border-b border-gray-300",
-          tableCell: "py-2 px-4 border-r text-sm",
-          total: "text-base font-medium text-gray-900",
-          button: "bg-[#E8EAED] text-gray-700 hover:bg-gray-200 border-gray-300",
-          message: "bg-[#F3F4F6] p-4 rounded-lg text-sm", 
-          groupTitle: "text-sm font-medium bg-[#E8EAED] p-2 border border-gray-300 border-b-0",
-          subtotal: "text-right py-2 px-4 font-medium bg-[#F3F4F6] border-t border-r text-sm",
-          totalsSection: "border border-t-0 border-gray-300",
-          totalsRow: "grid grid-cols-2 gap-4 p-2 border-b last:border-b-0 border-gray-300",
-        };
-
-      case 'minimal':
-        return {
-          card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-sm",
-          header: "flex flex-col md:flex-row md:items-start justify-between mb-6 space-y-4 md:space-y-0",
-          title: "text-xl md:text-2xl font-light tracking-tight",
-          text: "text-neutral-600 text-sm",
-          section: "bg-white rounded-none border-0 mb-4",
-          ...baseTableStyles,
-          tableHeader: "bg-gray-50 text-left text-xs font-medium text-gray-600 py-2 px-4 border-b",
-          total: "text-2xl md:text-3xl font-light",
-          button: "bg-gray-100 text-gray-700 hover:bg-gray-200",
-          message: "bg-gray-50 p-4 rounded-lg text-sm", 
-          groupTitle: "text-base font-medium mb-2 w-full",
-          subtotal: "hidden",
-        };
-
-      case 'classic':
-        return {
-          card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-lg",
-          header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b space-y-4 md:space-y-0",
-          title: `text-xl md:text-2xl font-bold text-[${primaryColor}]`,
-          text: "text-gray-600 text-sm",
-          section: "bg-white rounded-none mb-0 last:mb-4",
-          ...baseTableStyles,
-          tableHeader: "bg-gray-800 text-xs text-white font-medium py-2 px-4 text-left",
-          total: `text-2xl md:text-3xl font-bold text-[${primaryColor}]`,
-          button: `bg-gray-100 text-gray-800 hover:bg-gray-200`,
-          message: "bg-gray-50 p-4 rounded-lg text-sm",
-          groupTitle: `text-base font-bold mb-2 w-full text-[${primaryColor}]`,
-          subtotal: "text-right py-2 px-4 text-sm font-medium",
-        };
-
       case 'bold':
         return {
           card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-xl",
           header: `bg-[${primaryColor}] -mx-4 -mt-4 md:-mx-8 md:-mt-8 p-4 md:p-8 mb-8`,
-          headerContent: "grid grid-cols-[1fr-auto] gap-4 items-start",
+          headerContent: "flex justify-between items-start",
+          businessInfo: "flex items-center gap-4",
           title: `text-xl md:text-2xl font-black text-[${darkerColor}]`,
           text: `text-[${darkerColor}]/90 text-sm`,
           section: "bg-white p-4 rounded-xl mb-4",
@@ -300,12 +248,12 @@ ${templateSettings.estimate_footer_text || ''}
           tableRow: `border-b hover:bg-gray-50 transition-colors font-semibold text-[${darkerColor}]`,
           tableCell: `py-3 px-4 text-sm text-[${darkerColor}]`,
           total: `text-3xl md:text-4xl font-black text-[${darkerColor}]`,
-          button: `bg-white/10 text-white hover:bg-white/20`,
+          button: `bg-[${darkerColor}]/10 text-[${darkerColor}] hover:bg-[${darkerColor}]/20`,
           message: `bg-gray-50 p-4 rounded-xl text-sm text-[${darkerColor}]`,
           groupTitle: `text-lg font-black mb-2 text-[${darkerColor}] w-full`,
           subtotal: `text-right py-2 px-4 text-sm font-bold text-[${darkerColor}]`,
-          companyInfo: `text-white font-medium`,
-          contactInfo: `text-white/80`,
+          companyInfo: `text-[${darkerColor}] font-medium`,
+          contactInfo: `text-[${darkerColor}]/80`,
           buttonsContainer: "flex items-center gap-2",
         };
 
@@ -339,7 +287,7 @@ ${templateSettings.estimate_footer_text || ''}
           <div className={styles.header}>
             {templateSettings.estimate_template_style === 'bold' ? (
               <div className={styles.headerContent}>
-                <div className="flex items-center gap-4">
+                <div className={styles.businessInfo}>
                   {contractor?.business_logo_url && (
                     <img 
                       src={contractor.business_logo_url} 
