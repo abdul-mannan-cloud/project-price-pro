@@ -233,8 +233,8 @@ ${templateSettings.estimate_footer_text || ''}
       headerContent: "flex justify-between items-center w-full",
       businessInfo: "flex items-center gap-6",
       companyInfo: "text-gray-900 font-semibold",
-      contactInfo: "text-gray-700 font-medium",
-      contactLink: "hover:underline text-primary transition-colors inline-flex items-center gap-2",
+      contactInfo: "text-gray-700 font-medium flex flex-col gap-1",
+      contactLink: "hover:underline text-primary transition-colors inline-flex items-center gap-2 text-sm",
       title: "text-xl md:text-2xl font-bold",
       text: "text-gray-600 text-sm",
       section: "bg-white rounded-none mb-0 last:mb-4",
@@ -360,24 +360,26 @@ ${templateSettings.estimate_footer_text || ''}
                   <h1 className={getTemplateStyles(templateSettings.estimate_template_style).companyInfo}>
                     {companyInfo.business_name}
                   </h1>
-                  {companyInfo.contact_email && (
-                    <a 
-                      href={`mailto:${companyInfo.contact_email}`}
-                      className={getTemplateStyles(templateSettings.estimate_template_style).contactLink}
-                    >
-                      <Mail className="h-4 w-4" />
-                      {companyInfo.contact_email}
-                    </a>
-                  )}
-                  {companyInfo.contact_phone && (
-                    <a 
-                      href={`tel:${companyInfo.contact_phone}`}
-                      className={getTemplateStyles(templateSettings.estimate_template_style).contactLink}
-                    >
-                      <Phone className="h-4 w-4" />
-                      {companyInfo.contact_phone}
-                    </a>
-                  )}
+                  <div className={getTemplateStyles(templateSettings.estimate_template_style).contactInfo}>
+                    {companyInfo.contact_email && (
+                      <a 
+                        href={`mailto:${companyInfo.contact_email}`}
+                        className={getTemplateStyles(templateSettings.estimate_template_style).contactLink}
+                      >
+                        <Mail className="h-4 w-4" />
+                        {companyInfo.contact_email}
+                      </a>
+                    )}
+                    {companyInfo.contact_phone && (
+                      <a 
+                        href={`tel:${companyInfo.contact_phone}`}
+                        className={getTemplateStyles(templateSettings.estimate_template_style).contactLink}
+                      >
+                        <Phone className="h-4 w-4" />
+                        {companyInfo.contact_phone}
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className={getTemplateStyles(templateSettings.estimate_template_style).buttonsContainer} id="estimate-actions">
