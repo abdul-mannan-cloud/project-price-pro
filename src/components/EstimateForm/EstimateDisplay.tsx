@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -110,20 +109,38 @@ export const EstimateDisplay = ({
   const [signature, setSignature] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const { data: settings } = useQuery<ContractorSettings>({
+  const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["contractor-settings", contractorId],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase
         .from("contractor_settings")
         .select("*")
         .eq("id", contractorId)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
-      return data as ContractorSettings;
+      if (error) {
+        console.error("Error fetching settings:", error);
+        throw error;
+      }
+
+      return data || {
+        estimate_template_style: 'modern',
+        estimate_signature_enabled: false,
+        estimate_client_message: '',
+        estimate_footer_text: '',
+        estimate_hide_subtotals: false,
+        estimate_compact_view: true
+      };
     },
     enabled: !!contractorId
   });
+
+  useEffect(() => {
+    checkContractorAccess();
+  }, [contractorId]);
 
   const checkContractorAccess = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -131,10 +148,6 @@ export const EstimateDisplay = ({
       setIsContractor(true);
     }
   };
-
-  useEffect(() => {
-    checkContractorAccess();
-  }, [contractorId]);
 
   const handleRefreshEstimate = async () => {
     try {
@@ -421,13 +434,13 @@ ${templateSettings.estimate_footer_text || ''}
   return (
     <>
       <Card className={cn(
-        getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).card,
+        getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').card,
         isBlurred && "blur-md pointer-events-none"
       )}>
         <div id="estimate-content">
-          <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).header}>
-            <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).headerContent}>
-              <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).businessInfo}>
+          <div className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').header}>
+            <div className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').headerContent}>
+              <div className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').businessInfo}>
                 {contractor?.business_logo_url && (
                   <img 
                     src={contractor.business_logo_url} 
@@ -436,14 +449,14 @@ ${templateSettings.estimate_footer_text || ''}
                   />
                 )}
                 <div>
-                  <h1 className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).companyInfo}>
+                  <h1 className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').companyInfo}>
                     {companyInfo.business_name}
                   </h1>
-                  <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).contactInfo}>
+                  <div className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').contactInfo}>
                     {companyInfo.contact_email && (
                       <a 
                         href={`mailto:${companyInfo.contact_email}`}
-                        className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).contactLink}
+                        className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').contactLink}
                       >
                         <Mail className="h-4 w-4" />
                         {companyInfo.contact_email}
@@ -452,7 +465,7 @@ ${templateSettings.estimate_footer_text || ''}
                     {companyInfo.contact_phone && (
                       <a 
                         href={`tel:${companyInfo.contact_phone}`}
-                        className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).contactLink}
+                        className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').contactLink}
                       >
                         <Phone className="h-4 w-4" />
                         {companyInfo.contact_phone}
@@ -461,14 +474,14 @@ ${templateSettings.estimate_footer_text || ''}
                   </div>
                 </div>
               </div>
-              <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).buttonsContainer} id="estimate-actions">
+              <div className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').buttonsContainer} id="estimate-actions">
                 {isContractor && (
                   <>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={handleRefreshEstimate}
-                      className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).button}
+                      className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').button}
                       title="Refresh estimate"
                     >
                       <RefreshCw className="h-4 w-4" />
@@ -477,7 +490,7 @@ ${templateSettings.estimate_footer_text || ''}
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowSettings(true)}
-                      className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).button}
+                      className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').button}
                       title="AI Preferences"
                     >
                       <BrainCog className="h-4 w-4" />
@@ -486,7 +499,7 @@ ${templateSettings.estimate_footer_text || ''}
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowAIPreferences(true)}
-                      className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).button}
+                      className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').button}
                       title="Template Settings"
                     >
                       <Settings className="h-4 w-4" />
@@ -496,7 +509,7 @@ ${templateSettings.estimate_footer_text || ''}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).button)}
+                  className={cn("gap-2", getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').button)}
                   onClick={handleCopyEstimate}
                 >
                   <Copy className="h-4 w-4" />
@@ -505,7 +518,7 @@ ${templateSettings.estimate_footer_text || ''}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).button)}
+                  className={cn("gap-2", getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').button)}
                   onClick={handleExportPDF}
                 >
                   <FileDown className="h-4 w-4" />
@@ -518,7 +531,7 @@ ${templateSettings.estimate_footer_text || ''}
           {/* AI Generated Title */}
           {estimate?.ai_generated_title && (
             <h2 className={cn(
-              getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).title,
+              getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').title,
               "mb-4 text-center"
             )}>
               {estimate.ai_generated_title}
@@ -527,8 +540,8 @@ ${templateSettings.estimate_footer_text || ''}
 
           {/* AI Generated Message */}
           {(estimate?.ai_generated_message || projectSummary) && (
-            <div className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).message, "mb-6")}>
-              <p className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).text}>
+            <div className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').message, "mb-6")}>
+              <p className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').text}>
                 {estimate?.ai_generated_message || projectSummary}
               </p>
             </div>
@@ -556,16 +569,16 @@ ${templateSettings.estimate_footer_text || ''}
 
           {/* Estimate Groups */}
           {groups?.map((group, index) => (
-            <div key={index} className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).section}>
-              <h3 className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).groupTitle}>{group.name}</h3>
+            <div key={index} className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').section}>
+              <h3 className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').groupTitle}>{group.name}</h3>
               
               {templateSettings.estimate_template_style === 'classic' ? (
                 <div className="space-y-2">
                   {group.subgroups?.map(subgroup => (
                     <div key={subgroup.name} className="space-y-1">
                       {subgroup.items?.map((item, itemIndex) => (
-                        <div key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableRow}>
-                          <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableCell}>
+                        <div key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableRow}>
+                          <div className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableCell}>
                             <span className="font-medium">{item.title}</span>
                             {item.unit && ` (${formatUnit(item.unit)})`}
                             {item.description && (
@@ -577,8 +590,8 @@ ${templateSettings.estimate_footer_text || ''}
                           </div>
                         </div>
                       ))}
-                      {!templateSettings.estimate_hide_subtotals && (
-                        <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).subtotal}>
+                      {!settings?.estimate_hide_subtotals && (
+                        <div className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').subtotal}>
                           Subtotal for {subgroup.name}: {formatCurrency(subgroup.subtotal)}
                         </div>
                       )}
@@ -587,33 +600,33 @@ ${templateSettings.estimate_footer_text || ''}
                 </div>
               ) : (
                 <div className="w-full">
-                  <table className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).table}>
+                  <table className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').table}>
                     <thead>
                       <tr>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableHeader, "w-[45%]")}>Item</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableHeader, "w-[35%]")}>Description</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableHeader, "w-[7%] text-right")}>Qty</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableHeader, "w-[7%] text-right")}>Price</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableHeader, "w-[6%] text-right")}>Total</th>
+                        <th className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableHeader, "w-[45%]")}>Item</th>
+                        <th className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableHeader, "w-[35%]")}>Description</th>
+                        <th className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableHeader, "w-[7%] text-right")}>Qty</th>
+                        <th className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableHeader, "w-[7%] text-right")}>Price</th>
+                        <th className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableHeader, "w-[6%] text-right")}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {group.subgroups?.map(subgroup => 
                         subgroup.items?.map((item, itemIndex) => (
-                          <tr key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableRow}>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableCell, "w-[45%] break-words")}>
+                          <tr key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableRow}>
+                            <td className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableCell, "w-[45%] break-words")}>
                               {item.title} {item.unit && `(${formatUnit(item.unit)})`}
                             </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableCell, "w-[35%] break-words")}>
+                            <td className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableCell, "w-[35%] break-words")}>
                               {item.description}
                             </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableCell, "w-[7%] text-right")}>
+                            <td className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableCell, "w-[7%] text-right")}>
                               {item.quantity.toLocaleString()}
                             </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableCell, "w-[7%] text-right")}>
+                            <td className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableCell, "w-[7%] text-right")}>
                               {formatCurrency(item.unitAmount)}
                             </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableCell, "w-[6%] text-right font-medium")}>
+                            <td className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableCell, "w-[6%] text-right font-medium")}>
                               {formatCurrency(item.totalPrice)}
                             </td>
                           </tr>
@@ -625,9 +638,9 @@ ${templateSettings.estimate_footer_text || ''}
               )}
 
               {/* Group Subtotal */}
-              {!templateSettings.estimate_hide_subtotals && templateSettings.estimate_template_style !== 'minimal' && (
-                <div className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).subtotal, "mt-4 pt-3 border-t")}>
-                  <span className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).text}>Subtotal for {group.name}</span>
+              {!settings?.estimate_hide_subtotals && templateSettings.estimate_template_style !== 'minimal' && (
+                <div className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').subtotal, "mt-4 pt-3 border-t")}>
+                  <span className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').text}>Subtotal for {group.name}</span>
                   <span className="font-semibold ml-4">
                     {formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0))}
                   </span>
@@ -659,50 +672,8 @@ ${templateSettings.estimate_footer_text || ''}
           ) : (
             <div className={cn("mt-8 pt-6 border-t space-y-4", templateSettings.estimate_compact_view ? "md:space-y-3" : "md:space-y-6")}>
               <div className="flex justify-between items-center">
-                <p className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).text}>Subtotal</p>
-                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).text, "text-lg")}>{formatCurrency(totalCost)}</p>
+                <p className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').text}>Subtotal</p>
+                <p className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').text, "text-lg")}>{formatCurrency(totalCost)}</p>
               </div>
               <div className="flex justify-between items-center">
-                <p className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).text}>Tax (8.5%)</p>
-                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).text, "text-lg")}>{formatCurrency(totalCost * 0.085)}</p>
-              </div>
-              <div className="flex justify-between items-center pt-4 border-t">
-                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).title, "!text-xl")}>Total Estimate</p>
-                <p className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).total}>{formatCurrency(totalCost * 1.085)}</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </Card>
-      
-      {showSettings && (
-        <SettingsDialog
-          title="Template Settings"
-          isOpen={showSettings}
-          onClose={() => setShowSettings(false)}
-        >
-          <EstimateTemplateSettings />
-        </SettingsDialog>
-      )}
-      
-      {showAIPreferences && (
-        <SettingsDialog
-          title="AI Preferences"
-          isOpen={showAIPreferences}
-          onClose={() => setShowAIPreferences(false)}
-        >
-          <AIPreferencesSettings />
-        </SettingsDialog>
-      )}
-      
-      {showSignatureDialog && (
-        <SignatureDialog
-          isOpen={showSignatureDialog}
-          onClose={() => setShowSignatureDialog(false)}
-          onSign={handleSignature}
-        />
-      )}
-    </>
-  );
-};
-
+                <p className={getTemplateStyles(settings?.estimate_template_style

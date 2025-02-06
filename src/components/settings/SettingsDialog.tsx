@@ -30,6 +30,14 @@ export const SettingsDialog = ({ title, description, isOpen, onClose, children }
             <DialogTitle>{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="w-6 h-6 p-0 hover:bg-secondary"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </DialogHeader>
         <div className={`
           flex-1 overflow-y-auto
@@ -41,3 +49,4 @@ export const SettingsDialog = ({ title, description, isOpen, onClose, children }
     </Dialog>
   );
 };
+
