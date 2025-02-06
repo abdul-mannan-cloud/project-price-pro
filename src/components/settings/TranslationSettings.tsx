@@ -22,7 +22,8 @@ export const TranslationSettings = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery({
+  // First, fetch the authenticated user
+  const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ["auth-user"],
     queryFn: async () => {
       const { data: { user }, error } = await supabase.auth.getUser();
@@ -34,7 +35,8 @@ export const TranslationSettings = () => {
     },
   });
 
-  const { data: settings, isLoading } = useQuery({
+  // Then, fetch the settings only if we have a user
+  const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["contractorSettings", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -48,7 +50,7 @@ export const TranslationSettings = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id, // Only run this query if we have a user ID
   });
 
   const updateLanguage = useMutation({
@@ -125,7 +127,7 @@ export const TranslationSettings = () => {
     setupLanguage();
   }, [settings, navigate, user?.id]);
 
-  if (isLoading) {
+  if (userLoading || settingsLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
