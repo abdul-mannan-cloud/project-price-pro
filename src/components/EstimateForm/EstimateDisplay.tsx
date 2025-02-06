@@ -15,7 +15,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { SignatureDialog } from "./SignatureDialog";
-import { BrainCog } from "lucide-react";
 
 interface LineItem {
   title: string;
@@ -447,7 +446,7 @@ ${templateSettings.estimate_footer_text || ''}
                       className={getTemplateStyles(templateSettings.estimate_template_style).button}
                       title="AI Preferences"
                     >
-                      <BrainCog className="h-4 w-4" />
+                      <Settings className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
