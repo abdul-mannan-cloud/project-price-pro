@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, FileDown, Settings, Phone, Mail, RefreshCw } from "lucide-react";
+import { Copy, FileDown, Settings, Phone, Mail, RefreshCw, BrainCog } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Database } from "@/integrations/supabase/types";
 import { Json } from "@/integrations/supabase/types";
-import { BrandingColors } from "@/types/settings";
+import { BrandingColors, EstimateTemplateStyle } from "@/types/settings";
 import { toast } from "@/hooks/use-toast";
 import html2pdf from 'html2pdf.js';
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
@@ -15,8 +15,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { SignatureDialog } from "./SignatureDialog";
-import { BrainCog } from "lucide-react";
-import { EstimateTemplateStyle } from "@/types/settings";
 
 interface LineItem {
   title: string;
@@ -386,8 +384,8 @@ ${templateSettings.estimate_footer_text || ''}
         };
 
       default: // modern
-        const primaryColor = contractor?.branding_colors ? 
-          ((typeof contractor.branding_colors === 'string' ? 
+        const primaryColor = contractor?.branding_colors 
+          ? ((typeof contractor.branding_colors === 'string' ? 
             JSON.parse(contractor.branding_colors) : 
             contractor.branding_colors) as BrandingColors).primary : 
           '#007AFF';
@@ -669,4 +667,10 @@ ${templateSettings.estimate_footer_text || ''}
               </div>
               <div className="flex justify-between items-center pt-4 border-t">
                 <p className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).title, "!text-xl")}>Total Estimate</p>
-                <p className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).total}>{formatCurrency(totalCost * 1.085)}
+                <p className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).total}>{formatCurrency(totalCost * 1.085)}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/*
