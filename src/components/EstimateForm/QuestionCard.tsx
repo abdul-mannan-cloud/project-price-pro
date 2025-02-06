@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,6 +16,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 
 type Contractor = Database['public']['Tables']['contractors']['Row'];
+
+// Add TypeScript declarations for the Web Speech API
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
 
 interface QuestionCardProps {
   question: Question;
@@ -78,7 +87,7 @@ export const QuestionCard = ({
         });
       };
       
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         const matchingOption = question.options.find(
           option => option.label.toLowerCase().includes(transcript.toLowerCase())
@@ -99,7 +108,7 @@ export const QuestionCard = ({
         }
       };
       
-      recognition.onerror = (event) => {
+      recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
         toast({
