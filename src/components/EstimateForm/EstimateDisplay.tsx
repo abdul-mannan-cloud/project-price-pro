@@ -62,6 +62,7 @@ interface EstimateDisplayProps {
   onEstimateChange?: (estimate: any) => void;
   onSignatureComplete?: (initials: string) => void;
   projectImages?: string[];
+  estimate?: any; // Added to access AI generated title and message
 }
 
 interface ContractorSettings {
@@ -96,7 +97,8 @@ export const EstimateDisplay = ({
   isEditable = false,
   onEstimateChange,
   onSignatureComplete,
-  projectImages = []
+  projectImages = [],
+  estimate // Added to access AI generated title and message
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const { contractorId } = useParams();
@@ -355,7 +357,9 @@ ${templateSettings.estimate_footer_text || ''}
                   />
                 )}
                 <div>
-                  <h1 className={getTemplateStyles(templateSettings.estimate_template_style).companyInfo}>{companyInfo.business_name}</h1>
+                  <h1 className={getTemplateStyles(templateSettings.estimate_template_style).companyInfo}>
+                    {companyInfo.business_name}
+                  </h1>
                   {companyInfo.contact_email && (
                     <a 
                       href={`mailto:${companyInfo.contact_email}`}
@@ -409,11 +413,21 @@ ${templateSettings.estimate_footer_text || ''}
             </div>
           </div>
 
-          {/* Client Message */}
-          {(templateSettings?.estimate_client_message || projectSummary) && (
+          {/* AI Generated Title */}
+          {estimate?.ai_generated_title && (
+            <h2 className={cn(
+              getTemplateStyles(templateSettings.estimate_template_style).title,
+              "mb-4 text-center"
+            )}>
+              {estimate.ai_generated_title}
+            </h2>
+          )}
+
+          {/* AI Generated Message */}
+          {(estimate?.ai_generated_message || projectSummary) && (
             <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).message, "mb-6")}>
               <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>
-                {templateSettings.estimate_client_message || projectSummary}
+                {estimate?.ai_generated_message || projectSummary}
               </p>
             </div>
           )}
@@ -421,11 +435,11 @@ ${templateSettings.estimate_footer_text || ''}
           {/* Project Images */}
           {projectImages && projectImages.length > 0 && (
             <div className="mb-6 overflow-x-auto">
-              <div className="flex gap-4 pb-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {projectImages.map((image, index) => (
                   <div 
                     key={index} 
-                    className="flex-none w-64 h-48 relative rounded-lg overflow-hidden"
+                    className="aspect-square relative rounded-lg overflow-hidden"
                   >
                     <img 
                       src={image} 
