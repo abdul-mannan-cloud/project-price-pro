@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -435,18 +436,19 @@ ${templateSettings.estimate_footer_text || ''}
     <>
       {showSettings && (
         <EstimateTemplateSettings
+          isOpen={showSettings}
           onClose={() => setShowSettings(false)}
-          contractorId={contractorId || ''}
         />
       )}
       {showAIPreferences && (
         <AIPreferencesSettings
+          isOpen={showAIPreferences}
           onClose={() => setShowAIPreferences(false)}
-          contractorId={contractorId || ''}
         />
       )}
       {showSignatureDialog && (
         <SignatureDialog
+          isOpen={showSignatureDialog}
           onClose={() => setShowSignatureDialog(false)}
           onComplete={handleSignature}
         />
