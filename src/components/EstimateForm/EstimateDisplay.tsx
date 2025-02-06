@@ -1,4 +1,3 @@
-<lov-code>
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -274,7 +273,7 @@ ${templateSettings.estimate_footer_text || ''}
         : contractor.branding_colors as BrandingColors)
     : null;
 
-  const getTemplateStyles = (style: EstimateTemplateStyle = 'modern') => {
+  const getTemplateStyles = (style: EstimateTemplateStyle = 'modern'): Record<string, string> => {
     const baseStyles = {
       card: "bg-white p-4 md:p-8 max-w-5xl mx-auto",
       header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 space-y-4 md:space-y-0",
@@ -306,110 +305,112 @@ ${templateSettings.estimate_footer_text || ''}
       totalsValue: "py-2 px-4 text-sm text-right border"
     };
 
-  switch (style) {
-    case 'classic':
-      return {
-        ...baseStyles,
-        card: "bg-[#FFFDF7] p-6 md:p-10 max-w-5xl mx-auto border border-gray-200",
-        header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 space-y-4 md:space-y-0",
-        title: "text-xl md:text-2xl font-serif font-bold",
-        text: "font-serif text-gray-700 text-sm leading-relaxed",
-        table: "w-full bg-[#FFFDF7]",
-        tableHeader: "text-sm font-serif tracking-wide py-4 px-6 text-left border-b-2 border-gray-300 text-gray-800",
-        tableRow: "border-b border-gray-200 hover:bg-[#FAF7F0]",
-        tableCell: "py-4 px-6 text-sm font-serif break-words text-gray-700",
-        total: "text-2xl md:text-3xl font-serif font-bold",
-        message: "bg-[#FAF7F0] p-6 border border-gray-200 rounded-none text-sm font-serif",
-        groupTitle: "text-lg font-serif font-bold mb-4 w-full",
-        subtotal: "text-right py-4 px-6 text-sm font-serif font-medium text-gray-700",
-        totalsSection: "space-y-4 mt-8 pt-6 border-t-2 border-gray-300",
-        signatureBox: "h-32 bg-[#FAF7F0] border border-gray-200 rounded-none",
-        signatureText: "font-['Playfair_Display'] text-2xl font-bold text-gray-800"
-      };
+    switch (style) {
+      case 'classic':
+        return {
+          ...baseStyles,
+          card: "bg-[#FFFDF7] p-6 md:p-10 max-w-5xl mx-auto border border-gray-200",
+          header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 space-y-4 md:space-y-0",
+          title: "text-xl md:text-2xl font-serif font-bold",
+          text: "font-serif text-gray-700 text-sm leading-relaxed",
+          table: "w-full bg-[#FFFDF7]",
+          tableHeader: "text-sm font-serif tracking-wide py-4 px-6 text-left border-b-2 border-gray-300 text-gray-800",
+          tableRow: "border-b border-gray-200 hover:bg-[#FAF7F0]",
+          tableCell: "py-4 px-6 text-sm font-serif break-words text-gray-700",
+          total: "text-2xl md:text-3xl font-serif font-bold",
+          message: "bg-[#FAF7F0] p-6 border border-gray-200 rounded-none text-sm font-serif",
+          groupTitle: "text-lg font-serif font-bold mb-4 w-full",
+          subtotal: "text-right py-4 px-6 text-sm font-serif font-medium text-gray-700",
+          totalsSection: "space-y-4 mt-8 pt-6 border-t-2 border-gray-300",
+          signatureBox: "h-32 bg-[#FAF7F0] border border-gray-200 rounded-none",
+          signatureText: "font-['Playfair_Display'] text-2xl font-bold text-gray-800"
+        };
 
-    case 'minimal':
-      return {
-        ...baseStyles,
-        card: "bg-white p-8 md:p-12 max-w-5xl mx-auto",
-        header: "flex flex-col md:flex-row md:items-start justify-between mb-12 space-y-6 md:space-y-0",
-        title: "text-xl md:text-2xl font-light tracking-wide",
-        text: "text-gray-600 text-sm font-light leading-relaxed",
-        table: "w-full border-t border-gray-100",
-        tableHeader: "text-xs uppercase tracking-wide py-4 px-4 text-left text-gray-500 font-light",
-        tableRow: "border-b border-gray-50",
-        tableCell: "py-4 px-4 text-sm break-words text-gray-700 font-light",
-        total: "text-2xl md:text-3xl font-light tracking-wide",
-        message: "py-6 text-sm font-light leading-relaxed",
-        groupTitle: "text-base font-light uppercase tracking-wide mb-6 w-full",
-        subtotal: "text-right py-4 px-4 text-sm font-light text-gray-500",
-        totalsSection: "space-y-6 mt-12 pt-6 border-t border-gray-100",
-        signatureBox: "h-32 border border-gray-100 rounded-none"
-      };
+      case 'minimal':
+        return {
+          ...baseStyles,
+          card: "bg-white p-8 md:p-12 max-w-5xl mx-auto",
+          header: "flex flex-col md:flex-row md:items-start justify-between mb-12 space-y-6 md:space-y-0",
+          title: "text-xl md:text-2xl font-light tracking-wide",
+          text: "text-gray-600 text-sm font-light leading-relaxed",
+          table: "w-full border-t border-gray-100",
+          tableHeader: "text-xs uppercase tracking-wide py-4 px-4 text-left text-gray-500 font-light",
+          tableRow: "border-b border-gray-50",
+          tableCell: "py-4 px-4 text-sm break-words text-gray-700 font-light",
+          total: "text-2xl md:text-3xl font-light tracking-wide",
+          message: "py-6 text-sm font-light leading-relaxed",
+          groupTitle: "text-base font-light uppercase tracking-wide mb-6 w-full",
+          subtotal: "text-right py-4 px-4 text-sm font-light text-gray-500",
+          totalsSection: "space-y-6 mt-12 pt-6 border-t border-gray-100",
+          signatureBox: "h-32 border border-gray-100 rounded-none"
+        };
 
-    case 'bold':
-      return {
-        ...baseStyles,
-        card: "bg-gray-900 text-white p-6 md:p-10 max-w-5xl mx-auto rounded-xl shadow-2xl",
-        header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b border-gray-700 space-y-4 md:space-y-0",
-        title: "text-2xl md:text-3xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
-        text: "text-gray-300 text-sm font-medium",
-        table: "w-full rounded-lg overflow-hidden bg-gray-800",
-        tableHeader: "text-sm uppercase tracking-wider py-4 px-6 text-left bg-gray-700 text-white font-bold",
-        tableRow: "border-b border-gray-700 hover:bg-gray-750 transition-all duration-200",
-        tableCell: "py-4 px-6 text-sm break-words text-gray-300",
-        total: "text-3xl md:text-4xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
-        message: "bg-gray-800 p-6 rounded-lg text-sm text-gray-300 border border-gray-700",
-        groupTitle: "text-lg font-bold mb-4 w-full bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
-        subtotal: "text-right py-4 px-6 text-sm font-bold text-gray-300 bg-gray-800",
-        totalsSection: "space-y-4 mt-8 pt-6 border-t border-gray-700",
-        signatureBox: "h-32 bg-gray-800 border border-gray-700 rounded-lg"
-      };
+      case 'bold':
+        return {
+          ...baseStyles,
+          card: "bg-gray-900 text-white p-6 md:p-10 max-w-5xl mx-auto rounded-xl shadow-2xl",
+          header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b border-gray-700 space-y-4 md:space-y-0",
+          title: "text-2xl md:text-3xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
+          text: "text-gray-300 text-sm font-medium",
+          table: "w-full rounded-lg overflow-hidden bg-gray-800",
+          tableHeader: "text-sm uppercase tracking-wider py-4 px-6 text-left bg-gray-700 text-white font-bold",
+          tableRow: "border-b border-gray-700 hover:bg-gray-750 transition-all duration-200",
+          tableCell: "py-4 px-6 text-sm break-words text-gray-300",
+          total: "text-3xl md:text-4xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
+          message: "bg-gray-800 p-6 rounded-lg text-sm text-gray-300 border border-gray-700",
+          groupTitle: "text-lg font-bold mb-4 w-full bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
+          subtotal: "text-right py-4 px-6 text-sm font-bold text-gray-300 bg-gray-800",
+          totalsSection: "space-y-4 mt-8 pt-6 border-t border-gray-700",
+          signatureBox: "h-32 bg-gray-800 border border-gray-700 rounded-lg"
+        };
 
-    case 'excel':
-      return {
-        ...baseStyles,
-        card: "bg-white p-0 max-w-5xl mx-auto shadow-sm border border-gray-300",
-        header: "flex flex-col md:flex-row md:items-start justify-between p-4 md:p-6 bg-[#F8F9FA] border-b space-y-4 md:space-y-0",
-        title: "text-xl md:text-2xl font-normal font-['Calibri']",
-        text: "text-gray-700 text-sm font-['Calibri']",
-        table: "w-full border-collapse",
-        tableHeader: "text-xs font-bold bg-[#E9ECEF] py-2 px-3 text-left border border-gray-300 text-black font-['Calibri']",
-        tableRow: "odd:bg-white even:bg-gray-50 hover:bg-[#F8F9FA]",
-        tableCell: "py-2 px-3 text-sm border border-gray-300 break-words text-black font-['Calibri']",
-        total: "text-xl md:text-2xl font-bold font-['Calibri']",
-        message: "bg-[#F8F9FA] p-4 border text-sm font-['Calibri']",
-        groupTitle: "text-base font-bold mb-3 w-full font-['Calibri']",
-        subtotal: "text-right py-2 px-3 text-sm font-bold bg-[#F8F9FA] border border-gray-300 text-black font-['Calibri']",
-        totalsSection: "mt-4",
-        totalsTable: "w-full border-collapse",
-        totalsRow: "border border-gray-300 font-['Calibri']",
-        signatureBox: "h-32 bg-[#F8F9FA] border border-gray-300"
-      };
+      case 'excel':
+        return {
+          ...baseStyles,
+          card: "bg-white p-0 max-w-5xl mx-auto shadow-sm border border-gray-300",
+          header: "flex flex-col md:flex-row md:items-start justify-between p-4 md:p-6 bg-[#F8F9FA] border-b space-y-4 md:space-y-0",
+          title: "text-xl md:text-2xl font-normal font-['Calibri']",
+          text: "text-gray-700 text-sm font-['Calibri']",
+          table: "w-full border-collapse",
+          tableHeader: "text-xs font-bold bg-[#E9ECEF] py-2 px-3 text-left border border-gray-300 text-black font-['Calibri']",
+          tableRow: "odd:bg-white even:bg-gray-50 hover:bg-[#F8F9FA]",
+          tableCell: "py-2 px-3 text-sm border border-gray-300 break-words text-black font-['Calibri']",
+          total: "text-xl md:text-2xl font-bold font-['Calibri']",
+          message: "bg-[#F8F9FA] p-4 border text-sm font-['Calibri']",
+          groupTitle: "text-base font-bold mb-3 w-full font-['Calibri']",
+          subtotal: "text-right py-2 px-3 text-sm font-bold bg-[#F8F9FA] border border-gray-300 text-black font-['Calibri']",
+          totalsSection: "mt-4",
+          totalsTable: "w-full border-collapse",
+          totalsRow: "border border-gray-300 font-['Calibri']",
+          signatureBox: "h-32 bg-[#F8F9FA] border border-gray-300"
+        };
 
-    default: // modern
-      const primaryColor = contractor?.branding_colors && typeof contractor.branding_colors === 'object' 
-        ? (contractor.branding_colors as BrandingColors).primary 
-        : '#007AFF';
-      
-      return {
-        ...baseStyles,
-        card: "bg-white p-6 md:p-10 max-w-5xl mx-auto shadow-lg rounded-xl",
-        header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b border-gray-100 space-y-4 md:space-y-0",
-        title: `text-xl md:text-2xl font-semibold text-[${primaryColor}]`,
-        text: "text-gray-600 text-sm leading-relaxed",
-        table: "w-full rounded-lg overflow-hidden",
-        tableHeader: "text-xs uppercase tracking-wider py-3 px-6 text-left bg-gray-50 text-gray-700 font-semibold",
-        tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
-        tableCell: "py-4 px-6 text-sm break-words text-gray-800",
-        total: `text-2xl md:text-3xl font-bold text-[${primaryColor}]`,
-        message: "bg-gray-50 p-6 rounded-xl text-sm leading-relaxed",
-        groupTitle: `text-lg font-semibold mb-4 w-full text-[${primaryColor}]`,
-        subtotal: "text-right py-3 px-6 text-sm font-medium text-gray-700 bg-gray-50",
-        totalsSection: "space-y-4 mt-8 pt-6 border-t border-gray-100",
-        signatureBox: "h-32 bg-gray-50 rounded-lg transition-colors"
-      };
-  }
-};
+      default: // modern
+        const primaryColor = contractor?.branding_colors ? 
+          ((typeof contractor.branding_colors === 'string' ? 
+            JSON.parse(contractor.branding_colors) : 
+            contractor.branding_colors) as BrandingColors).primary : 
+          '#007AFF';
+        
+        return {
+          ...baseStyles,
+          card: "bg-white p-6 md:p-10 max-w-5xl mx-auto shadow-lg rounded-xl",
+          header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b border-gray-100 space-y-4 md:space-y-0",
+          title: `text-xl md:text-2xl font-semibold text-[${primaryColor}]`,
+          text: "text-gray-600 text-sm leading-relaxed",
+          table: "w-full rounded-lg overflow-hidden",
+          tableHeader: "text-xs uppercase tracking-wider py-3 px-6 text-left bg-gray-50 text-gray-700 font-semibold",
+          tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
+          tableCell: "py-4 px-6 text-sm break-words text-gray-800",
+          total: `text-2xl md:text-3xl font-bold text-[${primaryColor}]`,
+          message: "bg-gray-50 p-6 rounded-xl text-sm leading-relaxed",
+          groupTitle: `text-lg font-semibold mb-4 w-full text-[${primaryColor}]`,
+          subtotal: "text-right py-3 px-6 text-sm font-medium text-gray-700 bg-gray-50",
+          totalsSection: "space-y-4 mt-8 pt-6 border-t border-gray-100",
+          signatureBox: "h-32 bg-gray-50 rounded-lg transition-colors"
+        };
+    }
+  };
 
   const handleSignature = (initials: string) => {
     setSignature(initials);
@@ -668,11 +669,4 @@ ${templateSettings.estimate_footer_text || ''}
               </div>
               <div className="flex justify-between items-center pt-4 border-t">
                 <p className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).title, "!text-xl")}>Total Estimate</p>
-                <p className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).total}>{formatCurrency(totalCost * 1.085)}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Signature Section */}
-        
+                <p className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).total}>{formatCurrency(totalCost * 1.085)}
