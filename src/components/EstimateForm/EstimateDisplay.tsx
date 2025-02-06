@@ -219,8 +219,8 @@ ${templateSettings.estimate_footer_text || ''}
 
   const getTemplateStyles = (style: string = 'modern') => {
     const baseStyles = {
-      card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-lg",
-      header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b space-y-4 md:space-y-0",
+      card: "bg-white p-4 md:p-8 max-w-5xl mx-auto",
+      header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 space-y-4 md:space-y-0",
       headerContent: "flex justify-between items-center w-full",
       businessInfo: "flex items-center gap-6",
       companyInfo: "text-gray-900 font-semibold",
@@ -230,74 +230,89 @@ ${templateSettings.estimate_footer_text || ''}
       section: "bg-white rounded-none mb-0 last:mb-4",
       table: "w-full",
       tableHeader: "text-xs uppercase tracking-wider py-2 px-4 text-left border-b text-black",
-      tableRow: "border-b border-gray-200 hover:bg-gray-50 transition-colors",
+      tableRow: "border-b hover:bg-gray-50 transition-colors",
       tableCell: "py-3 px-4 text-sm border-r last:border-r-0 break-words text-black",
-      total: "text-2xl md:text-3xl font-bold text-gray-900",
-      button: "bg-gray-100 text-gray-800 hover:bg-gray-200",
+      total: "text-2xl md:text-3xl font-bold",
+      button: "bg-gray-100 hover:bg-gray-200",
       message: "bg-gray-50 p-4 rounded-lg text-sm",
       groupTitle: "text-base font-bold mb-2 w-full",
       subtotal: "text-right py-2 px-4 text-sm font-medium text-black",
       totalsSection: "space-y-4 mt-8 pt-6 border-t",
-      totalsRow: "flex justify-between items-center py-2 text-gray-900",
+      totalsRow: "flex justify-between items-center py-2",
       buttonsContainer: "flex items-center gap-2 ml-auto"
     };
 
-    const primaryColor = contractor?.branding_colors 
-      ? (typeof contractor.branding_colors === 'string' 
-          ? JSON.parse(contractor.branding_colors).primary 
-          : (contractor.branding_colors as BrandingColors).primary)
-      : '#007AFF';
-    const primaryColorLight = `${primaryColor}20`;
-    const darkerColor = '#1A1F2C';
-
     switch (style) {
-      case 'bold':
+      case 'minimal':
         return {
           ...baseStyles,
-          card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-xl",
-          header: `bg-[${primaryColor}] -mx-4 -mt-4 md:-mx-8 md:-mt-8 p-4 md:p-8 mb-8`,
-          title: `text-xl md:text-2xl font-black text-[${darkerColor}]`,
-          text: `text-[${darkerColor}]/90 text-sm`,
-          section: "bg-white p-4 rounded-xl mb-4",
-          table: "w-full md:min-w-[900px] rounded-xl overflow-hidden border border-gray-200",
-          tableHeader: `bg-[${darkerColor}] text-white text-xs font-bold py-2 px-4 text-left`,
-          tableRow: `border-b hover:bg-gray-50 transition-colors font-semibold text-[${darkerColor}]`,
-          tableCell: `py-3 px-4 text-sm text-[${darkerColor}]`,
-          total: `text-3xl md:text-4xl font-black text-[${darkerColor}]`,
-          button: `bg-[${darkerColor}]/10 text-[${darkerColor}] hover:bg-[${darkerColor}]/20`,
-          message: `bg-gray-50 p-4 rounded-xl text-sm text-[${darkerColor}]`,
-          groupTitle: `text-lg font-black mb-2 text-[${darkerColor}] w-full`,
-          subtotal: `text-right py-2 px-4 text-sm font-bold text-[${darkerColor}]`,
-          companyInfo: `text-[${darkerColor}] font-medium`,
-          contactInfo: `text-[${darkerColor}]/80`,
-          headerContent: baseStyles.headerContent,
-          businessInfo: baseStyles.businessInfo,
-          buttonsContainer: baseStyles.buttonsContainer
+          card: "bg-white p-4 md:p-8 max-w-5xl mx-auto",
+          header: "flex flex-col md:flex-row md:items-start justify-between mb-12 space-y-4 md:space-y-0",
+          title: "text-xl md:text-2xl font-light tracking-wide",
+          text: "text-gray-600 text-sm font-light",
+          table: "w-full border-t border-gray-200",
+          tableHeader: "text-xs uppercase tracking-wide py-4 px-4 text-left text-gray-600 font-light",
+          tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
+          tableCell: "py-4 px-4 text-sm break-words text-gray-800 font-light",
+          total: "text-2xl md:text-3xl font-light",
+          message: "bg-gray-50/50 p-6 rounded-none text-sm font-light",
+          groupTitle: "text-base font-light mb-4 w-full uppercase tracking-wide",
+          subtotal: "text-right py-4 px-4 text-sm font-light text-gray-600",
+          totalsSection: "space-y-6 mt-12 pt-6 border-t",
+          totalsRow: "flex justify-between items-center py-3 text-gray-800 font-light"
+        };
+
+      case 'excel':
+        return {
+          ...baseStyles,
+          card: "bg-white p-0 max-w-5xl mx-auto shadow-sm border border-gray-300",
+          header: "flex flex-col md:flex-row md:items-start justify-between p-4 md:p-6 bg-[#F8F9FA] border-b space-y-4 md:space-y-0",
+          title: "text-xl md:text-2xl font-normal font-['Calibri']",
+          text: "text-gray-700 text-sm font-['Calibri']",
+          section: "p-4 md:p-6",
+          table: "w-full border-collapse",
+          tableHeader: "text-xs font-bold bg-[#E9ECEF] py-2 px-3 text-left border border-gray-300 text-black font-['Calibri']",
+          tableRow: "hover:bg-[#F8F9FA] transition-colors",
+          tableCell: "py-2 px-3 text-sm border border-gray-300 break-words text-black font-['Calibri']",
+          total: "text-xl md:text-2xl font-bold font-['Calibri']",
+          message: "bg-[#F8F9FA] p-4 border text-sm font-['Calibri']",
+          groupTitle: "text-base font-bold mb-3 w-full font-['Calibri']",
+          subtotal: "text-right py-2 px-3 text-sm font-bold bg-[#F8F9FA] border border-gray-300 text-black font-['Calibri']",
+          totalsSection: "space-y-2 mt-6 pt-4 border-t",
+          totalsRow: "flex justify-between items-center py-2 text-black font-['Calibri']"
         };
 
       default: // modern
         return {
           ...baseStyles,
-          title: `text-xl md:text-2xl font-bold text-[${primaryColor}]`,
-          groupTitle: `text-base font-bold mb-2 w-full text-[${primaryColor}]`,
-          tableHeader: "bg-gray-800 text-xs text-white font-medium py-2 px-4 text-left",
-          total: `text-2xl md:text-3xl font-bold text-[${primaryColor}]`,
+          card: "bg-white p-6 md:p-10 max-w-5xl mx-auto shadow-lg rounded-xl",
+          header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b border-gray-100 space-y-4 md:space-y-0",
+          title: `text-xl md:text-2xl font-semibold text-[${contractor?.branding_colors?.primary || '#007AFF'}]`,
+          text: "text-gray-600 text-sm leading-relaxed",
+          table: "w-full rounded-lg overflow-hidden",
+          tableHeader: "text-xs uppercase tracking-wider py-3 px-6 text-left bg-gray-50 text-gray-700 font-semibold",
+          tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
+          tableCell: "py-4 px-6 text-sm break-words text-gray-800",
+          total: `text-2xl md:text-3xl font-bold text-[${contractor?.branding_colors?.primary || '#007AFF'}]`,
+          message: "bg-gray-50 p-6 rounded-xl text-sm leading-relaxed",
+          groupTitle: `text-lg font-semibold mb-4 w-full text-[${contractor?.branding_colors?.primary || '#007AFF'}]`,
+          subtotal: "text-right py-3 px-6 text-sm font-medium text-gray-700 bg-gray-50",
+          totalsSection: "space-y-4 mt-8 pt-6 border-t border-gray-100",
+          totalsRow: "flex justify-between items-center py-2 text-gray-800"
         };
     }
   };
 
-  const styles = getTemplateStyles(templateSettings.estimate_template_style);
-
   return (
     <>
       <Card className={cn(
-        styles.card,
+        getTemplateStyles(templateSettings.estimate_template_style).card,
         isBlurred && "blur-md pointer-events-none"
       )}>
         <div id="estimate-content">
-          <div className={styles.header}>
-            <div className={styles.headerContent}>
-              <div className={styles.businessInfo}>
+          <div className={getTemplateStyles(templateSettings.estimate_template_style).header}>
+            <div className={getTemplateStyles(templateSettings.estimate_template_style).headerContent}>
+              <div className={getTemplateStyles(templateSettings.estimate_template_style).businessInfo}>
                 {contractor?.business_logo_url && (
                   <img 
                     src={contractor.business_logo_url} 
@@ -306,22 +321,22 @@ ${templateSettings.estimate_footer_text || ''}
                   />
                 )}
                 <div>
-                  <h1 className={styles.companyInfo}>{companyInfo.business_name}</h1>
+                  <h1 className={getTemplateStyles(templateSettings.estimate_template_style).companyInfo}>{companyInfo.business_name}</h1>
                   {companyInfo.contact_email && (
-                    <p className={styles.contactInfo}>{companyInfo.contact_email}</p>
+                    <p className={getTemplateStyles(templateSettings.estimate_template_style).contactInfo}>{companyInfo.contact_email}</p>
                   )}
                   {companyInfo.contact_phone && (
-                    <p className={styles.contactInfo}>{companyInfo.contact_phone}</p>
+                    <p className={getTemplateStyles(templateSettings.estimate_template_style).contactInfo}>{companyInfo.contact_phone}</p>
                   )}
                 </div>
               </div>
-              <div className={styles.buttonsContainer} id="estimate-actions">
+              <div className={getTemplateStyles(templateSettings.estimate_template_style).buttonsContainer} id="estimate-actions">
                 {isContractor && (
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowSettings(true)}
-                    className={styles.button}
+                    className={getTemplateStyles(templateSettings.estimate_template_style).button}
                   >
                     <Settings className="h-4 w-4" />
                   </Button>
@@ -329,7 +344,7 @@ ${templateSettings.estimate_footer_text || ''}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn("gap-2", styles.button)}
+                  className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style).button)}
                   onClick={handleCopyEstimate}
                 >
                   <Copy className="h-4 w-4" />
@@ -338,7 +353,7 @@ ${templateSettings.estimate_footer_text || ''}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn("gap-2", styles.button)}
+                  className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style).button)}
                   onClick={handleExportPDF}
                 >
                   <FileDown className="h-4 w-4" />
@@ -350,31 +365,31 @@ ${templateSettings.estimate_footer_text || ''}
 
           {/* Client Message */}
           {templateSettings?.estimate_client_message && (
-            <div className={cn(styles.message, "mb-6")}>
-              <p className={styles.text}>{templateSettings.estimate_client_message}</p>
+            <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).message, "mb-6")}>
+              <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>{templateSettings.estimate_client_message}</p>
             </div>
           )}
 
           {/* Project Summary */}
           {projectSummary && (
-            <div className={cn(styles.message, "mb-6")}>
-              <h2 className={cn(styles.title, "!text-lg mb-2")}>Project Overview</h2>
-              <p className={styles.text}>{projectSummary}</p>
+            <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).message, "mb-6")}>
+              <h2 className={cn(getTemplateStyles(templateSettings.estimate_template_style).title, "!text-lg mb-2")}>Project Overview</h2>
+              <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>{projectSummary}</p>
             </div>
           )}
 
           {/* Estimate Groups */}
           {groups?.map((group, index) => (
-            <div key={index} className={styles.section}>
-              <h3 className={styles.groupTitle}>{group.name}</h3>
+            <div key={index} className={getTemplateStyles(templateSettings.estimate_template_style).section}>
+              <h3 className={getTemplateStyles(templateSettings.estimate_template_style).groupTitle}>{group.name}</h3>
               
               {templateSettings.estimate_template_style === 'classic' ? (
                 <div className="space-y-2">
                   {group.subgroups?.map(subgroup => (
                     <div key={subgroup.name} className="space-y-1">
                       {subgroup.items?.map((item, itemIndex) => (
-                        <div key={`${subgroup.name}-${itemIndex}`} className={styles.tableRow}>
-                          <div className={styles.tableCell}>
+                        <div key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
+                          <div className={getTemplateStyles(templateSettings.estimate_template_style).tableCell}>
                             <span className="font-medium">{item.title}</span>
                             {item.unit && ` (${formatUnit(item.unit)})`}
                             {item.description && (
@@ -387,7 +402,7 @@ ${templateSettings.estimate_footer_text || ''}
                         </div>
                       ))}
                       {!templateSettings.estimate_hide_subtotals && (
-                        <div className={styles.subtotal}>
+                        <div className={getTemplateStyles(templateSettings.estimate_template_style).subtotal}>
                           Subtotal for {subgroup.name}: {formatCurrency(subgroup.subtotal)}
                         </div>
                       )}
@@ -396,33 +411,33 @@ ${templateSettings.estimate_footer_text || ''}
                 </div>
               ) : (
                 <div className="w-full">
-                  <table className={styles.table}>
+                  <table className={getTemplateStyles(templateSettings.estimate_template_style).table}>
                     <thead>
                       <tr>
-                        <th className={cn(styles.tableHeader, "w-[45%]")}>Item</th>
-                        <th className={cn(styles.tableHeader, "w-[35%]")}>Description</th>
-                        <th className={cn(styles.tableHeader, "w-[7%] text-right")}>Qty</th>
-                        <th className={cn(styles.tableHeader, "w-[7%] text-right")}>Price</th>
-                        <th className={cn(styles.tableHeader, "w-[6%] text-right")}>Total</th>
+                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[45%]")}>Item</th>
+                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[35%]")}>Description</th>
+                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Qty</th>
+                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Price</th>
+                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[6%] text-right")}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {group.subgroups?.map(subgroup => 
                         subgroup.items?.map((item, itemIndex) => (
-                          <tr key={`${subgroup.name}-${itemIndex}`} className={styles.tableRow}>
-                            <td className={cn(styles.tableCell, "w-[45%] break-words")}>
+                          <tr key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
+                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%] break-words")}>
                               {item.title} {item.unit && `(${formatUnit(item.unit)})`}
                             </td>
-                            <td className={cn(styles.tableCell, "w-[35%] break-words")}>
+                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%] break-words")}>
                               {item.description}
                             </td>
-                            <td className={cn(styles.tableCell, "w-[7%] text-right")}>
+                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
                               {item.quantity.toLocaleString()}
                             </td>
-                            <td className={cn(styles.tableCell, "w-[7%] text-right")}>
+                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
                               {formatCurrency(item.unitAmount)}
                             </td>
-                            <td className={cn(styles.tableCell, "w-[6%] text-right font-medium")}>
+                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[6%] text-right font-medium")}>
                               {formatCurrency(item.totalPrice)}
                             </td>
                           </tr>
@@ -435,8 +450,8 @@ ${templateSettings.estimate_footer_text || ''}
 
               {/* Group Subtotal */}
               {!templateSettings.estimate_hide_subtotals && templateSettings.estimate_template_style !== 'minimal' && (
-                <div className={cn(styles.subtotal, "mt-4 pt-3 border-t")}>
-                  <span className={styles.text}>Subtotal for {group.name}</span>
+                <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).subtotal, "mt-4 pt-3 border-t")}>
+                  <span className={getTemplateStyles(templateSettings.estimate_template_style).text}>Subtotal for {group.name}</span>
                   <span className="font-semibold ml-4">
                     {formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0))}
                   </span>
@@ -447,16 +462,16 @@ ${templateSettings.estimate_footer_text || ''}
           
           {/* Total */}
           {templateSettings.estimate_template_style === 'excel' ? (
-            <div className={styles.totalsSection}>
-              <div className={styles.totalsRow}>
+            <div className={getTemplateStyles(templateSettings.estimate_template_style).totalsSection}>
+              <div className={getTemplateStyles(templateSettings.estimate_template_style).totalsRow}>
                 <span>Subtotal</span>
                 <span className="text-right">{formatCurrency(totalCost)}</span>
               </div>
-              <div className={styles.totalsRow}>
+              <div className={getTemplateStyles(templateSettings.estimate_template_style).totalsRow}>
                 <span>Tax (8.5%)</span>
                 <span className="text-right">{formatCurrency(totalCost * 0.085)}</span>
               </div>
-              <div className={cn(styles.totalsRow, "font-bold")}>
+              <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).totalsRow, "font-bold")}>
                 <span>Total Estimate</span>
                 <span className="text-right">{formatCurrency(totalCost * 1.085)}</span>
               </div>
@@ -464,16 +479,16 @@ ${templateSettings.estimate_footer_text || ''}
           ) : (
             <div className={cn("mt-8 pt-6 border-t space-y-4", templateSettings.estimate_compact_view ? "md:space-y-3" : "md:space-y-6")}>
               <div className="flex justify-between items-center">
-                <p className={styles.text}>Subtotal</p>
-                <p className={cn(styles.text, "text-lg")}>{formatCurrency(totalCost)}</p>
+                <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>Subtotal</p>
+                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).text, "text-lg")}>{formatCurrency(totalCost)}</p>
               </div>
               <div className="flex justify-between items-center">
-                <p className={styles.text}>Tax (8.5%)</p>
-                <p className={cn(styles.text, "text-lg")}>{formatCurrency(totalCost * 0.085)}</p>
+                <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>Tax (8.5%)</p>
+                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).text, "text-lg")}>{formatCurrency(totalCost * 0.085)}</p>
               </div>
               <div className="flex justify-between items-center pt-4 border-t">
-                <p className={cn(styles.title, "!text-xl")}>Total Estimate</p>
-                <p className={styles.total}>{formatCurrency(totalCost * 1.085)}</p>
+                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).title, "!text-xl")}>Total Estimate</p>
+                <p className={getTemplateStyles(templateSettings.estimate_template_style).total}>{formatCurrency(totalCost * 1.085)}</p>
               </div>
             </div>
           )}
@@ -481,17 +496,17 @@ ${templateSettings.estimate_footer_text || ''}
 
         {/* Signature Section */}
         {templateSettings?.estimate_signature_enabled && (
-          <div className={cn("mt-8 pt-6 border-t space-y-6", styles.text)}>
-            <h3 className={cn(styles.title, "!text-xl")}>Signatures</h3>
+          <div className={cn("mt-8 pt-6 border-t space-y-6", getTemplateStyles(templateSettings.estimate_template_style).text)}>
+            <h3 className={cn(getTemplateStyles(templateSettings.estimate_template_style).title, "!text-xl")}>Signatures</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <p className="text-sm font-medium">Client Signature</p>
-                <div className={cn("h-32 rounded-lg", styles.message)}></div>
+                <div className={cn("h-32 rounded-lg", getTemplateStyles(templateSettings.estimate_template_style).message)}></div>
                 <p className="text-sm">Sign above to approve this estimate</p>
               </div>
               <div className="space-y-3">
                 <p className="text-sm font-medium">Contractor Signature</p>
-                <div className={cn("h-32 rounded-lg", styles.message)}></div>
+                <div className={cn("h-32 rounded-lg", getTemplateStyles(templateSettings.estimate_template_style).message)}></div>
                 <p className="text-sm">Contractor approval</p>
               </div>
             </div>
@@ -500,7 +515,7 @@ ${templateSettings.estimate_footer_text || ''}
 
         {/* Footer Text */}
         {templateSettings?.estimate_footer_text && (
-          <div className={cn("mt-8 pt-6 border-t", styles.text)}>
+          <div className={cn("mt-8 pt-6 border-t", getTemplateStyles(templateSettings.estimate_template_style).text)}>
             <p className="whitespace-pre-wrap text-sm">
               {templateSettings.estimate_footer_text}
             </p>
