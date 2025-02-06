@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Json } from "@/integrations/supabase/types";
 
 interface AIPreferences {
   rate: string;
@@ -16,6 +17,11 @@ interface AIPreferences {
 interface ContractorSettings {
   ai_preferences: AIPreferences;
   ai_instructions: string;
+}
+
+interface SupabaseContractorSettings {
+  ai_preferences: Json;
+  ai_instructions: string | null;
 }
 
 export const AIPreferencesSettings = () => {
@@ -34,7 +40,19 @@ export const AIPreferencesSettings = () => {
         .single();
 
       if (error) throw error;
-      return data as ContractorSettings;
+      
+      // Convert Supabase data to our ContractorSettings type
+      const supabaseData = data as SupabaseContractorSettings;
+      const aiPreferences = supabaseData.ai_preferences as AIPreferences;
+      
+      return {
+        ai_preferences: aiPreferences || {
+          rate: "HR",
+          type: "material_labor",
+          instructions: ""
+        },
+        ai_instructions: supabaseData.ai_instructions || ""
+      } as ContractorSettings;
     },
   });
 
@@ -46,7 +64,7 @@ export const AIPreferencesSettings = () => {
       const { error } = await supabase
         .from("contractor_settings")
         .update({
-          ai_preferences: formData.ai_preferences,
+          ai_preferences: formData.ai_preferences as Json,
           ai_instructions: formData.ai_instructions
         })
         .eq("id", user.id);
