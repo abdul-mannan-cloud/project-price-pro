@@ -23,11 +23,12 @@ export const TranslationSettings = () => {
   const queryClient = useQueryClient();
 
   // First, fetch the authenticated user
-  const { data: user, isLoading: userLoading } = useQuery({
+  const { data: user, isLoading: userLoading, error: userError } = useQuery({
     queryKey: ["auth-user"],
     queryFn: async () => {
       const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) {
+      if (error) throw error;
+      if (!user) {
         navigate("/login");
         return null;
       }
@@ -39,7 +40,7 @@ export const TranslationSettings = () => {
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["contractorSettings", user?.id],
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!user?.id) throw new Error("No authenticated user");
 
       const { data, error } = await supabase
         .from("contractor_settings")
@@ -116,7 +117,7 @@ export const TranslationSettings = () => {
         }
 
         i18next.changeLanguage(preferredLanguage);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error setting up language:', error);
         if (error.message?.includes('JWT')) {
           navigate("/login");
@@ -126,6 +127,12 @@ export const TranslationSettings = () => {
 
     setupLanguage();
   }, [settings, navigate, user?.id]);
+
+  // Handle authentication error
+  if (userError) {
+    navigate("/login");
+    return null;
+  }
 
   if (userLoading || settingsLoading) {
     return (
