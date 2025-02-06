@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Json } from "@/integrations/supabase/types";
+import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 interface AIPreferences {
   rate: string;
@@ -33,24 +35,39 @@ const defaultPreferences: AIPreferences = {
 
 export const AIPreferencesSettings = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ["ai-preferences"],
+  // First, fetch the authenticated user
+  const { data: user, isLoading: userLoading, error: userError } = useQuery({
+    queryKey: ["auth-user"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (!user) {
+        navigate("/login");
+        return null;
+      }
+      return user;
+    },
+  });
+
+  // Then, fetch settings only if we have a user
+  const { data: settings, isLoading: settingsLoading } = useQuery({
+    queryKey: ["contractor-settings", user?.id],
+    queryFn: async () => {
+      if (!user?.id) throw new Error("No authenticated user");
 
       const { data, error } = await supabase
         .from("contractor_settings")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       
       // Convert Supabase data to our ContractorSettings type
       const supabaseData = data as SupabaseContractorSettings;
-      const preferences = supabaseData.ai_preferences as any;
+      const preferences = supabaseData?.ai_preferences as any || defaultPreferences;
       
       // Ensure we have all required fields with proper types
       const aiPreferences: AIPreferences = {
@@ -61,15 +78,15 @@ export const AIPreferencesSettings = () => {
       
       return {
         ai_preferences: aiPreferences,
-        ai_instructions: supabaseData.ai_instructions || ""
+        ai_instructions: supabaseData?.ai_instructions || ""
       } as ContractorSettings;
     },
+    enabled: !!user?.id, // Only run this query if we have a user ID
   });
 
   const updateSettings = useMutation({
     mutationFn: async (formData: ContractorSettings) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
+      if (!user?.id) throw new Error("No authenticated user");
 
       // Convert AIPreferences to a plain object that matches Json type
       const aiPreferencesJson: { [key: string]: string } = {
@@ -103,6 +120,25 @@ export const AIPreferencesSettings = () => {
     },
   });
 
+  // Handle authentication error
+  if (userError) {
+    navigate("/login");
+    return null;
+  }
+
+  if (userLoading || settingsLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="ml-2">Loading preferences...</span>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -116,10 +152,6 @@ export const AIPreferencesSettings = () => {
     };
     updateSettings.mutate(data);
   };
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -167,3 +199,4 @@ export const AIPreferencesSettings = () => {
     </form>
   );
 };
+
