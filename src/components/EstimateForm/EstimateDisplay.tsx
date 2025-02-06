@@ -102,6 +102,7 @@ export const EstimateDisplay = ({
   estimate
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
+  const [showAIPreferences, setShowAIPreferences] = useState(false);
   const { contractorId } = useParams();
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
@@ -441,7 +442,7 @@ ${templateSettings.estimate_footer_text || ''}
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => navigate('/settings')}
+                      onClick={() => setShowAIPreferences(true)}
                       className={getTemplateStyles(templateSettings.estimate_template_style).button}
                       title="AI Preferences"
                     >
@@ -698,14 +699,24 @@ ${templateSettings.estimate_footer_text || ''}
       />
 
       {isContractor && (
-        <SettingsDialog
-          title="Estimate Settings"
-          description="Customize how your estimates appear to clients"
-          isOpen={showSettings}
-          onClose={() => setShowSettings(false)}
-        >
-          <EstimateTemplateSettings />
-        </SettingsDialog>
+        <>
+          <SettingsDialog
+            title="Estimate Settings"
+            description="Customize how your estimates appear to clients"
+            isOpen={showSettings}
+            onClose={() => setShowSettings(false)}
+          >
+            <EstimateTemplateSettings />
+          </SettingsDialog>
+          <SettingsDialog
+            title="AI Preferences"
+            description="Configure AI settings for estimate generation"
+            isOpen={showAIPreferences}
+            onClose={() => setShowAIPreferences(false)}
+          >
+            <AIPreferencesSettings />
+          </SettingsDialog>
+        </>
       )}
     </>
   );
