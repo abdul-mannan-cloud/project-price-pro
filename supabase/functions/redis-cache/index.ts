@@ -1,19 +1,10 @@
-import { createClient } from '@redis/client';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { connect } from "https://deno.land/x/redis@v0.29.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const redisClient = createClient({
-  username: Deno.env.get('REDIS_USERNAME') || 'default',
-  password: Deno.env.get('REDIS_PASSWORD'),
-  socket: {
-    host: Deno.env.get('REDIS_HOST'),
-    port: parseInt(Deno.env.get('REDIS_PORT') || '12923')
-  }
-});
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -21,16 +12,21 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let redis;
   try {
-    if (!redisClient.isOpen) {
-      await redisClient.connect();
-    }
+    // Connect to Redis
+    redis = await connect({
+      hostname: Deno.env.get('REDIS_HOST') || "",
+      port: parseInt(Deno.env.get('REDIS_PORT') || "12923"),
+      username: Deno.env.get('REDIS_USERNAME') || "default",
+      password: Deno.env.get('REDIS_PASSWORD') || "",
+    });
 
     const { action, key, value, ttl } = await req.json();
 
     switch (action) {
       case 'get':
-        const result = await redisClient.get(key);
+        const result = await redis.get(key);
         return new Response(
           JSON.stringify({ success: true, data: result }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -38,9 +34,9 @@ serve(async (req) => {
 
       case 'set':
         if (ttl) {
-          await redisClient.setEx(key, ttl, value);
+          await redis.setex(key, ttl, value);
         } else {
-          await redisClient.set(key, value);
+          await redis.set(key, value);
         }
         return new Response(
           JSON.stringify({ success: true }),
@@ -48,7 +44,7 @@ serve(async (req) => {
         );
 
       case 'delete':
-        await redisClient.del(key);
+        await redis.del(key);
         return new Response(
           JSON.stringify({ success: true }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -66,5 +62,10 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
+  } finally {
+    // Close Redis connection
+    if (redis) {
+      await redis.close();
+    }
   }
 });
