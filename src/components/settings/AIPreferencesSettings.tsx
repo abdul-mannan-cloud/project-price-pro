@@ -7,6 +7,17 @@ import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+interface AIPreferences {
+  rate: string;
+  type: string;
+  instructions: string;
+}
+
+interface ContractorSettings {
+  ai_preferences: AIPreferences;
+  ai_instructions: string;
+}
+
 export const AIPreferencesSettings = () => {
   const { toast } = useToast();
 
@@ -23,12 +34,12 @@ export const AIPreferencesSettings = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as ContractorSettings;
     },
   });
 
   const updateSettings = useMutation({
-    mutationFn: async (formData: any) => {
+    mutationFn: async (formData: ContractorSettings) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
@@ -60,13 +71,13 @@ export const AIPreferencesSettings = () => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const data = {
+    const data: ContractorSettings = {
       ai_preferences: {
-        rate: formData.get("rate"),
-        type: formData.get("type"),
-        instructions: formData.get("instructions")
+        rate: formData.get("rate") as string || "HR",
+        type: formData.get("type") as string || "material_labor",
+        instructions: formData.get("instructions") as string || ""
       },
-      ai_instructions: formData.get("ai_instructions")
+      ai_instructions: formData.get("ai_instructions") as string || ""
     };
     updateSettings.mutate(data);
   };
@@ -75,13 +86,19 @@ export const AIPreferencesSettings = () => {
     return <div>Loading...</div>;
   }
 
+  const defaultPreferences = settings?.ai_preferences || {
+    rate: "HR",
+    type: "material_labor",
+    instructions: ""
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
         <Label>Rate Type</Label>
         <Input
           name="rate"
-          defaultValue={settings?.ai_preferences?.rate || "HR"}
+          defaultValue={defaultPreferences.rate}
           placeholder="e.g., HR for hourly rate"
         />
       </div>
@@ -90,7 +107,7 @@ export const AIPreferencesSettings = () => {
         <Label>Calculation Type</Label>
         <Input
           name="type"
-          defaultValue={settings?.ai_preferences?.type || "material_labor"}
+          defaultValue={defaultPreferences.type}
           placeholder="e.g., material_labor"
         />
       </div>
@@ -99,7 +116,7 @@ export const AIPreferencesSettings = () => {
         <Label>AI Instructions</Label>
         <Textarea
           name="instructions"
-          defaultValue={settings?.ai_preferences?.instructions || ""}
+          defaultValue={defaultPreferences.instructions}
           placeholder="Enter specific instructions for AI estimate generation..."
           className="min-h-[100px]"
         />
