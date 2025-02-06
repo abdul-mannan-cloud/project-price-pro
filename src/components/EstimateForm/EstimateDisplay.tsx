@@ -433,6 +433,24 @@ ${templateSettings.estimate_footer_text || ''}
 
   return (
     <>
+      {showSettings && (
+        <EstimateTemplateSettings
+          onClose={() => setShowSettings(false)}
+          contractorId={contractorId || ''}
+        />
+      )}
+      {showAIPreferences && (
+        <AIPreferencesSettings
+          onClose={() => setShowAIPreferences(false)}
+          contractorId={contractorId || ''}
+        />
+      )}
+      {showSignatureDialog && (
+        <SignatureDialog
+          onClose={() => setShowSignatureDialog(false)}
+          onComplete={handleSignature}
+        />
+      )}
       <Card className={cn(
         getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').card,
         isBlurred && "blur-md pointer-events-none"
@@ -570,7 +588,9 @@ ${templateSettings.estimate_footer_text || ''}
           {/* Estimate Groups */}
           {groups?.map((group, index) => (
             <div key={index} className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').section}>
-              <h3 className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').groupTitle}>{group.name}</h3>
+              <h3 className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').groupTitle}>
+                {group.name}
+              </h3>
               
               {templateSettings.estimate_template_style === 'classic' ? (
                 <div className="space-y-2">
@@ -581,7 +601,9 @@ ${templateSettings.estimate_footer_text || ''}
                           <div className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableCell}>
                             <span className="font-medium">{item.title}</span>
                             {item.unit && ` (${formatUnit(item.unit)})`}
-                            {item.description && (\n                              <p className="text-sm text-gray-600 mt-1">{item.description}</p>\n                            )}
+                            {item.description && (
+                              <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                            )}
                             <div className="text-sm text-gray-600 mt-1">
                               {item.quantity.toLocaleString()} × {formatCurrency(item.unitAmount)} = {formatCurrency(item.totalPrice)}
                             </div>
@@ -681,4 +703,22 @@ ${templateSettings.estimate_footer_text || ''}
                 >
                   {signature ? (
                     <div className="text-center">
-                      <p className={getTemplate
+                      <p className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').signatureText}>
+                        {signature}
+                      </p>
+                      <p className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').signatureDate}>
+                        {new Date().toLocaleDateString()}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">Click to sign</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+    </>
+  );
+};
