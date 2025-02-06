@@ -1,4 +1,4 @@
-<lov-code>
+
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -673,4 +673,33 @@ ${templateSettings.estimate_footer_text || ''}
             </div>
           )}
         </div>
-
+      </Card>
+      
+      {showSettings && (
+        <SettingsDialog
+          open={showSettings}
+          onOpenChange={() => setShowSettings(false)}
+        >
+          <EstimateTemplateSettings />
+        </SettingsDialog>
+      )}
+      
+      {showAIPreferences && (
+        <SettingsDialog
+          open={showAIPreferences}
+          onOpenChange={() => setShowAIPreferences(false)}
+        >
+          <AIPreferencesSettings />
+        </SettingsDialog>
+      )}
+      
+      {showSignatureDialog && (
+        <SignatureDialog
+          open={showSignatureDialog}
+          onOpenChange={() => setShowSignatureDialog(false)}
+          onComplete={handleSignature}
+        />
+      )}
+    </>
+  );
+};
