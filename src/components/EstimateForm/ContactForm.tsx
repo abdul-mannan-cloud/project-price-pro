@@ -50,6 +50,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
       }
 
       console.log('Submitting contact form with:', { leadId, contractorId, formData });
+      console.log('Estimate data being sent:', estimate);
 
       // Update the lead with the form data
       const { error: updateError } = await supabase
@@ -73,7 +74,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
       const estimateUrl = `${window.location.origin}/estimate/${leadId}`;
 
       // Send the email notifications
-      await Promise.all([
+      const [emailResponse] = await Promise.all([
         // Send email to customer
         supabase.functions.invoke('send-estimate-email', {
           body: {
@@ -95,6 +96,10 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
           }
         })
       ]);
+
+      if (emailResponse.error) {
+        throw new Error(emailResponse.error);
+      }
 
       toast({
         title: "Success!",
