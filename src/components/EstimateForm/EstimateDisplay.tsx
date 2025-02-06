@@ -283,19 +283,23 @@ ${templateSettings.estimate_footer_text || ''}
         };
 
       default: // modern
+        const primaryColor = contractor?.branding_colors && typeof contractor.branding_colors === 'object' 
+          ? (contractor.branding_colors as BrandingColors).primary 
+          : '#007AFF';
+
         return {
           ...baseStyles,
           card: "bg-white p-6 md:p-10 max-w-5xl mx-auto shadow-lg rounded-xl",
           header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b border-gray-100 space-y-4 md:space-y-0",
-          title: `text-xl md:text-2xl font-semibold text-[${contractor?.branding_colors?.primary || '#007AFF'}]`,
+          title: `text-xl md:text-2xl font-semibold text-[${primaryColor}]`,
           text: "text-gray-600 text-sm leading-relaxed",
           table: "w-full rounded-lg overflow-hidden",
           tableHeader: "text-xs uppercase tracking-wider py-3 px-6 text-left bg-gray-50 text-gray-700 font-semibold",
           tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
           tableCell: "py-4 px-6 text-sm break-words text-gray-800",
-          total: `text-2xl md:text-3xl font-bold text-[${contractor?.branding_colors?.primary || '#007AFF'}]`,
+          total: `text-2xl md:text-3xl font-bold text-[${primaryColor}]`,
           message: "bg-gray-50 p-6 rounded-xl text-sm leading-relaxed",
-          groupTitle: `text-lg font-semibold mb-4 w-full text-[${contractor?.branding_colors?.primary || '#007AFF'}]`,
+          groupTitle: `text-lg font-semibold mb-4 w-full text-[${primaryColor}]`,
           subtotal: "text-right py-3 px-6 text-sm font-medium text-gray-700 bg-gray-50",
           totalsSection: "space-y-4 mt-8 pt-6 border-t border-gray-100",
           totalsRow: "flex justify-between items-center py-2 text-gray-800"
