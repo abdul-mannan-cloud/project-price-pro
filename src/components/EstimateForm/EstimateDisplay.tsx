@@ -673,3 +673,4 @@ ${templateSettings.estimate_footer_text || ''}
             </div>
           )}
         </div>
+
