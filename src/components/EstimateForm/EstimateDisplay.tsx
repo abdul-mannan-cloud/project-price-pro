@@ -451,7 +451,7 @@ ${templateSettings.estimate_footer_text || ''}
                     )}
                     {companyInfo.contact_phone && (
                       <a 
-                        href={`tel:${companyInfo.contact_phone}`}
+                        href={`tel:${companyInfo.contact_phone}`}\
                         className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).contactLink}
                       >
                         <Phone className="h-4 w-4" />
