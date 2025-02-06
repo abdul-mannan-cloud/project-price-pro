@@ -221,8 +221,8 @@ ${templateSettings.estimate_footer_text || ''}
     const baseStyles = {
       card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-lg",
       header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b space-y-4 md:space-y-0",
-      headerContent: "flex justify-between items-start",
-      businessInfo: "flex items-center gap-4",
+      headerContent: "flex justify-between items-center w-full",
+      businessInfo: "flex items-center gap-6",
       companyInfo: "text-gray-900 font-medium",
       contactInfo: "text-gray-600",
       title: "text-xl md:text-2xl font-bold",
@@ -239,7 +239,7 @@ ${templateSettings.estimate_footer_text || ''}
       subtotal: "text-right py-2 px-4 text-sm font-medium",
       totalsSection: "space-y-4 mt-8 pt-6 border-t",
       totalsRow: "flex justify-between items-center py-2",
-      buttonsContainer: "flex items-center gap-2"
+      buttonsContainer: "flex items-center gap-2 ml-auto"
     };
 
     const primaryColor = contractor?.branding_colors 
@@ -302,7 +302,7 @@ ${templateSettings.estimate_footer_text || ''}
                   <img 
                     src={contractor.business_logo_url} 
                     alt={`${companyInfo.business_name} logo`}
-                    className="w-16 h-16 object-contain rounded-lg"
+                    className="w-24 h-24 object-contain rounded-lg"
                   />
                 )}
                 <div>
