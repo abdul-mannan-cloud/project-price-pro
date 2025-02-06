@@ -207,6 +207,7 @@ ${templateSettings.estimate_footer_text || ''}
   const getTemplateStyles = (style: string = 'modern') => {
     const primaryColor = brandingColors?.primary || '#9b87f5';
     const primaryColorLight = `${primaryColor}20`;
+    const darkerColor = '#1A1F2C'; // Added darker color for bold template
 
     const baseTableStyles = {
       table: "w-full border-collapse",
@@ -275,18 +276,18 @@ ${templateSettings.estimate_footer_text || ''}
         return {
           card: "bg-white p-4 md:p-8 max-w-4xl mx-auto shadow-xl",
           header: `bg-[${primaryColor}] -mx-4 -mt-4 md:-mx-8 md:-mt-8 p-4 md:p-8 mb-8`,
-          title: "text-xl md:text-2xl font-black text-white",
+          title: `text-xl md:text-2xl font-black text-[${darkerColor}]`,
           text: "text-white/90 text-sm",
           section: "bg-white p-4 rounded-xl mb-4",
           ...baseTableStyles,
-          tableHeader: "bg-gray-100 text-xs font-bold py-1 px-3 text-left",
-          tableRow: "border-b hover:bg-gray-50 transition-colors font-medium",
+          tableHeader: `bg-[${darkerColor}] text-white text-xs font-bold py-1 px-3 text-left`,
+          tableRow: `border-b hover:bg-gray-50 transition-colors font-medium text-[${darkerColor}]`,
           tableCell: "py-2 px-3 text-sm",
-          total: "text-3xl md:text-4xl font-black text-gray-900",
+          total: `text-3xl md:text-4xl font-black text-[${darkerColor}]`,
           button: "bg-gray-100 text-gray-800 hover:bg-gray-200",
           message: "bg-gray-50 p-4 rounded-xl text-sm",
-          groupTitle: "text-lg font-black mb-2 text-gray-900 w-full",
-          subtotal: "text-right py-2 text-sm font-bold text-gray-900",
+          groupTitle: `text-lg font-black mb-2 text-[${darkerColor}] w-full`,
+          subtotal: `text-right py-2 text-sm font-bold text-[${darkerColor}]`,
         };
 
       default: // modern
