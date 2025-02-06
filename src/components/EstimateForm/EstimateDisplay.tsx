@@ -1,3 +1,4 @@
+<lov-code>
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -101,8 +102,8 @@ export const EstimateDisplay = ({
   projectImages = [],
   estimate
 }: EstimateDisplayProps) => {
-  const [showSettings, setShowAIPreferences] = useState(false);
-  const [showAIPreferences, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showAIPreferences, setShowAIPreferences] = useState(false);
   const { contractorId } = useParams();
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
@@ -676,4 +677,4 @@ ${templateSettings.estimate_footer_text || ''}
                 <p className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').text, "text-lg")}>{formatCurrency(totalCost)}</p>
               </div>
               <div className="flex justify-between items-center">
-                <p className={getTemplateStyles(settings?.estimate_template_style
+                <p className={getTemplateStyles(settings?.estimate_
