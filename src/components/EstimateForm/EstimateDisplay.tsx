@@ -1,4 +1,3 @@
-<lov-code>
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -582,9 +581,7 @@ ${templateSettings.estimate_footer_text || ''}
                           <div className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').tableCell}>
                             <span className="font-medium">{item.title}</span>
                             {item.unit && ` (${formatUnit(item.unit)})`}
-                            {item.description && (
-                              <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                            )}
+                            {item.description && (\n                              <p className="text-sm text-gray-600 mt-1">{item.description}</p>\n                            )}
                             <div className="text-sm text-gray-600 mt-1">
                               {item.quantity.toLocaleString()} × {formatCurrency(item.unitAmount)} = {formatCurrency(item.totalPrice)}
                             </div>
@@ -650,31 +647,38 @@ ${templateSettings.estimate_footer_text || ''}
             </div>
           ))}
           
-          {/* Total */}
-          {templateSettings.estimate_template_style === 'excel' ? (
-            <div className={getTemplateStyles('excel').totalsSection}>
-              <table className={getTemplateStyles('excel').totalsTable}>
-                <tbody>
-                  <tr className={getTemplateStyles('excel').totalsRow}>
-                    <td className={getTemplateStyles('excel').totalsLabel}>Subtotal</td>
-                    <td className={getTemplateStyles('excel').totalsValue}>{formatCurrency(totalCost)}</td>
-                  </tr>
-                  <tr className={getTemplateStyles('excel').totalsRow}>
-                    <td className={getTemplateStyles('excel').totalsLabel}>Tax (8.5%)</td>
-                    <td className={getTemplateStyles('excel').totalsValue}>{formatCurrency(totalCost * 0.085)}</td>
-                  </tr>
-                  <tr className={getTemplateStyles('excel').totalsRow}>
-                    <td className={cn(getTemplateStyles('excel').totalsLabel, "font-bold")}>Total Estimate</td>
-                    <td className={cn(getTemplateStyles('excel').totalsValue, "font-bold")}>{formatCurrency(totalCost * 1.085)}</td>
-                  </tr>
-                </tbody>
-              </table>
+          {/* Total Section */}
+          <div className={cn("mt-8 pt-6 border-t space-y-4", templateSettings.estimate_compact_view ? "md:space-y-3" : "md:space-y-6")}>
+            <div className="flex justify-between items-center">
+              <p className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').text}>
+                Subtotal
+              </p>
+              <p className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').text, "text-lg")}>
+                {formatCurrency(totalCost)}
+              </p>
             </div>
-          ) : (
-            <div className={cn("mt-8 pt-6 border-t space-y-4", templateSettings.estimate_compact_view ? "md:space-y-3" : "md:space-y-6")}>
-              <div className="flex justify-between items-center">
-                <p className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').text}>Subtotal</p>
-                <p className={cn(getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').text, "text-lg")}>{formatCurrency(totalCost)}</p>
+            {templateSettings.estimate_client_message && (
+              <div className="mt-6 border-t pt-6">
+                <p className={getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').text}>
+                  {templateSettings.estimate_client_message}
+                </p>
               </div>
-              <div className="flex justify-between items-center">
-                <p className={getTemplateStyles(settings?.estimate_
+            )}
+            {templateSettings.estimate_footer_text && (
+              <div className="mt-6 border-t pt-6 text-sm text-gray-500">
+                {templateSettings.estimate_footer_text}
+              </div>
+            )}
+            {templateSettings.estimate_signature_enabled && (
+              <div className="mt-6 border-t pt-6">
+                <div 
+                  className={cn(
+                    getTemplateStyles(settings?.estimate_template_style as EstimateTemplateStyle || 'modern').signatureBox,
+                    "flex items-center justify-center cursor-pointer border-2 border-dashed",
+                    signature ? "border-green-500" : "border-gray-300 hover:border-gray-400"
+                  )}
+                  onClick={() => setShowSignatureDialog(true)}
+                >
+                  {signature ? (
+                    <div className="text-center">
+                      <p className={getTemplate
