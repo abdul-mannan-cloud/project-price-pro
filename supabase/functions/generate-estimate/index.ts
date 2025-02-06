@@ -120,21 +120,10 @@ serve(async (req) => {
     console.log('Title API response:', titleData);
     console.log('Message API response:', messageData);
 
-    // Better error handling for title/message response
-    if (!titleData?.choices?.[0]?.message?.content) {
-      console.error('Invalid title response:', titleData);
-      throw new Error('Invalid title response format');
-    }
+    const aiTitle = titleData.choices?.[0]?.message?.content?.trim() || 'Project Estimate';
+    const aiMessage = messageData.choices?.[0]?.message?.content?.trim() || 'Custom project estimate based on provided specifications.';
 
-    if (!messageData?.choices?.[0]?.message?.content) {
-      console.error('Invalid message response:', messageData);
-      throw new Error('Invalid message response format');
-    }
-
-    const aiTitle = titleData.choices[0].message.content.trim();
-    const aiMessage = messageData.choices[0].message.content.trim();
-
-    const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format only. Do not include any markdown or text before or after the JSON. The response must follow the exact structure provided at the end of this prompt.
+    const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format only. Do not include any markdown or text before or after the JSON:
 
 Project Category: ${category || 'General Construction'}
 Project Description: ${projectDescription || 'Project estimate'}
@@ -169,8 +158,8 @@ Response must be valid JSON with this structure:
     }
   ],
   "totalCost": number,
-  "ai_generated_title": "${aiTitle}",
-  "ai_generated_message": "${aiMessage}"
+  "ai_generated_title": string,
+  "ai_generated_message": string
 }`;
 
     console.log('Sending estimate prompt to Llama API');
@@ -203,90 +192,77 @@ Response must be valid JSON with this structure:
     const aiResponse = await response.json();
     console.log('Received estimate response:', aiResponse);
 
-    if (!aiResponse?.choices?.[0]?.message?.content) {
-      console.error('Invalid estimate response format:', aiResponse);
+    const content = aiResponse.choices?.[0]?.message?.content;
+    if (!content) {
       throw new Error('Invalid estimate response format');
     }
 
-    const content = aiResponse.choices[0].message.content;
     console.log('Parsing estimate content:', content);
 
     let parsedEstimate;
     try {
+      // If content is already an object, use it directly
       parsedEstimate = typeof content === 'string' ? JSON.parse(content) : content;
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       throw new Error('Failed to parse estimate response. Expected valid JSON.');
     }
 
-    // Validate the estimate structure
     if (!parsedEstimate || typeof parsedEstimate !== 'object') {
-      console.error('Invalid estimate format:', parsedEstimate);
       throw new Error('Invalid estimate format: must be an object');
     }
 
     if (!Array.isArray(parsedEstimate.groups)) {
-      console.error('Invalid groups format:', parsedEstimate.groups);
       throw new Error('Invalid estimate structure: groups must be an array');
     }
 
     if (typeof parsedEstimate.totalCost !== 'number') {
-      console.error('Invalid totalCost:', parsedEstimate.totalCost);
       throw new Error('Invalid estimate structure: totalCost must be a number');
     }
 
-    // Validate groups structure
+    // Add the AI generated title and message
+    parsedEstimate.ai_generated_title = aiTitle;
+    parsedEstimate.ai_generated_message = aiMessage;
+
+    // Validate structure and types
     parsedEstimate.groups.forEach((group, groupIndex) => {
       if (!group.name || typeof group.name !== 'string') {
-        console.error(`Invalid group at index ${groupIndex}:`, group);
         throw new Error(`Invalid group name at index ${groupIndex}`);
       }
 
       if (!Array.isArray(group.subgroups)) {
-        console.error(`Invalid subgroups in group ${group.name}:`, group.subgroups);
         throw new Error(`Invalid subgroups array in group ${group.name}`);
       }
 
       group.subgroups.forEach((subgroup, subgroupIndex) => {
         if (!subgroup.name || typeof subgroup.name !== 'string') {
-          console.error(`Invalid subgroup in group ${group.name}:`, subgroup);
           throw new Error(`Invalid subgroup name in group ${group.name}`);
         }
 
         if (!Array.isArray(subgroup.items)) {
-          console.error(`Invalid items in subgroup ${subgroup.name}:`, subgroup.items);
           throw new Error(`Invalid items array in subgroup ${subgroup.name}`);
         }
 
         if (typeof subgroup.subtotal !== 'number') {
-          console.error(`Invalid subtotal in subgroup ${subgroup.name}:`, subgroup.subtotal);
           throw new Error(`Invalid subtotal in subgroup ${subgroup.name}`);
         }
 
         subgroup.items.forEach((item, itemIndex) => {
           if (!item.title || typeof item.title !== 'string') {
-            console.error(`Invalid item in subgroup ${subgroup.name}:`, item);
             throw new Error(`Invalid item title in subgroup ${subgroup.name}`);
           }
           if (typeof item.quantity !== 'number') {
-            console.error(`Invalid quantity in item ${item.title}:`, item.quantity);
             throw new Error(`Invalid quantity in item ${item.title}`);
           }
           if (typeof item.unitAmount !== 'number') {
-            console.error(`Invalid unitAmount in item ${item.title}:`, item.unitAmount);
             throw new Error(`Invalid unitAmount in item ${item.title}`);
           }
           if (typeof item.totalPrice !== 'number') {
-            console.error(`Invalid totalPrice in item ${item.title}:`, item.totalPrice);
             throw new Error(`Invalid totalPrice in item ${item.title}`);
           }
         });
       });
     });
-
-    // Add title and message to response
-    parsedEstimate.ai_generated_title = aiTitle;
-    parsedEstimate.ai_generated_message = aiMessage;
 
     console.log('Estimate validation successful');
     return new Response(
