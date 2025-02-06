@@ -251,6 +251,9 @@ ${templateSettings.estimate_footer_text || ''}
       signatureBox: "h-32 rounded-lg transition-colors",
       signatureText: "font-['Dancing_Script'] text-2xl font-bold text-gray-800",
       signatureDate: "text-sm text-gray-500 mt-1",
+      totalsTable: "w-full border-collapse",
+      totalsLabel: "py-2 px-4 text-sm font-medium text-left border",
+      totalsValue: "py-2 px-4 text-sm text-right border"
     };
 
     switch (style) {
@@ -270,7 +273,10 @@ ${templateSettings.estimate_footer_text || ''}
           groupTitle: "text-base font-light mb-4 w-full uppercase tracking-wide",
           subtotal: "text-right py-4 px-4 text-sm font-light text-gray-600",
           totalsSection: "space-y-6 mt-12 pt-6 border-t",
-          totalsRow: "flex justify-between items-center py-3 text-gray-800 font-light"
+          totalsRow: "flex justify-between items-center py-3 text-gray-800 font-light",
+          totalsTable: baseStyles.totalsTable,
+          totalsLabel: "py-2 px-4 text-sm font-light text-left border border-gray-200",
+          totalsValue: "py-2 px-4 text-sm font-light text-right border border-gray-200"
         };
 
       case 'excel':
@@ -316,7 +322,10 @@ ${templateSettings.estimate_footer_text || ''}
           groupTitle: `text-lg font-semibold mb-4 w-full text-[${primaryColor}]`,
           subtotal: "text-right py-3 px-6 text-sm font-medium text-gray-700 bg-gray-50",
           totalsSection: "space-y-4 mt-8 pt-6 border-t border-gray-100",
-          totalsRow: "flex justify-between items-center py-2 text-gray-800"
+          totalsRow: "flex justify-between items-center py-2 text-gray-800",
+          totalsTable: baseStyles.totalsTable,
+          totalsLabel: "py-2 px-6 text-sm font-medium text-left border-b",
+          totalsValue: "py-2 px-6 text-sm font-medium text-right border-b"
         };
     }
   };
