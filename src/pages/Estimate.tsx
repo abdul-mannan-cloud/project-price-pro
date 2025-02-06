@@ -476,6 +476,7 @@ const EstimatePage = () => {
             ? "Generating your estimate..."
             : "Processing your request..."
         }
+        isEstimate={stage === 'questions' && currentQuestionIndex === questions.length - 1}
       />
     );
   }
