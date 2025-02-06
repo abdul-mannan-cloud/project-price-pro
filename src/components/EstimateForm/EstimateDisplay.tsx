@@ -1,3 +1,4 @@
+<lov-code>
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -384,8 +385,8 @@ ${templateSettings.estimate_footer_text || ''}
         };
 
       default: // modern
-        const primaryColor = contractor?.branding_colors 
-          ? ((typeof contractor.branding_colors === 'string' ? 
+        const primaryColor = contractor?.branding_colors ? 
+          ((typeof contractor.branding_colors === 'string' ? 
             JSON.parse(contractor.branding_colors) : 
             contractor.branding_colors) as BrandingColors).primary : 
           '#007AFF';
@@ -672,5 +673,3 @@ ${templateSettings.estimate_footer_text || ''}
             </div>
           )}
         </div>
-
-        {/*
