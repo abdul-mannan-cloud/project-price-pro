@@ -207,13 +207,12 @@ ${templateSettings.estimate_footer_text || ''}
   const getTemplateStyles = (style: string = 'modern') => {
     const primaryColor = brandingColors?.primary || '#9b87f5';
     const primaryColorLight = `${primaryColor}20`;
-    const primaryColorMedium = `${primaryColor}40`;
 
     const baseTableStyles = {
-      table: "w-full border-collapse md:border md:border-gray-200",
-      tableHeader: "hidden md:table-cell text-xs uppercase tracking-wider text-neutral-500 py-2 px-3 text-left border-b bg-gray-50",
-      tableRow: "flex flex-col md:table-row border-b border-gray-200 hover:bg-gray-50 transition-colors",
-      tableCell: "flex justify-between md:table-cell py-2 px-3 text-sm before:content-[attr(data-label)] before:md:hidden before:font-medium md:border-r last:border-r-0",
+      table: "w-full border-collapse",
+      tableHeader: "text-xs uppercase tracking-wider py-2 px-3 text-left border-b bg-gray-50",
+      tableRow: "border-b border-gray-200 hover:bg-gray-50 transition-colors",
+      tableCell: "py-2 px-3 text-sm border-r last:border-r-0",
     };
 
     switch (style) {
@@ -223,16 +222,16 @@ ${templateSettings.estimate_footer_text || ''}
           header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 space-y-4 md:space-y-0",
           title: "text-xl md:text-2xl font-medium text-gray-900",
           text: "text-gray-600 text-sm",
-          section: "bg-white rounded-none border-0 mb-4 space-y-3",
-          table: "w-full",
-          tableHeader: "bg-transparent",
-          tableRow: "border-none odd:bg-muted/50 hover:bg-transparent odd:hover:bg-muted/50",
-          tableCell: "py-2.5 px-3 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-0.5",
+          section: "bg-white rounded-none border-0 mb-4",
+          table: "w-full border border-gray-300",
+          tableHeader: "bg-[#E8EAED] text-left font-medium text-gray-700 py-2 px-3 border-b border-r",
+          tableRow: "border-b border-gray-300",
+          tableCell: "py-2 px-3 border-r text-sm",
           total: "text-2xl md:text-3xl font-medium text-gray-900",
-          button: "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
-          message: "bg-muted/50 p-4 rounded-lg text-sm", 
+          button: "bg-[#E8EAED] text-gray-700 hover:bg-gray-200 border-gray-300",
+          message: "bg-[#F3F4F6] p-4 rounded-lg text-sm", 
           groupTitle: "text-xl font-medium mb-3 w-full text-gray-900",
-          subtotal: "text-right py-2 text-base font-medium",
+          subtotal: "text-right py-2 px-3 font-medium bg-[#F3F4F6] border-t border-r text-sm",
         };
 
       case 'minimal':
@@ -241,47 +240,48 @@ ${templateSettings.estimate_footer_text || ''}
           header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 space-y-4 md:space-y-0",
           title: "text-xl md:text-2xl font-light tracking-tight",
           text: "text-neutral-600 text-sm",
-          section: "bg-white rounded-none border-0 mb-4 space-y-3",
+          section: "bg-white rounded-none border-0 mb-4",
           ...baseTableStyles,
+          tableHeader: "bg-gray-50 text-left font-medium text-gray-600 py-2 px-3 border-b",
           total: "text-2xl md:text-3xl font-light",
-          button: "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
-          message: "bg-[#F1F0FB] p-4 rounded-lg text-sm", 
+          button: "bg-gray-100 text-gray-700 hover:bg-gray-200",
+          message: "bg-gray-50 p-4 rounded-lg text-sm", 
           groupTitle: "text-xl font-medium mb-3 w-full",
-          subtotal: "text-right py-2 text-base font-medium",
+          subtotal: "hidden",
         };
 
       case 'classic':
         return {
-          card: `bg-white p-4 md:p-8 max-w-4xl mx-auto shadow-lg border-2 border-[${primaryColor}]`,
+          card: "bg-white p-4 md:p-8 max-w-4xl mx-auto shadow-lg",
           header: `flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b-2 border-[${primaryColor}] space-y-4 md:space-y-0`,
           title: `text-xl md:text-2xl font-serif font-bold text-[${primaryColor}]`,
           text: "text-[#4A4A4A] font-serif text-sm",
-          section: `bg-white rounded-lg border border-[${primaryColorLight}] mb-4 shadow-sm space-y-3`,
+          section: "bg-white rounded-lg mb-4 shadow-sm",
           ...baseTableStyles,
-          tableHeader: `bg-[${primaryColor}] text-white font-serif py-2 px-3 hidden md:table-cell`,
+          tableHeader: `bg-[${primaryColor}] text-white font-serif py-2 px-3 text-left`,
           total: `text-2xl md:text-3xl font-serif font-bold text-[${primaryColor}]`,
-          button: `bg-[${primaryColor}] text-white hover:bg-[${primaryColorMedium}]`,
-          message: "bg-[#F1F0FB] p-4 rounded-lg border text-sm",
+          button: `border border-[${primaryColor}] text-[${primaryColor}] hover:bg-[${primaryColorLight}]`,
+          message: "bg-gray-50 p-4 rounded-lg border text-sm",
           groupTitle: "text-xl font-serif font-bold mb-3 w-full",
           subtotal: "text-right py-2 text-base font-serif font-medium",
         };
 
       case 'bold':
         return {
-          card: "bg-[#1A1F2C] p-4 md:p-8 max-w-4xl mx-auto shadow-2xl",
-          header: `flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b border-[${primaryColor}] space-y-4 md:space-y-0`,
-          title: `text-xl md:text-2xl font-black bg-gradient-to-r from-[${primaryColor}] to-white bg-clip-text text-transparent`,
-          text: "text-gray-300 text-sm",
-          section: `bg-[#252B3B] p-4 rounded-xl border border-[${primaryColor}] mb-4 space-y-3`,
+          card: "bg-white p-4 md:p-8 max-w-4xl mx-auto shadow-xl",
+          header: `bg-[${primaryColor}] -mx-4 -mt-4 md:-mx-8 md:-mt-8 p-4 md:p-8 mb-8`,
+          title: "text-xl md:text-2xl font-black text-white",
+          text: "text-white/90 text-sm",
+          section: "bg-white p-4 rounded-xl mb-4 shadow-sm",
           ...baseTableStyles,
-          tableHeader: `bg-[${primaryColor}] text-white font-bold py-2 px-3 hidden md:table-cell`,
-          tableRow: "flex flex-col md:table-row border-b border-gray-700 hover:bg-[#2A3346] transition-colors",
-          tableCell: "flex justify-between md:table-cell py-2 px-3 text-sm text-gray-300 before:content-[attr(data-label)] before:md:hidden before:font-medium",
-          total: `text-3xl md:text-4xl font-black text-[${primaryColor}]`,
-          button: `bg-gradient-to-r from-[${primaryColor}] to-[${primaryColorMedium}] text-white hover:opacity-90`,
-          message: `bg-[#252B3B] p-4 rounded-xl border border-[${primaryColor}] text-sm`,
-          groupTitle: "text-xl font-black mb-3 bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent w-full",
-          subtotal: "text-right py-2 text-base font-bold text-white",
+          tableHeader: "bg-gray-100 text-gray-800 font-bold py-2 px-3 text-left",
+          tableRow: "border-b hover:bg-gray-50 transition-colors",
+          tableCell: "py-2 px-3 text-sm",
+          total: "text-3xl md:text-4xl font-black text-gray-900",
+          button: "bg-gray-100 text-gray-800 hover:bg-gray-200",
+          message: "bg-gray-50 p-4 rounded-xl text-sm",
+          groupTitle: "text-xl font-black mb-3 text-gray-900 w-full",
+          subtotal: "text-right py-2 text-base font-bold text-gray-900",
         };
 
       default: // modern
@@ -290,13 +290,13 @@ ${templateSettings.estimate_footer_text || ''}
           header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b space-y-4 md:space-y-0",
           title: `text-xl md:text-2xl font-bold text-[${primaryColor}]`,
           text: "text-gray-600 text-sm",
-          section: "bg-[#F8FAFC] p-4 rounded-lg shadow-sm mb-4 space-y-3",
+          section: "bg-white rounded-none mb-0 last:mb-4",
           ...baseTableStyles,
-          tableHeader: `bg-[${primaryColor}] text-white font-medium py-2 px-3 hidden md:table-cell`,
+          tableHeader: "bg-gray-800 text-white font-medium py-2 px-3 text-left",
           total: `text-2xl md:text-3xl font-bold text-[${primaryColor}]`,
-          button: `bg-[${primaryColor}] text-white hover:opacity-90`,
-          message: "bg-[#E5DEFF] p-4 rounded-lg border border-[#D6BCFA] text-sm",
-          groupTitle: "text-xl font-bold mb-3 w-full",
+          button: `bg-gray-100 text-gray-800 hover:bg-gray-200`,
+          message: "bg-gray-50 p-4 rounded-lg text-sm",
+          groupTitle: `text-xl font-bold mb-3 w-full text-[${primaryColor}]`,
           subtotal: "text-right py-2 text-base font-medium",
         };
     }
