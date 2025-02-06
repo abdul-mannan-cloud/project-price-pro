@@ -61,6 +61,7 @@ interface EstimateDisplayProps {
   isEditable?: boolean;
   onEstimateChange?: (estimate: any) => void;
   onSignatureComplete?: (initials: string) => void;
+  projectImages?: string[];
 }
 
 interface ContractorSettings {
@@ -94,7 +95,8 @@ export const EstimateDisplay = ({
   projectSummary,
   isEditable = false,
   onEstimateChange,
-  onSignatureComplete
+  onSignatureComplete,
+  projectImages = []
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const { contractorId } = useParams();
@@ -402,11 +404,23 @@ ${templateSettings.estimate_footer_text || ''}
             </div>
           )}
 
-          {/* Project Summary */}
-          {projectSummary && (
-            <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).message, "mb-6")}>
-              <h2 className={cn(getTemplateStyles(templateSettings.estimate_template_style).title, "!text-lg mb-2")}>Project Overview</h2>
-              <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>{projectSummary}</p>
+          {/* Project Images */}
+          {projectImages && projectImages.length > 0 && (
+            <div className="mb-6 overflow-x-auto">
+              <div className="flex gap-4 pb-4">
+                {projectImages.map((image, index) => (
+                  <div 
+                    key={index} 
+                    className="flex-none w-64 h-48 relative rounded-lg overflow-hidden"
+                  >
+                    <img 
+                      src={image} 
+                      alt={`Project image ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
