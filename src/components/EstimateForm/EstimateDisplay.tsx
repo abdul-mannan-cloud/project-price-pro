@@ -238,7 +238,7 @@ ${templateSettings.estimate_footer_text || ''}
         return {
           card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-sm",
           header: "w-full border border-gray-300",
-          headerContent: "grid grid-cols-[1fr_auto_auto] gap-4 p-4 bg-[#E8EAED]",
+          headerContent: "grid grid-cols-[1fr_auto-auto] gap-4 p-4 bg-[#E8EAED]",
           title: "text-base font-medium text-gray-900",
           text: "text-gray-600 text-sm",
           section: "bg-white rounded-none border-0 mb-0",
@@ -291,7 +291,7 @@ ${templateSettings.estimate_footer_text || ''}
         return {
           card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-xl",
           header: `bg-[${primaryColor}] -mx-4 -mt-4 md:-mx-8 md:-mt-8 p-4 md:p-8 mb-8`,
-          headerContent: "grid grid-cols-[1fr_auto_auto] gap-4 items-start",
+          headerContent: "grid grid-cols-[1fr-auto] gap-4 items-start",
           title: `text-xl md:text-2xl font-black text-[${darkerColor}]`,
           text: `text-[${darkerColor}]/90 text-sm`,
           section: "bg-white p-4 rounded-xl mb-4",
@@ -300,12 +300,13 @@ ${templateSettings.estimate_footer_text || ''}
           tableRow: `border-b hover:bg-gray-50 transition-colors font-semibold text-[${darkerColor}]`,
           tableCell: `py-3 px-4 text-sm text-[${darkerColor}]`,
           total: `text-3xl md:text-4xl font-black text-[${darkerColor}]`,
-          button: `bg-gray-100 text-[${darkerColor}] hover:bg-gray-200`,
+          button: `bg-white/10 text-white hover:bg-white/20`,
           message: `bg-gray-50 p-4 rounded-xl text-sm text-[${darkerColor}]`,
           groupTitle: `text-lg font-black mb-2 text-[${darkerColor}] w-full`,
           subtotal: `text-right py-2 px-4 text-sm font-bold text-[${darkerColor}]`,
-          companyInfo: `text-[${darkerColor}] font-medium`,
-          contactInfo: `text-[${darkerColor}]/80`,
+          companyInfo: `text-white font-medium`,
+          contactInfo: `text-white/80`,
+          buttonsContainer: "flex items-center gap-2",
         };
 
       default: // modern
@@ -335,27 +336,28 @@ ${templateSettings.estimate_footer_text || ''}
         isBlurred && "blur-md pointer-events-none"
       )}>
         <div id="estimate-content">
-          {/* Company Header */}
           <div className={styles.header}>
-            {templateSettings.estimate_template_style === 'excel' ? (
+            {templateSettings.estimate_template_style === 'bold' ? (
               <div className={styles.headerContent}>
-                <div>
+                <div className="flex items-center gap-4">
                   {contractor?.business_logo_url && (
                     <img 
                       src={contractor.business_logo_url} 
                       alt={`${companyInfo.business_name} logo`}
-                      className="w-16 h-16 object-contain rounded-lg mb-2"
+                      className="w-16 h-16 object-contain rounded-lg"
                     />
                   )}
-                  <h1 className={styles.title}>{companyInfo.business_name}</h1>
-                  {companyInfo.contact_email && (
-                    <p className={styles.text}>{companyInfo.contact_email}</p>
-                  )}
-                  {companyInfo.contact_phone && (
-                    <p className={styles.text}>{companyInfo.contact_phone}</p>
-                  )}
+                  <div>
+                    <h1 className={styles.companyInfo}>{companyInfo.business_name}</h1>
+                    {companyInfo.contact_email && (
+                      <p className={styles.contactInfo}>{companyInfo.contact_email}</p>
+                    )}
+                    {companyInfo.contact_phone && (
+                      <p className={styles.contactInfo}>{companyInfo.contact_phone}</p>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className={styles.buttonsContainer}>
                   {isContractor && (
                     <Button
                       variant="ghost"
@@ -367,7 +369,7 @@ ${templateSettings.estimate_footer_text || ''}
                     </Button>
                   )}
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     className={cn("gap-2", styles.button)}
                     onClick={handleCopyEstimate}
@@ -376,7 +378,7 @@ ${templateSettings.estimate_footer_text || ''}
                     Copy
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     className={cn("gap-2", styles.button)}
                     onClick={handleExportPDF}
@@ -384,10 +386,6 @@ ${templateSettings.estimate_footer_text || ''}
                     <FileDown className="h-4 w-4" />
                     PDF
                   </Button>
-                </div>
-                <div className="text-right">
-                  <p className={styles.text}>Date</p>
-                  <p className="font-medium text-sm">{new Date().toLocaleDateString()}</p>
                 </div>
               </div>
             ) : (
