@@ -80,6 +80,10 @@ const formatCurrency = (amount: number): string => {
   });
 };
 
+const formatUnit = (unit: string): string => {
+  return unit.toLowerCase();
+};
+
 export const EstimateDisplay = ({ 
   groups = [], 
   totalCost = 0, 
@@ -214,12 +218,16 @@ ${templateSettings.estimate_footer_text || ''}
     : null;
 
   const getTemplateStyles = (style: string = 'modern') => {
-    const primaryColor = contractor?.branding_colors?.primary || '#007AFF';
+    const primaryColor = contractor?.branding_colors 
+      ? (typeof contractor.branding_colors === 'string' 
+          ? JSON.parse(contractor.branding_colors).primary 
+          : (contractor.branding_colors as BrandingColors).primary)
+      : '#007AFF';
     const primaryColorLight = `${primaryColor}20`;
     const darkerColor = '#1A1F2C';
 
     const baseTableStyles = {
-      table: "w-full md:min-w-[800px] border-collapse",
+      table: "w-full md:min-w-[900px] border-collapse",
       tableHeader: "text-xs uppercase tracking-wider py-2 px-4 text-left border-b",
       tableRow: "border-b border-gray-200 hover:bg-gray-50 transition-colors",
       tableCell: "py-3 px-4 text-sm border-r last:border-r-0",
@@ -234,7 +242,7 @@ ${templateSettings.estimate_footer_text || ''}
           title: "text-base font-medium text-gray-900",
           text: "text-gray-600 text-sm",
           section: "bg-white rounded-none border-0 mb-0",
-          table: "w-full md:min-w-[800px] border border-gray-300",
+          table: "w-full md:min-w-[900px] border border-gray-300",
           tableHeader: "bg-[#E8EAED] text-left text-xs font-medium text-gray-700 py-2 px-4 border-b border-r",
           tableRow: "border-b border-gray-300",
           tableCell: "py-2 px-4 border-r text-sm",
@@ -287,7 +295,7 @@ ${templateSettings.estimate_footer_text || ''}
           title: `text-xl md:text-2xl font-black text-[${darkerColor}]`,
           text: `text-[${darkerColor}]/90 text-sm`,
           section: "bg-white p-4 rounded-xl mb-4",
-          table: "w-full md:min-w-[800px] rounded-xl overflow-hidden border border-gray-200",
+          table: "w-full md:min-w-[900px] rounded-xl overflow-hidden border border-gray-200",
           tableHeader: `bg-[${darkerColor}] text-white text-xs font-bold py-2 px-4 text-left`,
           tableRow: `border-b hover:bg-gray-50 transition-colors font-semibold text-[${darkerColor}]`,
           tableCell: `py-3 px-4 text-sm text-[${darkerColor}]`,
@@ -317,6 +325,8 @@ ${templateSettings.estimate_footer_text || ''}
         };
     }
   };
+
+  const styles = getTemplateStyles(templateSettings.estimate_template_style);
 
   return (
     <>
