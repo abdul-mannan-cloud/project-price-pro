@@ -218,14 +218,6 @@ ${templateSettings.estimate_footer_text || ''}
     : null;
 
   const getTemplateStyles = (style: string = 'modern') => {
-    const primaryColor = contractor?.branding_colors 
-      ? (typeof contractor.branding_colors === 'string' 
-          ? JSON.parse(contractor.branding_colors).primary 
-          : (contractor.branding_colors as BrandingColors).primary)
-      : '#007AFF';
-    const primaryColorLight = `${primaryColor}20`;
-    const darkerColor = '#1A1F2C';
-
     const baseStyles = {
       card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-lg",
       header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b space-y-4 md:space-y-0",
@@ -250,6 +242,14 @@ ${templateSettings.estimate_footer_text || ''}
       buttonsContainer: "flex items-center gap-2"
     };
 
+    const primaryColor = contractor?.branding_colors 
+      ? (typeof contractor.branding_colors === 'string' 
+          ? JSON.parse(contractor.branding_colors).primary 
+          : (contractor.branding_colors as BrandingColors).primary)
+      : '#007AFF';
+    const primaryColorLight = `${primaryColor}20`;
+    const darkerColor = '#1A1F2C';
+
     switch (style) {
       case 'bold':
         return {
@@ -270,6 +270,9 @@ ${templateSettings.estimate_footer_text || ''}
           subtotal: `text-right py-2 px-4 text-sm font-bold text-[${darkerColor}]`,
           companyInfo: `text-[${darkerColor}] font-medium`,
           contactInfo: `text-[${darkerColor}]/80`,
+          headerContent: baseStyles.headerContent,
+          businessInfo: baseStyles.businessInfo,
+          buttonsContainer: baseStyles.buttonsContainer
         };
 
       default: // modern
