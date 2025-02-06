@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -13,16 +12,16 @@ import { Input } from "@/components/ui/input";
 interface SignatureDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onComplete: (initials: string) => void;
+  onSign: (initials: string) => void;
 }
 
-export const SignatureDialog = ({ isOpen, onClose, onComplete }: SignatureDialogProps) => {
+export const SignatureDialog = ({ isOpen, onClose, onSign }: SignatureDialogProps) => {
   const [initials, setInitials] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (initials.trim()) {
-      onComplete(initials);
+      onSign(initials);
       onClose();
     }
   };

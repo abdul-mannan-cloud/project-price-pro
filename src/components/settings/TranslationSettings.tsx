@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,7 +7,6 @@ import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import i18next from "@/i18n/config";
 import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
 
 const languages = [
   { code: "en", name: "English", nativeName: "English" },
@@ -22,41 +20,39 @@ export const TranslationSettings = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // First, fetch the authenticated user
-  const { data: user, isLoading: userLoading, error: userError } = useQuery({
-    queryKey: ["auth-user"],
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["contractorSettings"],
     queryFn: async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) throw error;
-      if (!user) {
-        navigate("/login");
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError) throw authError;
+        if (!user) {
+          navigate("/login");
+          return null;
+        }
+
+        const { data, error } = await supabase
+          .from("contractor_settings")
+          .select("preferred_language")
+          .eq("id", user.id)
+          .single();
+
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+        if (error.message?.includes('JWT')) {
+          navigate("/login");
+        }
         return null;
       }
-      return user;
     },
-  });
-
-  // Then, fetch the settings only if we have a user
-  const { data: settings, isLoading: settingsLoading } = useQuery({
-    queryKey: ["contractorSettings", user?.id],
-    queryFn: async () => {
-      if (!user?.id) throw new Error("No authenticated user");
-
-      const { data, error } = await supabase
-        .from("contractor_settings")
-        .select("preferred_language")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id, // Only run this query if we have a user ID
   });
 
   const updateLanguage = useMutation({
     mutationFn: async (language: string) => {
-      if (!user?.id) throw new Error("No authenticated user");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
 
       const { error } = await supabase
         .from("contractor_settings")
@@ -95,7 +91,8 @@ export const TranslationSettings = () => {
   useEffect(() => {
     const setupLanguage = async () => {
       try {
-        if (!user?.id) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
           navigate("/login");
           return;
         }
@@ -117,7 +114,7 @@ export const TranslationSettings = () => {
         }
 
         i18next.changeLanguage(preferredLanguage);
-      } catch (error: any) {
+      } catch (error) {
         console.error('Error setting up language:', error);
         if (error.message?.includes('JWT')) {
           navigate("/login");
@@ -126,25 +123,10 @@ export const TranslationSettings = () => {
     };
 
     setupLanguage();
-  }, [settings, navigate, user?.id]);
+  }, [settings, navigate]);
 
-  // Handle authentication error
-  if (userError) {
-    navigate("/login");
-    return null;
-  }
-
-  if (userLoading || settingsLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <span className="ml-2">{t("Loading language preferences...")}</span>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
+  if (isLoading) {
+    return <div>{t("Loading language preferences...")}</div>;
   }
 
   return (
