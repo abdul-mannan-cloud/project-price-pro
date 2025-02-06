@@ -11,7 +11,7 @@ import html2pdf from 'html2pdf.js';
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplateSettings";
 import { AIPreferencesSettings } from "@/components/settings/AIPreferencesSettings";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { SignatureDialog } from "./SignatureDialog";
@@ -99,14 +99,14 @@ export const EstimateDisplay = ({
   onEstimateChange,
   onSignatureComplete,
   projectImages = [],
-  estimate // Added to access AI generated title and message
+  estimate
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
-  const [showAIPreferences, setShowAIPreferences] = useState(false);
   const { contractorId } = useParams();
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const { data: settings } = useQuery<ContractorSettings>({
     queryKey: ["contractor-settings", contractorId],
@@ -441,7 +441,7 @@ ${templateSettings.estimate_footer_text || ''}
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setShowAIPreferences(true)}
+                      onClick={() => navigate('/settings')}
                       className={getTemplateStyles(templateSettings.estimate_template_style).button}
                       title="AI Preferences"
                     >
@@ -698,24 +698,14 @@ ${templateSettings.estimate_footer_text || ''}
       />
 
       {isContractor && (
-        <>
-          <SettingsDialog
-            title="Estimate Settings"
-            description="Customize how your estimates appear to clients"
-            isOpen={showSettings}
-            onClose={() => setShowSettings(false)}
-          >
-            <EstimateTemplateSettings />
-          </SettingsDialog>
-          <SettingsDialog
-            title="AI Preferences"
-            description="Configure AI settings for estimate generation"
-            isOpen={showAIPreferences}
-            onClose={() => setShowAIPreferences(false)}
-          >
-            <AIPreferencesSettings />
-          </SettingsDialog>
-        </>
+        <SettingsDialog
+          title="Estimate Settings"
+          description="Customize how your estimates appear to clients"
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+        >
+          <EstimateTemplateSettings />
+        </SettingsDialog>
       )}
     </>
   );
