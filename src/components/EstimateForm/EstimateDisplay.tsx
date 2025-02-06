@@ -228,7 +228,7 @@ ${templateSettings.estimate_footer_text || ''}
       title: "text-xl md:text-2xl font-bold",
       text: "text-gray-600 text-sm",
       section: "bg-white rounded-none mb-0 last:mb-4",
-      table: "w-full table-fixed", // Changed to table-fixed for better column control
+      table: "w-full", // Changed to just w-full
       tableHeader: "text-xs uppercase tracking-wider py-2 px-4 text-left border-b text-gray-900",
       tableRow: "border-b border-gray-200 hover:bg-gray-50 transition-colors",
       tableCell: "py-3 px-4 text-sm border-r last:border-r-0 break-words", // Added break-words
@@ -399,30 +399,30 @@ ${templateSettings.estimate_footer_text || ''}
                   <table className={styles.table}>
                     <thead>
                       <tr>
-                        <th className={cn(styles.tableHeader, "w-[30%]")}>Item</th>
-                        <th className={cn(styles.tableHeader, "w-[40%]")}>Description</th>
-                        <th className={cn(styles.tableHeader, "w-[10%] text-right")}>Qty</th>
-                        <th className={cn(styles.tableHeader, "w-[10%] text-right")}>Unit Price</th>
-                        <th className={cn(styles.tableHeader, "w-[10%] text-right")}>Total</th>
+                        <th className={cn(styles.tableHeader, "w-[45%]")}>Item</th>
+                        <th className={cn(styles.tableHeader, "w-[35%]")}>Description</th>
+                        <th className={cn(styles.tableHeader, "w-[7%] text-right")}>Qty</th>
+                        <th className={cn(styles.tableHeader, "w-[7%] text-right")}>Price</th>
+                        <th className={cn(styles.tableHeader, "w-[6%] text-right")}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {group.subgroups?.map(subgroup => 
                         subgroup.items?.map((item, itemIndex) => (
                           <tr key={`${subgroup.name}-${itemIndex}`} className={styles.tableRow}>
-                            <td className={cn(styles.tableCell, "w-[30%]")}>
+                            <td className={cn(styles.tableCell, "w-[45%] break-words")}>
                               {item.title} {item.unit && `(${formatUnit(item.unit)})`}
                             </td>
-                            <td className={cn(styles.tableCell, "w-[40%]")}>
+                            <td className={cn(styles.tableCell, "w-[35%] break-words")}>
                               {item.description}
                             </td>
-                            <td className={cn(styles.tableCell, "w-[10%] text-right whitespace-nowrap")}>
+                            <td className={cn(styles.tableCell, "w-[7%] text-right")}>
                               {item.quantity.toLocaleString()}
                             </td>
-                            <td className={cn(styles.tableCell, "w-[10%] text-right whitespace-nowrap")}>
+                            <td className={cn(styles.tableCell, "w-[7%] text-right")}>
                               {formatCurrency(item.unitAmount)}
                             </td>
-                            <td className={cn(styles.tableCell, "w-[10%] text-right whitespace-nowrap font-medium")}>
+                            <td className={cn(styles.tableCell, "w-[6%] text-right font-medium")}>
                               {formatCurrency(item.totalPrice)}
                             </td>
                           </tr>
