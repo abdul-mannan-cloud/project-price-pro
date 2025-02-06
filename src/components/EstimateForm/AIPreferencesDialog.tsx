@@ -13,9 +13,11 @@ interface AIPreferencesDialogProps {
 }
 
 export const AIPreferencesDialog = ({ isOpen, onClose, contractorId }: AIPreferencesDialogProps) => {
-  const { data: aiRates } = useQuery({
+  const { data: aiRates, isLoading: isLoadingRates } = useQuery({
     queryKey: ["ai-rates", contractorId],
     queryFn: async () => {
+      if (!contractorId) return [];
+      
       const { data, error } = await supabase
         .from("ai_rates")
         .select("*")
@@ -43,6 +45,10 @@ export const AIPreferencesDialog = ({ isOpen, onClose, contractorId }: AIPrefere
       console.error("Error saving AI rates:", error);
     }
   };
+
+  if (!contractorId) {
+    return null;
+  }
 
   return (
     <SettingsDialog
