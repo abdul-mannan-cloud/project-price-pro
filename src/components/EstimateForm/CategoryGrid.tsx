@@ -122,7 +122,7 @@ export const CategoryGrid = ({
                   {category.name}
                 </h3>
                 <p className={cn(
-                  "text-sm text-muted-foreground transition-colors duration-200",
+                  "text-sm text-muted-foreground transition-colors duration-200 hidden sm:block", // Hide on mobile
                   selectedCategories.has(category.id) && "text-primary/80"
                 )}>
                   {category.description || "Select this option"}
@@ -134,9 +134,9 @@ export const CategoryGrid = ({
         ))}
       </div>
 
-      {/* Sticky continue button */}
+      {/* Sticky continue button with white background */}
       <div className={cn(
-        "fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t p-4 transition-transform duration-200",
+        "fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t p-4 transition-transform duration-200",
         selectedCategories.size > 0 ? "translate-y-0" : "translate-y-full"
       )}>
         <div className="container max-w-7xl mx-auto">
