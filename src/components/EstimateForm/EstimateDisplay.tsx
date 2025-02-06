@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import html2pdf from 'html2pdf.js';
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplateSettings";
+import { AIPreferencesSettings } from "@/components/settings/AIPreferencesSettings";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
