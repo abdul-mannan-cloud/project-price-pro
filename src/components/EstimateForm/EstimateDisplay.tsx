@@ -296,59 +296,8 @@ ${templateSettings.estimate_footer_text || ''}
       )}>
         <div id="estimate-content">
           <div className={styles.header}>
-            {templateSettings.estimate_template_style === 'bold' ? (
-              <div className={styles.headerContent}>
-                <div className={styles.businessInfo}>
-                  {contractor?.business_logo_url && (
-                    <img 
-                      src={contractor.business_logo_url} 
-                      alt={`${companyInfo.business_name} logo`}
-                      className="w-16 h-16 object-contain rounded-lg"
-                    />
-                  )}
-                  <div>
-                    <h1 className={styles.companyInfo}>{companyInfo.business_name}</h1>
-                    {companyInfo.contact_email && (
-                      <p className={styles.contactInfo}>{companyInfo.contact_email}</p>
-                    )}
-                    {companyInfo.contact_phone && (
-                      <p className={styles.contactInfo}>{companyInfo.contact_phone}</p>
-                    )}
-                  </div>
-                </div>
-                <div className={styles.buttonsContainer}>
-                  {isContractor && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowSettings(true)}
-                      className={styles.button}
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn("gap-2", styles.button)}
-                    onClick={handleCopyEstimate}
-                  >
-                    <Copy className="h-4 w-4" />
-                    Copy
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn("gap-2", styles.button)}
-                    onClick={handleExportPDF}
-                  >
-                    <FileDown className="h-4 w-4" />
-                    PDF
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
+            <div className={styles.headerContent}>
+              <div className={styles.businessInfo}>
                 {contractor?.business_logo_url && (
                   <img 
                     src={contractor.business_logo_url} 
@@ -357,16 +306,46 @@ ${templateSettings.estimate_footer_text || ''}
                   />
                 )}
                 <div>
-                  <h1 className={styles.title}>{companyInfo.business_name}</h1>
+                  <h1 className={styles.companyInfo}>{companyInfo.business_name}</h1>
                   {companyInfo.contact_email && (
-                    <p className={styles.text}>{companyInfo.contact_email}</p>
+                    <p className={styles.contactInfo}>{companyInfo.contact_email}</p>
                   )}
                   {companyInfo.contact_phone && (
-                    <p className={styles.text}>{companyInfo.contact_phone}</p>
+                    <p className={styles.contactInfo}>{companyInfo.contact_phone}</p>
                   )}
                 </div>
               </div>
-            )}
+              <div className={styles.buttonsContainer} id="estimate-actions">
+                {isContractor && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowSettings(true)}
+                    className={styles.button}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn("gap-2", styles.button)}
+                  onClick={handleCopyEstimate}
+                >
+                  <Copy className="h-4 w-4" />
+                  Copy
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn("gap-2", styles.button)}
+                  onClick={handleExportPDF}
+                >
+                  <FileDown className="h-4 w-4" />
+                  PDF
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Client Message */}
