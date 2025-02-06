@@ -677,8 +677,9 @@ ${templateSettings.estimate_footer_text || ''}
       
       {showSettings && (
         <SettingsDialog
-          open={showSettings}
-          onOpenChange={() => setShowSettings(false)}
+          title="Template Settings"
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
         >
           <EstimateTemplateSettings />
         </SettingsDialog>
@@ -686,8 +687,9 @@ ${templateSettings.estimate_footer_text || ''}
       
       {showAIPreferences && (
         <SettingsDialog
-          open={showAIPreferences}
-          onOpenChange={() => setShowAIPreferences(false)}
+          title="AI Preferences"
+          isOpen={showAIPreferences}
+          onClose={() => setShowAIPreferences(false)}
         >
           <AIPreferencesSettings />
         </SettingsDialog>
@@ -695,11 +697,12 @@ ${templateSettings.estimate_footer_text || ''}
       
       {showSignatureDialog && (
         <SignatureDialog
-          open={showSignatureDialog}
-          onOpenChange={() => setShowSignatureDialog(false)}
-          onComplete={handleSignature}
+          isOpen={showSignatureDialog}
+          onClose={() => setShowSignatureDialog(false)}
+          onSign={handleSignature}
         />
       )}
     </>
   );
 };
+
