@@ -82,7 +82,10 @@ export const CategoryGrid = ({
   };
 
   return (
-    <div className="space-y-6 pb-20 md:pb-24">
+    <div className={cn(
+      "space-y-6 pb-20 md:pb-24",
+      isCollapsed && "hidden" // Hide the grid when collapsed
+    )}>
       {!matchedCategory && description && (
         <p className="text-center text-muted-foreground">
           We couldn't determine what you were trying to say. Please select categories that you need help with.
@@ -134,9 +137,9 @@ export const CategoryGrid = ({
         ))}
       </div>
 
-      {/* Sticky continue button with white background */}
+      {/* Sticky continue button with white background and high z-index */}
       <div className={cn(
-        "fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t p-4 transition-transform duration-200",
+        "fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t p-4 transition-transform duration-200 z-50",
         selectedCategories.size > 0 ? "translate-y-0" : "translate-y-full"
       )}>
         <div className="container max-w-7xl mx-auto">
