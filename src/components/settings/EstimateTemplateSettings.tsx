@@ -6,6 +6,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 
 const templates = [
   {
@@ -38,6 +40,10 @@ const templates = [
 export const EstimateTemplateSettings = () => {
   const { contractorId } = useParams();
   const queryClient = useQueryClient();
+  const [clientMessage, setClientMessage] = useState("");
+  const [footerText, setFooterText] = useState("");
+  const [hasClientMessageChanges, setHasClientMessageChanges] = useState(false);
+  const [hasFooterTextChanges, setHasFooterTextChanges] = useState(false);
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["contractor-settings", contractorId],
@@ -54,6 +60,13 @@ export const EstimateTemplateSettings = () => {
     enabled: !!contractorId
   });
 
+  useEffect(() => {
+    if (settings) {
+      setClientMessage(settings.estimate_client_message || "");
+      setFooterText(settings.estimate_footer_text || "");
+    }
+  }, [settings]);
+
   const updateSettings = useMutation({
     mutationFn: async (updates: Partial<typeof settings>) => {
       const { error } = await supabase
@@ -69,6 +82,8 @@ export const EstimateTemplateSettings = () => {
         title: "Settings updated",
         description: "Your estimate template settings have been saved.",
       });
+      setHasClientMessageChanges(false);
+      setHasFooterTextChanges(false);
     },
     onError: (error) => {
       toast({
@@ -82,6 +97,24 @@ export const EstimateTemplateSettings = () => {
   if (isLoading) {
     return <div>Loading...</div>;
   }
+
+  const handleClientMessageChange = (value: string) => {
+    setClientMessage(value);
+    setHasClientMessageChanges(value !== settings?.estimate_client_message);
+  };
+
+  const handleFooterTextChange = (value: string) => {
+    setFooterText(value);
+    setHasFooterTextChanges(value !== settings?.estimate_footer_text);
+  };
+
+  const saveClientMessage = () => {
+    updateSettings.mutate({ estimate_client_message: clientMessage });
+  };
+
+  const saveFooterText = () => {
+    updateSettings.mutate({ estimate_footer_text: footerText });
+  };
 
   return (
     <div className="space-y-6">
@@ -133,28 +166,62 @@ export const EstimateTemplateSettings = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Client Message</Label>
-              <Textarea
-                placeholder="Enter a message to display on all estimates..."
-                value={settings?.estimate_client_message || ""}
-                onChange={(e) => 
-                  updateSettings.mutate({ estimate_client_message: e.target.value })
+            <div className="flex items-center justify-between">
+              <Label htmlFor="subtotals" className="flex-1">
+                Show Subgroup Totals
+                <span className="block text-sm text-muted-foreground">
+                  Display subtotals for each group and subgroup
+                </span>
+              </Label>
+              <Switch
+                id="subtotals"
+                checked={!settings?.estimate_hide_subtotals}
+                onCheckedChange={(checked) =>
+                  updateSettings.mutate({ estimate_hide_subtotals: !checked })
                 }
-                className="min-h-[100px]"
               />
             </div>
 
             <div className="space-y-2">
+              <Label>Client Message</Label>
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Enter a message to display on all estimates..."
+                  value={clientMessage}
+                  onChange={(e) => handleClientMessageChange(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                {hasClientMessageChanges && (
+                  <Button 
+                    onClick={saveClientMessage}
+                    disabled={updateSettings.isPending}
+                    size="sm"
+                  >
+                    Save Message
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
               <Label>Footer Text</Label>
-              <Textarea
-                placeholder="Enter footer text (terms, conditions, etc.)..."
-                value={settings?.estimate_footer_text || ""}
-                onChange={(e) => 
-                  updateSettings.mutate({ estimate_footer_text: e.target.value })
-                }
-                className="min-h-[100px]"
-              />
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Enter footer text (terms, conditions, etc.)..."
+                  value={footerText}
+                  onChange={(e) => handleFooterTextChange(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                {hasFooterTextChanges && (
+                  <Button 
+                    onClick={saveFooterText}
+                    disabled={updateSettings.isPending}
+                    size="sm"
+                  >
+                    Save Footer
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
