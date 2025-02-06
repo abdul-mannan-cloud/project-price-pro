@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +25,12 @@ interface SupabaseContractorSettings {
   ai_instructions: string | null;
 }
 
+const defaultPreferences: AIPreferences = {
+  rate: "HR",
+  type: "material_labor",
+  instructions: ""
+};
+
 export const AIPreferencesSettings = () => {
   const { toast } = useToast();
 
@@ -43,14 +50,17 @@ export const AIPreferencesSettings = () => {
       
       // Convert Supabase data to our ContractorSettings type
       const supabaseData = data as SupabaseContractorSettings;
-      const aiPreferences = supabaseData.ai_preferences as AIPreferences;
+      const preferences = supabaseData.ai_preferences as any;
+      
+      // Ensure we have all required fields with proper types
+      const aiPreferences: AIPreferences = {
+        rate: typeof preferences?.rate === 'string' ? preferences.rate : defaultPreferences.rate,
+        type: typeof preferences?.type === 'string' ? preferences.type : defaultPreferences.type,
+        instructions: typeof preferences?.instructions === 'string' ? preferences.instructions : defaultPreferences.instructions
+      };
       
       return {
-        ai_preferences: aiPreferences || {
-          rate: "HR",
-          type: "material_labor",
-          instructions: ""
-        },
+        ai_preferences: aiPreferences,
         ai_instructions: supabaseData.ai_instructions || ""
       } as ContractorSettings;
     },
@@ -61,10 +71,17 @@ export const AIPreferencesSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
+      // Convert AIPreferences to a plain object that matches Json type
+      const aiPreferencesJson: { [key: string]: string } = {
+        rate: formData.ai_preferences.rate,
+        type: formData.ai_preferences.type,
+        instructions: formData.ai_preferences.instructions
+      };
+
       const { error } = await supabase
         .from("contractor_settings")
         .update({
-          ai_preferences: formData.ai_preferences as Json,
+          ai_preferences: aiPreferencesJson as Json,
           ai_instructions: formData.ai_instructions
         })
         .eq("id", user.id);
@@ -91,9 +108,9 @@ export const AIPreferencesSettings = () => {
     const formData = new FormData(e.currentTarget);
     const data: ContractorSettings = {
       ai_preferences: {
-        rate: formData.get("rate") as string || "HR",
-        type: formData.get("type") as string || "material_labor",
-        instructions: formData.get("instructions") as string || ""
+        rate: formData.get("rate") as string || defaultPreferences.rate,
+        type: formData.get("type") as string || defaultPreferences.type,
+        instructions: formData.get("instructions") as string || defaultPreferences.instructions
       },
       ai_instructions: formData.get("ai_instructions") as string || ""
     };
@@ -104,19 +121,13 @@ export const AIPreferencesSettings = () => {
     return <div>Loading...</div>;
   }
 
-  const defaultPreferences = settings?.ai_preferences || {
-    rate: "HR",
-    type: "material_labor",
-    instructions: ""
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
         <Label>Rate Type</Label>
         <Input
           name="rate"
-          defaultValue={defaultPreferences.rate}
+          defaultValue={settings?.ai_preferences.rate || defaultPreferences.rate}
           placeholder="e.g., HR for hourly rate"
         />
       </div>
@@ -125,7 +136,7 @@ export const AIPreferencesSettings = () => {
         <Label>Calculation Type</Label>
         <Input
           name="type"
-          defaultValue={defaultPreferences.type}
+          defaultValue={settings?.ai_preferences.type || defaultPreferences.type}
           placeholder="e.g., material_labor"
         />
       </div>
@@ -134,7 +145,7 @@ export const AIPreferencesSettings = () => {
         <Label>AI Instructions</Label>
         <Textarea
           name="instructions"
-          defaultValue={defaultPreferences.instructions}
+          defaultValue={settings?.ai_preferences.instructions || defaultPreferences.instructions}
           placeholder="Enter specific instructions for AI estimate generation..."
           className="min-h-[100px]"
         />
