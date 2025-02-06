@@ -210,7 +210,7 @@ ${templateSettings.estimate_footer_text || ''}
 
     const baseTableStyles = {
       table: "w-full border-collapse",
-      tableHeader: "text-xs uppercase tracking-wider py-1.5 px-3 text-left border-b",
+      tableHeader: "text-xs uppercase tracking-wider py-1 px-3 text-left border-b",
       tableRow: "border-b border-gray-200 hover:bg-gray-50 transition-colors",
       tableCell: "py-2 px-3 text-sm border-r last:border-r-0",
     };
@@ -219,19 +219,22 @@ ${templateSettings.estimate_footer_text || ''}
       case 'excel':
         return {
           card: "bg-white p-4 md:p-8 max-w-4xl mx-auto shadow-sm",
-          header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 space-y-4 md:space-y-0",
-          title: "text-xl md:text-2xl font-medium text-gray-900",
+          header: "w-full border border-gray-300",
+          headerContent: "grid grid-cols-2 gap-4 p-3 bg-[#E8EAED]",
+          title: "text-base font-medium text-gray-900",
           text: "text-gray-600 text-sm",
-          section: "bg-white rounded-none border-0 mb-4",
+          section: "bg-white rounded-none border-0 mb-0",
           table: "w-full border border-gray-300",
-          tableHeader: "bg-[#E8EAED] text-left font-medium text-gray-700 py-1.5 px-3 border-b border-r",
+          tableHeader: "bg-[#E8EAED] text-left text-xs font-medium text-gray-700 py-1 px-3 border-b border-r",
           tableRow: "border-b border-gray-300",
-          tableCell: "py-2 px-3 border-r text-sm",
-          total: "text-2xl md:text-3xl font-medium text-gray-900",
+          tableCell: "py-1.5 px-3 border-r text-sm",
+          total: "text-base font-medium text-gray-900",
           button: "bg-[#E8EAED] text-gray-700 hover:bg-gray-200 border-gray-300",
           message: "bg-[#F3F4F6] p-4 rounded-lg text-sm", 
-          groupTitle: "text-xl font-medium mb-3 w-full text-gray-900",
-          subtotal: "text-right py-2 px-3 font-medium bg-[#F3F4F6] border-t border-r text-sm",
+          groupTitle: "text-sm font-medium bg-[#E8EAED] p-2 border border-gray-300 border-b-0",
+          subtotal: "text-right py-1.5 px-3 font-medium bg-[#F3F4F6] border-t border-r text-sm",
+          totalsSection: "border border-t-0 border-gray-300",
+          totalsRow: "grid grid-cols-2 gap-4 p-2 border-b last:border-b-0 border-gray-300",
         };
 
       case 'minimal':
@@ -242,11 +245,11 @@ ${templateSettings.estimate_footer_text || ''}
           text: "text-neutral-600 text-sm",
           section: "bg-white rounded-none border-0 mb-4",
           ...baseTableStyles,
-          tableHeader: "bg-gray-50 text-left font-medium text-gray-600 py-1.5 px-3 border-b",
+          tableHeader: "bg-gray-50 text-left text-xs font-medium text-gray-600 py-1 px-3 border-b",
           total: "text-2xl md:text-3xl font-light",
           button: "bg-gray-100 text-gray-700 hover:bg-gray-200",
           message: "bg-gray-50 p-4 rounded-lg text-sm", 
-          groupTitle: "text-xl font-medium mb-3 w-full",
+          groupTitle: "text-base font-medium mb-2 w-full",
           subtotal: "hidden",
         };
 
@@ -256,14 +259,16 @@ ${templateSettings.estimate_footer_text || ''}
           header: `flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b-2 border-[${primaryColor}] space-y-4 md:space-y-0`,
           title: `text-xl md:text-2xl font-serif font-bold text-[${primaryColor}]`,
           text: "text-[#4A4A4A] font-serif text-sm",
-          section: "bg-white rounded-lg mb-4 shadow-sm",
-          ...baseTableStyles,
-          tableHeader: `bg-[${primaryColor}] text-white font-serif py-1.5 px-3 text-left`,
+          section: "bg-[#f3f3f3] rounded-lg mb-4 p-4",
+          table: "w-full",
+          tableHeader: "hidden",
+          tableRow: "group",
+          tableCell: "py-1.5 font-serif relative pl-6 before:content-['•'] before:absolute before:left-2 before:top-2 before:text-gray-400",
           total: `text-2xl md:text-3xl font-serif font-bold text-[${primaryColor}]`,
           button: `border border-[${primaryColor}] text-[${primaryColor}] hover:bg-[${primaryColorLight}]`,
           message: "bg-gray-50 p-4 rounded-lg border text-sm",
-          groupTitle: "text-xl font-serif font-bold mb-3 w-full",
-          subtotal: "text-right py-2 text-base font-serif font-medium",
+          groupTitle: "text-base font-serif font-bold mb-2 w-full",
+          subtotal: "text-right py-2 text-sm font-serif font-medium italic",
         };
 
       case 'bold':
@@ -272,16 +277,16 @@ ${templateSettings.estimate_footer_text || ''}
           header: `bg-[${primaryColor}] -mx-4 -mt-4 md:-mx-8 md:-mt-8 p-4 md:p-8 mb-8`,
           title: "text-xl md:text-2xl font-black text-white",
           text: "text-white/90 text-sm",
-          section: "bg-white p-4 rounded-xl mb-4 shadow-sm",
+          section: "bg-white p-4 rounded-xl mb-4",
           ...baseTableStyles,
-          tableHeader: "bg-gray-100 text-gray-800 font-bold py-1.5 px-3 text-left",
-          tableRow: "border-b hover:bg-gray-50 transition-colors",
+          tableHeader: "bg-gray-100 text-xs font-bold py-1 px-3 text-left",
+          tableRow: "border-b hover:bg-gray-50 transition-colors font-medium",
           tableCell: "py-2 px-3 text-sm",
           total: "text-3xl md:text-4xl font-black text-gray-900",
           button: "bg-gray-100 text-gray-800 hover:bg-gray-200",
           message: "bg-gray-50 p-4 rounded-xl text-sm",
-          groupTitle: "text-xl font-black mb-3 text-gray-900 w-full",
-          subtotal: "text-right py-2 text-base font-bold text-gray-900",
+          groupTitle: "text-lg font-black mb-2 text-gray-900 w-full",
+          subtotal: "text-right py-2 text-sm font-bold text-gray-900",
         };
 
       default: // modern
@@ -292,12 +297,12 @@ ${templateSettings.estimate_footer_text || ''}
           text: "text-gray-600 text-sm",
           section: "bg-white rounded-none mb-0 last:mb-4",
           ...baseTableStyles,
-          tableHeader: "bg-gray-800 text-white font-medium py-1.5 px-3 text-left",
+          tableHeader: "bg-gray-800 text-xs text-white font-medium py-1 px-3 text-left",
           total: `text-2xl md:text-3xl font-bold text-[${primaryColor}]`,
           button: `bg-gray-100 text-gray-800 hover:bg-gray-200`,
           message: "bg-gray-50 p-4 rounded-lg text-sm",
-          groupTitle: `text-xl font-bold mb-3 w-full text-[${primaryColor}]`,
-          subtotal: "text-right py-2 text-base font-medium",
+          groupTitle: `text-base font-bold mb-2 w-full text-[${primaryColor}]`,
+          subtotal: "text-right py-2 text-sm font-medium",
         };
     }
   };
@@ -336,24 +341,49 @@ ${templateSettings.estimate_footer_text || ''}
         <div id="estimate-content">
           {/* Company Header */}
           <div className={styles.header}>
-            <div className="flex items-center gap-4">
-              {contractor?.business_logo_url && (
-                <img 
-                  src={contractor.business_logo_url} 
-                  alt={`${companyInfo.business_name} logo`}
-                  className="w-16 h-16 object-contain rounded-lg"
-                />
-              )}
-              <div>
-                <h1 className={styles.title}>{companyInfo.business_name}</h1>
-                {companyInfo.contact_email && (
-                  <p className={styles.text}>{companyInfo.contact_email}</p>
-                )}
-                {companyInfo.contact_phone && (
-                  <p className={styles.text}>{companyInfo.contact_phone}</p>
-                )}
+            {templateStyle === 'excel' ? (
+              <div className={styles.headerContent}>
+                <div>
+                  {contractor?.business_logo_url && (
+                    <img 
+                      src={contractor.business_logo_url} 
+                      alt={`${companyInfo.business_name} logo`}
+                      className="w-16 h-16 object-contain rounded-lg mb-2"
+                    />
+                  )}
+                  <h1 className={styles.title}>{companyInfo.business_name}</h1>
+                  {companyInfo.contact_email && (
+                    <p className={styles.text}>{companyInfo.contact_email}</p>
+                  )}
+                  {companyInfo.contact_phone && (
+                    <p className={styles.text}>{companyInfo.contact_phone}</p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className={styles.text}>Date</p>
+                  <p className="font-medium text-sm">{new Date().toLocaleDateString()}</p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                {contractor?.business_logo_url && (
+                  <img 
+                    src={contractor.business_logo_url} 
+                    alt={`${companyInfo.business_name} logo`}
+                    className="w-16 h-16 object-contain rounded-lg"
+                  />
+                )}
+                <div>
+                  <h1 className={styles.title}>{companyInfo.business_name}</h1>
+                  {companyInfo.contact_email && (
+                    <p className={styles.text}>{companyInfo.contact_email}</p>
+                  )}
+                  {companyInfo.contact_phone && (
+                    <p className={styles.text}>{companyInfo.contact_phone}</p>
+                  )}
+                </div>
+              </div>
+            )}
             <div id="estimate-actions" className="flex items-center gap-4">
               {isContractor && (
                 <Button
@@ -383,10 +413,12 @@ ${templateSettings.estimate_footer_text || ''}
                 <FileDown className="h-4 w-4" />
                 PDF
               </Button>
-              <div className="text-right hidden md:block">
-                <p className={styles.text}>Date</p>
-                <p className="font-medium text-sm">{new Date().toLocaleDateString()}</p>
-              </div>
+              {templateStyle !== 'excel' && (
+                <div className="text-right hidden md:block">
+                  <p className={styles.text}>Date</p>
+                  <p className="font-medium text-sm">{new Date().toLocaleDateString()}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -410,46 +442,73 @@ ${templateSettings.estimate_footer_text || ''}
             <div key={index} className={styles.section}>
               <h3 className={styles.groupTitle}>{group.name}</h3>
               
-              {/* Line Items Table */}
-              <div className="overflow-hidden">
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th className={styles.tableHeader}>Item</th>
-                      <th className={styles.tableHeader}>Description</th>
-                      <th className={cn(styles.tableHeader, "text-right")}>Qty</th>
-                      <th className={cn(styles.tableHeader, "text-right")}>Unit Price</th>
-                      <th className={cn(styles.tableHeader, "text-right")}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.subgroups?.map(subgroup => 
-                      subgroup.items?.map((item, itemIndex) => (
-                        <tr key={`${subgroup.name}-${itemIndex}`} className={styles.tableRow}>
-                          <td className={styles.tableCell} data-label="Item">
-                            {item.title} {item.unit && `(${formatUnit(item.unit)})`}
-                          </td>
-                          <td className={styles.tableCell} data-label="Description">
-                            {item.description}
-                          </td>
-                          <td className={cn(styles.tableCell, "text-right")} data-label="Qty">
-                            {item.quantity}
-                          </td>
-                          <td className={cn(styles.tableCell, "text-right")} data-label="Unit Price">
-                            ${item.unitAmount.toFixed(2)}
-                          </td>
-                          <td className={cn(styles.tableCell, "text-right font-medium")} data-label="Total">
-                            ${item.totalPrice.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              {templateStyle === 'classic' ? (
+                <div className="space-y-2">
+                  {group.subgroups?.map(subgroup => (
+                    <div key={subgroup.name} className="space-y-1">
+                      {subgroup.items?.map((item, itemIndex) => (
+                        <div key={`${subgroup.name}-${itemIndex}`} className={styles.tableRow}>
+                          <div className={styles.tableCell}>
+                            <span className="font-medium">{item.title}</span>
+                            {item.unit && ` (${formatUnit(item.unit)})`}
+                            {item.description && (
+                              <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                            )}
+                            <div className="text-sm text-gray-600 mt-1">
+                              {item.quantity} × ${item.unitAmount.toFixed(2)} = ${item.totalPrice.toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {!hideSubtotals && (
+                        <div className={styles.subtotal}>
+                          Subtotal for {subgroup.name}: ${subgroup.subtotal.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="overflow-hidden">
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th className={styles.tableHeader}>Item</th>
+                        <th className={styles.tableHeader}>Description</th>
+                        <th className={cn(styles.tableHeader, "text-right")}>Qty</th>
+                        <th className={cn(styles.tableHeader, "text-right")}>Unit Price</th>
+                        <th className={cn(styles.tableHeader, "text-right")}>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.subgroups?.map(subgroup => 
+                        subgroup.items?.map((item, itemIndex) => (
+                          <tr key={`${subgroup.name}-${itemIndex}`} className={styles.tableRow}>
+                            <td className={styles.tableCell} data-label="Item">
+                              {item.title} {item.unit && `(${formatUnit(item.unit)})`}
+                            </td>
+                            <td className={styles.tableCell} data-label="Description">
+                              {item.description}
+                            </td>
+                            <td className={cn(styles.tableCell, "text-right")} data-label="Qty">
+                              {item.quantity}
+                            </td>
+                            <td className={cn(styles.tableCell, "text-right")} data-label="Unit Price">
+                              ${item.unitAmount.toFixed(2)}
+                            </td>
+                            <td className={cn(styles.tableCell, "text-right font-medium")} data-label="Total">
+                              ${item.totalPrice.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               {/* Group Subtotal */}
-              {!hideSubtotals && (
+              {!hideSubtotals && templateStyle !== 'minimal' && (
                 <div className={cn(styles.subtotal, "mt-4 pt-3 border-t")}>
                   <span className={styles.text}>Subtotal for {group.name}</span>
                   <span className="font-semibold ml-4">
@@ -461,20 +520,37 @@ ${templateSettings.estimate_footer_text || ''}
           ))}
           
           {/* Total */}
-          <div className={cn("mt-8 pt-6 border-t space-y-4", compactView ? "md:space-y-3" : "md:space-y-6")}>
-            <div className="flex justify-between items-center">
-              <p className={styles.text}>Subtotal</p>
-              <p className={cn(styles.text, "text-lg")}>${totalCost.toFixed(2)}</p>
+          {templateStyle === 'excel' ? (
+            <div className={styles.totalsSection}>
+              <div className={styles.totalsRow}>
+                <span>Subtotal</span>
+                <span className="text-right">${totalCost.toFixed(2)}</span>
+              </div>
+              <div className={styles.totalsRow}>
+                <span>Tax (8.5%)</span>
+                <span className="text-right">${(totalCost * 0.085).toFixed(2)}</span>
+              </div>
+              <div className={cn(styles.totalsRow, "font-bold")}>
+                <span>Total Estimate</span>
+                <span className="text-right">${(totalCost * 1.085).toFixed(2)}</span>
+              </div>
             </div>
-            <div className="flex justify-between items-center">
-              <p className={styles.text}>Tax (8.5%)</p>
-              <p className={cn(styles.text, "text-lg")}>${(totalCost * 0.085).toFixed(2)}</p>
+          ) : (
+            <div className={cn("mt-8 pt-6 border-t space-y-4", compactView ? "md:space-y-3" : "md:space-y-6")}>
+              <div className="flex justify-between items-center">
+                <p className={styles.text}>Subtotal</p>
+                <p className={cn(styles.text, "text-lg")}>${totalCost.toFixed(2)}</p>
+              </div>
+              <div className="flex justify-between items-center">
+                <p className={styles.text}>Tax (8.5%)</p>
+                <p className={cn(styles.text, "text-lg")}>${(totalCost * 0.085).toFixed(2)}</p>
+              </div>
+              <div className="flex justify-between items-center pt-4 border-t">
+                <p className={cn(styles.title, "!text-xl")}>Total Estimate</p>
+                <p className={styles.total}>${(totalCost * 1.085).toFixed(2)}</p>
+              </div>
             </div>
-            <div className="flex justify-between items-center pt-4 border-t">
-              <p className={cn(styles.title, "!text-xl")}>Total Estimate</p>
-              <p className={styles.total}>${(totalCost * 1.085).toFixed(2)}</p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Signature Section */}
