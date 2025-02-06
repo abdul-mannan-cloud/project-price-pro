@@ -399,30 +399,30 @@ ${templateSettings.estimate_footer_text || ''}
                   <table className={styles.table}>
                     <thead>
                       <tr>
-                        <th className={cn(styles.tableHeader, "w-1/4")}>Item</th>
-                        <th className={cn(styles.tableHeader, "w-1/3")}>Description</th>
-                        <th className={cn(styles.tableHeader, "w-1/6 text-right")}>Qty</th>
-                        <th className={cn(styles.tableHeader, "w-1/6 text-right")}>Unit Price</th>
-                        <th className={cn(styles.tableHeader, "w-1/6 text-right")}>Total</th>
+                        <th className={cn(styles.tableHeader, "w-[30%]")}>Item</th>
+                        <th className={cn(styles.tableHeader, "w-[40%]")}>Description</th>
+                        <th className={cn(styles.tableHeader, "w-[10%] text-right")}>Qty</th>
+                        <th className={cn(styles.tableHeader, "w-[10%] text-right")}>Unit Price</th>
+                        <th className={cn(styles.tableHeader, "w-[10%] text-right")}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {group.subgroups?.map(subgroup => 
                         subgroup.items?.map((item, itemIndex) => (
                           <tr key={`${subgroup.name}-${itemIndex}`} className={styles.tableRow}>
-                            <td className={styles.tableCell}>
+                            <td className={cn(styles.tableCell, "w-[30%]")}>
                               {item.title} {item.unit && `(${formatUnit(item.unit)})`}
                             </td>
-                            <td className={styles.tableCell}>
+                            <td className={cn(styles.tableCell, "w-[40%]")}>
                               {item.description}
                             </td>
-                            <td className={cn(styles.tableCell, "text-right")}>
+                            <td className={cn(styles.tableCell, "w-[10%] text-right whitespace-nowrap")}>
                               {item.quantity.toLocaleString()}
                             </td>
-                            <td className={cn(styles.tableCell, "text-right")}>
+                            <td className={cn(styles.tableCell, "w-[10%] text-right whitespace-nowrap")}>
                               {formatCurrency(item.unitAmount)}
                             </td>
-                            <td className={cn(styles.tableCell, "text-right font-medium")}>
+                            <td className={cn(styles.tableCell, "w-[10%] text-right whitespace-nowrap font-medium")}>
                               {formatCurrency(item.totalPrice)}
                             </td>
                           </tr>
