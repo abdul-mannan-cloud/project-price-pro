@@ -255,6 +255,8 @@ ${templateSettings.estimate_footer_text || ''}
           companyInfo: `text-[${darkerColor}] font-medium`,
           contactInfo: `text-[${darkerColor}]/80`,
           buttonsContainer: "flex items-center gap-2",
+          totalsSection: "space-y-4 mt-8 pt-6 border-t",
+          totalsRow: "flex justify-between items-center py-2"
         };
 
       default: // modern
@@ -271,6 +273,8 @@ ${templateSettings.estimate_footer_text || ''}
           message: "bg-gray-50 p-4 rounded-lg text-sm",
           groupTitle: `text-base font-bold mb-2 w-full text-[${primaryColor}]`,
           subtotal: "text-right py-2 px-4 text-sm font-medium",
+          totalsSection: "space-y-4 mt-8 pt-6 border-t",
+          totalsRow: "flex justify-between items-center py-2"
         };
     }
   };
