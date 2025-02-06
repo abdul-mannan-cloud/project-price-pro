@@ -228,15 +228,15 @@ ${templateSettings.estimate_footer_text || ''}
       title: "text-xl md:text-2xl font-bold",
       text: "text-gray-600 text-sm",
       section: "bg-white rounded-none mb-0 last:mb-4",
-      table: "w-full", // Changed to just w-full
-      tableHeader: "text-xs uppercase tracking-wider py-2 px-4 text-left border-b text-gray-900",
+      table: "w-full",
+      tableHeader: "text-xs uppercase tracking-wider py-2 px-4 text-left border-b text-black",
       tableRow: "border-b border-gray-200 hover:bg-gray-50 transition-colors",
-      tableCell: "py-3 px-4 text-sm border-r last:border-r-0 break-words", // Added break-words
+      tableCell: "py-3 px-4 text-sm border-r last:border-r-0 break-words text-black",
       total: "text-2xl md:text-3xl font-bold text-gray-900",
       button: "bg-gray-100 text-gray-800 hover:bg-gray-200",
       message: "bg-gray-50 p-4 rounded-lg text-sm",
       groupTitle: "text-base font-bold mb-2 w-full",
-      subtotal: "text-right py-2 px-4 text-sm font-medium text-gray-900",
+      subtotal: "text-right py-2 px-4 text-sm font-medium text-black",
       totalsSection: "space-y-4 mt-8 pt-6 border-t",
       totalsRow: "flex justify-between items-center py-2 text-gray-900",
       buttonsContainer: "flex items-center gap-2 ml-auto"
