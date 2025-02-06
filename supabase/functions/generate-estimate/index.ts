@@ -8,13 +8,11 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Validate request method
     if (req.method !== 'POST') {
       throw new Error('Method not allowed');
     }
@@ -24,7 +22,6 @@ serve(async (req) => {
       throw new Error('Missing LLAMA_API_KEY');
     }
 
-    // Parse request body with error handling
     let requestData;
     try {
       requestData = await req.json();
@@ -36,7 +33,6 @@ serve(async (req) => {
     const { answers, projectDescription, category } = requestData;
     console.log('Generating estimate for:', { category, projectDescription });
 
-    // Format answers for better readability
     const formattedAnswers = Object.entries(answers).map(([category, categoryAnswers]) => {
       const questions = Object.values(categoryAnswers).map(qa => ({
         question: qa.question,
@@ -47,6 +43,66 @@ serve(async (req) => {
       }));
       return { category, questions };
     });
+
+    // Generate AI title and message
+    const titlePrompt = `Based on this project description and answers, generate a concise project title (4 words or less):
+    Category: ${category}
+    Description: ${projectDescription}
+    ${formattedAnswers.map(cat => 
+      cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
+    ).join('\n')}`;
+
+    const messagePrompt = `Based on this project description and answers, generate a clear, professional overview of the project scope (2-3 sentences):
+    Category: ${category}
+    Description: ${projectDescription}
+    ${formattedAnswers.map(cat => 
+      cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
+    ).join('\n')}`;
+
+    const [titleResponse, messageResponse] = await Promise.all([
+      fetch('https://api.llama-api.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${llamaApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{
+            role: 'system',
+            content: 'Generate a concise project title.'
+          }, {
+            role: 'user',
+            content: titlePrompt
+          }],
+          temperature: 0.2
+        }),
+      }),
+      fetch('https://api.llama-api.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${llamaApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{
+            role: 'system',
+            content: 'Generate a clear project overview.'
+          }, {
+            role: 'user',
+            content: messagePrompt
+          }],
+          temperature: 0.2
+        }),
+      })
+    ]);
+
+    const [titleData, messageData] = await Promise.all([
+      titleResponse.json(),
+      messageResponse.json()
+    ]);
+
+    const aiTitle = titleData.choices[0].message.content.trim();
+    const aiMessage = messageData.choices[0].message.content.trim();
 
     const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format.
     
@@ -129,33 +185,29 @@ Important:
     let content = aiResponse.choices[0].message.content.trim();
     console.log('Parsing content:', content);
 
-    // Remove any potential markdown code block markers
     content = content.replace(/```json\n?|\n?```/g, '').trim();
 
-    // Parse and validate JSON structure
-    let estimateJson;
+    let parsedEstimate;
     try {
-      estimateJson = JSON.parse(content);
+      parsedEstimate = JSON.parse(content);
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       throw new Error(`Failed to parse JSON: ${parseError.message}`);
     }
 
-    // Validate estimate structure
-    if (!estimateJson || typeof estimateJson !== 'object') {
+    if (!parsedEstimate || typeof parsedEstimate !== 'object') {
       throw new Error('Invalid estimate format: must be an object');
     }
 
-    if (!Array.isArray(estimateJson.groups)) {
+    if (!Array.isArray(parsedEstimate.groups)) {
       throw new Error('Invalid estimate structure: groups must be an array');
     }
 
-    if (typeof estimateJson.totalCost !== 'number') {
+    if (typeof parsedEstimate.totalCost !== 'number') {
       throw new Error('Invalid estimate structure: totalCost must be a number');
     }
 
-    // Validate each group and subgroup
-    estimateJson.groups.forEach((group, groupIndex) => {
+    parsedEstimate.groups.forEach((group, groupIndex) => {
       if (!group.name || typeof group.name !== 'string') {
         throw new Error(`Invalid group name at index ${groupIndex}`);
       }
@@ -193,6 +245,12 @@ Important:
         });
       });
     });
+
+    const estimateJson = {
+      ...parsedEstimate,
+      ai_generated_title: aiTitle,
+      ai_generated_message: aiMessage
+    };
 
     console.log('Estimate validation successful');
     return new Response(
