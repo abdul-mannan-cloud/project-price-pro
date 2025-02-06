@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, SkipForward, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +16,8 @@ import { Question, Category, CategoryQuestions, AnswersState } from "@/types/est
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
+import { Mic, MicOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
@@ -39,6 +41,9 @@ const EstimatePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
@@ -468,6 +473,80 @@ const EstimatePage = () => {
 
   const showProgressBar = stage !== 'estimate' && stage !== 'contact';
 
+  const toggleRecording = async () => {
+    if (isRecording) {
+      // Stop recording
+      mediaRecorderRef.current?.stop();
+      audioStream?.getTracks().forEach(track => track.stop());
+      setAudioStream(null);
+      setIsRecording(false);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setAudioStream(stream);
+
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+
+        const audioChunks: Blob[] = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const reader = new FileReader();
+          
+          reader.onloadend = async () => {
+            const base64Audio = (reader.result as string).split(',')[1];
+            
+            try {
+              const { data, error } = await supabase.functions.invoke('voice-to-text', {
+                body: { audio: base64Audio }
+              });
+
+              if (error) throw error;
+              
+              setProjectDescription(prev => prev + (prev ? ' ' : '') + data.text);
+              
+              toast({
+                title: "Voice transcribed",
+                description: "Your voice has been converted to text",
+              });
+            } catch (error) {
+              console.error('Error transcribing audio:', error);
+              toast({
+                title: "Error",
+                description: "Failed to transcribe audio. Please try again.",
+                variant: "destructive",
+              });
+            }
+          };
+
+          reader.readAsDataURL(audioBlob);
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+        
+        toast({
+          title: "Recording started",
+          description: "Speak clearly into your microphone",
+        });
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+        toast({
+          title: "Error",
+          description: "Failed to access microphone. Please check your permissions.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   if (isProcessing) {
     return (
       <LoadingScreen
@@ -568,18 +647,28 @@ const EstimatePage = () => {
         {stage === 'description' && (
           <div className="card p-8 animate-fadeIn">
             <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <Textarea
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
                 placeholder="Describe what you need help with (e.g., paint my living room walls)..."
-                className="min-h-[150px]"
+                className="min-h-[150px] pr-12"
               />
-              {projectDescription.length > 0 && projectDescription.length < 30 && (
-                <p className="text-sm text-destructive">
-                  Please enter at least {30 - projectDescription.length} more characters
-                </p>
-              )}
+              <button
+                onClick={toggleRecording}
+                className={cn(
+                  "absolute right-3 top-3 p-2 rounded-full transition-all duration-200",
+                  isRecording 
+                    ? "bg-red-100 text-red-600 hover:bg-red-200" 
+                    : "bg-gray-100 hover:bg-gray-200"
+                )}
+              >
+                {isRecording ? (
+                  <MicOff className="h-5 w-5" />
+                ) : (
+                  <Mic className="h-5 w-5" />
+                )}
+              </button>
             </div>
             <Button 
               className="w-full mt-6"
