@@ -150,8 +150,8 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
         )}
       </div>
 
-      <div className="space-y-4">
-        {uploadedPhotos.length > 0 && (
+      {uploadedPhotos.length > 0 && (
+        <div className="space-y-4">
           <Button
             className="w-full"
             size="lg"
@@ -159,8 +159,8 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
           >
             Continue
           </Button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
