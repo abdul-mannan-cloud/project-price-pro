@@ -4,6 +4,7 @@ import { Camera, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { LoadingScreen } from "./LoadingScreen";
 
 interface PhotoUploadProps {
   onPhotosSelected: (urls: string[]) => void;
@@ -106,6 +107,10 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
     });
   };
 
+  if (isUploading) {
+    return <LoadingScreen message="Uploading photos..." />;
+  }
+
   return (
     <div className="space-y-6 w-full">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
@@ -146,14 +151,15 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
       </div>
 
       <div className="space-y-4">
-        <Button
-          className="w-full"
-          size="lg"
-          onClick={onNext}
-          disabled={uploadedPhotos.length === 0}
-        >
-          Continue
-        </Button>
+        {uploadedPhotos.length > 0 && (
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={onNext}
+          >
+            Continue
+          </Button>
+        )}
       </div>
     </div>
   );
