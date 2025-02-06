@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/3d-button";
 import { Question } from "@/types/estimate";
 import { Card } from "@/components/ui/card";
-import { Check, AlertTriangle, Square, X } from "lucide-react";
+import { Check, AlertTriangle, Square, X, Mic } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
@@ -39,13 +39,14 @@ export const QuestionCard = ({
 }: QuestionCardProps) => {
   const [showNextButton, setShowNextButton] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const questionLoadTime = useRef<number>(0);
   const isMobile = useIsMobile();
   const { toast, dismiss } = useToast();
   const { contractorId } = useParams();
   const toastRef = useRef<string | null>(null);
 
-  // Fetch contractor data to get branding colors
+  // Safely extract primary color from branding_colors
   const { data: contractor } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
@@ -60,6 +61,67 @@ export const QuestionCard = ({
     },
     enabled: !!contractorId
   });
+
+  const startListening = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      
+      recognition.onstart = () => {
+        setIsListening(true);
+        toast({
+          title: "Listening...",
+          description: "Speak now",
+        });
+      };
+      
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        const matchingOption = question.options.find(
+          option => option.label.toLowerCase().includes(transcript.toLowerCase())
+        );
+        
+        if (matchingOption) {
+          handleOptionClick(matchingOption.value);
+          toast({
+            title: "Voice recognized",
+            description: `Selected: ${matchingOption.label}`,
+          });
+        } else {
+          toast({
+            title: "No match found",
+            description: "Please try again or select manually",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        toast({
+          title: "Error",
+          description: "Failed to recognize speech. Please try again.",
+          variant: "destructive",
+        });
+      };
+      
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+      
+      recognition.start();
+    } else {
+      toast({
+        title: "Not supported",
+        description: "Speech recognition is not supported in your browser.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Safely extract primary color from branding_colors
   const primaryColor = typeof contractor?.branding_colors === 'object' && contractor?.branding_colors !== null
@@ -160,10 +222,30 @@ export const QuestionCard = ({
         "w-full max-w-6xl mx-auto relative bg-white",
         isMobile ? "px-0 py-4 rounded-none" : "p-6 rounded-xl"
       )}>
-        <h2 className={cn(
-          "font-semibold mb-6",
-          isMobile ? "text-base px-4" : "text-xl"
-        )}>{question?.question}</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className={cn(
+            "font-semibold",
+            isMobile ? "text-base px-4" : "text-xl"
+          )}>{question?.question}</h2>
+          <Button
+            size="icon"
+            variant={isListening ? "destructive" : "outline"}
+            className="rounded-full"
+            onClick={() => isListening ? setIsListening(false) : startListening()}
+          >
+            {isListening ? (
+              <Square className="h-4 w-4" />
+            ) : (
+              <div className="relative">
+                <div className={cn(
+                  "absolute inset-0 rounded-full",
+                  isListening ? "animate-ping bg-red-400" : ""
+                )} />
+                <Mic className="h-4 w-4" />
+              </div>
+            )}
+          </Button>
+        </div>
 
         <div className={cn(
           "grid gap-4 mb-12", // Changed from mb-20 to mb-12 to reduce space before button
