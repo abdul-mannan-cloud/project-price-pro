@@ -226,25 +226,36 @@ ${templateSettings.estimate_footer_text || ''}
     const primaryColorLight = `${primaryColor}20`;
     const darkerColor = '#1A1F2C';
 
-    const baseTableStyles = {
+    const baseStyles = {
+      card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-lg",
+      header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b space-y-4 md:space-y-0",
+      headerContent: "flex justify-between items-start",
+      businessInfo: "flex items-center gap-4",
+      companyInfo: "text-gray-900 font-medium",
+      contactInfo: "text-gray-600",
+      title: "text-xl md:text-2xl font-bold",
+      text: "text-gray-600 text-sm",
+      section: "bg-white rounded-none mb-0 last:mb-4",
       table: "w-full md:min-w-[900px] border-collapse",
       tableHeader: "text-xs uppercase tracking-wider py-2 px-4 text-left border-b",
       tableRow: "border-b border-gray-200 hover:bg-gray-50 transition-colors",
       tableCell: "py-3 px-4 text-sm border-r last:border-r-0",
-    };
-
-    const baseTotalStyles = {
+      total: "text-2xl md:text-3xl font-bold",
+      button: "bg-gray-100 text-gray-800 hover:bg-gray-200",
+      message: "bg-gray-50 p-4 rounded-lg text-sm",
+      groupTitle: "text-base font-bold mb-2 w-full",
+      subtotal: "text-right py-2 px-4 text-sm font-medium",
       totalsSection: "space-y-4 mt-8 pt-6 border-t",
-      totalsRow: "flex justify-between items-center py-2"
+      totalsRow: "flex justify-between items-center py-2",
+      buttonsContainer: "flex items-center gap-2"
     };
 
     switch (style) {
       case 'bold':
         return {
+          ...baseStyles,
           card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-xl",
           header: `bg-[${primaryColor}] -mx-4 -mt-4 md:-mx-8 md:-mt-8 p-4 md:p-8 mb-8`,
-          headerContent: "flex justify-between items-start",
-          businessInfo: "flex items-center gap-4",
           title: `text-xl md:text-2xl font-black text-[${darkerColor}]`,
           text: `text-[${darkerColor}]/90 text-sm`,
           section: "bg-white p-4 rounded-xl mb-4",
@@ -259,25 +270,15 @@ ${templateSettings.estimate_footer_text || ''}
           subtotal: `text-right py-2 px-4 text-sm font-bold text-[${darkerColor}]`,
           companyInfo: `text-[${darkerColor}] font-medium`,
           contactInfo: `text-[${darkerColor}]/80`,
-          buttonsContainer: "flex items-center gap-2",
-          ...baseTotalStyles
         };
 
       default: // modern
         return {
-          card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-lg",
-          header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b space-y-4 md:space-y-0",
+          ...baseStyles,
           title: `text-xl md:text-2xl font-bold text-[${primaryColor}]`,
-          text: "text-gray-600 text-sm",
-          section: "bg-white rounded-none mb-0 last:mb-4",
-          ...baseTableStyles,
+          groupTitle: `text-base font-bold mb-2 w-full text-[${primaryColor}]`,
           tableHeader: "bg-gray-800 text-xs text-white font-medium py-2 px-4 text-left",
           total: `text-2xl md:text-3xl font-bold text-[${primaryColor}]`,
-          button: `bg-gray-100 text-gray-800 hover:bg-gray-200`,
-          message: "bg-gray-50 p-4 rounded-lg text-sm",
-          groupTitle: `text-base font-bold mb-2 w-full text-[${primaryColor}]`,
-          subtotal: "text-right py-2 px-4 text-sm font-medium",
-          ...baseTotalStyles
         };
     }
   };
