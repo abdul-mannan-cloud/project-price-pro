@@ -314,6 +314,13 @@ ${templateSettings.estimate_footer_text || ''}
     }
   };
 
+  const handleSignature = (initials: string) => {
+    setSignature(initials);
+    if (onSignatureComplete) {
+      onSignatureComplete(initials);
+    }
+  };
+
   return (
     <>
       <Card className={cn(
@@ -387,10 +394,10 @@ ${templateSettings.estimate_footer_text || ''}
           </div>
 
           {/* Client Message */}
-          {(templateSettings?.estimate_client_message || lead?.ai_generated_message) && (
+          {(templateSettings?.estimate_client_message || projectSummary) && (
             <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).message, "mb-6")}>
               <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>
-                {templateSettings.estimate_client_message || lead?.ai_generated_message}
+                {templateSettings.estimate_client_message || projectSummary}
               </p>
             </div>
           )}
