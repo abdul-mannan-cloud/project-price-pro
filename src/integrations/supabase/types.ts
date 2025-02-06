@@ -9,65 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      contractor_settings: {
-        Row: {
-          id: string;
-          minimum_project_cost: number | null;
-          markup_percentage: number | null;
-          tax_rate: number | null;
-          ai_prompt_template: string | null;
-          created_at: string | null;
-          updated_at: string | null;
-          ai_preferences: Json | null;
-          excluded_categories: string[] | null;
-          ai_instructions: string | null;
-          preferred_language: string | null;
-          estimate_template_style: string | null;
-          estimate_signature_enabled: boolean | null;
-          estimate_client_message: string | null;
-          estimate_footer_text: string | null;
-          estimate_hide_subtotals: boolean | null;
-          estimate_compact_view: boolean | null;
-        };
-        Insert: {
-          id: string;
-          minimum_project_cost?: number | null;
-          markup_percentage?: number | null;
-          tax_rate?: number | null;
-          ai_prompt_template?: string | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-          ai_preferences?: Json | null;
-          excluded_categories?: string[] | null;
-          ai_instructions?: string | null;
-          preferred_language?: string | null;
-          estimate_template_style?: string | null;
-          estimate_signature_enabled?: boolean | null;
-          estimate_client_message?: string | null;
-          estimate_footer_text?: string | null;
-          estimate_hide_subtotals?: boolean | null;
-          estimate_compact_view?: boolean | null;
-        };
-        Update: {
-          id?: string;
-          minimum_project_cost?: number | null;
-          markup_percentage?: number | null;
-          tax_rate?: number | null;
-          ai_prompt_template?: string | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-          ai_preferences?: Json | null;
-          excluded_categories?: string[] | null;
-          ai_instructions?: string | null;
-          preferred_language?: string | null;
-          estimate_template_style?: string | null;
-          estimate_signature_enabled?: boolean | null;
-          estimate_client_message?: string | null;
-          estimate_footer_text?: string | null;
-          estimate_hide_subtotals?: boolean | null;
-          estimate_compact_view?: boolean | null;
-        };
-      };
       ai_instructions: {
         Row: {
           contractor_id: string
@@ -180,6 +121,74 @@ export type Database = {
         }
         Relationships: []
       }
+      contractor_settings: {
+        Row: {
+          ai_instructions: string | null
+          ai_preferences: Json | null
+          ai_prompt_template: string | null
+          created_at: string | null
+          estimate_client_message: string | null
+          estimate_compact_view: boolean | null
+          estimate_footer_text: string | null
+          estimate_hide_subtotals: boolean | null
+          estimate_signature_enabled: boolean | null
+          estimate_template_style: string | null
+          excluded_categories: string[] | null
+          id: string
+          markup_percentage: number | null
+          minimum_project_cost: number | null
+          preferred_language: string | null
+          tax_rate: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_instructions?: string | null
+          ai_preferences?: Json | null
+          ai_prompt_template?: string | null
+          created_at?: string | null
+          estimate_client_message?: string | null
+          estimate_compact_view?: boolean | null
+          estimate_footer_text?: string | null
+          estimate_hide_subtotals?: boolean | null
+          estimate_signature_enabled?: boolean | null
+          estimate_template_style?: string | null
+          excluded_categories?: string[] | null
+          id: string
+          markup_percentage?: number | null
+          minimum_project_cost?: number | null
+          preferred_language?: string | null
+          tax_rate?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_instructions?: string | null
+          ai_preferences?: Json | null
+          ai_prompt_template?: string | null
+          created_at?: string | null
+          estimate_client_message?: string | null
+          estimate_compact_view?: boolean | null
+          estimate_footer_text?: string | null
+          estimate_hide_subtotals?: boolean | null
+          estimate_signature_enabled?: boolean | null
+          estimate_template_style?: string | null
+          excluded_categories?: string[] | null
+          id?: string
+          markup_percentage?: number | null
+          minimum_project_cost?: number | null
+          preferred_language?: string | null
+          tax_rate?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_settings_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contractors: {
         Row: {
           branding_colors: Json | null
@@ -221,7 +230,7 @@ export type Database = {
           contact_email?: string
           contact_phone?: string | null
           created_at?: string | null
-          id: string
+          id?: string
           license_number?: string | null
           subscription_status?:
             | Database["public"]["Enums"]["subscription_status"]
@@ -285,7 +294,7 @@ export type Database = {
           project_address?: string | null
           project_description?: string | null
           project_images?: Json | null
-          project_title: string
+          project_title?: string
           status?: string | null
           updated_at?: string | null
           user_email?: string | null
@@ -317,7 +326,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          email: string
+          email?: string
           id?: string
           updated_at?: string | null
         }
@@ -476,7 +485,7 @@ export type Database = {
           contractor_id: string
           created_at?: string | null
           description?: string | null
-          id: string
+          id?: string
           is_active?: boolean | null
           updated_at?: string | null
           url: string
@@ -527,7 +536,7 @@ export type Tables<
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
         Database[PublicTableNameOrOptions["schema"]]["Views"])
-    : never,
+    : never = never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
       Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
@@ -539,10 +548,10 @@ export type Tables<
         PublicSchema["Views"])
     ? (PublicSchema["Tables"] &
         PublicSchema["Views"])[PublicTableNameOrOptions] extends {
-      Row: infer R
-    }
-    ? R
-    : never
+        Row: infer R
+      }
+      ? R
+      : never
     : never
 
 export type TablesInsert<
