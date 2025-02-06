@@ -223,22 +223,22 @@ ${templateSettings.estimate_footer_text || ''}
       header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b space-y-4 md:space-y-0",
       headerContent: "flex justify-between items-center w-full",
       businessInfo: "flex items-center gap-6",
-      companyInfo: "text-gray-900 font-semibold", // Made business name bold
-      contactInfo: "text-gray-700 font-medium", // Made contact info semi-bold
+      companyInfo: "text-gray-900 font-semibold",
+      contactInfo: "text-gray-700 font-medium",
       title: "text-xl md:text-2xl font-bold",
       text: "text-gray-600 text-sm",
       section: "bg-white rounded-none mb-0 last:mb-4",
-      table: "w-full border-collapse overflow-x-auto", // Removed min-width to contain table
-      tableHeader: "text-xs uppercase tracking-wider py-2 px-4 text-left border-b text-gray-900", // Made headers visible
+      table: "w-full table-fixed", // Changed to table-fixed for better column control
+      tableHeader: "text-xs uppercase tracking-wider py-2 px-4 text-left border-b text-gray-900",
       tableRow: "border-b border-gray-200 hover:bg-gray-50 transition-colors",
-      tableCell: "py-3 px-4 text-sm border-r last:border-r-0",
-      total: "text-2xl md:text-3xl font-bold text-gray-900", // Made total dark
+      tableCell: "py-3 px-4 text-sm border-r last:border-r-0 break-words", // Added break-words
+      total: "text-2xl md:text-3xl font-bold text-gray-900",
       button: "bg-gray-100 text-gray-800 hover:bg-gray-200",
       message: "bg-gray-50 p-4 rounded-lg text-sm",
       groupTitle: "text-base font-bold mb-2 w-full",
-      subtotal: "text-right py-2 px-4 text-sm font-medium text-gray-900", // Made subtotal dark
+      subtotal: "text-right py-2 px-4 text-sm font-medium text-gray-900",
       totalsSection: "space-y-4 mt-8 pt-6 border-t",
-      totalsRow: "flex justify-between items-center py-2 text-gray-900", // Made totals row dark
+      totalsRow: "flex justify-between items-center py-2 text-gray-900",
       buttonsContainer: "flex items-center gap-2 ml-auto"
     };
 
@@ -395,34 +395,34 @@ ${templateSettings.estimate_footer_text || ''}
                   ))}
                 </div>
               ) : (
-                <div className="overflow-x-auto"> {/* Added overflow container */}
+                <div className="w-full">
                   <table className={styles.table}>
                     <thead>
                       <tr>
-                        <th className={styles.tableHeader}>Item</th>
-                        <th className={styles.tableHeader}>Description</th>
-                        <th className={cn(styles.tableHeader, "text-right")}>Qty</th>
-                        <th className={cn(styles.tableHeader, "text-right")}>Unit Price</th>
-                        <th className={cn(styles.tableHeader, "text-right")}>Total</th>
+                        <th className={cn(styles.tableHeader, "w-1/4")}>Item</th>
+                        <th className={cn(styles.tableHeader, "w-1/3")}>Description</th>
+                        <th className={cn(styles.tableHeader, "w-1/6 text-right")}>Qty</th>
+                        <th className={cn(styles.tableHeader, "w-1/6 text-right")}>Unit Price</th>
+                        <th className={cn(styles.tableHeader, "w-1/6 text-right")}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {group.subgroups?.map(subgroup => 
                         subgroup.items?.map((item, itemIndex) => (
                           <tr key={`${subgroup.name}-${itemIndex}`} className={styles.tableRow}>
-                            <td className={styles.tableCell} data-label="Item">
+                            <td className={styles.tableCell}>
                               {item.title} {item.unit && `(${formatUnit(item.unit)})`}
                             </td>
-                            <td className={styles.tableCell} data-label="Description">
+                            <td className={styles.tableCell}>
                               {item.description}
                             </td>
-                            <td className={cn(styles.tableCell, "text-right")} data-label="Qty">
+                            <td className={cn(styles.tableCell, "text-right")}>
                               {item.quantity.toLocaleString()}
                             </td>
-                            <td className={cn(styles.tableCell, "text-right")} data-label="Unit Price">
+                            <td className={cn(styles.tableCell, "text-right")}>
                               {formatCurrency(item.unitAmount)}
                             </td>
-                            <td className={cn(styles.tableCell, "text-right font-medium")} data-label="Total">
+                            <td className={cn(styles.tableCell, "text-right font-medium")}>
                               {formatCurrency(item.totalPrice)}
                             </td>
                           </tr>
