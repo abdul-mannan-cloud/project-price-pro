@@ -44,6 +44,7 @@ const EstimatePage = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
@@ -87,6 +88,12 @@ const EstimatePage = () => {
       loadQuestionSet(selectedCategory);
     }
   }, [selectedCategory]);
+
+  useEffect(() => {
+    // Check if speech recognition is supported
+    const isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+    setIsSpeechSupported(isSupported);
+  }, []);
 
   const loadCategories = async () => {
     try {
@@ -485,57 +492,44 @@ const EstimatePage = () => {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         setAudioStream(stream);
 
-        const mediaRecorder = new MediaRecorder(stream);
-        mediaRecorderRef.current = mediaRecorder;
-
-        const audioChunks: Blob[] = [];
-
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            audioChunks.push(event.data);
-          }
-        };
-
-        mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-          const reader = new FileReader();
-          
-          reader.onloadend = async () => {
-            const base64Audio = (reader.result as string).split(',')[1];
-            
-            try {
-              const { data, error } = await supabase.functions.invoke('voice-to-text', {
-                body: { audio: base64Audio }
-              });
-
-              if (error) throw error;
-              
-              setProjectDescription(prev => prev + (prev ? ' ' : '') + data.text);
-              
-              toast({
-                title: "Voice transcribed",
-                description: "Your voice has been converted to text",
-              });
-            } catch (error) {
-              console.error('Error transcribing audio:', error);
-              toast({
-                title: "Error",
-                description: "Failed to transcribe audio. Please try again.",
-                variant: "destructive",
-              });
-            }
-          };
-
-          reader.readAsDataURL(audioBlob);
-        };
-
-        mediaRecorder.start();
-        setIsRecording(true);
+        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+        const recognition = new SpeechRecognition();
         
-        toast({
-          title: "Recording started",
-          description: "Speak clearly into your microphone",
-        });
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        
+        recognition.onstart = () => {
+          setIsRecording(true);
+          toast({
+            title: "Recording started",
+            description: "Speak clearly into your microphone",
+          });
+        };
+        
+        recognition.onresult = (event: any) => {
+          const transcript = Array.from(event.results)
+            .map((result: any) => result[0])
+            .map((result: any) => result.transcript)
+            .join('');
+          
+          setProjectDescription(transcript);
+        };
+        
+        recognition.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setIsRecording(false);
+          toast({
+            title: "Error",
+            description: "Failed to recognize speech. Please try again.",
+            variant: "destructive",
+          });
+        };
+        
+        recognition.onend = () => {
+          setIsRecording(false);
+        };
+        
+        recognition.start();
       } catch (error) {
         console.error('Error accessing microphone:', error);
         toast({
@@ -654,21 +648,23 @@ const EstimatePage = () => {
                 placeholder="Describe what you need help with (e.g., paint my living room walls)..."
                 className="min-h-[150px] pr-12"
               />
-              <button
-                onClick={toggleRecording}
-                className={cn(
-                  "absolute right-3 top-3 p-2 rounded-full transition-all duration-200",
-                  isRecording 
-                    ? "bg-red-100 text-red-600 hover:bg-red-200" 
-                    : "bg-gray-100 hover:bg-gray-200"
-                )}
-              >
-                {isRecording ? (
-                  <MicOff className="h-5 w-5" />
-                ) : (
-                  <Mic className="h-5 w-5" />
-                )}
-              </button>
+              {isSpeechSupported && (
+                <button
+                  onClick={toggleRecording}
+                  className={cn(
+                    "absolute right-3 top-3 p-2 rounded-full transition-all duration-200",
+                    isRecording 
+                      ? "bg-red-100 text-red-600 hover:bg-red-200" 
+                      : "bg-gray-100 hover:bg-gray-200"
+                  )}
+                >
+                  {isRecording ? (
+                    <MicOff className="h-5 w-5" />
+                  ) : (
+                    <Mic className="h-5 w-5" />
+                  )}
+                </button>
+              )}
             </div>
             <Button 
               className="w-full mt-6"
