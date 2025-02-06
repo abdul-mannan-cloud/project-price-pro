@@ -1,3 +1,4 @@
+<lov-code>
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { SignatureDialog } from "./SignatureDialog";
 import { BrainCog } from "lucide-react";
+import { EstimateTemplateStyle } from "@/types/settings";
 
 interface LineItem {
   title: string;
@@ -102,8 +104,8 @@ export const EstimateDisplay = ({
   projectImages = [],
   estimate
 }: EstimateDisplayProps) => {
-  const [showSettings, setShowSettings] = useState(false);
-  const [showAIPreferences, setShowAIPreferences] = useState(false);
+  const [showSettings, setShowAIPreferences] = useState(false);
+  const [showAIPreferences, setShowSettings] = useState(false);
   const { contractorId } = useParams();
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
@@ -272,7 +274,7 @@ ${templateSettings.estimate_footer_text || ''}
         : contractor.branding_colors as BrandingColors)
     : null;
 
-  const getTemplateStyles = (style: string = 'modern') => {
+  const getTemplateStyles = (style: EstimateTemplateStyle = 'modern') => {
     const baseStyles = {
       card: "bg-white p-4 md:p-8 max-w-5xl mx-auto",
       header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 space-y-4 md:space-y-0",
@@ -304,79 +306,110 @@ ${templateSettings.estimate_footer_text || ''}
       totalsValue: "py-2 px-4 text-sm text-right border"
     };
 
-    switch (style) {
-      case 'minimal':
-        return {
-          ...baseStyles,
-          card: "bg-white p-4 md:p-8 max-w-5xl mx-auto",
-          header: "flex flex-col md:flex-row md:items-start justify-between mb-12 space-y-4 md:space-y-0",
-          title: "text-xl md:text-2xl font-light tracking-wide",
-          text: "text-gray-600 text-sm font-light",
-          table: "w-full border-t border-gray-200",
-          tableHeader: "text-xs uppercase tracking-wide py-4 px-4 text-left text-gray-600 font-light",
-          tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
-          tableCell: "py-4 px-4 text-sm border border-gray-300 break-words text-gray-800 font-light",
-          total: "text-2xl md:text-3xl font-light",
-          message: "bg-gray-50/50 p-6 rounded-none text-sm font-light",
-          groupTitle: "text-base font-light mb-4 w-full uppercase tracking-wide",
-          subtotal: "text-right py-4 px-4 text-sm font-light text-gray-600",
-          totalsSection: "space-y-6 mt-12 pt-6 border-t",
-          totalsRow: "flex justify-between items-center py-3 text-gray-800 font-light",
-          totalsTable: baseStyles.totalsTable,
-          totalsLabel: "py-2 px-4 text-sm font-light text-left border border-gray-200",
-          totalsValue: "py-2 px-4 text-sm font-light text-right border border-gray-200"
-        };
+  switch (style) {
+    case 'classic':
+      return {
+        ...baseStyles,
+        card: "bg-[#FFFDF7] p-6 md:p-10 max-w-5xl mx-auto border border-gray-200",
+        header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 space-y-4 md:space-y-0",
+        title: "text-xl md:text-2xl font-serif font-bold",
+        text: "font-serif text-gray-700 text-sm leading-relaxed",
+        table: "w-full bg-[#FFFDF7]",
+        tableHeader: "text-sm font-serif tracking-wide py-4 px-6 text-left border-b-2 border-gray-300 text-gray-800",
+        tableRow: "border-b border-gray-200 hover:bg-[#FAF7F0]",
+        tableCell: "py-4 px-6 text-sm font-serif break-words text-gray-700",
+        total: "text-2xl md:text-3xl font-serif font-bold",
+        message: "bg-[#FAF7F0] p-6 border border-gray-200 rounded-none text-sm font-serif",
+        groupTitle: "text-lg font-serif font-bold mb-4 w-full",
+        subtotal: "text-right py-4 px-6 text-sm font-serif font-medium text-gray-700",
+        totalsSection: "space-y-4 mt-8 pt-6 border-t-2 border-gray-300",
+        signatureBox: "h-32 bg-[#FAF7F0] border border-gray-200 rounded-none",
+        signatureText: "font-['Playfair_Display'] text-2xl font-bold text-gray-800"
+      };
 
-      case 'excel':
-        return {
-          ...baseStyles,
-          card: "bg-white p-0 max-w-5xl mx-auto shadow-sm border border-gray-300",
-          header: "flex flex-col md:flex-row md:items-start justify-between p-4 md:p-6 bg-[#F8F9FA] border-b space-y-4 md:space-y-0",
-          title: "text-xl md:text-2xl font-normal font-['Calibri']",
-          text: "text-gray-700 text-sm font-['Calibri']",
-          section: "p-4 md:p-6",
-          table: "w-full border-collapse",
-          tableHeader: "text-xs font-bold bg-[#E9ECEF] py-2 px-3 text-left border border-gray-300 text-black font-['Calibri']",
-          tableRow: "hover:bg-[#F8F9FA] transition-colors",
-          tableCell: "py-2 px-3 text-sm border border-gray-300 break-words text-black font-['Calibri']",
-          total: "text-xl md:text-2xl font-bold font-['Calibri']",
-          message: "bg-[#F8F9FA] p-4 border text-sm font-['Calibri']",
-          groupTitle: "text-base font-bold mb-3 w-full font-['Calibri']",
-          subtotal: "text-right py-2 px-3 text-sm font-bold bg-[#F8F9FA] border border-gray-300 text-black font-['Calibri']",
-          totalsSection: "mt-4",
-          totalsTable: "w-full border-collapse",
-          totalsRow: "border border-gray-300 font-['Calibri']",
-          totalsLabel: "py-2 px-3 text-sm border border-gray-300 bg-[#F8F9FA] font-bold",
-          totalsValue: "py-2 px-3 text-sm border border-gray-300 text-right"
-        };
+    case 'minimal':
+      return {
+        ...baseStyles,
+        card: "bg-white p-8 md:p-12 max-w-5xl mx-auto",
+        header: "flex flex-col md:flex-row md:items-start justify-between mb-12 space-y-6 md:space-y-0",
+        title: "text-xl md:text-2xl font-light tracking-wide",
+        text: "text-gray-600 text-sm font-light leading-relaxed",
+        table: "w-full border-t border-gray-100",
+        tableHeader: "text-xs uppercase tracking-wide py-4 px-4 text-left text-gray-500 font-light",
+        tableRow: "border-b border-gray-50",
+        tableCell: "py-4 px-4 text-sm break-words text-gray-700 font-light",
+        total: "text-2xl md:text-3xl font-light tracking-wide",
+        message: "py-6 text-sm font-light leading-relaxed",
+        groupTitle: "text-base font-light uppercase tracking-wide mb-6 w-full",
+        subtotal: "text-right py-4 px-4 text-sm font-light text-gray-500",
+        totalsSection: "space-y-6 mt-12 pt-6 border-t border-gray-100",
+        signatureBox: "h-32 border border-gray-100 rounded-none"
+      };
 
-      default: // modern
-        const primaryColor = contractor?.branding_colors && typeof contractor.branding_colors === 'object' 
-          ? (contractor.branding_colors as BrandingColors).primary 
-          : '#007AFF';
+    case 'bold':
+      return {
+        ...baseStyles,
+        card: "bg-gray-900 text-white p-6 md:p-10 max-w-5xl mx-auto rounded-xl shadow-2xl",
+        header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b border-gray-700 space-y-4 md:space-y-0",
+        title: "text-2xl md:text-3xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
+        text: "text-gray-300 text-sm font-medium",
+        table: "w-full rounded-lg overflow-hidden bg-gray-800",
+        tableHeader: "text-sm uppercase tracking-wider py-4 px-6 text-left bg-gray-700 text-white font-bold",
+        tableRow: "border-b border-gray-700 hover:bg-gray-750 transition-all duration-200",
+        tableCell: "py-4 px-6 text-sm break-words text-gray-300",
+        total: "text-3xl md:text-4xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
+        message: "bg-gray-800 p-6 rounded-lg text-sm text-gray-300 border border-gray-700",
+        groupTitle: "text-lg font-bold mb-4 w-full bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent",
+        subtotal: "text-right py-4 px-6 text-sm font-bold text-gray-300 bg-gray-800",
+        totalsSection: "space-y-4 mt-8 pt-6 border-t border-gray-700",
+        signatureBox: "h-32 bg-gray-800 border border-gray-700 rounded-lg"
+      };
 
-        return {
-          ...baseStyles,
-          card: "bg-white p-6 md:p-10 max-w-5xl mx-auto shadow-lg rounded-xl",
-          header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b border-gray-100 space-y-4 md:space-y-0",
-          title: `text-xl md:text-2xl font-semibold text-[${primaryColor}]`,
-          text: "text-gray-600 text-sm leading-relaxed",
-          table: "w-full rounded-lg overflow-hidden",
-          tableHeader: "text-xs uppercase tracking-wider py-3 px-6 text-left bg-gray-50 text-gray-700 font-semibold",
-          tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
-          tableCell: "py-4 px-6 text-sm break-words text-gray-800",
-          total: `text-2xl md:text-3xl font-bold text-[${primaryColor}]`,
-          message: "bg-gray-50 p-6 rounded-xl text-sm leading-relaxed",
-          groupTitle: `text-lg font-semibold mb-4 w-full text-[${primaryColor}]`,
-          subtotal: "text-right py-3 px-6 text-sm font-medium text-gray-700 bg-gray-50",
-          totalsSection: "space-y-4 mt-8 pt-6 border-t border-gray-100",
-          totalsRow: "flex justify-between items-center py-2 text-gray-800",
-          totalsTable: baseStyles.totalsTable,
-          totalsLabel: "py-2 px-6 text-sm font-medium text-left border-b",
-          totalsValue: "py-2 px-6 text-sm font-medium text-right border-b"
-        };
-    }
-  };
+    case 'excel':
+      return {
+        ...baseStyles,
+        card: "bg-white p-0 max-w-5xl mx-auto shadow-sm border border-gray-300",
+        header: "flex flex-col md:flex-row md:items-start justify-between p-4 md:p-6 bg-[#F8F9FA] border-b space-y-4 md:space-y-0",
+        title: "text-xl md:text-2xl font-normal font-['Calibri']",
+        text: "text-gray-700 text-sm font-['Calibri']",
+        table: "w-full border-collapse",
+        tableHeader: "text-xs font-bold bg-[#E9ECEF] py-2 px-3 text-left border border-gray-300 text-black font-['Calibri']",
+        tableRow: "odd:bg-white even:bg-gray-50 hover:bg-[#F8F9FA]",
+        tableCell: "py-2 px-3 text-sm border border-gray-300 break-words text-black font-['Calibri']",
+        total: "text-xl md:text-2xl font-bold font-['Calibri']",
+        message: "bg-[#F8F9FA] p-4 border text-sm font-['Calibri']",
+        groupTitle: "text-base font-bold mb-3 w-full font-['Calibri']",
+        subtotal: "text-right py-2 px-3 text-sm font-bold bg-[#F8F9FA] border border-gray-300 text-black font-['Calibri']",
+        totalsSection: "mt-4",
+        totalsTable: "w-full border-collapse",
+        totalsRow: "border border-gray-300 font-['Calibri']",
+        signatureBox: "h-32 bg-[#F8F9FA] border border-gray-300"
+      };
+
+    default: // modern
+      const primaryColor = contractor?.branding_colors && typeof contractor.branding_colors === 'object' 
+        ? (contractor.branding_colors as BrandingColors).primary 
+        : '#007AFF';
+      
+      return {
+        ...baseStyles,
+        card: "bg-white p-6 md:p-10 max-w-5xl mx-auto shadow-lg rounded-xl",
+        header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b border-gray-100 space-y-4 md:space-y-0",
+        title: `text-xl md:text-2xl font-semibold text-[${primaryColor}]`,
+        text: "text-gray-600 text-sm leading-relaxed",
+        table: "w-full rounded-lg overflow-hidden",
+        tableHeader: "text-xs uppercase tracking-wider py-3 px-6 text-left bg-gray-50 text-gray-700 font-semibold",
+        tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
+        tableCell: "py-4 px-6 text-sm break-words text-gray-800",
+        total: `text-2xl md:text-3xl font-bold text-[${primaryColor}]`,
+        message: "bg-gray-50 p-6 rounded-xl text-sm leading-relaxed",
+        groupTitle: `text-lg font-semibold mb-4 w-full text-[${primaryColor}]`,
+        subtotal: "text-right py-3 px-6 text-sm font-medium text-gray-700 bg-gray-50",
+        totalsSection: "space-y-4 mt-8 pt-6 border-t border-gray-100",
+        signatureBox: "h-32 bg-gray-50 rounded-lg transition-colors"
+      };
+  }
+};
 
   const handleSignature = (initials: string) => {
     setSignature(initials);
@@ -388,13 +421,13 @@ ${templateSettings.estimate_footer_text || ''}
   return (
     <>
       <Card className={cn(
-        getTemplateStyles(templateSettings.estimate_template_style).card,
+        getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).card,
         isBlurred && "blur-md pointer-events-none"
       )}>
         <div id="estimate-content">
-          <div className={getTemplateStyles(templateSettings.estimate_template_style).header}>
-            <div className={getTemplateStyles(templateSettings.estimate_template_style).headerContent}>
-              <div className={getTemplateStyles(templateSettings.estimate_template_style).businessInfo}>
+          <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).header}>
+            <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).headerContent}>
+              <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).businessInfo}>
                 {contractor?.business_logo_url && (
                   <img 
                     src={contractor.business_logo_url} 
@@ -403,14 +436,14 @@ ${templateSettings.estimate_footer_text || ''}
                   />
                 )}
                 <div>
-                  <h1 className={getTemplateStyles(templateSettings.estimate_template_style).companyInfo}>
+                  <h1 className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).companyInfo}>
                     {companyInfo.business_name}
                   </h1>
-                  <div className={getTemplateStyles(templateSettings.estimate_template_style).contactInfo}>
+                  <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).contactInfo}>
                     {companyInfo.contact_email && (
                       <a 
                         href={`mailto:${companyInfo.contact_email}`}
-                        className={getTemplateStyles(templateSettings.estimate_template_style).contactLink}
+                        className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).contactLink}
                       >
                         <Mail className="h-4 w-4" />
                         {companyInfo.contact_email}
@@ -419,7 +452,7 @@ ${templateSettings.estimate_footer_text || ''}
                     {companyInfo.contact_phone && (
                       <a 
                         href={`tel:${companyInfo.contact_phone}`}
-                        className={getTemplateStyles(templateSettings.estimate_template_style).contactLink}
+                        className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).contactLink}
                       >
                         <Phone className="h-4 w-4" />
                         {companyInfo.contact_phone}
@@ -428,14 +461,14 @@ ${templateSettings.estimate_footer_text || ''}
                   </div>
                 </div>
               </div>
-              <div className={getTemplateStyles(templateSettings.estimate_template_style).buttonsContainer} id="estimate-actions">
+              <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).buttonsContainer} id="estimate-actions">
                 {isContractor && (
                   <>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={handleRefreshEstimate}
-                      className={getTemplateStyles(templateSettings.estimate_template_style).button}
+                      className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).button}
                       title="Refresh estimate"
                     >
                       <RefreshCw className="h-4 w-4" />
@@ -443,8 +476,8 @@ ${templateSettings.estimate_footer_text || ''}
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setShowAIPreferences(true)}
-                      className={getTemplateStyles(templateSettings.estimate_template_style).button}
+                      onClick={() => setShowSettings(true)}
+                      className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).button}
                       title="AI Preferences"
                     >
                       <BrainCog className="h-4 w-4" />
@@ -452,8 +485,8 @@ ${templateSettings.estimate_footer_text || ''}
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setShowSettings(true)}
-                      className={getTemplateStyles(templateSettings.estimate_template_style).button}
+                      onClick={() => setShowAIPreferences(true)}
+                      className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).button}
                       title="Template Settings"
                     >
                       <Settings className="h-4 w-4" />
@@ -463,7 +496,7 @@ ${templateSettings.estimate_footer_text || ''}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style).button)}
+                  className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).button)}
                   onClick={handleCopyEstimate}
                 >
                   <Copy className="h-4 w-4" />
@@ -472,7 +505,7 @@ ${templateSettings.estimate_footer_text || ''}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style).button)}
+                  className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).button)}
                   onClick={handleExportPDF}
                 >
                   <FileDown className="h-4 w-4" />
@@ -485,7 +518,7 @@ ${templateSettings.estimate_footer_text || ''}
           {/* AI Generated Title */}
           {estimate?.ai_generated_title && (
             <h2 className={cn(
-              getTemplateStyles(templateSettings.estimate_template_style).title,
+              getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).title,
               "mb-4 text-center"
             )}>
               {estimate.ai_generated_title}
@@ -494,8 +527,8 @@ ${templateSettings.estimate_footer_text || ''}
 
           {/* AI Generated Message */}
           {(estimate?.ai_generated_message || projectSummary) && (
-            <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).message, "mb-6")}>
-              <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>
+            <div className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).message, "mb-6")}>
+              <p className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).text}>
                 {estimate?.ai_generated_message || projectSummary}
               </p>
             </div>
@@ -523,16 +556,16 @@ ${templateSettings.estimate_footer_text || ''}
 
           {/* Estimate Groups */}
           {groups?.map((group, index) => (
-            <div key={index} className={getTemplateStyles(templateSettings.estimate_template_style).section}>
-              <h3 className={getTemplateStyles(templateSettings.estimate_template_style).groupTitle}>{group.name}</h3>
+            <div key={index} className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).section}>
+              <h3 className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).groupTitle}>{group.name}</h3>
               
               {templateSettings.estimate_template_style === 'classic' ? (
                 <div className="space-y-2">
                   {group.subgroups?.map(subgroup => (
                     <div key={subgroup.name} className="space-y-1">
                       {subgroup.items?.map((item, itemIndex) => (
-                        <div key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
-                          <div className={getTemplateStyles(templateSettings.estimate_template_style).tableCell}>
+                        <div key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableRow}>
+                          <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableCell}>
                             <span className="font-medium">{item.title}</span>
                             {item.unit && ` (${formatUnit(item.unit)})`}
                             {item.description && (
@@ -545,7 +578,7 @@ ${templateSettings.estimate_footer_text || ''}
                         </div>
                       ))}
                       {!templateSettings.estimate_hide_subtotals && (
-                        <div className={getTemplateStyles(templateSettings.estimate_template_style).subtotal}>
+                        <div className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).subtotal}>
                           Subtotal for {subgroup.name}: {formatCurrency(subgroup.subtotal)}
                         </div>
                       )}
@@ -554,33 +587,33 @@ ${templateSettings.estimate_footer_text || ''}
                 </div>
               ) : (
                 <div className="w-full">
-                  <table className={getTemplateStyles(templateSettings.estimate_template_style).table}>
+                  <table className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).table}>
                     <thead>
                       <tr>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[45%]")}>Item</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[35%]")}>Description</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Qty</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Price</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[6%] text-right")}>Total</th>
+                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableHeader, "w-[45%]")}>Item</th>
+                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableHeader, "w-[35%]")}>Description</th>
+                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableHeader, "w-[7%] text-right")}>Qty</th>
+                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableHeader, "w-[7%] text-right")}>Price</th>
+                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableHeader, "w-[6%] text-right")}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {group.subgroups?.map(subgroup => 
                         subgroup.items?.map((item, itemIndex) => (
-                          <tr key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%] break-words")}>
+                          <tr key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableRow}>
+                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableCell, "w-[45%] break-words")}>
                               {item.title} {item.unit && `(${formatUnit(item.unit)})`}
                             </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%] break-words")}>
+                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableCell, "w-[35%] break-words")}>
                               {item.description}
                             </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
+                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableCell, "w-[7%] text-right")}>
                               {item.quantity.toLocaleString()}
                             </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
+                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableCell, "w-[7%] text-right")}>
                               {formatCurrency(item.unitAmount)}
                             </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[6%] text-right font-medium")}>
+                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).tableCell, "w-[6%] text-right font-medium")}>
                               {formatCurrency(item.totalPrice)}
                             </td>
                           </tr>
@@ -593,8 +626,8 @@ ${templateSettings.estimate_footer_text || ''}
 
               {/* Group Subtotal */}
               {!templateSettings.estimate_hide_subtotals && templateSettings.estimate_template_style !== 'minimal' && (
-                <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).subtotal, "mt-4 pt-3 border-t")}>
-                  <span className={getTemplateStyles(templateSettings.estimate_template_style).text}>Subtotal for {group.name}</span>
+                <div className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).subtotal, "mt-4 pt-3 border-t")}>
+                  <span className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).text}>Subtotal for {group.name}</span>
                   <span className="font-semibold ml-4">
                     {formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0))}
                   </span>
@@ -626,99 +659,20 @@ ${templateSettings.estimate_footer_text || ''}
           ) : (
             <div className={cn("mt-8 pt-6 border-t space-y-4", templateSettings.estimate_compact_view ? "md:space-y-3" : "md:space-y-6")}>
               <div className="flex justify-between items-center">
-                <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>Subtotal</p>
-                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).text, "text-lg")}>{formatCurrency(totalCost)}</p>
+                <p className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).text}>Subtotal</p>
+                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).text, "text-lg")}>{formatCurrency(totalCost)}</p>
               </div>
               <div className="flex justify-between items-center">
-                <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>Tax (8.5%)</p>
-                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).text, "text-lg")}>{formatCurrency(totalCost * 0.085)}</p>
+                <p className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).text}>Tax (8.5%)</p>
+                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).text, "text-lg")}>{formatCurrency(totalCost * 0.085)}</p>
               </div>
               <div className="flex justify-between items-center pt-4 border-t">
-                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).title, "!text-xl")}>Total Estimate</p>
-                <p className={getTemplateStyles(templateSettings.estimate_template_style).total}>{formatCurrency(totalCost * 1.085)}</p>
+                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).title, "!text-xl")}>Total Estimate</p>
+                <p className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).total}>{formatCurrency(totalCost * 1.085)}</p>
               </div>
             </div>
           )}
         </div>
 
         {/* Signature Section */}
-        {templateSettings?.estimate_signature_enabled && (
-          <div className={cn("mt-8 pt-6 border-t space-y-6", getTemplateStyles(templateSettings.estimate_template_style).text)}>
-            <h3 className={cn(getTemplateStyles(templateSettings.estimate_template_style).title, "!text-xl")}>Signatures</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <p className="text-sm font-medium">Client Signature</p>
-                <div 
-                  className={cn(
-                    getTemplateStyles(templateSettings.estimate_template_style).signatureBox,
-                    !signature ? "bg-yellow-50 hover:bg-yellow-100 cursor-pointer flex items-center justify-center" : "bg-white"
-                  )}
-                  onClick={() => !signature && setShowSignatureDialog(true)}
-                >
-                  {signature ? (
-                    <div className="p-4">
-                      <p className={getTemplateStyles(templateSettings.estimate_template_style).signatureText}>
-                        {signature}
-                      </p>
-                      <p className={getTemplateStyles(templateSettings.estimate_template_style).signatureDate}>
-                        {new Date().toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                  ) : (
-                    <Button variant="ghost">Sign Here</Button>
-                  )}
-                </div>
-                <p className="text-sm">Sign above to approve this estimate</p>
-              </div>
-              <div className="space-y-3">
-                <p className="text-sm font-medium">Contractor Signature</p>
-                <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).signatureBox, "bg-gray-50")}></div>
-                <p className="text-sm">Contractor approval</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Footer Text */}
-        {templateSettings?.estimate_footer_text && (
-          <div className={cn("mt-8 pt-6 border-t", getTemplateStyles(templateSettings.estimate_template_style).text)}>
-            <p className="whitespace-pre-wrap text-sm">
-              {templateSettings.estimate_footer_text}
-            </p>
-          </div>
-        )}
-      </Card>
-
-      <SignatureDialog
-        isOpen={showSignatureDialog}
-        onClose={() => setShowSignatureDialog(false)}
-        onSign={handleSignature}
-      />
-
-      {isContractor && (
-        <>
-          <SettingsDialog
-            title="Estimate Settings"
-            description="Customize how your estimates appear to clients"
-            isOpen={showSettings}
-            onClose={() => setShowSettings(false)}
-          >
-            <EstimateTemplateSettings />
-          </SettingsDialog>
-          <SettingsDialog
-            title="AI Preferences"
-            description="Configure AI settings for estimate generation"
-            isOpen={showAIPreferences}
-            onClose={() => setShowAIPreferences(false)}
-          >
-            <AIPreferencesSettings />
-          </SettingsDialog>
-        </>
-      )}
-    </>
-  );
-};
+        

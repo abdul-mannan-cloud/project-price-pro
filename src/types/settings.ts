@@ -1,3 +1,4 @@
+
 export interface BrandingColors {
   primary: string;
   secondary: string;
@@ -9,3 +10,5 @@ export interface AIInstruction {
   description: string;
   instructions: string;
 }
+
+export type EstimateTemplateStyle = 'modern' | 'classic' | 'minimal' | 'bold' | 'excel';

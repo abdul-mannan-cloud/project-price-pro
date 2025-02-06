@@ -126,6 +126,7 @@ export type Database = {
           ai_instructions: string | null
           ai_preferences: Json | null
           ai_prompt_template: string | null
+          branding_colors: Json | null
           created_at: string | null
           estimate_client_message: string | null
           estimate_compact_view: boolean | null
@@ -145,6 +146,7 @@ export type Database = {
           ai_instructions?: string | null
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
+          branding_colors?: Json | null
           created_at?: string | null
           estimate_client_message?: string | null
           estimate_compact_view?: boolean | null
@@ -164,6 +166,7 @@ export type Database = {
           ai_instructions?: string | null
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
+          branding_colors?: Json | null
           created_at?: string | null
           estimate_client_message?: string | null
           estimate_compact_view?: boolean | null
@@ -523,6 +526,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      estimate_template_style:
+        | "modern"
+        | "classic"
+        | "minimal"
+        | "bold"
+        | "excel"
       question_template_type: "single_choice" | "multi_choice"
       question_type: "multiple_choice" | "multi_select" | "yes_no"
       subscription_status: "active" | "inactive" | "trial"
