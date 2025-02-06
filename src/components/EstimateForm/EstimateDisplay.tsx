@@ -223,22 +223,22 @@ ${templateSettings.estimate_footer_text || ''}
       header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b space-y-4 md:space-y-0",
       headerContent: "flex justify-between items-center w-full",
       businessInfo: "flex items-center gap-6",
-      companyInfo: "text-gray-900 font-medium",
-      contactInfo: "text-gray-600",
+      companyInfo: "text-gray-900 font-semibold", // Made business name bold
+      contactInfo: "text-gray-700 font-medium", // Made contact info semi-bold
       title: "text-xl md:text-2xl font-bold",
       text: "text-gray-600 text-sm",
       section: "bg-white rounded-none mb-0 last:mb-4",
-      table: "w-full md:min-w-[900px] border-collapse",
-      tableHeader: "text-xs uppercase tracking-wider py-2 px-4 text-left border-b",
+      table: "w-full border-collapse overflow-x-auto", // Removed min-width to contain table
+      tableHeader: "text-xs uppercase tracking-wider py-2 px-4 text-left border-b text-gray-900", // Made headers visible
       tableRow: "border-b border-gray-200 hover:bg-gray-50 transition-colors",
       tableCell: "py-3 px-4 text-sm border-r last:border-r-0",
-      total: "text-2xl md:text-3xl font-bold",
+      total: "text-2xl md:text-3xl font-bold text-gray-900", // Made total dark
       button: "bg-gray-100 text-gray-800 hover:bg-gray-200",
       message: "bg-gray-50 p-4 rounded-lg text-sm",
       groupTitle: "text-base font-bold mb-2 w-full",
-      subtotal: "text-right py-2 px-4 text-sm font-medium",
+      subtotal: "text-right py-2 px-4 text-sm font-medium text-gray-900", // Made subtotal dark
       totalsSection: "space-y-4 mt-8 pt-6 border-t",
-      totalsRow: "flex justify-between items-center py-2",
+      totalsRow: "flex justify-between items-center py-2 text-gray-900", // Made totals row dark
       buttonsContainer: "flex items-center gap-2 ml-auto"
     };
 
@@ -395,7 +395,7 @@ ${templateSettings.estimate_footer_text || ''}
                   ))}
                 </div>
               ) : (
-                <div className="overflow-hidden">
+                <div className="overflow-x-auto"> {/* Added overflow container */}
                   <table className={styles.table}>
                     <thead>
                       <tr>
