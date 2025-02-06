@@ -27,13 +27,18 @@ interface SupabaseContractorSettings {
   ai_instructions: string | null;
 }
 
+interface AIPreferencesSettingsProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
 const defaultPreferences: AIPreferences = {
   rate: "HR",
   type: "material_labor",
   instructions: ""
 };
 
-export const AIPreferencesSettings = () => {
+export const AIPreferencesSettings = ({ isOpen, onClose }: AIPreferencesSettingsProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -88,7 +93,6 @@ export const AIPreferencesSettings = () => {
     mutationFn: async (formData: ContractorSettings) => {
       if (!user?.id) throw new Error("No authenticated user");
 
-      // Convert AIPreferences to a plain object that matches Json type
       const aiPreferencesJson: { [key: string]: string } = {
         rate: formData.ai_preferences.rate,
         type: formData.ai_preferences.type,
@@ -110,6 +114,9 @@ export const AIPreferencesSettings = () => {
         title: "Settings saved",
         description: "Your AI preferences have been updated successfully.",
       });
+      if (onClose) {
+        onClose();
+      }
     },
     onError: (error: any) => {
       toast({
@@ -199,4 +206,3 @@ export const AIPreferencesSettings = () => {
     </form>
   );
 };
-
