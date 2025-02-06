@@ -1,4 +1,4 @@
-
+<lov-code>
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -451,7 +451,7 @@ ${templateSettings.estimate_footer_text || ''}
                     )}
                     {companyInfo.contact_phone && (
                       <a 
-                        href={`tel:${companyInfo.contact_phone}`}\
+                        href={`tel:${companyInfo.contact_phone}`}
                         className={getTemplateStyles(templateSettings.estimate_template_style as EstimateTemplateStyle).contactLink}
                       >
                         <Phone className="h-4 w-4" />
@@ -673,32 +673,3 @@ ${templateSettings.estimate_footer_text || ''}
             </div>
           )}
         </div>
-      </Card>
-
-      {/* Settings Dialogs */}
-      <SettingsDialog
-        title="AI Settings"
-        description="Configure AI preferences for estimate generation"
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-      >
-        <AIPreferencesSettings />
-      </SettingsDialog>
-
-      <SettingsDialog
-        title="Template Settings" 
-        description="Configure estimate template settings"
-        isOpen={showAIPreferences}
-        onClose={() => setShowAIPreferences(false)}
-      >
-        <EstimateTemplateSettings />
-      </SettingsDialog>
-
-      <SignatureDialog
-        open={showSignatureDialog}
-        onOpenChange={setShowSignatureDialog}
-        onSign={handleSignature}
-      />
-    </>
-  );
-};
