@@ -86,7 +86,7 @@ Generate a detailed estimate with the following JSON structure:
 }
 
 Important:
-1. Return ONLY valid JSON, no additional text or markdown
+1. Return ONLY valid JSON, no additional text
 2. Ensure all numbers are valid and calculations are accurate
 3. Include realistic market prices
 4. Break down costs into logical groups
