@@ -232,6 +232,7 @@ ${templateSettings.estimate_footer_text || ''}
       businessInfo: "flex items-center gap-6",
       companyInfo: "text-gray-900 font-semibold",
       contactInfo: "text-gray-700 font-medium",
+      contactLink: "hover:underline text-primary transition-colors inline-flex items-center gap-2",
       title: "text-xl md:text-2xl font-bold",
       text: "text-gray-600 text-sm",
       section: "bg-white rounded-none mb-0 last:mb-4",
