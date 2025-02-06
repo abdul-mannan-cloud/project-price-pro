@@ -34,8 +34,8 @@ serve(async (req) => {
     const { answers, projectDescription, category } = requestData;
     console.log('Generating estimate for:', { category, projectDescription });
 
-    const formattedAnswers = Object.entries(answers).map(([category, categoryAnswers]) => {
-      const questions = Object.values(categoryAnswers).map(qa => ({
+    const formattedAnswers = Object.entries(answers || {}).map(([category, categoryAnswers]) => {
+      const questions = Object.entries(categoryAnswers || {}).map(([_, qa]) => ({
         question: qa.question,
         answer: qa.answers.map(ans => {
           const option = qa.options.find(opt => opt.value === ans);
@@ -47,15 +47,15 @@ serve(async (req) => {
 
     // Generate AI title and message
     const titlePrompt = `Based on this project description and answers, generate a concise project title (4 words or less):
-    Category: ${category}
-    Description: ${projectDescription}
+    Category: ${category || 'General Construction'}
+    Description: ${projectDescription || 'Project estimate'}
     ${formattedAnswers.map(cat => 
       cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
     ).join('\n')}`;
 
     const messagePrompt = `Based on this project description and answers, generate a clear, professional overview of the project scope (2-3 sentences):
-    Category: ${category}
-    Description: ${projectDescription}
+    Category: ${category || 'General Construction'}
+    Description: ${projectDescription || 'Project estimate'}
     ${formattedAnswers.map(cat => 
       cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
     ).join('\n')}`;
@@ -120,21 +120,13 @@ serve(async (req) => {
     console.log('Title API response:', titleData);
     console.log('Message API response:', messageData);
 
-    if (!titleData?.choices?.[0]?.message?.content) {
-      throw new Error('Invalid title response format');
-    }
-
-    if (!messageData?.choices?.[0]?.message?.content) {
-      throw new Error('Invalid message response format');
-    }
-
-    const aiTitle = titleData.choices[0].message.content.trim();
-    const aiMessage = messageData.choices[0].message.content.trim();
+    const aiTitle = titleData.choices?.[0]?.message?.content?.trim() || 'Project Estimate';
+    const aiMessage = messageData.choices?.[0]?.message?.content?.trim() || 'Custom project estimate based on provided specifications.';
 
     const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format.
     
 Project Category: ${category || 'General Construction'}
-${projectDescription ? `Project Description: ${projectDescription}` : ''}
+Project Description: ${projectDescription || 'Project estimate'}
 
 Questions and Answers:
 ${formattedAnswers.map(cat => `
@@ -165,7 +157,9 @@ Generate a detailed estimate with the following JSON structure:
       ]
     }
   ],
-  "totalCost": number
+  "totalCost": number,
+  "ai_generated_title": string,
+  "ai_generated_message": string
 }
 
 Important:
@@ -205,18 +199,17 @@ Important:
     const aiResponse = await response.json();
     console.log('Received estimate response:', aiResponse);
 
-    if (!aiResponse?.choices?.[0]?.message?.content) {
+    const content = aiResponse.choices?.[0]?.message?.content;
+    if (!content) {
       throw new Error('Invalid estimate response format');
     }
 
-    let content = aiResponse.choices[0].message.content.trim();
     console.log('Parsing estimate content:', content);
-
-    content = content.replace(/```json\n?|\n?```/g, '').trim();
 
     let parsedEstimate;
     try {
-      parsedEstimate = JSON.parse(content);
+      // If content is already an object, use it directly
+      parsedEstimate = typeof content === 'string' ? JSON.parse(content) : content;
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       throw new Error(`Failed to parse JSON: ${parseError.message}`);
@@ -233,6 +226,10 @@ Important:
     if (typeof parsedEstimate.totalCost !== 'number') {
       throw new Error('Invalid estimate structure: totalCost must be a number');
     }
+
+    // Add the AI generated title and message
+    parsedEstimate.ai_generated_title = aiTitle;
+    parsedEstimate.ai_generated_message = aiMessage;
 
     // Validate structure and types
     parsedEstimate.groups.forEach((group, groupIndex) => {
@@ -274,15 +271,9 @@ Important:
       });
     });
 
-    const estimateJson = {
-      ...parsedEstimate,
-      ai_generated_title: aiTitle,
-      ai_generated_message: aiMessage
-    };
-
     console.log('Estimate validation successful');
     return new Response(
-      JSON.stringify(estimateJson),
+      JSON.stringify(parsedEstimate),
       { 
         headers: { 
           ...corsHeaders,
@@ -307,4 +298,3 @@ Important:
     );
   }
 });
-
