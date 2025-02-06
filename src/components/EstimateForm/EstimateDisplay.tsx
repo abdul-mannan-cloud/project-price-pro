@@ -289,8 +289,11 @@ ${templateSettings.estimate_footer_text || ''}
           message: "bg-[#F8F9FA] p-4 border text-sm font-['Calibri']",
           groupTitle: "text-base font-bold mb-3 w-full font-['Calibri']",
           subtotal: "text-right py-2 px-3 text-sm font-bold bg-[#F8F9FA] border border-gray-300 text-black font-['Calibri']",
-          totalsSection: "space-y-2 mt-6 pt-4 border-t",
-          totalsRow: "flex justify-between items-center py-2 text-black font-['Calibri']"
+          totalsSection: "mt-4",
+          totalsTable: "w-full border-collapse",
+          totalsRow: "border border-gray-300 font-['Calibri']",
+          totalsLabel: "py-2 px-3 text-sm border border-gray-300 bg-[#F8F9FA] font-bold",
+          totalsValue: "py-2 px-3 text-sm border border-gray-300 text-right"
         };
 
       default: // modern
@@ -510,19 +513,23 @@ ${templateSettings.estimate_footer_text || ''}
           
           {/* Total */}
           {templateSettings.estimate_template_style === 'excel' ? (
-            <div className={getTemplateStyles(templateSettings.estimate_template_style).totalsSection}>
-              <div className={getTemplateStyles(templateSettings.estimate_template_style).totalsRow}>
-                <span>Subtotal</span>
-                <span className="text-right">{formatCurrency(totalCost)}</span>
-              </div>
-              <div className={getTemplateStyles(templateSettings.estimate_template_style).totalsRow}>
-                <span>Tax (8.5%)</span>
-                <span className="text-right">{formatCurrency(totalCost * 0.085)}</span>
-              </div>
-              <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).totalsRow, "font-bold")}>
-                <span>Total Estimate</span>
-                <span className="text-right">{formatCurrency(totalCost * 1.085)}</span>
-              </div>
+            <div className={getTemplateStyles('excel').totalsSection}>
+              <table className={getTemplateStyles('excel').totalsTable}>
+                <tbody>
+                  <tr className={getTemplateStyles('excel').totalsRow}>
+                    <td className={getTemplateStyles('excel').totalsLabel}>Subtotal</td>
+                    <td className={getTemplateStyles('excel').totalsValue}>{formatCurrency(totalCost)}</td>
+                  </tr>
+                  <tr className={getTemplateStyles('excel').totalsRow}>
+                    <td className={getTemplateStyles('excel').totalsLabel}>Tax (8.5%)</td>
+                    <td className={getTemplateStyles('excel').totalsValue}>{formatCurrency(totalCost * 0.085)}</td>
+                  </tr>
+                  <tr className={getTemplateStyles('excel').totalsRow}>
+                    <td className={cn(getTemplateStyles('excel').totalsLabel, "font-bold")}>Total Estimate</td>
+                    <td className={cn(getTemplateStyles('excel').totalsValue, "font-bold")}>{formatCurrency(totalCost * 1.085)}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className={cn("mt-8 pt-6 border-t space-y-4", templateSettings.estimate_compact_view ? "md:space-y-3" : "md:space-y-6")}>
