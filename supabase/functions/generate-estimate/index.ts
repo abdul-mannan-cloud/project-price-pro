@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
@@ -59,6 +60,9 @@ serve(async (req) => {
       cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
     ).join('\n')}`;
 
+    console.log('Sending title prompt:', titlePrompt);
+    console.log('Sending message prompt:', messagePrompt);
+
     const [titleResponse, messageResponse] = await Promise.all([
       fetch('https://api.llama-api.com/chat/completions', {
         method: 'POST',
@@ -74,7 +78,8 @@ serve(async (req) => {
             role: 'user',
             content: titlePrompt
           }],
-          temperature: 0.2
+          temperature: 0.2,
+          response_format: { type: "text" }
         }),
       }),
       fetch('https://api.llama-api.com/chat/completions', {
@@ -91,15 +96,37 @@ serve(async (req) => {
             role: 'user',
             content: messagePrompt
           }],
-          temperature: 0.2
+          temperature: 0.2,
+          response_format: { type: "text" }
         }),
       })
     ]);
+
+    if (!titleResponse.ok) {
+      console.error('Title API error:', await titleResponse.text());
+      throw new Error(`Title API error: ${titleResponse.status}`);
+    }
+
+    if (!messageResponse.ok) {
+      console.error('Message API error:', await messageResponse.text());
+      throw new Error(`Message API error: ${messageResponse.status}`);
+    }
 
     const [titleData, messageData] = await Promise.all([
       titleResponse.json(),
       messageResponse.json()
     ]);
+
+    console.log('Title API response:', titleData);
+    console.log('Message API response:', messageData);
+
+    if (!titleData?.choices?.[0]?.message?.content) {
+      throw new Error('Invalid title response format');
+    }
+
+    if (!messageData?.choices?.[0]?.message?.content) {
+      throw new Error('Invalid message response format');
+    }
 
     const aiTitle = titleData.choices[0].message.content.trim();
     const aiMessage = messageData.choices[0].message.content.trim();
@@ -148,7 +175,7 @@ Important:
 4. Break down costs into logical groups
 5. Include both labor and materials`;
 
-    console.log('Sending prompt to Llama API...');
+    console.log('Sending estimate prompt to Llama API');
 
     const response = await fetch('https://api.llama-api.com/chat/completions', {
       method: 'POST',
@@ -171,19 +198,19 @@ Important:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Llama API error:', errorText);
+      console.error('Llama API estimate error:', errorText);
       throw new Error(`Llama API error: ${response.status} ${response.statusText}`);
     }
 
     const aiResponse = await response.json();
-    console.log('Received AI response:', aiResponse);
+    console.log('Received estimate response:', aiResponse);
 
-    if (!aiResponse.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response format from Llama API');
+    if (!aiResponse?.choices?.[0]?.message?.content) {
+      throw new Error('Invalid estimate response format');
     }
 
     let content = aiResponse.choices[0].message.content.trim();
-    console.log('Parsing content:', content);
+    console.log('Parsing estimate content:', content);
 
     content = content.replace(/```json\n?|\n?```/g, '').trim();
 
@@ -207,6 +234,7 @@ Important:
       throw new Error('Invalid estimate structure: totalCost must be a number');
     }
 
+    // Validate structure and types
     parsedEstimate.groups.forEach((group, groupIndex) => {
       if (!group.name || typeof group.name !== 'string') {
         throw new Error(`Invalid group name at index ${groupIndex}`);
@@ -279,3 +307,4 @@ Important:
     );
   }
 });
+
