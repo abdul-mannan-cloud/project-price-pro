@@ -207,7 +207,7 @@ ${templateSettings.estimate_footer_text || ''}
   const getTemplateStyles = (style: string = 'modern') => {
     const primaryColor = brandingColors?.primary || '#9b87f5';
     const primaryColorLight = `${primaryColor}20`;
-    const darkerColor = '#1A1F2C'; // Added darker color for bold template
+    const darkerColor = '#1A1F2C'; // Dark color for better visibility
 
     const baseTableStyles = {
       table: "w-full border-collapse",
@@ -257,16 +257,16 @@ ${templateSettings.estimate_footer_text || ''}
       case 'classic':
         return {
           card: "bg-white p-4 md:p-8 max-w-4xl mx-auto shadow-lg",
-          header: `flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b-2 border-[${primaryColor}] space-y-4 md:space-y-0`,
-          title: `text-xl md:text-2xl font-serif font-bold text-[${primaryColor}]`,
+          header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b-2 border-[${primaryColor}] space-y-4 md:space-y-0",
+          title: "text-xl md:text-2xl font-serif font-bold text-[${primaryColor}]",
           text: "text-[#4A4A4A] font-serif text-sm",
           section: "bg-[#f3f3f3] rounded-lg mb-4 p-4",
           table: "w-full",
           tableHeader: "hidden",
           tableRow: "group",
           tableCell: "py-1.5 font-serif relative pl-6 before:content-['•'] before:absolute before:left-2 before:top-2 before:text-gray-400",
-          total: `text-2xl md:text-3xl font-serif font-bold text-[${primaryColor}]`,
-          button: `border border-[${primaryColor}] text-[${primaryColor}] hover:bg-[${primaryColorLight}]`,
+          total: "text-2xl md:text-3xl font-serif font-bold text-[${primaryColor}]",
+          button: "border border-[${primaryColor}] text-[${primaryColor}] hover:bg-[${primaryColorLight}]",
           message: "bg-gray-50 p-4 rounded-lg border text-sm",
           groupTitle: "text-base font-serif font-bold mb-2 w-full",
           subtotal: "text-right py-2 text-sm font-serif font-medium italic",
@@ -276,18 +276,21 @@ ${templateSettings.estimate_footer_text || ''}
         return {
           card: "bg-white p-4 md:p-8 max-w-4xl mx-auto shadow-xl",
           header: `bg-[${primaryColor}] -mx-4 -mt-4 md:-mx-8 md:-mt-8 p-4 md:p-8 mb-8`,
+          headerContent: `text-[${darkerColor}]`,
           title: `text-xl md:text-2xl font-black text-[${darkerColor}]`,
-          text: "text-white/90 text-sm",
+          text: `text-[${darkerColor}]/90 text-sm`,
           section: "bg-white p-4 rounded-xl mb-4",
           ...baseTableStyles,
           tableHeader: `bg-[${darkerColor}] text-white text-xs font-bold py-1 px-3 text-left`,
           tableRow: `border-b hover:bg-gray-50 transition-colors font-medium text-[${darkerColor}]`,
-          tableCell: "py-2 px-3 text-sm",
+          tableCell: `py-2 px-3 text-sm text-[${darkerColor}]`,
           total: `text-3xl md:text-4xl font-black text-[${darkerColor}]`,
-          button: "bg-gray-100 text-gray-800 hover:bg-gray-200",
-          message: "bg-gray-50 p-4 rounded-xl text-sm",
+          button: `bg-gray-100 text-[${darkerColor}] hover:bg-gray-200`,
+          message: `bg-gray-50 p-4 rounded-xl text-sm text-[${darkerColor}]`,
           groupTitle: `text-lg font-black mb-2 text-[${darkerColor}] w-full`,
           subtotal: `text-right py-2 text-sm font-bold text-[${darkerColor}]`,
+          companyInfo: `text-[${darkerColor}] font-medium`,
+          contactInfo: `text-[${darkerColor}]/80`,
         };
 
       default: // modern
