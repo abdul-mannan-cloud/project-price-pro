@@ -6,7 +6,7 @@ export const EstimateAnimation = () => {
     <div className="relative w-full h-full flex items-center justify-center">
       {/* File Icon Container */}
       <div className="relative">
-        <FileText size={100} className="text-primary" />
+        <FileText size={100} className="text-primary animate-pulse" />
         
         {/* Sparkle Animation */}
         <div className="absolute -top-2 -right-2 animate-[bounce_2s_infinite]">
