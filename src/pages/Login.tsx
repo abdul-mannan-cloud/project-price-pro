@@ -132,7 +132,7 @@ const Login = () => {
           <h1 className="text-2xl font-bold text-white">
             {isSignUp ? "Create Account" : "Welcome Back"}
           </h1>
-          <p className="mt-2 text-gray-400">
+          <p className="mt-2 text-white/80">
             {isSignUp
               ? "Sign up to start estimating projects"
               : "Sign in to your account"}
@@ -148,7 +148,7 @@ const Login = () => {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
-                className="bg-white/5 border-white/10 text-white"
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
               />
               <Input
                 label="Last Name"
@@ -156,7 +156,7 @@ const Login = () => {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
-                className="bg-white/5 border-white/10 text-white"
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
               />
             </>
           )}
@@ -167,7 +167,7 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="bg-white/5 border-white/10 text-white"
+            className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
           />
           <Input
             label="Password"
@@ -177,7 +177,7 @@ const Login = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="bg-white/5 border-white/10 text-white"
+            className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
           />
           <Button
             type="submit"
@@ -201,7 +201,7 @@ const Login = () => {
               setFirstName("");
               setLastName("");
             }}
-            className="text-gray-400 hover:text-white transition-colors border-none"
+            className="text-white/80 hover:text-white transition-colors border-none"
           >
             {isSignUp
               ? "Already have an account? Sign in"
