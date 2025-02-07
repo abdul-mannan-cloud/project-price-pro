@@ -127,12 +127,12 @@ const Login = () => {
       <div className="absolute inset-0 w-full h-full bg-black z-20 [mask-image:radial-gradient(transparent,white)] pointer-events-none opacity-90" />
       <Boxes className="!opacity-10 filter contrast-150 saturate-0" />
       
-      <Card className="w-full max-w-md p-8 relative z-30 bg-white shadow-xl">
+      <Card className="w-full max-w-md p-8 relative z-30 bg-white/10 backdrop-blur-xl border border-white/20">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-black">
+          <h1 className="text-2xl font-bold text-white">
             {isSignUp ? "Create Account" : "Welcome Back"}
           </h1>
-          <p className="mt-2 text-black/80">
+          <p className="mt-2 text-gray-400">
             {isSignUp
               ? "Sign up to start estimating projects"
               : "Sign in to your account"}
@@ -148,7 +148,7 @@ const Login = () => {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
-                className="bg-white border-black/20 text-black placeholder:text-black/50"
+                className="bg-white/5 border-white/10 text-white"
               />
               <Input
                 label="Last Name"
@@ -156,7 +156,7 @@ const Login = () => {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
-                className="bg-white border-black/20 text-black placeholder:text-black/50"
+                className="bg-white/5 border-white/10 text-white"
               />
             </>
           )}
@@ -167,7 +167,7 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="bg-white border-black/20 text-black placeholder:text-black/50"
+            className="bg-white/5 border-white/10 text-white"
           />
           <Input
             label="Password"
@@ -177,11 +177,11 @@ const Login = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="bg-white border-black/20 text-black placeholder:text-black/50"
+            className="bg-white/5 border-white/10 text-white"
           />
           <Button
             type="submit"
-            className="w-full bg-black text-white hover:bg-gray-800 transition-colors"
+            className="w-full bg-white text-black hover:bg-gray-200 transition-colors"
             disabled={loading}
           >
             {loading
@@ -201,7 +201,7 @@ const Login = () => {
               setFirstName("");
               setLastName("");
             }}
-            className="text-black/80 hover:text-black transition-colors border-none"
+            className="text-gray-400 hover:text-white transition-colors border-none"
           >
             {isSignUp
               ? "Already have an account? Sign in"
