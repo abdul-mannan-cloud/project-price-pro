@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/3d-button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -122,16 +123,16 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 relative overflow-hidden">
-      <div className="absolute inset-0 w-full h-full bg-slate-900 z-20 [mask-image:radial-gradient(transparent,white)] pointer-events-none" />
-      <Boxes />
+    <div className="min-h-screen flex items-center justify-center bg-black p-4 relative overflow-hidden">
+      <div className="absolute inset-0 w-full h-full bg-black z-20 [mask-image:radial-gradient(transparent,white)] pointer-events-none opacity-90" />
+      <Boxes className="!opacity-10 filter contrast-150 saturate-0" />
       
-      <Card className="w-full max-w-md p-8 relative z-30 bg-white">
+      <Card className="w-full max-w-md p-8 relative z-30 bg-white/10 backdrop-blur-xl border border-white/20">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-2xl font-bold text-white">
             {isSignUp ? "Create Account" : "Welcome Back"}
           </h1>
-          <p className="mt-2">
+          <p className="mt-2 text-gray-400">
             {isSignUp
               ? "Sign up to start estimating projects"
               : "Sign in to your account"}
@@ -147,6 +148,7 @@ const Login = () => {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
+                className="bg-white/5 border-white/10 text-white"
               />
               <Input
                 label="Last Name"
@@ -154,6 +156,7 @@ const Login = () => {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
+                className="bg-white/5 border-white/10 text-white"
               />
             </>
           )}
@@ -164,6 +167,7 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className="bg-white/5 border-white/10 text-white"
           />
           <Input
             label="Password"
@@ -173,10 +177,11 @@ const Login = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
+            className="bg-white/5 border-white/10 text-white"
           />
           <Button
             type="submit"
-            className="w-full"
+            className="w-full bg-white text-black hover:bg-gray-200 transition-colors"
             disabled={loading}
           >
             {loading
@@ -196,7 +201,7 @@ const Login = () => {
               setFirstName("");
               setLastName("");
             }}
-            className="text-primary hover:text-primary-700 transition-colors border-none"
+            className="text-gray-400 hover:text-white transition-colors border-none"
           >
             {isSignUp
               ? "Already have an account? Sign in"
