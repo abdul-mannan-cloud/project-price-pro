@@ -32,7 +32,6 @@ export const LeadMagnetPreview = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const [estimate, setEstimate] = useState<any>(null);
-  const [isProcessingEstimate, setIsProcessingEstimate] = useState(false);
   const [leadId, setLeadId] = useState<string | null>(null);
 
   const { data: contractor } = useQuery({
@@ -51,6 +50,28 @@ export const LeadMagnetPreview = () => {
       return data;
     },
   });
+
+  const generateEstimateInBackground = async () => {
+    try {
+      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          answers: selectedOptions,
+          projectDescription: "New project inquiry",
+          leadId,
+          category: "General"
+        }
+      });
+
+      if (error) throw error;
+      setEstimate(estimateData);
+    } catch (error) {
+      console.error('Error generating estimate:', error);
+      toast({
+        title: "Processing Estimate",
+        description: "Your estimate is being generated and will be emailed to you shortly.",
+      });
+    }
+  };
 
   const generateQuestions = async () => {
     try {
@@ -93,31 +114,6 @@ export const LeadMagnetPreview = () => {
       ...prev,
       [currentStep - 1]: value
     }));
-  };
-
-  const generateEstimateInBackground = async () => {
-    try {
-      setIsProcessingEstimate(true);
-      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          answers: selectedOptions,
-          projectDescription: "New project inquiry",
-          imageUrl: uploadedPhotos[0],
-          category: "General"
-        }
-      });
-
-      if (error) throw error;
-      setEstimate(estimateData);
-    } catch (error) {
-      console.error('Error generating estimate:', error);
-      toast({
-        title: "Processing Estimate",
-        description: "Your estimate is being generated and will be emailed to you shortly.",
-      });
-    } finally {
-      setIsProcessingEstimate(false);
-    }
   };
 
   const handleNext = async () => {
@@ -176,7 +172,6 @@ export const LeadMagnetPreview = () => {
 
       if (updateError) throw updateError;
 
-      // Show success message
       toast({
         title: "Success!",
         description: "Your estimate request has been submitted. You'll receive an email shortly.",
@@ -215,6 +210,7 @@ export const LeadMagnetPreview = () => {
 
   const handlePhotosSelected = (urls: string[]) => {
     setUploadedPhotos(urls);
+    handleNext();
   };
 
   // Show contact form immediately after questions
@@ -278,3 +274,4 @@ export const LeadMagnetPreview = () => {
     </div>
   );
 };
+
