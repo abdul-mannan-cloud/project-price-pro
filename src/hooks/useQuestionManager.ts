@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Question, CategoryQuestions, AnswersState, QuestionAnswer } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
@@ -111,8 +110,9 @@ export const useQuestionManager = (
 
     setIsGeneratingEstimate(true);
     try {
+      console.log('Completing questions with answers:', answers);
       // Ensure we call onComplete with the final answers
-      onComplete(answers);
+      await onComplete(answers);
     } catch (error) {
       console.error('Error completing questions:', error);
       toast({
@@ -120,7 +120,6 @@ export const useQuestionManager = (
         description: "Failed to process your answers. Please try again.",
         variant: "destructive",
       });
-      setIsGeneratingEstimate(false);
     }
   };
 
