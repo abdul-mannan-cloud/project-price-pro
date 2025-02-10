@@ -640,19 +640,13 @@ const EstimatePage = () => {
 
         {stage === 'description' && (
           <div className="card p-8 animate-fadeIn">
-            <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
-            <div className="space-y-2 relative">
-              <Textarea
-                value={projectDescription}
-                onChange={(e) => setProjectDescription(e.target.value)}
-                placeholder="Describe what you need help with (e.g., paint my living room walls)..."
-                className="min-h-[150px] pr-12"
-              />
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold">Describe Your Project</h2>
               {isSpeechSupported && (
                 <button
                   onClick={toggleRecording}
                   className={cn(
-                    "absolute right-3 top-3 p-2 rounded-full transition-all duration-200",
+                    "p-2 rounded-full transition-all duration-200",
                     isRecording 
                       ? "bg-red-100 text-red-600 hover:bg-red-200" 
                       : "bg-gray-100 hover:bg-gray-200"
@@ -665,6 +659,14 @@ const EstimatePage = () => {
                   )}
                 </button>
               )}
+            </div>
+            <div className="space-y-2 relative">
+              <Textarea
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                placeholder="Describe what you need help with (e.g., paint my living room walls)..."
+                className="min-h-[150px] pr-12"
+              />
             </div>
             <Button 
               className="w-full mt-6"
