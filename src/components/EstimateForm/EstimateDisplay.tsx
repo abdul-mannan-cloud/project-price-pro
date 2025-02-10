@@ -112,7 +112,7 @@ export const EstimateDisplay = ({
         .from("contractor_settings")
         .select("*")
         .eq("id", contractorId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data as Database["public"]["Tables"]["contractor_settings"]["Row"];
