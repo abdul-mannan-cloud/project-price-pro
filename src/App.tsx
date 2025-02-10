@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-quer
 import { supabase } from "@/integrations/supabase/client";
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
+import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
 import Settings from "@/pages/Settings";
@@ -77,6 +78,7 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="/settings" element={<Settings />} />
