@@ -135,7 +135,7 @@ export const LeadMagnetPreview = () => {
             contractor_id: contractor?.id,
             project_description: "New project inquiry",
             answers: selectedOptions,
-            uploaded_photos: uploadedPhotos
+            project_photos: uploadedPhotos
           })
           .select()
           .single();

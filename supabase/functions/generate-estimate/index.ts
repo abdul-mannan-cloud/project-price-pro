@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
+import { createClient } from "@supabase/supabase-js"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -65,56 +66,62 @@ serve(async (req) => {
 
         console.log('Processing estimate in background...');
 
-        const [titleResponse, messageResponse] = await Promise.all([
-          fetch('https://api.llama-api.com/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${llamaApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messages: [{
-                role: 'system',
-                content: 'Generate a concise project title.'
-              }, {
-                role: 'user',
-                content: titlePrompt
-              }],
-              temperature: 0.2,
-              response_format: { type: "text" }
-            }),
-          }),
-          fetch('https://api.llama-api.com/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${llamaApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messages: [{
-                role: 'system',
-                content: 'Generate a clear project overview.'
-              }, {
-                role: 'user',
-                content: messagePrompt
-              }],
-              temperature: 0.2,
-              response_format: { type: "text" }
-            }),
-          })
-        ]);
+        let aiTitle = 'Project Estimate';
+        let aiMessage = 'Custom project estimate based on provided specifications.';
 
-        if (!titleResponse.ok || !messageResponse.ok) {
-          throw new Error('Failed to generate title or message');
+        try {
+          const [titleResponse, messageResponse] = await Promise.all([
+            fetch('https://api.llama-api.com/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${llamaApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                messages: [{
+                  role: 'system',
+                  content: 'Generate a concise project title.'
+                }, {
+                  role: 'user',
+                  content: titlePrompt
+                }],
+                temperature: 0.2,
+                response_format: { type: "text" }
+              }),
+            }),
+            fetch('https://api.llama-api.com/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${llamaApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                messages: [{
+                  role: 'system',
+                  content: 'Generate a clear project overview.'
+                }, {
+                  role: 'user',
+                  content: messagePrompt
+                }],
+                temperature: 0.2,
+                response_format: { type: "text" }
+              }),
+            })
+          ]);
+
+          if (titleResponse.ok) {
+            const titleData = await titleResponse.json();
+            aiTitle = titleData.choices?.[0]?.message?.content?.trim() || aiTitle;
+          }
+
+          if (messageResponse.ok) {
+            const messageData = await messageResponse.json();
+            aiMessage = messageData.choices?.[0]?.message?.content?.trim() || aiMessage;
+          }
+        } catch (error) {
+          console.error('Error generating title or message:', error);
+          // Continue with default values if title/message generation fails
         }
-
-        const [titleData, messageData] = await Promise.all([
-          titleResponse.json(),
-          messageResponse.json()
-        ]);
-
-        const aiTitle = titleData.choices?.[0]?.message?.content?.trim() || 'Project Estimate';
-        const aiMessage = messageData.choices?.[0]?.message?.content?.trim() || 'Custom project estimate based on provided specifications.';
 
         const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format only. Do not include any markdown or text before or after the JSON:
 
