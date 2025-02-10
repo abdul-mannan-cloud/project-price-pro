@@ -15,6 +15,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { SignatureDialog } from "./SignatureDialog";
+import { EstimateSkeleton } from "./EstimateSkeleton";
 
 interface LineItem {
   title: string;
@@ -723,74 +724,5 @@ ${templateSettings.estimate_footer_text || ''}
         </>
       )}
     </>
-  );
-};
-
-const EstimateSkeleton = () => {
-  return (
-    <div className="bg-white p-6 md:p-10 max-w-5xl mx-auto shadow-lg rounded-xl">
-      <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b border-gray-100 space-y-4 md:space-y-0">
-        <div className="flex items-center gap-6">
-          <img 
-            src="/logo.png" 
-            alt="Company Logo"
-            className="w-24 h-24 object-contain rounded-lg"
-          />
-          <div>
-            <h1 className="text-xl md:text-2xl font-semibold text-[#007AFF]">
-              Company Name
-            </h1>
-            <div className="text-gray-700 font-medium flex flex-col gap-1">
-              <a 
-                href="mailto:contact@example.com"
-                className="hover:underline text-primary transition-colors inline-flex items-center gap-2 text-sm"
-              >
-                <Mail className="h-4 w-4" />
-                contact@example.com
-              </a>
-              <a 
-                href="tel:+1234567890"
-                className="hover:underline text-primary transition-colors inline-flex items-center gap-2 text-sm"
-              >
-                <Phone className="h-4 w-4" />
-                +123-456-7890
-              </a>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 ml-auto">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowAIPreferences(true)}
-            className="bg-gray-100 hover:bg-gray-200"
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowSettings(true)}
-            className="bg-gray-100 hover:bg-gray-200"
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-      <div className="mt-8 pt-6 border-t space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-sm font-medium">Subtotal</p>
-          <p className="text-lg">0.00</p>
-        </div>
-        <div className="flex justify-between items-center">
-          <p className="text-sm font-medium">Tax (8.5%)</p>
-          <p className="text-lg">0.00</p>
-        </div>
-        <div className="flex justify-between items-center pt-4 border-t">
-          <p className="text-xl font-semibold mb-4 w-full">Total Estimate</p>
-          <p className="text-2xl">0.00</p>
-        </div>
-      </div>
-    </div>
   );
 };
