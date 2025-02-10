@@ -53,59 +53,60 @@ serve(async (req) => {
         let aiMessage = 'Custom project estimate based on provided specifications.';
 
         try {
-          const [titleResponse, messageResponse] = await Promise.all([
-            fetch('https://api.llama-api.com/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${llamaApiKey}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                messages: [{
-                  role: 'system',
-                  content: 'Generate a concise project title.'
-                }, {
-                  role: 'user',
-                  content: `Based on this project description and answers, generate a concise project title (4 words or less):
-                  Category: ${category || 'General Construction'}
-                  Description: ${projectDescription || 'Project estimate'}
-                  ${formattedAnswers.map(cat => 
-                    cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
-                  ).join('\n')}`
-                }],
-                temperature: 0.2,
-                response_format: { type: "text" }
-              }),
+          // Get AI-generated title
+          const titleResponse = await fetch('https://api.llama-api.com/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${llamaApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: [{
+                role: 'system',
+                content: 'Generate a concise project title.'
+              }, {
+                role: 'user',
+                content: `Based on this project description and answers, generate a concise project title (4 words or less):
+                Category: ${category || 'General Construction'}
+                Description: ${projectDescription || 'Project estimate'}
+                ${formattedAnswers.map(cat => 
+                  cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
+                ).join('\n')}`
+              }],
+              temperature: 0.2,
+              response_format: { type: "text" }
             }),
-            fetch('https://api.llama-api.com/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${llamaApiKey}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                messages: [{
-                  role: 'system',
-                  content: 'Generate a clear project overview.'
-                }, {
-                  role: 'user',
-                  content: `Based on this project description and answers, generate a clear, professional overview of the project scope (2-3 sentences):
-                  Category: ${category || 'General Construction'}
-                  Description: ${projectDescription || 'Project estimate'}
-                  ${formattedAnswers.map(cat => 
-                    cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
-                  ).join('\n')}`
-                }],
-                temperature: 0.2,
-                response_format: { type: "text" }
-              }),
-            })
-          ]);
+          });
 
           if (titleResponse.ok) {
             const titleData = await titleResponse.json();
             aiTitle = titleData.choices?.[0]?.message?.content?.trim() || aiTitle;
           }
+
+          // Get AI-generated message/overview
+          const messageResponse = await fetch('https://api.llama-api.com/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${llamaApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: [{
+                role: 'system',
+                content: 'Generate a clear project overview.'
+              }, {
+                role: 'user',
+                content: `Based on this project description and answers, generate a clear, professional overview of the project scope (2-3 sentences):
+                Category: ${category || 'General Construction'}
+                Description: ${projectDescription || 'Project estimate'}
+                ${formattedAnswers.map(cat => 
+                  cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
+                ).join('\n')}`
+              }],
+              temperature: 0.2,
+              response_format: { type: "text" }
+            }),
+          });
 
           if (messageResponse.ok) {
             const messageData = await messageResponse.json();
@@ -116,6 +117,7 @@ serve(async (req) => {
           // Continue with default values if title/message generation fails
         }
 
+        // Generate the main estimate with cost breakdown
         const response = await fetch('https://api.llama-api.com/chat/completions', {
           method: 'POST',
           headers: {
@@ -215,3 +217,4 @@ serve(async (req) => {
     );
   }
 });
+
