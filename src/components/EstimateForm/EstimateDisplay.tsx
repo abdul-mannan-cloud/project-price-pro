@@ -69,6 +69,7 @@ interface EstimateDisplayProps {
   onSignatureComplete?: (initials: string) => void;
   projectImages?: string[];
   estimate?: any;
+  isLoading?: boolean;
 }
 
 const formatCurrency = (amount: number): string => {
@@ -94,7 +95,8 @@ export const EstimateDisplay = ({
   onEstimateChange,
   onSignatureComplete,
   projectImages = [],
-  estimate
+  estimate,
+  isLoading = false
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
@@ -102,7 +104,6 @@ export const EstimateDisplay = ({
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
@@ -130,6 +131,23 @@ export const EstimateDisplay = ({
   React.useEffect(() => {
     checkContractorAccess();
   }, [contractorId]);
+
+  if (isSettingsLoading || isLoading) {
+    return <EstimateSkeleton />;
+  }
+
+  if (!groups?.length || totalCost === 0) {
+    return <EstimateSkeleton />;
+  }
+
+  const templateSettings = settings || {
+    estimate_template_style: 'modern',
+    estimate_signature_enabled: false,
+    estimate_client_message: '',
+    estimate_footer_text: '',
+    estimate_hide_subtotals: false,
+    estimate_compact_view: true
+  };
 
   const handleRefreshEstimate = async () => {
     try {
@@ -164,15 +182,6 @@ export const EstimateDisplay = ({
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const templateSettings = settings || {
-    estimate_template_style: 'modern',
-    estimate_signature_enabled: false,
-    estimate_client_message: '',
-    estimate_footer_text: '',
-    estimate_hide_subtotals: false,
-    estimate_compact_view: true
   };
 
   const handleExportPDF = () => {
@@ -283,7 +292,7 @@ ${templateSettings.estimate_footer_text || ''}
           title: "text-xl md:text-2xl font-light tracking-wide",
           text: "text-gray-600 text-sm font-light",
           table: "w-full border-t border-gray-200",
-          tableHeader: "text-xs uppercase tracking-wide py-4 px-4 text-left text-gray-600 font-light",
+          tableHeader: "text-xs uppercase tracking-wider py-4 px-4 text-left text-gray-600 font-light",
           tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
           tableCell: "py-4 px-4 text-sm border border-gray-300 break-words text-gray-800 font-light",
           total: "text-2xl md:text-3xl font-bold",
@@ -354,10 +363,6 @@ ${templateSettings.estimate_footer_text || ''}
       onSignatureComplete(initials);
     }
   };
-
-  if (isSettingsLoading || isLoading) {
-    return <EstimateSkeleton />;
-  }
 
   return (
     <>
@@ -520,4 +525,17 @@ ${templateSettings.estimate_footer_text || ''}
       )}
     </>
   );
+};
+
+export const formatCurrency = (amount: number): string => {
+  return amount.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
+
+export const formatUnit = (unit: string): string => {
+  return unit.toLowerCase();
 };
