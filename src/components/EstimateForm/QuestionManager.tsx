@@ -35,7 +35,8 @@ export const QuestionManager = ({
     isGeneratingEstimate,
     hasFollowUpQuestion,
     currentStage,
-    totalStages
+    totalStages,
+    currentSetAnswers
   });
 
   if (isLoadingQuestions) {
