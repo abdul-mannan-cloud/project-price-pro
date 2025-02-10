@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 export const EstimateSkeleton = () => {
   return (
     <div className="space-y-6">
+      {/* Header Section */}
       <div className="flex items-center space-x-4">
         <Skeleton className="h-12 w-12 rounded-full" />
         <div className="space-y-2">
@@ -12,21 +13,60 @@ export const EstimateSkeleton = () => {
         </div>
       </div>
       
-      <div className="space-y-4">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex flex-col space-y-3">
-            <Skeleton className="h-[125px] w-full rounded-xl" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-[80%]" />
-            </div>
-          </div>
-        ))}
+      {/* Description Section */}
+      <div className="space-y-2">
+        <Skeleton className="h-5 w-[300px]" />
+        <Skeleton className="h-20 w-full rounded-lg" />
       </div>
 
-      <div className="space-y-2 mt-8">
-        <Skeleton className="h-6 w-[150px]" />
-        <Skeleton className="h-8 w-[200px]" />
+      {/* Table Groups */}
+      {Array.from({ length: 2 }).map((_, groupIndex) => (
+        <div key={groupIndex} className="space-y-4">
+          {/* Group Header */}
+          <Skeleton className="h-6 w-[200px]" />
+          
+          {/* Table */}
+          <div className="w-full space-y-3">
+            {/* Table Header */}
+            <div className="grid grid-cols-5 gap-4">
+              <Skeleton className="h-4 col-span-2" />
+              <Skeleton className="h-4" />
+              <Skeleton className="h-4" />
+              <Skeleton className="h-4" />
+            </div>
+            
+            {/* Table Rows */}
+            {Array.from({ length: 3 }).map((_, rowIndex) => (
+              <div key={rowIndex} className="grid grid-cols-5 gap-4">
+                <Skeleton className="h-8 col-span-2" />
+                <Skeleton className="h-8" />
+                <Skeleton className="h-8" />
+                <Skeleton className="h-8" />
+              </div>
+            ))}
+            
+            {/* Subtotal */}
+            <div className="flex justify-end mt-4">
+              <Skeleton className="h-6 w-[150px]" />
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Totals Section */}
+      <div className="space-y-4 mt-8 pt-6 border-t">
+        <div className="flex justify-between">
+          <Skeleton className="h-4 w-[100px]" />
+          <Skeleton className="h-4 w-[120px]" />
+        </div>
+        <div className="flex justify-between">
+          <Skeleton className="h-4 w-[120px]" />
+          <Skeleton className="h-4 w-[120px]" />
+        </div>
+        <div className="flex justify-between pt-4 border-t">
+          <Skeleton className="h-6 w-[150px]" />
+          <Skeleton className="h-6 w-[180px]" />
+        </div>
       </div>
     </div>
   );
