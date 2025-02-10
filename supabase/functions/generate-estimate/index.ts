@@ -1,7 +1,6 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,23 +48,6 @@ serve(async (req) => {
           return { category, questions };
         });
 
-        // Generate AI title and message
-        const titlePrompt = `Based on this project description and answers, generate a concise project title (4 words or less):
-        Category: ${category || 'General Construction'}
-        Description: ${projectDescription || 'Project estimate'}
-        ${formattedAnswers.map(cat => 
-          cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
-        ).join('\n')}`;
-
-        const messagePrompt = `Based on this project description and answers, generate a clear, professional overview of the project scope (2-3 sentences):
-        Category: ${category || 'General Construction'}
-        Description: ${projectDescription || 'Project estimate'}
-        ${formattedAnswers.map(cat => 
-          cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
-        ).join('\n')}`;
-
-        console.log('Processing estimate in background...');
-
         let aiTitle = 'Project Estimate';
         let aiMessage = 'Custom project estimate based on provided specifications.';
 
@@ -83,7 +65,12 @@ serve(async (req) => {
                   content: 'Generate a concise project title.'
                 }, {
                   role: 'user',
-                  content: titlePrompt
+                  content: `Based on this project description and answers, generate a concise project title (4 words or less):
+                  Category: ${category || 'General Construction'}
+                  Description: ${projectDescription || 'Project estimate'}
+                  ${formattedAnswers.map(cat => 
+                    cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
+                  ).join('\n')}`
                 }],
                 temperature: 0.2,
                 response_format: { type: "text" }
@@ -101,7 +88,12 @@ serve(async (req) => {
                   content: 'Generate a clear project overview.'
                 }, {
                   role: 'user',
-                  content: messagePrompt
+                  content: `Based on this project description and answers, generate a clear, professional overview of the project scope (2-3 sentences):
+                  Category: ${category || 'General Construction'}
+                  Description: ${projectDescription || 'Project estimate'}
+                  ${formattedAnswers.map(cat => 
+                    cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
+                  ).join('\n')}`
                 }],
                 temperature: 0.2,
                 response_format: { type: "text" }
@@ -123,16 +115,6 @@ serve(async (req) => {
           // Continue with default values if title/message generation fails
         }
 
-        const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format only. Do not include any markdown or text before or after the JSON:
-
-        Project Category: ${category || 'General Construction'}
-        Project Description: ${projectDescription || 'Project estimate'}
-
-        Questions and Answers:
-        ${formattedAnswers.map(cat => `
-        Category: ${cat.category}
-        ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`;
-
         const response = await fetch('https://api.llama-api.com/chat/completions', {
           method: 'POST',
           headers: {
@@ -145,7 +127,13 @@ serve(async (req) => {
               content: 'You are a construction cost estimator. Generate estimates in JSON format only.'
             }, {
               role: 'user',
-              content: prompt
+              content: `Based on the following project details, generate a detailed construction estimate in JSON format only:
+              Category: ${category || 'General Construction'}
+              Description: ${projectDescription || 'Project estimate'}
+              Questions and Answers:
+              ${formattedAnswers.map(cat => `
+              Category: ${cat.category}
+              ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
             }],
             temperature: 0.2,
             response_format: { type: "json_object" }
@@ -213,7 +201,7 @@ serve(async (req) => {
     console.error('Error in generate-estimate function:', error);
     return new Response(
       JSON.stringify({ 
-        error: 'Failed to start estimate generation',
+        error: 'Failed to generate estimate',
         details: error.message 
       }),
       { 
