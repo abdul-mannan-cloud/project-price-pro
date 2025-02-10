@@ -1,4 +1,6 @@
 
+import { formatCurrency } from "@/utils/formatters";
+
 interface EstimateTotalsProps {
   totalCost: number;
   templateSettings: {

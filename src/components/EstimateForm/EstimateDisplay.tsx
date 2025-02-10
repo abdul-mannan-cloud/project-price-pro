@@ -20,19 +20,7 @@ import { EstimateHeader } from "./components/EstimateHeader";
 import { EstimateContent } from "./components/EstimateContent";
 import { EstimateTotals } from "./components/EstimateTotals";
 import { EstimateSignature } from "./components/EstimateSignature";
-
-const formatCurrency = (amount: number): string => {
-  return amount.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
-};
-
-const formatUnit = (unit: string): string => {
-  return unit.toLowerCase();
-};
+import { formatCurrency, formatUnit } from "@/utils/formatters";
 
 export interface LineItem {
   title: string;
@@ -319,7 +307,7 @@ ${templateSettings.estimate_footer_text || ''}
           tableHeader: "text-xs font-bold bg-[#E9ECEF] py-2 px-3 text-left border border-gray-300 text-black font-['Calibri']",
           tableRow: "hover:bg-[#F8F9FA] transition-colors",
           tableCell: "py-2 px-3 text-sm border border-gray-300 break-words text-black font-['Calibri']",
-          total: "text-xl md:text-2xl font-bold font-['Calibri']",
+          total: "text-xl md:text-3xl font-bold font-['Calibri']",
           message: "bg-[#F8F9FA] p-4 border text-sm font-['Calibri']",
           groupTitle: "text-base font-bold mb-3 w-full font-['Calibri']",
           subtotal: "text-right py-2 px-3 text-sm font-bold bg-[#F8F9FA] border border-gray-300 text-black font-['Calibri']",
