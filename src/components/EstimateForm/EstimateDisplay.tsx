@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, FileDown, Settings, Phone, Mail, RefreshCw } from "lucide-react";
+import { Copy, FileDown, Settings, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Database } from "@/integrations/supabase/types";
 import { Json } from "@/integrations/supabase/types";
@@ -11,13 +11,17 @@ import html2pdf from 'html2pdf.js';
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplateSettings";
 import { AIPreferencesSettings } from "@/components/settings/AIPreferencesSettings";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { SignatureDialog } from "./SignatureDialog";
 import { EstimateSkeleton } from "./EstimateSkeleton";
+import { EstimateHeader } from "./components/EstimateHeader";
+import { EstimateContent } from "./components/EstimateContent";
+import { EstimateTotals } from "./components/EstimateTotals";
+import { EstimateSignature } from "./components/EstimateSignature";
 
-interface LineItem {
+export interface LineItem {
   title: string;
   description?: string;
   quantity: number;
@@ -26,19 +30,19 @@ interface LineItem {
   totalPrice: number;
 }
 
-interface SubGroup {
+export interface SubGroup {
   name: string;
   items: LineItem[];
   subtotal: number;
 }
 
-interface ItemGroup {
+export interface ItemGroup {
   name: string;
   description?: string;
   subgroups: SubGroup[];
 }
 
-type ContractorDisplay = {
+export type ContractorDisplay = {
   business_name?: string;
   business_logo_url?: string | null;
   contact_email?: string;
@@ -64,17 +68,7 @@ interface EstimateDisplayProps {
   onEstimateChange?: (estimate: any) => void;
   onSignatureComplete?: (initials: string) => void;
   projectImages?: string[];
-  estimate?: any; // Added to access AI generated title and message
-}
-
-interface ContractorSettings {
-  id: string;
-  estimate_template_style: string;
-  estimate_signature_enabled: boolean;
-  estimate_client_message: string;
-  estimate_footer_text: string;
-  estimate_hide_subtotals: boolean;
-  estimate_compact_view: boolean;
+  estimate?: any;
 }
 
 const formatCurrency = (amount: number): string => {
@@ -109,7 +103,6 @@ export const EstimateDisplay = ({
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
   const { toast } = useToast();
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
@@ -122,7 +115,7 @@ export const EstimateDisplay = ({
         .single();
 
       if (error) throw error;
-      return data as ContractorSettings;
+      return data as Database["public"]["Tables"]["contractor_settings"]["Row"];
     },
     enabled: !!contractorId
   });
@@ -134,7 +127,7 @@ export const EstimateDisplay = ({
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     checkContractorAccess();
   }, [contractorId]);
 
@@ -156,7 +149,6 @@ export const EstimateDisplay = ({
         description: "Your estimate will be updated shortly.",
       });
 
-      // Wait a bit to allow the background task to complete
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       if (onEstimateChange) {
@@ -174,13 +166,6 @@ export const EstimateDisplay = ({
     }
   };
 
-  const defaultCompany = {
-    business_name: "Example Company",
-    contact_email: "contact@example.com",
-    contact_phone: "(555) 123-4567"
-  };
-
-  const companyInfo = contractor || defaultCompany;
   const templateSettings = settings || {
     estimate_template_style: 'modern',
     estimate_signature_enabled: false,
@@ -188,11 +173,6 @@ export const EstimateDisplay = ({
     estimate_footer_text: '',
     estimate_hide_subtotals: false,
     estimate_compact_view: true
-  };
-
-  const formatItemTitle = (title: string, unit?: string) => {
-    if (!unit) return title;
-    return `${title} (${unit})`;
   };
 
   const handleExportPDF = () => {
@@ -206,7 +186,7 @@ export const EstimateDisplay = ({
 
     const opt = {
       margin: 10,
-      filename: `${companyInfo.business_name}-estimate.pdf`,
+      filename: `${contractor?.business_name}-estimate.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -225,9 +205,9 @@ export const EstimateDisplay = ({
 
   const handleCopyEstimate = () => {
     const estimateText = `
-${companyInfo.business_name}
-${companyInfo.contact_email}
-${companyInfo.contact_phone || ''}
+${contractor?.business_name}
+${contractor?.contact_email}
+${contractor?.contact_phone || ''}
 
 Project Overview:
 ${projectSummary || ''}
@@ -240,7 +220,7 @@ ${group.name}
 ${group.subgroups.map(subgroup => `
   ${subgroup.name}
   ${subgroup.items.map(item => `
-    - ${formatItemTitle(item.title, item.unit)}
+    - ${item.title} ${item.unit ? `(${item.unit})` : ''}
       Quantity: ${item.quantity.toLocaleString()}
       Unit Price: ${formatCurrency(item.unitAmount)}
       Total: ${formatCurrency(item.totalPrice)}
@@ -261,12 +241,6 @@ ${templateSettings.estimate_footer_text || ''}
       });
     });
   };
-
-  const brandingColors = contractor?.branding_colors 
-    ? (typeof contractor.branding_colors === 'string' 
-        ? JSON.parse(contractor.branding_colors) as BrandingColors 
-        : contractor.branding_colors as BrandingColors)
-    : null;
 
   const getTemplateStyles = (style: string = 'modern') => {
     const baseStyles = {
@@ -392,95 +366,7 @@ ${templateSettings.estimate_footer_text || ''}
         isBlurred && "blur-md pointer-events-none"
       )}>
         <div id="estimate-content">
-          <div className={getTemplateStyles(templateSettings.estimate_template_style).header}>
-            <div className={getTemplateStyles(templateSettings.estimate_template_style).headerContent}>
-              <div className={getTemplateStyles(templateSettings.estimate_template_style).businessInfo}>
-                {contractor?.business_logo_url && (
-                  <img 
-                    src={contractor.business_logo_url} 
-                    alt={`${companyInfo.business_name} logo`}
-                    className="w-24 h-24 object-contain rounded-lg"
-                  />
-                )}
-                <div>
-                  <h1 className={getTemplateStyles(templateSettings.estimate_template_style).companyInfo}>
-                    {companyInfo.business_name}
-                  </h1>
-                  <div className={getTemplateStyles(templateSettings.estimate_template_style).contactInfo}>
-                    {companyInfo.contact_email && (
-                      <a 
-                        href={`mailto:${companyInfo.contact_email}`}
-                        className={getTemplateStyles(templateSettings.estimate_template_style).contactLink}
-                      >
-                        <Mail className="h-4 w-4" />
-                        {companyInfo.contact_email}
-                      </a>
-                    )}
-                    {companyInfo.contact_phone && (
-                      <a 
-                        href={`tel:${companyInfo.contact_phone}`}
-                        className={getTemplateStyles(templateSettings.estimate_template_style).contactLink}
-                      >
-                        <Phone className="h-4 w-4" />
-                        {companyInfo.contact_phone}
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className={getTemplateStyles(templateSettings.estimate_template_style).buttonsContainer} id="estimate-actions">
-                {isContractor && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleRefreshEstimate}
-                      className={getTemplateStyles(templateSettings.estimate_template_style).button}
-                      title="Refresh estimate"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowAIPreferences(true)}
-                      className={getTemplateStyles(templateSettings.estimate_template_style).button}
-                      title="AI Preferences"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowSettings(true)}
-                      className={getTemplateStyles(templateSettings.estimate_template_style).button}
-                      title="Template Settings"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style).button)}
-                  onClick={handleCopyEstimate}
-                >
-                  <Copy className="h-4 w-4" />
-                  Copy
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style).button)}
-                  onClick={handleExportPDF}
-                >
-                  <FileDown className="h-4 w-4" />
-                  PDF
-                </Button>
-              </div>
-            </div>
-          </div>
+          <EstimateHeader contractor={contractor} />
 
           {/* AI Generated Title */}
           {estimate?.ai_generated_title && (
@@ -521,176 +407,89 @@ ${templateSettings.estimate_footer_text || ''}
             </div>
           )}
 
-          {/* Estimate Groups */}
-          {groups?.map((group, index) => (
-            <div key={index} className={getTemplateStyles(templateSettings.estimate_template_style).section}>
-              <h3 className={getTemplateStyles(templateSettings.estimate_template_style).groupTitle}>{group.name}</h3>
-              
-              {templateSettings.estimate_template_style === 'classic' ? (
-                <div className="space-y-2">
-                  {group.subgroups?.map(subgroup => (
-                    <div key={subgroup.name} className="space-y-1">
-                      {subgroup.items?.map((item, itemIndex) => (
-                        <div key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
-                          <div className={getTemplateStyles(templateSettings.estimate_template_style).tableCell}>
-                            <span className="font-medium">{item.title}</span>
-                            {item.unit && ` (${formatUnit(item.unit)})`}
-                            {item.description && (
-                              <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                            )}
-                            <div className="text-sm text-gray-600 mt-1">
-                              {item.quantity.toLocaleString()} × {formatCurrency(item.unitAmount)} = {formatCurrency(item.totalPrice)}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {!templateSettings.estimate_hide_subtotals && (
-                        <div className={getTemplateStyles(templateSettings.estimate_template_style).subtotal}>
-                          Subtotal for {subgroup.name}: {formatCurrency(subgroup.subtotal)}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="w-full">
-                  <table className={getTemplateStyles(templateSettings.estimate_template_style).table}>
-                    <thead>
-                      <tr>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[45%]")}>Item</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[35%]")}>Description</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Qty</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Price</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[6%] text-right")}>Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {group.subgroups?.map(subgroup => 
-                        subgroup.items?.map((item, itemIndex) => (
-                          <tr key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%] break-words")}>
-                              {item.title} {item.unit && `(${formatUnit(item.unit)})`}
-                            </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%] break-words")}>
-                              {item.description}
-                            </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                              {item.quantity.toLocaleString()}
-                            </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                              {formatCurrency(item.unitAmount)}
-                            </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[6%] text-right font-medium")}>
-                              {formatCurrency(item.totalPrice)}
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+          <EstimateContent
+            groups={groups}
+            templateSettings={templateSettings}
+            formatCurrency={formatCurrency}
+            formatUnit={formatUnit}
+            getTemplateStyles={getTemplateStyles}
+          />
 
-              {/* Group Subtotal */}
-              {!templateSettings.estimate_hide_subtotals && templateSettings.estimate_template_style !== 'minimal' && (
-                <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).subtotal, "mt-4 pt-3 border-t")}>
-                  <span className={getTemplateStyles(templateSettings.estimate_template_style).text}>Subtotal for {group.name}</span>
-                  <span className="font-semibold ml-4">
-                    {formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0))}
-                  </span>
-                </div>
-              )}
-            </div>
-          ))}
-          
-          {/* Total */}
-          {templateSettings.estimate_template_style === 'excel' ? (
-            <div className={getTemplateStyles('excel').totalsSection}>
-              <table className={getTemplateStyles('excel').totalsTable}>
-                <tbody>
-                  <tr className={getTemplateStyles('excel').totalsRow}>
-                    <td className={getTemplateStyles('excel').totalsLabel}>Subtotal</td>
-                    <td className={getTemplateStyles('excel').totalsValue}>{formatCurrency(totalCost)}</td>
-                  </tr>
-                  <tr className={getTemplateStyles('excel').totalsRow}>
-                    <td className={getTemplateStyles('excel').totalsLabel}>Tax (8.5%)</td>
-                    <td className={getTemplateStyles('excel').totalsValue}>{formatCurrency(totalCost * 0.085)}</td>
-                  </tr>
-                  <tr className={cn(getTemplateStyles('excel').totalsRow, "font-bold")}>
-                    <td className={getTemplateStyles('excel').totalsLabel}>Total Estimate</td>
-                    <td className={cn(getTemplateStyles('excel').totalsValue, "font-bold")}>{formatCurrency(totalCost * 1.085)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className={cn("mt-8 pt-6 border-t space-y-4", templateSettings.estimate_compact_view ? "md:space-y-3" : "md:space-y-6")}>
-              <div className="flex justify-between items-center">
-                <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>Subtotal</p>
-                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).text, "text-lg")}>{formatCurrency(totalCost)}</p>
-              </div>
-              <div className="flex justify-between items-center">
-                <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>Tax (8.5%)</p>
-                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).text, "text-lg")}>{formatCurrency(totalCost * 0.085)}</p>
-              </div>
-              <div className="flex justify-between items-center pt-4 border-t">
-                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).title, "!text-xl")}>Total Estimate</p>
-                <p className={getTemplateStyles(templateSettings.estimate_template_style).total}>{formatCurrency(totalCost * 1.085)}</p>
-              </div>
+          <EstimateTotals
+            totalCost={totalCost}
+            templateSettings={templateSettings}
+            formatCurrency={formatCurrency}
+            getTemplateStyles={getTemplateStyles}
+          />
+
+          <EstimateSignature
+            templateSettings={templateSettings}
+            signature={signature}
+            setShowSignatureDialog={setShowSignatureDialog}
+            getTemplateStyles={getTemplateStyles}
+          />
+
+          {/* Footer Text */}
+          {templateSettings?.estimate_footer_text && (
+            <div className={cn("mt-8 pt-6 border-t", getTemplateStyles(templateSettings.estimate_template_style).text)}>
+              <p className="whitespace-pre-wrap text-sm">
+                {templateSettings.estimate_footer_text}
+              </p>
             </div>
           )}
         </div>
 
-        {/* Signature Section */}
-        {templateSettings?.estimate_signature_enabled && (
-          <div className={cn("mt-8 pt-6 border-t space-y-6", getTemplateStyles(templateSettings.estimate_template_style).text)}>
-            <h3 className={cn(getTemplateStyles(templateSettings.estimate_template_style).title, "!text-xl")}>Signatures</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <p className="text-sm font-medium">Client Signature</p>
-                <div 
-                  className={cn(
-                    getTemplateStyles(templateSettings.estimate_template_style).signatureBox,
-                    !signature ? "bg-yellow-50 hover:bg-yellow-100 cursor-pointer flex items-center justify-center" : "bg-white"
-                  )}
-                  onClick={() => !signature && setShowSignatureDialog(true)}
-                >
-                  {signature ? (
-                    <div className="p-4">
-                      <p className={getTemplateStyles(templateSettings.estimate_template_style).signatureText}>
-                        {signature}
-                      </p>
-                      <p className={getTemplateStyles(templateSettings.estimate_template_style).signatureDate}>
-                        {new Date().toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                  ) : (
-                    <Button variant="ghost">Sign Here</Button>
-                  )}
-                </div>
-                <p className="text-sm">Sign above to approve this estimate</p>
-              </div>
-              <div className="space-y-3">
-                <p className="text-sm font-medium">Contractor Signature</p>
-                <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).signatureBox, "bg-gray-50")}></div>
-                <p className="text-sm">Contractor approval</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Footer Text */}
-        {templateSettings?.estimate_footer_text && (
-          <div className={cn("mt-8 pt-6 border-t", getTemplateStyles(templateSettings.estimate_template_style).text)}>
-            <p className="whitespace-pre-wrap text-sm">
-              {templateSettings.estimate_footer_text}
-            </p>
-          </div>
-        )}
+        <div className={getTemplateStyles(templateSettings.estimate_template_style).buttonsContainer} id="estimate-actions">
+          {isContractor && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleRefreshEstimate}
+                className={getTemplateStyles(templateSettings.estimate_template_style).button}
+                title="Refresh estimate"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowAIPreferences(true)}
+                className={getTemplateStyles(templateSettings.estimate_template_style).button}
+                title="AI Preferences"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSettings(true)}
+                className={getTemplateStyles(templateSettings.estimate_template_style).button}
+                title="Template Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style).button)}
+            onClick={handleCopyEstimate}
+          >
+            <Copy className="h-4 w-4" />
+            Copy
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style).button)}
+            onClick={handleExportPDF}
+          >
+            <FileDown className="h-4 w-4" />
+            PDF
+          </Button>
+        </div>
       </Card>
 
       <SignatureDialog
