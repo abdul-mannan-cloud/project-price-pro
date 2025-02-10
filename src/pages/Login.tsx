@@ -10,6 +10,7 @@ import { Boxes } from "@/components/ui/background-boxes";
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -19,7 +20,7 @@ const Login = () => {
   const { toast } = useToast();
 
   const validateForm = () => {
-    if (!email || !password) {
+    if (!email || (!isForgotPassword && !password)) {
       toast({
         title: "Missing Fields",
         description: "Please fill in all required fields.",
@@ -28,7 +29,7 @@ const Login = () => {
       return false;
     }
 
-    if (password.length < 6) {
+    if (!isForgotPassword && password.length < 6) {
       toast({
         title: "Invalid Password",
         description: "Password must be at least 6 characters long.",
@@ -47,6 +48,45 @@ const Login = () => {
     }
 
     return true;
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email) {
+      toast({
+        title: "Missing Email",
+        description: "Please enter your email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const resetUrl = `${window.location.origin}/reset-password`;
+      const response = await supabase.functions.invoke('send-password-reset', {
+        body: { email, resetUrl },
+      });
+
+      if (response.error) throw response.error;
+
+      toast({
+        title: "Check your email",
+        description: "If an account exists with this email, you will receive password reset instructions.",
+      });
+      setIsForgotPassword(false);
+    } catch (error: any) {
+      console.error("Forgot password error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred while processing your request",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,17 +170,23 @@ const Login = () => {
       <Card className="w-full max-w-md p-8 relative z-30 bg-white/10 backdrop-blur-xl border border-white/20">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-white">
-            {isSignUp ? "Create Account" : "Welcome Back"}
+            {isForgotPassword 
+              ? "Reset Password"
+              : isSignUp 
+                ? "Create Account" 
+                : "Welcome Back"}
           </h1>
           <p className="mt-2 text-gray-400">
-            {isSignUp
-              ? "Sign up to start estimating projects"
-              : "Sign in to your account"}
+            {isForgotPassword
+              ? "Enter your email to receive reset instructions"
+              : isSignUp
+                ? "Sign up to start estimating projects"
+                : "Sign in to your account"}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {isSignUp && (
+        <form onSubmit={isForgotPassword ? handleForgotPassword : handleSubmit} className="space-y-6">
+          {isSignUp && !isForgotPassword && (
             <>
               <Input
                 label="First Name"
@@ -169,16 +215,18 @@ const Login = () => {
             required
             className="bg-white/5 border-white/10 text-white"
           />
-          <Input
-            label="Password"
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            className="bg-white/5 border-white/10 text-white"
-          />
+          {!isForgotPassword && (
+            <Input
+              label="Password"
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              className="bg-white/5 border-white/10 text-white"
+            />
+          )}
           <Button
             type="submit"
             className="w-full bg-white text-black hover:bg-gray-200 transition-colors"
@@ -186,26 +234,43 @@ const Login = () => {
           >
             {loading
               ? "Loading..."
-              : isSignUp
-              ? "Create Account"
-              : "Sign In"}
+              : isForgotPassword
+                ? "Send Reset Instructions"
+                : isSignUp
+                  ? "Create Account"
+                  : "Sign In"}
           </Button>
         </form>
-        <div className="mt-6 text-center">
+
+        <div className="mt-6 text-center space-y-4">
+          {!isForgotPassword && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setEmail("");
+                setPassword("");
+                setFirstName("");
+                setLastName("");
+              }}
+              className="text-gray-400 hover:text-white transition-colors border-none"
+            >
+              {isSignUp
+                ? "Already have an account? Sign in"
+                : "Don't have an account? Sign up"}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
-              setIsSignUp(!isSignUp);
-              setEmail("");
+              setIsForgotPassword(!isForgotPassword);
               setPassword("");
-              setFirstName("");
-              setLastName("");
             }}
-            className="text-gray-400 hover:text-white transition-colors border-none"
+            className="block w-full text-gray-400 hover:text-white transition-colors border-none"
           >
-            {isSignUp
-              ? "Already have an account? Sign in"
-              : "Don't have an account? Sign up"}
+            {isForgotPassword
+              ? "Back to login"
+              : "Forgot your password?"}
           </button>
         </div>
       </Card>
