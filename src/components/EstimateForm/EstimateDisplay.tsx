@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Database } from "@/integrations/supabase/types";
 import { Json } from "@/integrations/supabase/types";
 import { BrandingColors } from "@/types/settings";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import html2pdf from 'html2pdf.js';
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplateSettings";
