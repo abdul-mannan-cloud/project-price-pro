@@ -33,20 +33,29 @@ function GlobalBrandingLoader() {
     queryFn: async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return null;
+        if (!user) {
+          console.log("No authenticated user found");
+          return null;
+        }
 
-        const { data, error } = await supabase
+        const { data: contractor, error } = await supabase
           .from("contractors")
           .select("branding_colors")
           .eq("id", user.id)
           .maybeSingle();
 
         if (error) {
-          console.error("Error fetching branding colors:", error);
+          console.error("Error fetching contractor:", error);
+          return null;
+        }
+
+        // If no contractor found, return null without setting colors
+        if (!contractor) {
+          console.log("No contractor found for user:", user.id);
           return null;
         }
         
-        const colors = data?.branding_colors as { primary: string; secondary: string } | null;
+        const colors = contractor.branding_colors as { primary: string; secondary: string } | null;
         if (colors) {
           document.documentElement.style.setProperty('--primary', colors.primary);
           document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
