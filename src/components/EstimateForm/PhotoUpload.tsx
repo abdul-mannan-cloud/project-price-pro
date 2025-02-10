@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Camera, X, Plus, Loader2 } from "lucide-react";
@@ -53,9 +54,9 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
           .getPublicUrl(fileName);
 
         uploadedUrls.push(publicUrl);
+        onPhotosSelected([...uploadedPhotos, publicUrl]);
       }
 
-      onPhotosSelected([...uploadedPhotos, ...uploadedUrls]);
       toast.success("Photos uploaded successfully");
     } catch (error) {
       console.error('Upload error:', error);
