@@ -21,6 +21,19 @@ import { EstimateContent } from "./components/EstimateContent";
 import { EstimateTotals } from "./components/EstimateTotals";
 import { EstimateSignature } from "./components/EstimateSignature";
 
+const formatCurrency = (amount: number): string => {
+  return amount.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
+
+const formatUnit = (unit: string): string => {
+  return unit.toLowerCase();
+};
+
 export interface LineItem {
   title: string;
   description?: string;
@@ -72,19 +85,6 @@ interface EstimateDisplayProps {
   isLoading?: boolean;
 }
 
-const formatCurrency = (amount: number): string => {
-  return amount.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
-};
-
-const formatUnit = (unit: string): string => {
-  return unit.toLowerCase();
-};
-
 export const EstimateDisplay = ({ 
   groups = [], 
   totalCost = 0, 
@@ -96,7 +96,7 @@ export const EstimateDisplay = ({
   onSignatureComplete,
   projectImages = [],
   estimate,
-  isLoading = false
+  isLoading: initialIsLoading = false
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
@@ -105,6 +105,7 @@ export const EstimateDisplay = ({
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(initialIsLoading);
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ["contractor-settings", contractorId],
@@ -132,7 +133,7 @@ export const EstimateDisplay = ({
     checkContractorAccess();
   }, [contractorId]);
 
-  if (isSettingsLoading || isLoading) {
+  if (isLoading || isSettingsLoading) {
     return <EstimateSkeleton />;
   }
 
