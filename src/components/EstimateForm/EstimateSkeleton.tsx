@@ -1,5 +1,5 @@
+
 import { Skeleton } from "@/components/ui/skeleton"
-import { RefreshCw } from "lucide-react";
 
 export const EstimateSkeleton = () => {
   return (
@@ -19,47 +19,42 @@ export const EstimateSkeleton = () => {
         <Skeleton className="h-20 w-full rounded-lg" />
       </div>
 
-      {/* Main Content Container - Keep it white and visible */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        {/* Loading Spinner */}
-        <div className="flex items-center justify-center py-12">
-          <RefreshCw className="h-8 w-8 text-primary animate-spin" />
-        </div>
-
-        {/* Table Groups */}
-        {Array.from({ length: 2 }).map((_, groupIndex) => (
-          <div key={groupIndex} className="space-y-4 mt-8">
-            {/* Group Header */}
-            <Skeleton className="h-6 w-[200px]" />
+      {/* Table Groups */}
+      {Array.from({ length: 2 }).map((_, groupIndex) => (
+        <div key={groupIndex} className="space-y-4 mt-8">
+          {/* Group Header */}
+          <Skeleton className="h-6 w-[200px]" />
+          
+          {/* Table */}
+          <div className="w-full space-y-3">
+            {/* Table Header */}
+            <div className="grid grid-cols-5 gap-4">
+              <Skeleton className="h-4 col-span-2" />
+              <Skeleton className="h-4" />
+              <Skeleton className="h-4" />
+              <Skeleton className="h-4" />
+            </div>
             
-            {/* Table */}
-            <div className="w-full space-y-3">
-              {/* Table Header */}
-              <div className="grid grid-cols-5 gap-4">
-                <Skeleton className="h-4 col-span-2" />
-                <Skeleton className="h-4" />
-                <Skeleton className="h-4" />
-                <Skeleton className="h-4" />
+            {/* Table Rows */}
+            {Array.from({ length: 3 }).map((_, rowIndex) => (
+              <div key={rowIndex} className="grid grid-cols-5 gap-4">
+                <Skeleton className="h-8 col-span-2" />
+                <Skeleton className="h-8" />
+                <Skeleton className="h-8" />
+                <Skeleton className="h-8" />
               </div>
-              
-              {/* Table Rows */}
-              {Array.from({ length: 3 }).map((_, rowIndex) => (
-                <div key={rowIndex} className="grid grid-cols-5 gap-4">
-                  <Skeleton className="h-8 col-span-2" />
-                  <Skeleton className="h-8" />
-                  <Skeleton className="h-8" />
-                  <Skeleton className="h-8" />
-                </div>
-              ))}
-              
-              {/* Subtotal */}
-              <div className="flex justify-end mt-4">
-                <Skeleton className="h-6 w-[150px]" />
-              </div>
+            ))}
+            
+            {/* Subtotal */}
+            <div className="flex justify-end mt-4">
+              <Skeleton className="h-6 w-[150px]" />
             </div>
           </div>
-        ))}
+        </div>
+      ))}
 
+      {/* Main Content Container */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         {/* Totals Section */}
         <div className="space-y-4 mt-8 pt-6 border-t">
           <div className="flex justify-between">
@@ -79,3 +74,4 @@ export const EstimateSkeleton = () => {
     </div>
   );
 };
+
