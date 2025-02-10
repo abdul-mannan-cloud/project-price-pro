@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/3d-button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,17 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard");
+      }
+    };
+    checkUser();
+  }, [navigate]);
 
   const validateForm = () => {
     if (!email || (!isForgotPassword && !password)) {
@@ -127,11 +138,17 @@ const Login = () => {
           throw signInError;
         }
 
+        // After successful login, get the user session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error("Failed to get session after login");
+        }
+
         // Check if contractor record exists
         const { data: contractor, error: contractorError } = await supabase
           .from("contractors")
           .select("*")
-          .eq("id", (await supabase.auth.getUser()).data.user?.id)
+          .eq("id", session.user.id)
           .maybeSingle();
 
         if (contractorError) throw contractorError;
