@@ -70,8 +70,31 @@ export const EstimateSkeleton = () => {
             <Skeleton className="h-6 w-[180px]" />
           </div>
         </div>
+
+        {/* Signatures Section */}
+        <div className="mt-8 pt-6 border-t space-y-6">
+          <Skeleton className="h-6 w-[150px]" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Client Signature Box */}
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-[100px]" />
+              <Skeleton className="h-32 w-full rounded-lg" />
+              <Skeleton className="h-4 w-[150px]" />
+            </div>
+            {/* Contractor Signature Box */}
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-[120px]" />
+              <Skeleton className="h-32 w-full rounded-lg" />
+              <Skeleton className="h-4 w-[150px]" />
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Text */}
+        <div className="mt-8 pt-6 border-t">
+          <Skeleton className="h-20 w-full" />
+        </div>
       </div>
     </div>
   );
 };
-
