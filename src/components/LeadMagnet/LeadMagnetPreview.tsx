@@ -10,6 +10,7 @@ import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { Question } from "@/types/estimate";
 import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
+import { EstimateSkeleton } from "@/components/EstimateForm/EstimateSkeleton";
 
 interface BrandingColors {
   primary: string;
@@ -33,6 +34,7 @@ export const LeadMagnetPreview = () => {
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const [estimate, setEstimate] = useState<any>(null);
   const [leadId, setLeadId] = useState<string | null>(null);
+  const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
 
   const { data: contractor } = useQuery({
     queryKey: ["contractor"],
@@ -53,6 +55,7 @@ export const LeadMagnetPreview = () => {
 
   const generateEstimateInBackground = async () => {
     try {
+      setIsGeneratingEstimate(true);
       const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           answers: selectedOptions,
@@ -70,6 +73,8 @@ export const LeadMagnetPreview = () => {
         title: "Processing Estimate",
         description: "Your estimate is being generated and will be emailed to you shortly.",
       });
+    } finally {
+      setIsGeneratingEstimate(false);
     }
   };
 
@@ -215,7 +220,11 @@ export const LeadMagnetPreview = () => {
 
   // Show contact form immediately after questions
   if (currentStep === questions.length + 1) {
-    return (
+    return isGeneratingEstimate ? (
+      <div className="card p-8">
+        <EstimateSkeleton />
+      </div>
+    ) : (
       <ContactForm
         onSubmit={handleContactFormSubmit}
         leadId={leadId || undefined}
@@ -274,4 +283,3 @@ export const LeadMagnetPreview = () => {
     </div>
   );
 };
-
