@@ -312,7 +312,7 @@ ${templateSettings.estimate_footer_text || ''}
           tableHeader: "text-xs uppercase tracking-wide py-4 px-4 text-left text-gray-600 font-light",
           tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
           tableCell: "py-4 px-4 text-sm border border-gray-300 break-words text-gray-800 font-light",
-          total: "text-2xl md:text-3xl font-light",
+          total: "text-2xl md:text-3xl font-bold",
           message: "bg-gray-50/50 p-6 rounded-none text-sm font-light",
           groupTitle: "text-base font-light mb-4 w-full uppercase tracking-wide",
           subtotal: "text-right py-4 px-4 text-sm font-light text-gray-600",
@@ -616,8 +616,8 @@ ${templateSettings.estimate_footer_text || ''}
                     <td className={getTemplateStyles('excel').totalsLabel}>Tax (8.5%)</td>
                     <td className={getTemplateStyles('excel').totalsValue}>{formatCurrency(totalCost * 0.085)}</td>
                   </tr>
-                  <tr className={getTemplateStyles('excel').totalsRow}>
-                    <td className={cn(getTemplateStyles('excel').totalsLabel, "font-bold")}>Total Estimate</td>
+                  <tr className={cn(getTemplateStyles('excel').totalsRow, "font-bold")}>
+                    <td className={getTemplateStyles('excel').totalsLabel}>Total Estimate</td>
                     <td className={cn(getTemplateStyles('excel').totalsValue, "font-bold")}>{formatCurrency(totalCost * 1.085)}</td>
                   </tr>
                 </tbody>
