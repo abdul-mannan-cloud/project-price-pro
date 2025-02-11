@@ -108,9 +108,7 @@ export const EstimateDisplay = ({
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ["contractor-settings", contractorId],
@@ -140,37 +138,43 @@ export const EstimateDisplay = ({
 
   const handleRefreshEstimate = async () => {
     try {
-      setIsLoading(true);
-      const { data, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          leadId: estimate?.id,
-          contractorId,
-          refreshOnly: true
-        }
-      });
-
-      if (error) throw error;
-
       toast({
-        title: "Estimate refresh started",
-        description: "Your estimate will be updated shortly.",
+        title: "Refreshing estimate...",
+        description: "Please wait while we regenerate your estimate.",
+      });
+      
+      // Trigger estimate regeneration
+      const response = await fetch(`/api/generate-estimate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          leadId: estimate.id,
+          contractorId: contractorId,
+        }),
       });
 
-      // Wait a bit to allow the background task to complete
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      if (!response.ok) {
+        throw new Error('Failed to refresh estimate');
+      }
 
+      const data = await response.json();
+      
       if (onEstimateChange) {
         onEstimateChange(data);
       }
+
+      toast({
+        title: "Estimate refreshed",
+        description: "Your estimate has been successfully regenerated.",
+      });
     } catch (error) {
-      console.error('Error refreshing estimate:', error);
       toast({
         title: "Error",
         description: "Failed to refresh the estimate. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -381,7 +385,7 @@ ${templateSettings.estimate_footer_text || ''}
     }
   };
 
-  if (isSettingsLoading || isLoading) {
+  if (isSettingsLoading) {
     return <EstimateSkeleton />;
   }
 
