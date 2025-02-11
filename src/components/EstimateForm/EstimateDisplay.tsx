@@ -65,17 +65,8 @@ interface EstimateDisplayProps {
   onEstimateChange?: (estimate: any) => void;
   onSignatureComplete?: (initials: string) => void;
   projectImages?: string[];
-  estimate?: any; // Added to access AI generated title and message
-}
-
-interface ContractorSettings {
-  id: string;
-  estimate_template_style: string;
-  estimate_signature_enabled: boolean;
-  estimate_client_message: string;
-  estimate_footer_text: string;
-  estimate_hide_subtotals: boolean;
-  estimate_compact_view: boolean;
+  estimate?: any;
+  isLoading?: boolean;
 }
 
 const formatCurrency = (amount: number): string => {
@@ -101,7 +92,8 @@ export const EstimateDisplay = ({
   onEstimateChange,
   onSignatureComplete,
   projectImages = [],
-  estimate
+  estimate,
+  isLoading = false
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
@@ -416,8 +408,48 @@ ${templateSettings.estimate_footer_text || ''}
   };
 
   const renderTableContent = () => {
-    if (!isEstimateReady) {
-      return <EstimateSkeleton />;
+    if (isLoading) {
+      return (
+        <div className="space-y-6">
+          {[1, 2].map((groupIndex) => (
+            <div key={groupIndex} className={getTemplateStyles(templateSettings.estimate_template_style).section}>
+              <div className="h-6 w-48 bg-gray-200 animate-pulse rounded mb-4" />
+              <table className={getTemplateStyles(templateSettings.estimate_template_style).table}>
+                <thead>
+                  <tr>
+                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[45%]")}>Item</th>
+                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[35%]")}>Description</th>
+                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Qty</th>
+                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Price</th>
+                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[6%] text-right")}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3].map((itemIndex) => (
+                    <tr key={itemIndex} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
+                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%]")}>
+                        <div className="h-4 bg-gray-200 animate-pulse rounded w-3/4" />
+                      </td>
+                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%]")}>
+                        <div className="h-4 bg-gray-200 animate-pulse rounded w-1/2" />
+                      </td>
+                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
+                        <div className="h-4 bg-gray-200 animate-pulse rounded w-full" />
+                      </td>
+                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
+                        <div className="h-4 bg-gray-200 animate-pulse rounded w-full" />
+                      </td>
+                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[6%] text-right")}>
+                        <div className="h-4 bg-gray-200 animate-pulse rounded w-full" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      );
     }
 
     return groups?.map((group, index) => (
