@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,9 +7,6 @@ import { useState } from "react";
 import { ProgressSteps } from "@/components/ui/progress-steps";
 import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { Question } from "@/types/estimate";
-import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
-import { ContactForm } from "@/components/EstimateForm/ContactForm";
-import { EstimateSkeleton } from "@/components/EstimateForm/EstimateSkeleton";
 
 interface BrandingColors {
   primary: string;
@@ -31,10 +27,6 @@ export const LeadMagnetPreview = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
-  const [estimate, setEstimate] = useState<any>(null);
-  const [leadId, setLeadId] = useState<string | null>(null);
-  const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
 
   const { data: contractor } = useQuery({
     queryKey: ["contractor"],
@@ -53,31 +45,6 @@ export const LeadMagnetPreview = () => {
     },
   });
 
-  const generateEstimateInBackground = async () => {
-    try {
-      setIsGeneratingEstimate(true);
-      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          answers: selectedOptions,
-          projectDescription: "New project inquiry",
-          leadId,
-          category: "General"
-        }
-      });
-
-      if (error) throw error;
-      setEstimate(estimateData);
-    } catch (error) {
-      console.error('Error generating estimate:', error);
-      toast({
-        title: "Processing Estimate",
-        description: "Your estimate is being generated and will be emailed to you shortly.",
-      });
-    } finally {
-      setIsGeneratingEstimate(false);
-    }
-  };
-
   const generateQuestions = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('generate-questions', {
@@ -90,6 +57,7 @@ export const LeadMagnetPreview = () => {
       if (error) throw error;
       if (!data?.questions) throw new Error('No questions generated');
 
+      // Ensure questions conform to the Question interface
       const formattedQuestions: Question[] = data.questions.map((q: any) => ({
         id: q.id || crypto.randomUUID(),
         question: q.question,
@@ -121,80 +89,11 @@ export const LeadMagnetPreview = () => {
     }));
   };
 
-  const handleNext = async () => {
+  const handleNext = () => {
     if (currentStep === 0) {
       generateQuestions();
     } else if (currentStep < questions.length) {
       setCurrentStep(prev => prev + 1);
-    } else {
-      // Create a lead and move to contact form
-      try {
-        const { data: lead, error: leadError } = await supabase
-          .from('leads')
-          .insert({
-            status: 'pending',
-            contractor_id: contractor?.id,
-            project_description: "New project inquiry",
-            answers: selectedOptions,
-            project_images: uploadedPhotos,
-            project_title: "New Project"
-          })
-          .select()
-          .single();
-
-        if (leadError) throw leadError;
-        
-        setLeadId(lead.id);
-        setCurrentStep(questions.length + 1);
-        
-        // Start estimate generation in background
-        generateEstimateInBackground();
-      } catch (error) {
-        console.error('Error creating lead:', error);
-        toast({
-          title: "Error",
-          description: "Failed to process your request. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  const handleContactFormSubmit = async (contactData: any) => {
-    if (!leadId) return;
-
-    try {
-      const { error: updateError } = await supabase
-        .from('leads')
-        .update({
-          user_name: contactData.fullName,
-          user_email: contactData.email,
-          user_phone: contactData.phone,
-          project_address: contactData.address,
-          status: estimate ? 'complete' : 'processing'
-        })
-        .eq('id', leadId);
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Success!",
-        description: "Your estimate request has been submitted. You'll receive an email shortly.",
-      });
-
-      // Reset form
-      setCurrentStep(0);
-      setSelectedOptions({});
-      setUploadedPhotos([]);
-      setEstimate(null);
-      setLeadId(null);
-    } catch (error) {
-      console.error('Error updating lead:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save your information. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -213,30 +112,8 @@ export const LeadMagnetPreview = () => {
         secondary: "#4F46E5"
       };
 
-  const handlePhotosSelected = (urls: string[]) => {
-    setUploadedPhotos(urls);
-    handleNext();
-  };
-
-  // Show contact form immediately after questions
-  if (currentStep === questions.length + 1) {
-    return isGeneratingEstimate ? (
-      <div className="card p-8">
-        <EstimateSkeleton />
-      </div>
-    ) : (
-      <ContactForm
-        onSubmit={handleContactFormSubmit}
-        leadId={leadId || undefined}
-        contractorId={contractor?.id}
-        estimate={estimate}
-        contractor={contractor}
-      />
-    );
-  }
-
   return (
-    <div className="w-full mx-auto space-y-8 animate-fadeIn" style={{
+    <div className="w-full max-w-3xl mx-auto p-6 space-y-8 animate-fadeIn" style={{
       "--primary": brandColors.primary,
       "--secondary": brandColors.secondary,
     } as React.CSSProperties}>
@@ -256,16 +133,22 @@ export const LeadMagnetPreview = () => {
             </div>
           </div>
 
-          <PhotoUpload
-            onPhotosSelected={handlePhotosSelected}
-            onNext={handleNext}
-            uploadedPhotos={uploadedPhotos}
-          />
+          <div className="flex flex-col items-center justify-center p-8 bg-secondary rounded-lg mb-6">
+            <div className="w-full h-64 bg-primary/5 rounded-lg flex items-center justify-center">
+              <p className="text-muted-foreground">Animation Preview</p>
+            </div>
+          </div>
 
-          <Button variant="ghost" className="w-full mt-4" size="lg" onClick={handleNext}>
-            <SkipForward className="mr-2" />
-            Skip Photo
-          </Button>
+          <div className="space-y-4">
+            <Button className="w-full" size="lg" onClick={handleNext}>
+              <Camera className="mr-2" />
+              TAKE A PHOTO
+            </Button>
+            <Button variant="ghost" className="w-full" size="lg" onClick={handleNext}>
+              <SkipForward className="mr-2" />
+              Skip
+            </Button>
+          </div>
         </div>
       )}
 

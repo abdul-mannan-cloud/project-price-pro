@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -105,26 +104,18 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Received request with method:', req.method);
-    
-    const requestBody = await req.json();
-    console.log('Request body:', JSON.stringify(requestBody, null, 2));
-    
-    const { name, email, estimateData, estimateUrl, contractor }: EmailRequest = requestBody;
+    const { name, email, estimateData, estimateUrl, contractor }: EmailRequest = await req.json();
 
-    if (!estimateData || !estimateData.groups) {
-      console.error('Invalid or missing estimate data:', estimateData);
-      throw new Error('Invalid or missing estimate data structure');
+    console.log("Received request with:", { name, email, estimateUrl });
+    console.log("Estimate data:", JSON.stringify(estimateData, null, 2));
+    console.log("Contractor info:", contractor);
+
+    if (!estimateData) {
+      throw new Error("No estimate data provided");
     }
 
     if (!email) {
-      console.error('No email address provided');
-      throw new Error('No email address provided');
-    }
-
-    if (!estimateUrl) {
-      console.error('No estimate URL provided');
-      throw new Error('No estimate URL provided');
+      throw new Error("No email address provided");
     }
 
     const emailResponse = await resend.emails.send({
