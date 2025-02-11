@@ -133,13 +133,18 @@ export const EstimateDisplay = ({
 
       return data;
     },
-    refetchInterval: 3000, // Poll every 3 seconds
+    refetchInterval: !isEstimateReady ? 3000 : false, // Only poll while not ready
     enabled: !!id
   });
 
   useEffect(() => {
     if (leadData) {
-      setIsEstimateReady(!!leadData.estimate_data && leadData.status === 'complete');
+      const isComplete = !!leadData.estimate_data && leadData.status === 'complete';
+      setIsEstimateReady(isComplete);
+
+      if (isComplete && onEstimateChange) {
+        onEstimateChange(leadData.estimate_data);
+      }
     }
   }, [leadData]);
 
@@ -565,7 +570,7 @@ ${templateSettings.estimate_footer_text || ''}
             <div className="w-4 h-4">
               <EstimateAnimation className="!bg-white/20" />
             </div>
-            <span>Calculating your estimate...</span>
+            <span>Generating your estimate...</span>
           </div>
         </div>
       )}
