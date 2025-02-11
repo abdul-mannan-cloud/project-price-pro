@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, SkipForward, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +16,8 @@ import { Question, Category, CategoryQuestions, AnswersState } from "@/types/est
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
+import { Mic, MicOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
@@ -39,6 +41,11 @@ const EstimatePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
 
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
@@ -82,6 +89,12 @@ const EstimatePage = () => {
       loadQuestionSet(selectedCategory);
     }
   }, [selectedCategory]);
+
+  useEffect(() => {
+    // Check if speech recognition is supported
+    const isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+    setIsSpeechSupported(isSupported);
+  }, []);
 
   const loadCategories = async () => {
     try {
@@ -358,7 +371,7 @@ const EstimatePage = () => {
   };
 
   const handleQuestionComplete = async (answers: AnswersState) => {
-    setIsProcessing(true);
+    setIsGeneratingEstimate(true);
     try {
       const answersForSupabase = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
         acc[category] = Object.entries(categoryAnswers).reduce((catAcc, [questionId, answer]) => {
@@ -373,7 +386,6 @@ const EstimatePage = () => {
         return acc;
       }, {} as Record<string, any>);
 
-      console.log('Creating lead record...');
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert({
@@ -390,47 +402,8 @@ const EstimatePage = () => {
       if (leadError) throw leadError;
 
       setCurrentLeadId(lead.id);
-
-      console.log('Generating estimate...');
-      const { data: estimateData, error } = await supabase.functions.invoke(
-        'generate-estimate',
-        {
-          body: { 
-            projectDescription, 
-            imageUrl: uploadedImageUrl, 
-            answers: answersForSupabase,
-            contractorId,
-            leadId: lead.id,
-            category: selectedCategory
-          },
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      if (error) {
-        console.error('Error from generate-estimate function:', error);
-        throw error;
-      }
-
-      if (!estimateData) {
-        throw new Error('No estimate data received');
-      }
-
-      console.log('Updating lead with estimate data...');
-      const { error: updateError } = await supabase
-        .from('leads')
-        .update({ 
-          estimate_data: estimateData,
-          estimated_cost: estimateData.totalCost || 0
-        })
-        .eq('id', lead.id);
-
-      if (updateError) throw updateError;
-
-      setEstimate(estimateData);
       setStage('contact');
+
     } catch (error) {
       console.error('Error generating estimate:', error);
       toast({
@@ -439,7 +412,7 @@ const EstimatePage = () => {
         variant: "destructive",
       });
     } finally {
-      setIsProcessing(false);
+      setIsGeneratingEstimate(false);
     }
   };
 
@@ -484,16 +457,85 @@ const EstimatePage = () => {
 
   const showProgressBar = stage !== 'estimate' && stage !== 'contact';
 
+  const toggleRecording = async () => {
+    if (isRecording) {
+      // Stop recording
+      mediaRecorderRef.current?.stop();
+      audioStream?.getTracks().forEach(track => track.stop());
+      setAudioStream(null);
+      setIsRecording(false);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setAudioStream(stream);
+
+        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+        const recognition = new SpeechRecognition();
+        
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        
+        recognition.onstart = () => {
+          setIsRecording(true);
+          toast({
+            title: "Recording started",
+            description: "Speak clearly into your microphone",
+          });
+        };
+        
+        recognition.onresult = (event: any) => {
+          const transcript = Array.from(event.results)
+            .map((result: any) => result[0])
+            .map((result: any) => result.transcript)
+            .join('');
+          
+          setProjectDescription(transcript);
+        };
+        
+        recognition.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setIsRecording(false);
+          toast({
+            title: "Error",
+            description: "Failed to recognize speech. Please try again.",
+            variant: "destructive",
+          });
+        };
+        
+        recognition.onend = () => {
+          setIsRecording(false);
+        };
+        
+        recognition.start();
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+        toast({
+          title: "Error",
+          description: "Failed to access microphone. Please check your permissions.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   if (isProcessing) {
     return (
-      <LoadingScreen
-        message={
-          stage === 'questions' && currentQuestionIndex === questions.length - 1
-            ? "Generating your estimate..."
-            : "Processing your request..."
-        }
-        isEstimate={stage === 'questions' && currentQuestionIndex === questions.length - 1}
-      />
+      <div className="min-h-screen bg-gray-100">
+        {showProgressBar && (
+          <Progress 
+            value={progress} 
+            className="h-8 rounded-none transition-all duration-500 ease-in-out"
+          />
+        )}
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          <EstimateDisplay 
+            groups={[]}
+            totalCost={0}
+            isLoading={true}
+            contractor={contractor}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -583,19 +625,33 @@ const EstimatePage = () => {
 
         {stage === 'description' && (
           <div className="card p-8 animate-fadeIn">
-            <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
-            <div className="space-y-2">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold">Describe Your Project</h2>
+              {isSpeechSupported && (
+                <button
+                  onClick={toggleRecording}
+                  className={cn(
+                    "p-2 rounded-full transition-all duration-200",
+                    isRecording 
+                      ? "bg-red-100 text-red-600 hover:bg-red-200" 
+                      : "bg-gray-100 hover:bg-gray-200"
+                  )}
+                >
+                  {isRecording ? (
+                    <MicOff className="h-5 w-5" />
+                  ) : (
+                    <Mic className="h-5 w-5" />
+                  )}
+                </button>
+              )}
+            </div>
+            <div className="space-y-2 relative">
               <Textarea
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
                 placeholder="Describe what you need help with (e.g., paint my living room walls)..."
-                className="min-h-[150px]"
+                className="min-h-[150px] pr-12"
               />
-              {projectDescription.length > 0 && projectDescription.length < 30 && (
-                <p className="text-sm text-destructive">
-                  Please enter at least {30 - projectDescription.length} more characters
-                </p>
-              )}
             </div>
             <Button 
               className="w-full mt-6"
