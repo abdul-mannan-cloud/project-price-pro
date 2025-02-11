@@ -27,6 +27,7 @@ serve(async (req) => {
     let requestData;
     try {
       requestData = await req.json();
+      console.log('Request data:', requestData);
     } catch (error) {
       console.error('Error parsing request body:', error);
       throw new Error('Invalid request body');
@@ -73,17 +74,20 @@ serve(async (req) => {
                   cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
                 ).join('\n')}`
               }],
-              model: "llama3.2-11b-vision",
+              model: "llama3.2-11b",
               temperature: 0.2,
-              response_format: { type: "text" }
+              stream: false,
+              max_tokens: 500
             }),
           });
 
           if (!titleResponse.ok) {
+            console.error('Title response error:', await titleResponse.text());
             throw new Error(`Llama API error: ${titleResponse.status}`);
           }
 
           const titleData = await titleResponse.json();
+          console.log('Title API response:', titleData);
           aiTitle = titleData.choices?.[0]?.message?.content?.trim() || aiTitle;
           console.log('Generated title:', aiTitle);
 
@@ -107,17 +111,20 @@ serve(async (req) => {
                   cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
                 ).join('\n')}`
               }],
-              model: "llama3.2-11b-vision",
+              model: "llama3.2-11b",
               temperature: 0.2,
-              response_format: { type: "text" }
+              stream: false,
+              max_tokens: 500
             }),
           });
 
           if (!messageResponse.ok) {
+            console.error('Message response error:', await messageResponse.text());
             throw new Error(`Llama API error: ${messageResponse.status}`);
           }
 
           const messageData = await messageResponse.json();
+          console.log('Message API response:', messageData);
           aiMessage = messageData.choices?.[0]?.message?.content?.trim() || aiMessage;
           console.log('Generated message:', aiMessage);
         } catch (error) {
@@ -171,23 +178,28 @@ serve(async (req) => {
               Category: ${cat.category}
               ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
             }],
-            model: "llama3.2-11b-vision",
+            model: "llama3.2-11b",
             temperature: 0.2,
+            stream: false,
+            max_tokens: 2000,
             response_format: { type: "json_object" }
           }),
         });
 
         if (!response.ok) {
+          console.error('Estimate response error:', await response.text());
           throw new Error(`Llama API error: ${response.status}`);
         }
 
         const aiResponse = await response.json();
+        console.log('Estimate API response:', aiResponse);
         const content = aiResponse.choices?.[0]?.message?.content;
         if (!content) {
           throw new Error('Invalid estimate response format');
         }
 
         const parsedEstimate = typeof content === 'string' ? JSON.parse(content) : content;
+        console.log('Parsed estimate:', parsedEstimate);
         
         // Add the AI generated title and message
         parsedEstimate.ai_generated_title = aiTitle;

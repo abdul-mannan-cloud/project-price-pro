@@ -389,62 +389,7 @@ ${templateSettings.estimate_footer_text || ''}
 
   const renderTableContent = () => {
     if (!isEstimateReady) {
-      return (
-        <div className="space-y-8">
-          {[1, 2].map((groupIndex) => (
-            <div key={groupIndex} className={getTemplateStyles(templateSettings.estimate_template_style).section}>
-              <div className="h-6 w-48 bg-gray-200 animate-pulse rounded mb-4" />
-              <table className={getTemplateStyles(templateSettings.estimate_template_style).table}>
-                <thead>
-                  <tr>
-                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[45%]")}>Item</th>
-                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[35%]")}>Description</th>
-                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Qty</th>
-                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Price</th>
-                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[6%] text-right")}>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[1, 2, 3].map((rowIndex) => (
-                    <tr key={rowIndex} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%]")}>
-                        <div className="h-4 w-3/4 bg-gray-200 animate-pulse rounded">
-                          <EstimateAnimation />
-                        </div>
-                      </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%]")}>
-                        <div className="h-4 w-2/3 bg-gray-200 animate-pulse rounded">
-                          <EstimateAnimation />
-                        </div>
-                      </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                        <div className="h-4 w-12 bg-gray-200 animate-pulse rounded ml-auto">
-                          <EstimateAnimation />
-                        </div>
-                      </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                        <div className="h-4 w-16 bg-gray-200 animate-pulse rounded ml-auto">
-                          <EstimateAnimation />
-                        </div>
-                      </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[6%] text-right")}>
-                        <div className="h-4 w-20 bg-gray-200 animate-pulse rounded ml-auto">
-                          <EstimateAnimation />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).subtotal, "mt-4 pt-3 border-t")}>
-                <div className="h-4 w-32 bg-gray-200 animate-pulse rounded ml-auto">
-                  <EstimateAnimation />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
+      return <EstimateSkeleton />;
     }
 
     return groups?.map((group, index) => (
