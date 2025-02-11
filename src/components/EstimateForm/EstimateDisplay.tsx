@@ -114,37 +114,33 @@ export const EstimateDisplay = ({
   const { toast } = useToast();
   const [isEstimateReady, setIsEstimateReady] = useState(false);
 
-  useEffect(() => {
-    const checkEstimateStatus = async () => {
-      if (!id) return;
+  const { data: leadData } = useQuery({
+    queryKey: ['estimate-status', id],
+    queryFn: async () => {
+      if (!id) return null;
+      
+      const { data, error } = await supabase
+        .from('leads')
+        .select('estimate_data, status')
+        .eq('id', id)
+        .maybeSingle();
 
-      try {
-        const { data: lead, error } = await supabase
-          .from('leads')
-          .select('estimate_data, status')
-          .eq('id', id)
-          .maybeSingle();
-
-        if (error) {
-          console.error('Error fetching lead:', error);
-          return;
-        }
-
-        // Set estimate ready when we have data and status is complete
-        setIsEstimateReady(!!lead?.estimate_data && lead?.status === 'complete');
-      } catch (error) {
-        console.error('Error checking estimate status:', error);
+      if (error) {
+        console.error('Error fetching lead:', error);
+        return null;
       }
-    };
 
-    // Check immediately
-    checkEstimateStatus();
+      return data;
+    },
+    refetchInterval: 3000, // Poll every 3 seconds
+    enabled: !!id
+  });
 
-    // Then poll every 3 seconds
-    const interval = setInterval(checkEstimateStatus, 3000);
-
-    return () => clearInterval(interval);
-  }, [id]);
+  useEffect(() => {
+    if (leadData) {
+      setIsEstimateReady(!!leadData.estimate_data && leadData.status === 'complete');
+    }
+  }, [leadData]);
 
   useEffect(() => {
     const hasValidEstimate = groups?.length > 0 && totalCost > 0;
