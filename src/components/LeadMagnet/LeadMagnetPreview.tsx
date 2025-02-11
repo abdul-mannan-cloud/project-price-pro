@@ -1,16 +1,16 @@
-
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Camera, SkipForward } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProgressSteps } from "@/components/ui/progress-steps";
 import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { Question } from "@/types/estimate";
 import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateSkeleton } from "@/components/EstimateForm/EstimateSkeleton";
+import { useNavigate } from "react-router-dom";
 
 interface BrandingColors {
   primary: string;
@@ -27,6 +27,7 @@ const isBrandingColors = (value: unknown): value is BrandingColors => {
 };
 
 export const LeadMagnetPreview = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
@@ -35,6 +36,32 @@ export const LeadMagnetPreview = () => {
   const [estimate, setEstimate] = useState<any>(null);
   const [leadId, setLeadId] = useState<string | null>(null);
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Session expired",
+          description: "Please log in again to continue.",
+          variant: "destructive",
+        });
+        navigate("/login");
+      }
+    };
+
+    checkSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        navigate("/login");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, toast]);
 
   const { data: contractor } = useQuery({
     queryKey: ["contractor"],
@@ -56,6 +83,18 @@ export const LeadMagnetPreview = () => {
   const generateEstimateInBackground = async () => {
     try {
       setIsGeneratingEstimate(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Session expired",
+          description: "Please log in again to continue.",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
+      }
+
       const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           answers: selectedOptions,
@@ -67,7 +106,7 @@ export const LeadMagnetPreview = () => {
 
       if (error) throw error;
       setEstimate(estimateData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating estimate:', error);
       toast({
         title: "Processing Estimate",
@@ -127,7 +166,6 @@ export const LeadMagnetPreview = () => {
     } else if (currentStep < questions.length) {
       setCurrentStep(prev => prev + 1);
     } else {
-      // Create a lead and move to contact form
       try {
         const { data: lead, error: leadError } = await supabase
           .from('leads')
@@ -147,7 +185,6 @@ export const LeadMagnetPreview = () => {
         setLeadId(lead.id);
         setCurrentStep(questions.length + 1);
         
-        // Start estimate generation in background
         generateEstimateInBackground();
       } catch (error) {
         console.error('Error creating lead:', error);
@@ -182,7 +219,6 @@ export const LeadMagnetPreview = () => {
         description: "Your estimate request has been submitted. You'll receive an email shortly.",
       });
 
-      // Reset form
       setCurrentStep(0);
       setSelectedOptions({});
       setUploadedPhotos([]);
@@ -218,7 +254,6 @@ export const LeadMagnetPreview = () => {
     handleNext();
   };
 
-  // Show contact form immediately after questions
   if (currentStep === questions.length + 1) {
     return isGeneratingEstimate ? (
       <div className="card p-8">
