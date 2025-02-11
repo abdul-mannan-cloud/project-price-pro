@@ -115,9 +115,13 @@ serve(async (req) => {
     const { answers, projectDescription, category, refreshOnly, leadId } = requestData;
     console.log('Generating estimate for:', { category, projectDescription, answers });
 
-    // Format answers for better prompt context
+    // Format answers for better prompt context, with null check
     const formattedAnswers = Object.entries(answers || {}).map(([_, value]) => {
-      return `Q: ${value.question}\nA: ${value.answers.join(', ')}`;
+      if (!value || !value.question || !Array.isArray(value.answers)) {
+        console.log('Invalid answer format:', value);
+        return `Q: Unknown\nA: No answer provided`;
+      }
+      return `Q: ${value.question}\nA: ${value.answers.filter(Boolean).join(', ')}`;
     }).join('\n');
 
     // Generate estimate
