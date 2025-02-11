@@ -49,83 +49,43 @@ serve(async (req) => {
           return { category, questions };
         });
 
-        let aiTitle = 'Project Estimate';
-        let aiMessage = 'Custom project estimate based on provided specifications.';
+        console.log('Formatted answers:', formattedAnswers);
 
-        try {
-          // Get AI-generated title
-          const titleResponse = await fetch('https://api.llama-api.com/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${llamaApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messages: [{
-                role: 'system',
-                content: 'Generate a concise project title (4 words or less). The title should be professional and descriptive.'
-              }, {
-                role: 'user',
-                content: `Based on this project description and answers, generate a concise project title:
-                Category: ${category || 'General Construction'}
-                Description: ${projectDescription || 'Project estimate'}
-                ${formattedAnswers.map(cat => 
-                  cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
-                ).join('\n')}`
-              }],
-              model: "llama3.2-11b-vision",
-              temperature: 0.2,
-              response_format: { type: "text" }
-            }),
-          });
+        // Get AI-generated title and message
+        const titleResponse = await fetch('https://api.llama-api.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${llamaApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: [{
+              role: 'system',
+              content: 'Generate a concise project title (4 words or less). The title should be professional and descriptive.'
+            }, {
+              role: 'user',
+              content: `Based on this project description and answers, generate a concise project title:
+              Category: ${category || 'General Construction'}
+              Description: ${projectDescription || 'Project estimate'}
+              ${formattedAnswers.map(cat => 
+                cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
+              ).join('\n')}`
+            }],
+            model: "llama3.2-11b-vision",
+            temperature: 0.2,
+            response_format: { type: "text" }
+          }),
+        });
 
-          if (!titleResponse.ok) {
-            throw new Error(`Llama API error: ${titleResponse.status}`);
-          }
-
-          const titleData = await titleResponse.json();
-          aiTitle = titleData.choices?.[0]?.message?.content?.trim() || aiTitle;
-          console.log('Generated title:', aiTitle);
-
-          // Get AI-generated message/overview
-          const messageResponse = await fetch('https://api.llama-api.com/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${llamaApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messages: [{
-                role: 'system',
-                content: 'Generate a clear, professional project overview (2-3 sentences).'
-              }, {
-                role: 'user',
-                content: `Based on this project description and answers, generate a clear overview:
-                Category: ${category || 'General Construction'}
-                Description: ${projectDescription || 'Project estimate'}
-                ${formattedAnswers.map(cat => 
-                  cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
-                ).join('\n')}`
-              }],
-              model: "llama3.2-11b-vision",
-              temperature: 0.2,
-              response_format: { type: "text" }
-            }),
-          });
-
-          if (!messageResponse.ok) {
-            throw new Error(`Llama API error: ${messageResponse.status}`);
-          }
-
-          const messageData = await messageResponse.json();
-          aiMessage = messageData.choices?.[0]?.message?.content?.trim() || aiMessage;
-          console.log('Generated message:', aiMessage);
-        } catch (error) {
-          console.error('Error generating title or message:', error);
-          // Continue with default values if title/message generation fails
+        if (!titleResponse.ok) {
+          throw new Error(`Llama API error: ${titleResponse.status}`);
         }
 
-        // Generate the main estimate with cost breakdown
+        const titleData = await titleResponse.json();
+        const aiTitle = titleData.choices?.[0]?.message?.content?.trim() || 'Project Estimate';
+        console.log('Generated title:', aiTitle);
+
+        // Generate estimate with cost breakdown
         const response = await fetch('https://api.llama-api.com/chat/completions', {
           method: 'POST',
           headers: {
@@ -188,10 +148,10 @@ serve(async (req) => {
         }
 
         const parsedEstimate = typeof content === 'string' ? JSON.parse(content) : content;
+        console.log('Generated estimate:', parsedEstimate);
         
-        // Add the AI generated title and message
+        // Add the AI generated title
         parsedEstimate.ai_generated_title = aiTitle;
-        parsedEstimate.ai_generated_message = aiMessage;
 
         // Update the lead with the estimate
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -211,8 +171,7 @@ serve(async (req) => {
               estimate_data: parsedEstimate,
               status: 'complete',
               estimated_cost: parsedEstimate.totalCost || 0,
-              ai_generated_title: aiTitle,
-              ai_generated_message: aiMessage
+              ai_generated_title: aiTitle
             })
             .eq('id', leadId);
 
@@ -225,6 +184,24 @@ serve(async (req) => {
 
       } catch (error) {
         console.error('Background task error:', error);
+        
+        // Update lead status to error if something went wrong
+        if (leadId) {
+          const supabaseUrl = Deno.env.get('SUPABASE_URL');
+          const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+          
+          if (supabaseUrl && supabaseKey) {
+            const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+            await supabaseAdmin
+              .from('leads')
+              .update({ 
+                status: 'error',
+                ai_generated_message: error.message
+              })
+              .eq('id', leadId);
+          }
+        }
+        
         throw error;
       }
     })());

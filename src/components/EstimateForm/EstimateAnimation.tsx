@@ -12,3 +12,4 @@ export const EstimateAnimation = ({ className, height = "h-6", width = "w-24" }:
     </div>
   );
 };
+
