@@ -9,6 +9,33 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+// Retry configuration
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function retryWithExponentialBackoff(
+  operation: () => Promise<Response>,
+  retries = MAX_RETRIES,
+  delay = INITIAL_RETRY_DELAY
+): Promise<Response> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (retries === 0) throw error;
+    
+    console.log(`Retry attempt remaining: ${retries}. Waiting ${delay}ms before next attempt...`);
+    await sleep(delay);
+    
+    return retryWithExponentialBackoff(
+      operation,
+      retries - 1,
+      delay * 2
+    );
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -86,7 +113,6 @@ serve(async (req) => {
         }`
       }];
 
-      // Add image analysis message if image URL is provided
       if (imageUrl) {
         messages.push({
           role: 'user',
@@ -103,7 +129,6 @@ serve(async (req) => {
         });
       }
 
-      // Add the main request message
       messages.push({
         role: 'user',
         content: `Based on the following information, generate ONLY a JSON response:
@@ -115,25 +140,30 @@ serve(async (req) => {
         ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
       });
 
-      const response = await fetch('https://api.llama-api.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${llamaApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages,
-          model: "llama3.2-11b-vision",
-          temperature: 0.2,
-          stream: false,
-          max_tokens: 2000,
-          response_format: { type: "json_object" }
-        }),
-      });
+      const response = await retryWithExponentialBackoff(async () => {
+        const res = await fetch('https://api.llama-api.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${llamaApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages,
+            model: "llama3.2-11b-vision",
+            temperature: 0.2,
+            stream: false,
+            max_tokens: 2000,
+            response_format: { type: "json_object" }
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(`Estimate generation failed: ${await response.text()}`);
-      }
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Estimate generation failed: ${errorText}`);
+        }
+
+        return res;
+      });
 
       const data = await response.json();
       console.log('Raw LLM response:', data);
@@ -143,12 +173,10 @@ serve(async (req) => {
         const content = data.choices?.[0]?.message?.content;
         console.log('LLM content:', content);
         
-        // Ensure we're working with a string before parsing
         if (typeof content !== 'string') {
           throw new Error('Invalid response format: content is not a string');
         }
 
-        // Try to extract JSON if the response includes any extra text
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
           throw new Error('No JSON object found in response');
@@ -164,7 +192,6 @@ serve(async (req) => {
         throw new Error('Invalid estimate format: missing required fields');
       }
 
-      // Update the lead with the estimate
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
       
@@ -201,7 +228,6 @@ serve(async (req) => {
 
     } catch (error) {
       console.error('Error generating estimate:', error);
-      // Update lead with error status
       if (leadId) {
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
