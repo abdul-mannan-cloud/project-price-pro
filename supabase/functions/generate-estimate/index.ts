@@ -127,7 +127,32 @@ serve(async (req) => {
           body: JSON.stringify({
             messages: [{
               role: 'system',
-              content: 'You are a construction cost estimator. Generate estimates in JSON format only.'
+              content: `You are a construction cost estimator. Generate estimates in JSON format with this structure:
+              {
+                "groups": [
+                  {
+                    "name": "Group Name",
+                    "description": "Optional group description",
+                    "subgroups": [
+                      {
+                        "name": "Subgroup Name",
+                        "items": [
+                          {
+                            "title": "Item Title",
+                            "description": "Item description",
+                            "quantity": number,
+                            "unit": "optional unit",
+                            "unitAmount": number,
+                            "totalPrice": number
+                          }
+                        ],
+                        "subtotal": number
+                      }
+                    ]
+                  }
+                ],
+                "totalCost": number
+              }`
             }, {
               role: 'user',
               content: `Based on the following project details, generate a detailed construction estimate in JSON format only:
