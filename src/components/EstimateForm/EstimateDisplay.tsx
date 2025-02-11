@@ -784,7 +784,7 @@ ${templateSettings.estimate_footer_text || ''}
               <div className="space-y-3">
                 <p className="text-sm font-medium">Client Signature</p>
                 {!isEstimateReady ? (
-                  <EstimateAnimation />
+                  <div className="h-32 w-full bg-gray-200 animate-pulse rounded relative overflow-hidden" />
                 ) : (
                   <div 
                     className={cn(
@@ -816,7 +816,7 @@ ${templateSettings.estimate_footer_text || ''}
               <div className="space-y-3">
                 <p className="text-sm font-medium">Contractor Signature</p>
                 {!isEstimateReady ? (
-                  <EstimateAnimation />
+                  <div className="h-32 w-full bg-gray-200 animate-pulse rounded relative overflow-hidden" />
                 ) : (
                   <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).signatureBox, "bg-gray-50")}></div>
                 )}
