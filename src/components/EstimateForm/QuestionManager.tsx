@@ -33,12 +33,14 @@ export const QuestionManager = ({
   }
 
   if (isGeneratingEstimate) {
-    return <LoadingScreen message="Generating your estimate..." />;
+    return <LoadingScreen message="Generating your estimate..." isEstimate={true} />;
   }
 
   if (!currentQuestion) {
     return <LoadingScreen message="Loading questions..." />;
   }
+
+  const isLastQuestion = currentStage === totalStages && !hasFollowUpQuestion;
 
   return (
     <QuestionCard
@@ -46,7 +48,7 @@ export const QuestionManager = ({
       selectedAnswers={currentSetAnswers[currentQuestion.id]?.answers || []}
       onSelect={handleAnswer}
       onNext={currentQuestion.type === 'multiple_choice' ? handleMultipleChoiceNext : undefined}
-      isLastQuestion={currentStage === totalStages}
+      isLastQuestion={isLastQuestion}
       currentStage={currentStage}
       totalStages={totalStages}
       hasFollowUpQuestion={hasFollowUpQuestion}
