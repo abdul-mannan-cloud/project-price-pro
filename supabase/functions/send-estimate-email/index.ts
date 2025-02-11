@@ -105,18 +105,26 @@ serve(async (req) => {
   }
 
   try {
-    const { name, email, estimateData, estimateUrl, contractor }: EmailRequest = await req.json();
+    console.log('Received request with method:', req.method);
+    
+    const requestBody = await req.json();
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+    
+    const { name, email, estimateData, estimateUrl, contractor }: EmailRequest = requestBody;
 
-    console.log("Received request with:", { name, email, estimateUrl });
-    console.log("Estimate data:", JSON.stringify(estimateData, null, 2));
-    console.log("Contractor info:", contractor);
-
-    if (!estimateData) {
-      throw new Error("No estimate data provided");
+    if (!estimateData || !estimateData.groups) {
+      console.error('Invalid or missing estimate data:', estimateData);
+      throw new Error('Invalid or missing estimate data structure');
     }
 
     if (!email) {
-      throw new Error("No email address provided");
+      console.error('No email address provided');
+      throw new Error('No email address provided');
+    }
+
+    if (!estimateUrl) {
+      console.error('No estimate URL provided');
+      throw new Error('No estimate URL provided');
     }
 
     const emailResponse = await resend.emails.send({
