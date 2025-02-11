@@ -53,7 +53,6 @@ serve(async (req) => {
     });
 
     try {
-      // Single request to generate everything
       const response = await fetch('https://api.llama-api.com/chat/completions', {
         method: 'POST',
         headers: {
@@ -63,10 +62,8 @@ serve(async (req) => {
         body: JSON.stringify({
           messages: [{
             role: 'system',
-            content: `You are a construction cost estimator assistant. Generate an estimate with the following components:
-            1. A concise project title (4 words or less)
-            2. A brief project overview (2-3 sentences)
-            3. A detailed cost breakdown in this exact JSON format:
+            content: `You are a construction cost estimator. Your task is to return ONLY a valid JSON object with no additional text or explanation.
+            The JSON must follow this exact format:
             {
               "ai_generated_title": "string (4 words or less)",
               "ai_generated_message": "string (2-3 sentences)",
@@ -96,7 +93,7 @@ serve(async (req) => {
             }`
           }, {
             role: 'user',
-            content: `Generate a complete estimate based on:
+            content: `Based on the following information, generate ONLY a JSON response:
             Category: ${category || 'General Construction'}
             Description: ${projectDescription || 'Project estimate'}
             Questions and Answers:
@@ -117,12 +114,32 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      const parsedEstimate = typeof data.choices?.[0]?.message?.content === 'string' 
-        ? JSON.parse(data.choices[0].message.content)
-        : data.choices?.[0]?.message?.content;
+      console.log('Raw LLM response:', data);
 
-      if (!parsedEstimate) {
-        throw new Error('Invalid estimate response format');
+      let parsedEstimate;
+      try {
+        const content = data.choices?.[0]?.message?.content;
+        console.log('LLM content:', content);
+        
+        // Ensure we're working with a string before parsing
+        if (typeof content !== 'string') {
+          throw new Error('Invalid response format: content is not a string');
+        }
+
+        // Try to extract JSON if the response includes any extra text
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error('No JSON object found in response');
+        }
+
+        parsedEstimate = JSON.parse(jsonMatch[0]);
+      } catch (parseError) {
+        console.error('Error parsing LLM response:', parseError);
+        throw new Error('Failed to parse estimate data');
+      }
+
+      if (!parsedEstimate || !parsedEstimate.groups || !Array.isArray(parsedEstimate.groups)) {
+        throw new Error('Invalid estimate format: missing required fields');
       }
 
       // Update the lead with the estimate
