@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import { Question, CategoryQuestions, AnswersState, QuestionAnswer } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Database, Json } from "@/integrations/supabase/types";
+
+type LeadInsert = Database['public']['Tables']['leads']['Insert'];
 
 export const useQuestionManager = (
   questionSets: CategoryQuestions[],
@@ -17,7 +20,6 @@ export const useQuestionManager = (
   const [queuedNextQuestions, setQueuedNextQuestions] = useState<string[]>([]);
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
   const [pendingBranchTransition, setPendingBranchTransition] = useState(false);
-  const [showingEstimate, setShowingEstimate] = useState(false);
 
   const calculateProgress = () => {
     if (questionSets.length === 0) return 0;
@@ -61,7 +63,7 @@ export const useQuestionManager = (
 
   const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {
-      onComplete(answers);
+      handleComplete();
       return;
     }
 
@@ -97,6 +99,7 @@ export const useQuestionManager = (
   };
 
   const moveToNextQuestionSet = () => {
+    console.log('Moving to next question set, current index:', currentSetIndex, 'total sets:', questionSets.length);
     if (currentSetIndex < questionSets.length - 1) {
       setCurrentSetIndex(prev => prev + 1);
     } else {
@@ -107,31 +110,84 @@ export const useQuestionManager = (
   const handleComplete = async () => {
     if (currentSetIndex < questionSets.length - 1) {
       moveToNextQuestionSet();
-    } else {
-      setIsGeneratingEstimate(true);
-      try {
-        const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
-          body: { answers }
-        });
+      return;
+    }
 
-        if (error) throw error;
-        
-        if (!estimateData) {
-          throw new Error('No estimate data received');
-        }
+    if (isGeneratingEstimate) {
+      console.log('Already generating estimate, skipping...');
+      return;
+    }
 
-        setShowingEstimate(true);
-        onComplete(answers);
-      } catch (error) {
-        console.error('Error generating estimate:', error);
-        toast({
-          title: "Error",
-          description: "Failed to generate estimate. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsGeneratingEstimate(false);
+    console.log('Starting estimate generation with answers:', answers);
+    setIsGeneratingEstimate(true);
+    
+    try {
+      const answersForDb = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
+        acc[category] = Object.entries(categoryAnswers || {}).reduce((catAcc, [questionId, answer]) => {
+          catAcc[questionId] = {
+            question: answer.question,
+            type: answer.type,
+            answers: answer.answers,
+            options: answer.options
+          };
+          return catAcc;
+        }, {} as Record<string, any>);
+        return acc;
+      }, {} as Record<string, any>);
+
+      // First, create the lead
+      const leadData: LeadInsert = {
+        project_description: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
+        project_title: `${questionSets[0]?.category || 'New'} Project`,
+        answers: answersForDb as Json,
+        category: questionSets[0]?.category,
+        status: 'pending'
+      };
+
+      console.log('Creating lead with data:', leadData);
+
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .insert(leadData)
+        .select()
+        .single();
+
+      if (leadError) {
+        console.error('Error creating lead:', leadError);
+        throw leadError;
       }
+
+      if (!lead?.id) {
+        throw new Error('Failed to create lead - no ID returned');
+      }
+
+      console.log('Lead created successfully:', lead.id);
+
+      // Then, generate the estimate
+      const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          answers: answersForDb,
+          projectDescription: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
+          category: questionSets[0]?.category,
+          leadId: lead.id
+        }
+      });
+
+      if (generateError) {
+        console.error('Error generating estimate:', generateError);
+        throw generateError;
+      }
+
+      await onComplete(answers);
+    } catch (error) {
+      console.error('Error completing questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process your answers. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingEstimate(false);
     }
   };
 
@@ -239,8 +295,9 @@ export const useQuestionManager = (
 
   useEffect(() => {
     const progress = calculateProgress();
+    console.log('Updating progress:', progress);
     onProgressChange(progress);
-  }, [answers, questionSets, onProgressChange]);
+  }, [answers, questionSets]);
 
   return {
     currentQuestion: questionSequence.find(q => q.id === currentQuestionId),
