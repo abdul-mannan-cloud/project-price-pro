@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
@@ -33,8 +34,8 @@ serve(async (req) => {
     const { answers, projectDescription, category } = requestData;
     console.log('Generating estimate for:', { category, projectDescription });
 
-    const formattedAnswers = Object.entries(answers).map(([category, categoryAnswers]) => {
-      const questions = Object.values(categoryAnswers).map(qa => ({
+    const formattedAnswers = Object.entries(answers || {}).map(([category, categoryAnswers]) => {
+      const questions = Object.entries(categoryAnswers || {}).map(([_, qa]) => ({
         question: qa.question,
         answer: qa.answers.map(ans => {
           const option = qa.options.find(opt => opt.value === ans);
@@ -59,50 +60,70 @@ serve(async (req) => {
       cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
     ).join('\n')}`;
 
+    const makeRequest = async (url: string, body: any) => {
+      console.log('Making API request to:', url);
+      console.log('Request body:', body);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${llamaApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('API error response:', text);
+        try {
+          // Try to parse error as JSON
+          const errorJson = JSON.parse(text);
+          throw new Error(`API error: ${errorJson.error || response.status}`);
+        } catch (e) {
+          // If not JSON, throw with text content
+          throw new Error(`API error (${response.status}): ${text.substring(0, 200)}`);
+        }
+      }
+
+      let responseText;
+      try {
+        responseText = await response.text();
+        return JSON.parse(responseText);
+      } catch (error) {
+        console.error('Error parsing response:', error);
+        console.error('Response text:', responseText);
+        throw new Error('Invalid JSON response from API');
+      }
+    };
+
+    console.log('Making title and message requests...');
+
     const [titleResponse, messageResponse] = await Promise.all([
-      fetch('https://api.llama-api.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${llamaApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [{
-            role: 'system',
-            content: 'Generate a concise project title.'
-          }, {
-            role: 'user',
-            content: titlePrompt
-          }],
-          temperature: 0.2
-        }),
+      makeRequest('https://api.llama-api.com/chat/completions', {
+        messages: [{
+          role: 'system',
+          content: 'Generate a concise project title.'
+        }, {
+          role: 'user',
+          content: titlePrompt
+        }],
+        temperature: 0.2
       }),
-      fetch('https://api.llama-api.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${llamaApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [{
-            role: 'system',
-            content: 'Generate a clear project overview.'
-          }, {
-            role: 'user',
-            content: messagePrompt
-          }],
-          temperature: 0.2
-        }),
+      makeRequest('https://api.llama-api.com/chat/completions', {
+        messages: [{
+          role: 'system',
+          content: 'Generate a clear project overview.'
+        }, {
+          role: 'user',
+          content: messagePrompt
+        }],
+        temperature: 0.2
       })
     ]);
 
-    const [titleData, messageData] = await Promise.all([
-      titleResponse.json(),
-      messageResponse.json()
-    ]);
-
-    const aiTitle = titleData.choices[0].message.content.trim();
-    const aiMessage = messageData.choices[0].message.content.trim();
+    const aiTitle = titleResponse.choices[0].message.content.trim();
+    const aiMessage = messageResponse.choices[0].message.content.trim();
 
     const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format.
     
@@ -148,35 +169,19 @@ Important:
 4. Break down costs into logical groups
 5. Include both labor and materials`;
 
-    console.log('Sending prompt to Llama API...');
+    console.log('Making estimate request...');
 
-    const response = await fetch('https://api.llama-api.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${llamaApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messages: [{
-          role: 'system',
-          content: 'You are a construction cost estimator. Generate detailed estimates in JSON format only.'
-        }, {
-          role: 'user',
-          content: prompt
-        }],
-        temperature: 0.2,
-        response_format: { type: "json_object" }
-      }),
+    const aiResponse = await makeRequest('https://api.llama-api.com/chat/completions', {
+      messages: [{
+        role: 'system',
+        content: 'You are a construction cost estimator. Generate detailed estimates in JSON format only.'
+      }, {
+        role: 'user',
+        content: prompt
+      }],
+      temperature: 0.2,
+      response_format: { type: "json_object" }
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Llama API error:', errorText);
-      throw new Error(`Llama API error: ${response.status} ${response.statusText}`);
-    }
-
-    const aiResponse = await response.json();
-    console.log('Received AI response:', aiResponse);
 
     if (!aiResponse.choices?.[0]?.message?.content) {
       throw new Error('Invalid response format from Llama API');
@@ -185,11 +190,9 @@ Important:
     let content = aiResponse.choices[0].message.content.trim();
     console.log('Parsing content:', content);
 
-    content = content.replace(/```json\n?|\n?```/g, '').trim();
-
     let parsedEstimate;
     try {
-      parsedEstimate = JSON.parse(content);
+      parsedEstimate = typeof content === 'string' ? JSON.parse(content) : content;
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       throw new Error(`Failed to parse JSON: ${parseError.message}`);
@@ -252,7 +255,7 @@ Important:
       ai_generated_message: aiMessage
     };
 
-    console.log('Estimate validation successful');
+    console.log('Estimate generation successful');
     return new Response(
       JSON.stringify(estimateJson),
       { 
