@@ -44,7 +44,7 @@ export const QuestionManager = ({
   }
 
   if (isGeneratingEstimate) {
-    return <LoadingScreen message="Generating your estimate..." isEstimate={true} />;
+    return <LoadingScreen message="Building your custom estimate..." isEstimate={true} />;
   }
 
   if (!currentQuestion) {
