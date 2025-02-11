@@ -665,15 +665,33 @@ ${templateSettings.estimate_footer_text || ''}
                 <tbody>
                   <tr className={getTemplateStyles('excel').totalsRow}>
                     <td className={getTemplateStyles('excel').totalsLabel}>Subtotal</td>
-                    <td className={getTemplateStyles('excel').totalsValue}>{formatCurrency(totalCost)}</td>
+                    <td className={getTemplateStyles('excel').totalsValue}>
+                      {isEstimateReady ? formatCurrency(totalCost) : (
+                        <div className="h-6 w-24 bg-gray-200 animate-pulse rounded relative overflow-hidden">
+                          <EstimateAnimation />
+                        </div>
+                      )}
+                    </td>
                   </tr>
                   <tr className={getTemplateStyles('excel').totalsRow}>
                     <td className={getTemplateStyles('excel').totalsLabel}>Tax (8.5%)</td>
-                    <td className={getTemplateStyles('excel').totalsValue}>{formatCurrency(totalCost * 0.085)}</td>
+                    <td className={getTemplateStyles('excel').totalsValue}>
+                      {isEstimateReady ? formatCurrency(totalCost * 0.085) : (
+                        <div className="h-6 w-24 bg-gray-200 animate-pulse rounded relative overflow-hidden">
+                          <EstimateAnimation />
+                        </div>
+                      )}
+                    </td>
                   </tr>
                   <tr className={cn(getTemplateStyles('excel').totalsRow, "font-bold")}>
                     <td className={getTemplateStyles('excel').totalsLabel}>Total Estimate</td>
-                    <td className={cn(getTemplateStyles('excel').totalsValue, "font-bold")}>{formatCurrency(totalCost * 1.085)}</td>
+                    <td className={cn(getTemplateStyles('excel').totalsValue, "font-bold")}>
+                      {isEstimateReady ? formatCurrency(totalCost * 1.085) : (
+                        <div className="h-6 w-32 bg-gray-200 animate-pulse rounded relative overflow-hidden">
+                          <EstimateAnimation />
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -682,15 +700,39 @@ ${templateSettings.estimate_footer_text || ''}
             <div className={cn("mt-8 pt-6 border-t space-y-4", templateSettings.estimate_compact_view ? "md:space-y-3" : "md:space-y-6")}>
               <div className="flex justify-between items-center">
                 <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>Subtotal</p>
-                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).text, "text-lg")}>{formatCurrency(totalCost)}</p>
+                {isEstimateReady ? (
+                  <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).text, "text-lg")}>
+                    {formatCurrency(totalCost)}
+                  </p>
+                ) : (
+                  <div className="h-6 w-24 bg-gray-200 animate-pulse rounded relative overflow-hidden">
+                    <EstimateAnimation />
+                  </div>
+                )}
               </div>
               <div className="flex justify-between items-center">
                 <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>Tax (8.5%)</p>
-                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).text, "text-lg")}>{formatCurrency(totalCost * 0.085)}</p>
+                {isEstimateReady ? (
+                  <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).text, "text-lg")}>
+                    {formatCurrency(totalCost * 0.085)}
+                  </p>
+                ) : (
+                  <div className="h-6 w-24 bg-gray-200 animate-pulse rounded relative overflow-hidden">
+                    <EstimateAnimation />
+                  </div>
+                )}
               </div>
               <div className="flex justify-between items-center pt-4 border-t">
                 <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).title, "!text-xl")}>Total Estimate</p>
-                <p className={getTemplateStyles(templateSettings.estimate_template_style).total}>{formatCurrency(totalCost * 1.085)}</p>
+                {isEstimateReady ? (
+                  <p className={getTemplateStyles(templateSettings.estimate_template_style).total}>
+                    {formatCurrency(totalCost * 1.085)}
+                  </p>
+                ) : (
+                  <div className="h-8 w-32 bg-gray-200 animate-pulse rounded relative overflow-hidden">
+                    <EstimateAnimation />
+                  </div>
+                )}
               </div>
             </div>
           )}
