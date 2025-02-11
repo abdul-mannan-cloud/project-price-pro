@@ -51,7 +51,6 @@ export type Database = {
         Row: {
           contractor_id: string
           created_at: string | null
-          description: string | null
           id: string
           instructions: string | null
           rate: number
@@ -63,7 +62,6 @@ export type Database = {
         Insert: {
           contractor_id: string
           created_at?: string | null
-          description?: string | null
           id?: string
           instructions?: string | null
           rate: number
@@ -75,7 +73,6 @@ export type Database = {
         Update: {
           contractor_id?: string
           created_at?: string | null
-          description?: string | null
           id?: string
           instructions?: string | null
           rate?: number
@@ -126,20 +123,11 @@ export type Database = {
           ai_instructions: string | null
           ai_preferences: Json | null
           ai_prompt_template: string | null
-          ai_rates: Json | null
-          branding_colors: Json | null
           created_at: string | null
-          estimate_client_message: string | null
-          estimate_compact_view: boolean | null
-          estimate_footer_text: string | null
-          estimate_hide_subtotals: boolean | null
-          estimate_signature_enabled: boolean | null
-          estimate_template_style: string | null
           excluded_categories: string[] | null
           id: string
           markup_percentage: number | null
           minimum_project_cost: number | null
-          preferred_language: string | null
           tax_rate: number | null
           updated_at: string | null
         }
@@ -147,20 +135,11 @@ export type Database = {
           ai_instructions?: string | null
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
-          ai_rates?: Json | null
-          branding_colors?: Json | null
           created_at?: string | null
-          estimate_client_message?: string | null
-          estimate_compact_view?: boolean | null
-          estimate_footer_text?: string | null
-          estimate_hide_subtotals?: boolean | null
-          estimate_signature_enabled?: boolean | null
-          estimate_template_style?: string | null
           excluded_categories?: string[] | null
           id: string
           markup_percentage?: number | null
           minimum_project_cost?: number | null
-          preferred_language?: string | null
           tax_rate?: number | null
           updated_at?: string | null
         }
@@ -168,20 +147,11 @@ export type Database = {
           ai_instructions?: string | null
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
-          ai_rates?: Json | null
-          branding_colors?: Json | null
           created_at?: string | null
-          estimate_client_message?: string | null
-          estimate_compact_view?: boolean | null
-          estimate_footer_text?: string | null
-          estimate_hide_subtotals?: boolean | null
-          estimate_signature_enabled?: boolean | null
-          estimate_template_style?: string | null
           excluded_categories?: string[] | null
           id?: string
           markup_percentage?: number | null
           minimum_project_cost?: number | null
-          preferred_language?: string | null
           tax_rate?: number | null
           updated_at?: string | null
         }
@@ -248,8 +218,6 @@ export type Database = {
       }
       leads: {
         Row: {
-          ai_generated_message: string | null
-          ai_generated_title: string | null
           answers: Json | null
           category: string | null
           contractor_id: string | null
@@ -270,8 +238,6 @@ export type Database = {
           user_phone: string | null
         }
         Insert: {
-          ai_generated_message?: string | null
-          ai_generated_title?: string | null
           answers?: Json | null
           category?: string | null
           contractor_id?: string | null
@@ -292,8 +258,6 @@ export type Database = {
           user_phone?: string | null
         }
         Update: {
-          ai_generated_message?: string | null
-          ai_generated_title?: string | null
           answers?: Json | null
           category?: string | null
           contractor_id?: string | null
@@ -410,33 +374,6 @@ export type Database = {
         }
         Relationships: []
       }
-      password_resets: {
-        Row: {
-          created_at: string | null
-          expires_at: string | null
-          id: string
-          token: string
-          used: boolean | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          token: string
-          used?: boolean | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          token?: string
-          used?: boolean | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       question_sets: {
         Row: {
           category: string | null
@@ -475,8 +412,6 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
-          invitation_sent_at: string | null
-          invitation_status: string
           role: string
           updated_at: string | null
         }
@@ -485,8 +420,6 @@ export type Database = {
           created_at?: string | null
           email: string
           id?: string
-          invitation_sent_at?: string | null
-          invitation_status?: string
           role?: string
           updated_at?: string | null
         }
@@ -495,8 +428,6 @@ export type Database = {
           created_at?: string | null
           email?: string
           id?: string
-          invitation_sent_at?: string | null
-          invitation_status?: string
           role?: string
           updated_at?: string | null
         }
@@ -556,12 +487,6 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      estimate_template_style:
-        | "modern"
-        | "classic"
-        | "minimal"
-        | "bold"
-        | "excel"
       question_template_type: "single_choice" | "multi_choice"
       question_type: "multiple_choice" | "multi_select" | "yes_no"
       subscription_status: "active" | "inactive" | "trial"

@@ -1,11 +1,8 @@
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
-import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
 import Settings from "@/pages/Settings";
@@ -13,7 +10,6 @@ import Estimate from "@/pages/Estimate";
 import PublicEstimate from "@/pages/PublicEstimate";
 import NotFound from "@/pages/NotFound";
 import Onboarding from "@/pages/Onboarding";
-import TeamOnboarding from "@/pages/TeamOnboarding";
 import "./App.css";
 
 // Create a client
@@ -27,82 +23,19 @@ const queryClient = new QueryClient({
   },
 });
 
-function GlobalBrandingLoader() {
-  useQuery({
-    queryKey: ["globalBranding"],
-    queryFn: async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.log("No authenticated user found");
-          return null;
-        }
-
-        const { data: contractor, error } = await supabase
-          .from("contractors")
-          .select("branding_colors")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Error fetching contractor:", error);
-          return null;
-        }
-
-        // If no contractor found, return null without setting colors
-        if (!contractor) {
-          console.log("No contractor found for user:", user.id);
-          return null;
-        }
-        
-        const colors = contractor.branding_colors as { primary: string; secondary: string } | null;
-        if (colors) {
-          document.documentElement.style.setProperty('--primary', colors.primary);
-          document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
-          document.documentElement.style.setProperty('--secondary', colors.secondary);
-          document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
-
-          const primaryHex = colors.primary.replace('#', '');
-          const r = parseInt(primaryHex.slice(0, 2), 16);
-          const g = parseInt(primaryHex.slice(2, 4), 16);
-          const b = parseInt(primaryHex.slice(4, 6), 16);
-
-          document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
-          document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
-          document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
-          document.documentElement.style.setProperty('--primary-400', `rgba(${r}, ${g}, ${b}, 0.6)`);
-          document.documentElement.style.setProperty('--primary-500', `rgba(${r}, ${g}, ${b}, 0.8)`);
-          document.documentElement.style.setProperty('--primary-600', colors.primary);
-          document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
-        }
-        return colors;
-      } catch (error) {
-        console.error("Error in GlobalBrandingLoader:", error);
-        return null;
-      }
-    },
-  });
-
-  return null;
-}
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <GlobalBrandingLoader />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Login />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/estimate/:contractorId?" element={<Estimate />} />
           <Route path="/e/:id" element={<PublicEstimate />} />
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/team-onboarding" element={<TeamOnboarding />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />

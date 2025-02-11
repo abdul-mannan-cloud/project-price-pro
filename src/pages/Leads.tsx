@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NavBar } from "@/components/ui/tubelight-navbar";
@@ -6,41 +6,17 @@ import { toast } from "@/hooks/use-toast";
 import { LeadsTable } from "@/components/Leads/LeadsTable";
 import { LeadDetailsDialog } from "@/components/Leads/LeadDetailsDialog";
 import { LayoutDashboard, Users, Settings } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import type { Lead, EstimateData } from "@/components/Leads/LeadsTable";
 
 const Leads = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
 
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { name: "Leads", url: "/leads", icon: Users },
     { name: "Settings", url: "/settings", icon: Settings }
   ];
-
-  // Check authentication status
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          navigate("/login");
-          toast({
-            title: "Authentication required",
-            description: "Please log in to view leads.",
-            variant: "destructive"
-          });
-        }
-      } catch (error) {
-        console.error("Auth error:", error);
-        navigate("/login");
-      }
-    };
-
-    checkAuth();
-  }, [navigate]);
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ["leads"],
