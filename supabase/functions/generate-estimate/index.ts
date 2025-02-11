@@ -52,7 +52,6 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
       throw new Error(`Llama API error: ${response.status}`);
     }
 
-    // Validate JSON response
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
       throw new Error('Invalid response format: expected JSON');
@@ -64,8 +63,8 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
       console.log(`Attempt ${attempt}: Successfully received and validated JSON response`);
       return new Response(text, {
         headers: {
-          'content-type': 'application/json',
-          ...corsHeaders // Add CORS headers to successful response
+          'Content-Type': 'application/json',
+          ...corsHeaders
         }
       });
     } catch (e) {
@@ -74,7 +73,7 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
     }
   } catch (error) {
     if (error.name === 'AbortError') {
-      console.error(`Request aborted after ${timeout}ms (attempt ${attempt})`);
+      console.log(`Request aborted after ${timeout}ms (attempt ${attempt})`);
       if (attempt < MAX_RETRIES) {
         console.log(`Retrying after timeout... Attempt ${attempt + 1} of ${MAX_RETRIES}`);
         return callLlamaAPI(payload, attempt + 1);
@@ -204,7 +203,6 @@ serve(async (req) => {
       }
     }
 
-    // Return immediate response
     return new Response(
       JSON.stringify(parsedEstimate),
       { 
