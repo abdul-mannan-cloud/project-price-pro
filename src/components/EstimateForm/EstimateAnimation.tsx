@@ -1,12 +1,18 @@
-
 import React from 'react';
+import { FileText, Sparkle } from 'lucide-react';
 
-export const EstimateAnimation = ({ className = '', height = "h-6", width = "w-24" }: { 
-  className?: string;
-  height?: string;
-  width?: string;
-}) => {
+export const EstimateAnimation = () => {
   return (
-    <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white to-transparent" />
+    <div className="relative w-full h-full flex items-center justify-center">
+      {/* File Icon Container */}
+      <div className="relative">
+        <FileText size={100} className="text-primary animate-pulse" />
+        
+        {/* Sparkle Animation */}
+        <div className="absolute -top-2 -right-2 animate-[bounce_2s_infinite]">
+          <Sparkle size={24} className="text-primary animate-pulse" />
+        </div>
+      </div>
+    </div>
   );
 };

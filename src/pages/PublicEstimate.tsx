@@ -83,17 +83,32 @@ const PublicEstimate = () => {
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", lead?.contractor_id || DEFAULT_CONTRACTOR_ID],
     queryFn: async () => {
-      const contractorId = lead?.contractor_id || DEFAULT_CONTRACTOR_ID;
       const { data, error } = await supabase
         .from("contractors")
         .select(`
           *,
           contractor_settings (*)
         `)
-        .eq("id", contractorId)
+        .eq("id", lead?.contractor_id || DEFAULT_CONTRACTOR_ID)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (lead?.contractor_id !== DEFAULT_CONTRACTOR_ID) {
+          const { data: defaultData, error: defaultError } = await supabase
+            .from("contractors")
+            .select(`
+              *,
+              contractor_settings (*)
+            `)
+            .eq("id", DEFAULT_CONTRACTOR_ID)
+            .single();
+
+          if (defaultError) throw defaultError;
+          return defaultData;
+        }
+        throw error;
+      }
+
       return data as ContractorWithSettings;
     },
     enabled: !!lead,

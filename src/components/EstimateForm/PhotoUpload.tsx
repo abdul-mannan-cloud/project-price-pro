@@ -1,7 +1,6 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Camera, X, Plus, Loader2 } from "lucide-react";
+import { Camera, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +55,6 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
         uploadedUrls.push(publicUrl);
       }
 
-      // Only update photos once all uploads are complete
       onPhotosSelected([...uploadedPhotos, ...uploadedUrls]);
       toast.success("Photos uploaded successfully");
     } catch (error) {
@@ -110,74 +108,53 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
 
   return (
     <div className="space-y-6 w-full">
-      <div className="relative">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
-          {uploadedPhotos.map((url, index) => (
-            <div key={url} className="relative aspect-square">
-              <img
-                src={url}
-                alt={`Uploaded photo ${index + 1}`}
-                className="w-full h-full object-cover rounded-lg"
-              />
-              <button
-                onClick={() => removePhoto(index)}
-                className="absolute top-2 right-2 p-1 bg-white/80 rounded-full hover:bg-white"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-          {uploadedPhotos.length < 12 && (
-            <label className={cn(
-              "cursor-pointer aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg hover:border-primary transition-colors w-full",
-              isUploading && "opacity-50 cursor-not-allowed"
-            )}>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                multiple
-                className="hidden"
-                capture="environment"
-                disabled={isUploading}
-              />
-              <div className="text-center">
-                {isUploading ? (
-                  <Loader2 className="mx-auto h-8 w-8 text-gray-400 animate-spin" />
-                ) : (
-                  <>
-                    <Plus className="mx-auto h-8 w-8 text-gray-400" />
-                    <span className="mt-2 block text-sm text-gray-500">
-                      Add Photos
-                    </span>
-                  </>
-                )}
-              </div>
-            </label>
-          )}
-        </div>
-        {isUploading && (
-          <div className="absolute inset-0 bg-white/50 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <Loader2 className="mx-auto h-8 w-8 text-primary animate-spin" />
-              <p className="mt-2 text-sm text-gray-600">Uploading photos...</p>
-            </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
+        {uploadedPhotos.map((url, index) => (
+          <div key={url} className="relative aspect-square">
+            <img
+              src={url}
+              alt={`Uploaded photo ${index + 1}`}
+              className="w-full h-full object-cover rounded-lg"
+            />
+            <button
+              onClick={() => removePhoto(index)}
+              className="absolute top-2 right-2 p-1 bg-white/80 rounded-full hover:bg-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
+        ))}
+        {uploadedPhotos.length < 12 && (
+          <label className="cursor-pointer aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg hover:border-primary transition-colors w-full">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              multiple
+              className="hidden"
+              capture="environment"
+              disabled={isUploading}
+            />
+            <div className="text-center">
+              <Plus className="mx-auto h-8 w-8 text-gray-400" />
+              <span className="mt-2 block text-sm text-gray-500">
+                Add Photos
+              </span>
+            </div>
+          </label>
         )}
       </div>
 
-      {uploadedPhotos.length > 0 && (
-        <div className="mt-6">
-          <Button
-            className="w-full"
-            size="lg"
-            onClick={onNext}
-            disabled={isUploading}
-          >
-            Continue
-          </Button>
-        </div>
-      )}
+      <div className="space-y-4">
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={onNext}
+          disabled={uploadedPhotos.length === 0}
+        >
+          Continue
+        </Button>
+      </div>
     </div>
   );
 };

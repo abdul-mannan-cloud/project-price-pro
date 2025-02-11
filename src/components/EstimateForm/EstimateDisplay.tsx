@@ -1,22 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Camera, SkipForward, ArrowLeft, Copy, FileDown, Settings, Phone, Mail, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Copy, FileDown, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Database } from "@/integrations/supabase/types";
 import { Json } from "@/integrations/supabase/types";
 import { BrandingColors } from "@/types/settings";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 import html2pdf from 'html2pdf.js';
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplateSettings";
-import { AIPreferencesSettings } from "@/components/settings/AIPreferencesSettings";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { SignatureDialog } from "./SignatureDialog";
-import { EstimateSkeleton } from "./EstimateSkeleton";
-import { EstimateAnimation } from "./EstimateAnimation";
 
 interface LineItem {
   title: string;
@@ -55,15 +51,6 @@ type ContractorDisplay = {
   };
 };
 
-interface ContractorSettings {
-  estimate_template_style?: string;
-  estimate_client_message?: string;
-  estimate_footer_text?: string;
-  estimate_signature_enabled?: boolean;
-  estimate_hide_subtotals?: boolean;
-  estimate_compact_view?: boolean;
-}
-
 interface EstimateDisplayProps {
   groups: ItemGroup[];
   totalCost: number;
@@ -72,10 +59,16 @@ interface EstimateDisplayProps {
   projectSummary?: string;
   isEditable?: boolean;
   onEstimateChange?: (estimate: any) => void;
-  onSignatureComplete?: (initials: string) => void;
-  projectImages?: string[];
-  estimate?: any;
-  isLoading?: boolean;
+}
+
+interface ContractorSettings {
+  id: string;
+  estimate_template_style: string;
+  estimate_signature_enabled: boolean;
+  estimate_client_message: string;
+  estimate_footer_text: string;
+  estimate_hide_subtotals: boolean;
+  estimate_compact_view: boolean;
 }
 
 const formatCurrency = (amount: number): string => {
@@ -98,62 +91,13 @@ export const EstimateDisplay = ({
   contractor,
   projectSummary,
   isEditable = false,
-  onEstimateChange,
-  onSignatureComplete,
-  projectImages = [],
-  estimate,
-  isLoading: initialLoading = false
+  onEstimateChange
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
-  const [showAIPreferences, setShowAIPreferences] = useState(false);
-  const { id, contractorId } = useParams();
+  const { contractorId } = useParams();
   const [isContractor, setIsContractor] = useState(false);
-  const [showSignatureDialog, setShowSignatureDialog] = useState(false);
-  const [signature, setSignature] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(initialLoading);
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isEstimateReady, setIsEstimateReady] = useState(false);
 
-  const { data: leadData } = useQuery({
-    queryKey: ['estimate-status', id],
-    queryFn: async () => {
-      if (!id) return null;
-      
-      const { data, error } = await supabase
-        .from('leads')
-        .select('estimate_data, status')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching lead:', error);
-        return null;
-      }
-
-      return data;
-    },
-    refetchInterval: !isEstimateReady ? 3000 : false, // Only poll while not ready
-    enabled: !!id
-  });
-
-  useEffect(() => {
-    if (leadData) {
-      const isComplete = !!leadData.estimate_data && leadData.status === 'complete';
-      setIsEstimateReady(isComplete);
-
-      if (isComplete && onEstimateChange) {
-        onEstimateChange(leadData.estimate_data);
-      }
-    }
-  }, [leadData]);
-
-  useEffect(() => {
-    const hasValidEstimate = groups?.length > 0 && totalCost > 0;
-    setIsEstimateReady(hasValidEstimate);
-  }, [groups, totalCost]);
-
-  const { data: settings, isLoading: isSettingsLoading } = useQuery({
+  const { data: settings } = useQuery<ContractorSettings>({
     queryKey: ["contractor-settings", contractorId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -178,41 +122,6 @@ export const EstimateDisplay = ({
   useEffect(() => {
     checkContractorAccess();
   }, [contractorId]);
-
-  const handleRefreshEstimate = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          leadId: estimate?.id,
-          contractorId,
-          refreshOnly: true
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Estimate refresh started",
-        description: "Your estimate will be updated shortly.",
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      if (onEstimateChange) {
-        onEstimateChange(data);
-      }
-    } catch (error) {
-      console.error('Error refreshing estimate:', error);
-      toast({
-        title: "Error",
-        description: "Failed to refresh the estimate. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const defaultCompany = {
     business_name: "Example Company",
@@ -310,348 +219,117 @@ ${templateSettings.estimate_footer_text || ''}
 
   const getTemplateStyles = (style: string = 'modern') => {
     const baseStyles = {
-      card: "bg-white p-4 md:p-8 max-w-5xl mx-auto",
-      header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 space-y-4 md:space-y-0",
-      headerContent: "flex justify-between items-center w-full",
-      businessInfo: "flex items-center gap-6",
-      companyInfo: "text-gray-900 font-semibold",
-      contactInfo: "text-gray-700 font-medium flex flex-col gap-1",
-      contactLink: "hover:underline text-primary transition-colors inline-flex items-center gap-2 text-sm",
+      card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-lg",
+      header: "flex flex-col md:flex-row md:items-start justify-between mb-6 pb-4 border-b space-y-4 md:space-y-0",
+      headerContent: "flex justify-between items-start",
+      businessInfo: "flex items-center gap-4",
+      companyInfo: "text-gray-900 font-medium",
+      contactInfo: "text-gray-600",
       title: "text-xl md:text-2xl font-bold",
       text: "text-gray-600 text-sm",
       section: "bg-white rounded-none mb-0 last:mb-4",
-      table: "w-full",
-      tableHeader: "text-xs uppercase tracking-wider py-2 px-4 text-left border-b text-black",
-      tableRow: "border-b hover:bg-gray-50 transition-colors",
-      tableCell: "py-3 px-4 text-sm border-r last:border-r-0 break-words text-black",
+      table: "w-full md:min-w-[900px] border-collapse",
+      tableHeader: "text-xs uppercase tracking-wider py-2 px-4 text-left border-b",
+      tableRow: "border-b border-gray-200 hover:bg-gray-50 transition-colors",
+      tableCell: "py-3 px-4 text-sm border-r last:border-r-0",
       total: "text-2xl md:text-3xl font-bold",
-      button: "bg-gray-100 hover:bg-gray-200",
+      button: "bg-gray-100 text-gray-800 hover:bg-gray-200",
       message: "bg-gray-50 p-4 rounded-lg text-sm",
       groupTitle: "text-base font-bold mb-2 w-full",
-      subtotal: "text-right py-2 px-4 text-sm font-medium text-black",
+      subtotal: "text-right py-2 px-4 text-sm font-medium",
       totalsSection: "space-y-4 mt-8 pt-6 border-t",
       totalsRow: "flex justify-between items-center py-2",
-      buttonsContainer: "flex items-center gap-2 ml-auto",
-      signatureBox: "h-32 rounded-lg transition-colors",
-      signatureText: "font-['Dancing_Script'] text-2xl font-bold text-gray-800",
-      signatureDate: "text-sm text-gray-500 mt-1",
-      totalsTable: "w-full border-collapse",
-      totalsLabel: "py-2 px-4 text-sm font-medium text-left border",
-      totalsValue: "py-2 px-4 text-sm text-right border"
+      buttonsContainer: "flex items-center gap-2"
     };
 
-    switch (style) {
-      case 'minimal':
-        return {
-          ...baseStyles,
-          card: "bg-white p-4 md:p-8 max-w-5xl mx-auto",
-          header: "flex flex-col md:flex-row md:items-start justify-between mb-12 space-y-4 md:space-y-0",
-          title: "text-xl md:text-2xl font-light tracking-wide",
-          text: "text-gray-600 text-sm font-light",
-          table: "w-full border-t border-gray-200",
-          tableHeader: "text-xs uppercase tracking-wide py-4 px-4 text-left text-gray-600 font-light",
-          tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
-          tableCell: "py-4 px-4 text-sm border border-gray-300 break-words text-gray-800 font-light",
-          total: "text-2xl md:text-3xl font-bold",
-          message: "bg-gray-50/50 p-6 rounded-none text-sm font-light",
-          groupTitle: "text-base font-light mb-4 w-full uppercase tracking-wide",
-          subtotal: "text-right py-4 px-4 text-sm font-light text-gray-600",
-          totalsSection: "space-y-6 mt-12 pt-6 border-t",
-          totalsRow: "flex justify-between items-center py-3 text-gray-800 font-light",
-          totalsTable: baseStyles.totalsTable,
-          totalsLabel: "py-2 px-4 text-sm font-light text-left border border-gray-200",
-          totalsValue: "py-2 px-4 text-sm font-light text-right border border-gray-200"
-        };
+    const primaryColor = contractor?.branding_colors 
+      ? (typeof contractor.branding_colors === 'string' 
+          ? JSON.parse(contractor.branding_colors).primary 
+          : (contractor.branding_colors as BrandingColors).primary)
+      : '#007AFF';
+    const primaryColorLight = `${primaryColor}20`;
+    const darkerColor = '#1A1F2C';
 
-      case 'excel':
+    switch (style) {
+      case 'bold':
         return {
           ...baseStyles,
-          card: "bg-white p-0 max-w-5xl mx-auto shadow-sm border border-gray-300",
-          header: "flex flex-col md:flex-row md:items-start justify-between p-4 md:p-6 bg-[#F8F9FA] border-b space-y-4 md:space-y-0",
-          title: "text-xl md:text-2xl font-normal font-['Calibri']",
-          text: "text-gray-700 text-sm font-['Calibri']",
-          section: "p-4 md:p-6",
-          table: "w-full border-collapse",
-          tableHeader: "text-xs font-bold bg-[#E9ECEF] py-2 px-3 text-left border border-gray-300 text-black font-['Calibri']",
-          tableRow: "hover:bg-[#F8F9FA] transition-colors",
-          tableCell: "py-2 px-3 text-sm border border-gray-300 break-words text-black font-['Calibri']",
-          total: "text-xl md:text-2xl font-bold font-['Calibri']",
-          message: "bg-[#F8F9FA] p-4 border text-sm font-['Calibri']",
-          groupTitle: "text-base font-bold mb-3 w-full font-['Calibri']",
-          subtotal: "text-right py-2 px-3 text-sm font-bold bg-[#F8F9FA] border border-gray-300 text-black font-['Calibri']",
-          totalsSection: "mt-4",
-          totalsTable: "w-full border-collapse",
-          totalsRow: "border border-gray-300 font-['Calibri']",
-          totalsLabel: "py-2 px-3 text-sm border border-gray-300 bg-[#F8F9FA] font-bold",
-          totalsValue: "py-2 px-3 text-sm border border-gray-300 text-right"
+          card: "bg-white p-4 md:p-8 max-w-5xl mx-auto shadow-xl",
+          header: `bg-[${primaryColor}] -mx-4 -mt-4 md:-mx-8 md:-mt-8 p-4 md:p-8 mb-8`,
+          title: `text-xl md:text-2xl font-black text-[${darkerColor}]`,
+          text: `text-[${darkerColor}]/90 text-sm`,
+          section: "bg-white p-4 rounded-xl mb-4",
+          table: "w-full md:min-w-[900px] rounded-xl overflow-hidden border border-gray-200",
+          tableHeader: `bg-[${darkerColor}] text-white text-xs font-bold py-2 px-4 text-left`,
+          tableRow: `border-b hover:bg-gray-50 transition-colors font-semibold text-[${darkerColor}]`,
+          tableCell: `py-3 px-4 text-sm text-[${darkerColor}]`,
+          total: `text-3xl md:text-4xl font-black text-[${darkerColor}]`,
+          button: `bg-[${darkerColor}]/10 text-[${darkerColor}] hover:bg-[${darkerColor}]/20`,
+          message: `bg-gray-50 p-4 rounded-xl text-sm text-[${darkerColor}]`,
+          groupTitle: `text-lg font-black mb-2 text-[${darkerColor}] w-full`,
+          subtotal: `text-right py-2 px-4 text-sm font-bold text-[${darkerColor}]`,
+          companyInfo: `text-[${darkerColor}] font-medium`,
+          contactInfo: `text-[${darkerColor}]/80`,
+          headerContent: baseStyles.headerContent,
+          businessInfo: baseStyles.businessInfo,
+          buttonsContainer: baseStyles.buttonsContainer
         };
 
       default: // modern
-        const primaryColor = contractor?.branding_colors && typeof contractor.branding_colors === 'object' 
-          ? (contractor.branding_colors as BrandingColors).primary 
-          : '#007AFF';
-
         return {
           ...baseStyles,
-          card: "bg-white p-6 md:p-10 max-w-5xl mx-auto shadow-lg rounded-xl",
-          header: "flex flex-col md:flex-row md:items-start justify-between mb-8 pb-6 border-b border-gray-100 space-y-4 md:space-y-0",
-          title: `text-xl md:text-2xl font-semibold text-[${primaryColor}]`,
-          text: "text-gray-600 text-sm leading-relaxed",
-          table: "w-full rounded-lg overflow-hidden",
-          tableHeader: "text-xs uppercase tracking-wider py-3 px-6 text-left bg-gray-50 text-gray-700 font-semibold",
-          tableRow: "border-b border-gray-100 hover:bg-gray-50/50 transition-colors",
-          tableCell: "py-4 px-6 text-sm break-words text-gray-800",
+          title: `text-xl md:text-2xl font-bold text-[${primaryColor}]`,
+          groupTitle: `text-base font-bold mb-2 w-full text-[${primaryColor}]`,
+          tableHeader: "bg-gray-800 text-xs text-white font-medium py-2 px-4 text-left",
           total: `text-2xl md:text-3xl font-bold text-[${primaryColor}]`,
-          message: "bg-gray-50 p-6 rounded-xl text-sm leading-relaxed",
-          groupTitle: `text-lg font-semibold mb-4 w-full text-[${primaryColor}]`,
-          subtotal: "text-right py-3 px-6 text-sm font-medium text-gray-700 bg-gray-50",
-          totalsSection: "space-y-4 mt-8 pt-6 border-t border-gray-100",
-          totalsRow: "flex justify-between items-center py-2 text-gray-800",
-          totalsTable: baseStyles.totalsTable,
-          totalsLabel: "py-2 px-6 text-sm font-medium text-left border-b",
-          totalsValue: "py-2 px-6 text-sm font-medium text-right border-b"
         };
     }
   };
 
-  const handleSignature = (initials: string) => {
-    setSignature(initials);
-    if (onSignatureComplete) {
-      onSignatureComplete(initials);
-    }
-  };
-
-  const renderTableContent = () => {
-    if (isLoading) {
-      return (
-        <div className="space-y-6">
-          {[1, 2].map((groupIndex) => (
-            <div key={groupIndex} className={getTemplateStyles(templateSettings.estimate_template_style).section}>
-              <div className="h-6 w-48 bg-gray-200 animate-pulse rounded mb-4" />
-              <table className={getTemplateStyles(templateSettings.estimate_template_style).table}>
-                <thead>
-                  <tr>
-                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[45%]")}>Item</th>
-                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[35%]")}>Description</th>
-                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Qty</th>
-                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Price</th>
-                    <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[6%] text-right")}>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[1, 2, 3].map((itemIndex) => (
-                    <tr key={itemIndex} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%]")}>
-                        <div className="h-4 bg-gray-200 animate-pulse rounded w-3/4" />
-                      </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%]")}>
-                        <div className="h-4 bg-gray-200 animate-pulse rounded w-1/2" />
-                      </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                        <div className="h-4 bg-gray-200 animate-pulse rounded w-full" />
-                      </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                        <div className="h-4 bg-gray-200 animate-pulse rounded w-full" />
-                      </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[6%] text-right")}>
-                        <div className="h-4 bg-gray-200 animate-pulse rounded w-full" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    return groups?.map((group, index) => (
-      <div key={index} className={getTemplateStyles(templateSettings.estimate_template_style).section}>
-        <h3 className={getTemplateStyles(templateSettings.estimate_template_style).groupTitle}>{group.name}</h3>
-        {group.description && (
-          <p className="text-sm text-gray-600 mb-4">{group.description}</p>
-        )}
-        
-        {templateSettings.estimate_template_style === 'classic' ? (
-          <div className="space-y-2">
-            {group.subgroups?.map(subgroup => (
-              <div key={subgroup.name} className="space-y-1">
-                {subgroup.items?.map((item, itemIndex) => (
-                  <div key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
-                    <div className={getTemplateStyles(templateSettings.estimate_template_style).tableCell}>
-                      <span className="font-medium">{item.title}</span>
-                      {item.unit && ` (${formatUnit(item.unit)})`}
-                      {item.description && (
-                        <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                      )}
-                      <div className="text-sm text-gray-600 mt-1">
-                        {isEstimateReady ? (
-                          <>{item.quantity.toLocaleString()} × {formatCurrency(item.unitAmount)} = {formatCurrency(item.totalPrice)}</>
-                        ) : (
-                          <div className="h-4 w-32 relative overflow-hidden">
-                            <EstimateAnimation />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {!templateSettings.estimate_hide_subtotals && (
-                  <div className={getTemplateStyles(templateSettings.estimate_template_style).subtotal}>
-                    Subtotal for {subgroup.name}: {formatCurrency(subgroup.subtotal)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="w-full">
-            <table className={getTemplateStyles(templateSettings.estimate_template_style).table}>
-              <thead>
-                <tr>
-                  <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[45%]")}>Item</th>
-                  <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[35%]")}>Description</th>
-                  <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Qty</th>
-                  <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Price</th>
-                  <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[6%] text-right")}>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {group.subgroups?.map(subgroup => 
-                  subgroup.items?.map((item, itemIndex) => (
-                    <tr key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%]")}>
-                        {item.title} {item.unit && `(${formatUnit(item.unit)})`}
-                      </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%]")}>
-                        {item.description}
-                      </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                        {item.quantity.toLocaleString()}
-                      </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                        {formatCurrency(item.unitAmount)}
-                      </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[6%] text-right font-medium")}>
-                        {formatCurrency(item.totalPrice)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {!templateSettings.estimate_hide_subtotals && templateSettings.estimate_template_style !== 'minimal' && (
-          <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).subtotal, "mt-4 pt-3 border-t")}>
-            <span className={getTemplateStyles(templateSettings.estimate_template_style).text}>
-              Subtotal for {group.name}
-            </span>
-            <span className="font-semibold ml-4">
-              {formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0))}
-            </span>
-          </div>
-        )}
-      </div>
-    ));
-  };
-
-  if (isSettingsLoading || isLoading) {
-    return <EstimateSkeleton />;
-  }
+  const styles = getTemplateStyles(templateSettings.estimate_template_style);
 
   return (
     <>
-      {!isEstimateReady && (
-        <div className="fixed top-0 left-0 right-0 bg-primary text-white p-4 text-center z-50 animate-in fade-in-0">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-4 h-4">
-              <EstimateAnimation className="!bg-white/20" />
-            </div>
-            <span>Generating your estimate...</span>
-          </div>
-        </div>
-      )}
-      
       <Card className={cn(
-        getTemplateStyles(templateSettings.estimate_template_style).card,
+        styles.card,
         isBlurred && "blur-md pointer-events-none"
       )}>
         <div id="estimate-content">
-          <div className={getTemplateStyles(templateSettings.estimate_template_style).header}>
-            <div className={getTemplateStyles(templateSettings.estimate_template_style).headerContent}>
-              <div className={getTemplateStyles(templateSettings.estimate_template_style).businessInfo}>
+          <div className={styles.header}>
+            <div className={styles.headerContent}>
+              <div className={styles.businessInfo}>
                 {contractor?.business_logo_url && (
                   <img 
                     src={contractor.business_logo_url} 
                     alt={`${companyInfo.business_name} logo`}
-                    className="w-24 h-24 object-contain rounded-lg"
+                    className="w-16 h-16 object-contain rounded-lg"
                   />
                 )}
                 <div>
-                  <h1 className={getTemplateStyles(templateSettings.estimate_template_style).companyInfo}>
-                    {companyInfo.business_name}
-                  </h1>
-                  <div className={getTemplateStyles(templateSettings.estimate_template_style).contactInfo}>
-                    {companyInfo.contact_email && (
-                      <a 
-                        href={`mailto:${companyInfo.contact_email}`}
-                        className={getTemplateStyles(templateSettings.estimate_template_style).contactLink}
-                      >
-                        <Mail className="h-4 w-4" />
-                        {companyInfo.contact_email}
-                      </a>
-                    )}
-                    {companyInfo.contact_phone && (
-                      <a 
-                        href={`tel:${companyInfo.contact_phone}`}
-                        className={getTemplateStyles(templateSettings.estimate_template_style).contactLink}
-                      >
-                        <Phone className="h-4 w-4" />
-                        {companyInfo.contact_phone}
-                      </a>
-                    )}
-                  </div>
+                  <h1 className={styles.companyInfo}>{companyInfo.business_name}</h1>
+                  {companyInfo.contact_email && (
+                    <p className={styles.contactInfo}>{companyInfo.contact_email}</p>
+                  )}
+                  {companyInfo.contact_phone && (
+                    <p className={styles.contactInfo}>{companyInfo.contact_phone}</p>
+                  )}
                 </div>
               </div>
-              <div className={getTemplateStyles(templateSettings.estimate_template_style).buttonsContainer} id="estimate-actions">
+              <div className={styles.buttonsContainer} id="estimate-actions">
                 {isContractor && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleRefreshEstimate}
-                      className={getTemplateStyles(templateSettings.estimate_template_style).button}
-                      title="Refresh estimate"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowAIPreferences(true)}
-                      className={getTemplateStyles(templateSettings.estimate_template_style).button}
-                      title="AI Preferences"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowSettings(true)}
-                      className={getTemplateStyles(templateSettings.estimate_template_style).button}
-                      title="Template Settings"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowSettings(true)}
+                    className={styles.button}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
                 )}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style).button)}
+                  className={cn("gap-2", styles.button)}
                   onClick={handleCopyEstimate}
                 >
                   <Copy className="h-4 w-4" />
@@ -660,7 +338,7 @@ ${templateSettings.estimate_footer_text || ''}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn("gap-2", getTemplateStyles(templateSettings.estimate_template_style).button)}
+                  className={cn("gap-2", styles.button)}
                   onClick={handleExportPDF}
                 >
                   <FileDown className="h-4 w-4" />
@@ -670,123 +348,132 @@ ${templateSettings.estimate_footer_text || ''}
             </div>
           </div>
 
-          {/* AI Generated Title */}
-          {estimate?.ai_generated_title && (
-            <h2 className={cn(
-              getTemplateStyles(templateSettings.estimate_template_style).title,
-              "mb-4 text-center"
-            )}>
-              {estimate.ai_generated_title}
-            </h2>
-          )}
-
-          {/* AI Generated Message */}
-          {(estimate?.ai_generated_message || projectSummary) && (
-            <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).message, "mb-6")}>
-              <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>
-                {estimate?.ai_generated_message || projectSummary}
-              </p>
+          {/* Client Message */}
+          {templateSettings?.estimate_client_message && (
+            <div className={cn(styles.message, "mb-6")}>
+              <p className={styles.text}>{templateSettings.estimate_client_message}</p>
             </div>
           )}
 
-          {/* Project Images */}
-          {projectImages && projectImages.length > 0 && (
-            <div className="mb-6 overflow-x-auto">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {projectImages.map((image, index) => (
-                  <div 
-                    key={index} 
-                    className="aspect-square relative rounded-lg overflow-hidden"
-                  >
-                    <img 
-                      src={image} 
-                      alt={`Project image ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
+          {/* Project Summary */}
+          {projectSummary && (
+            <div className={cn(styles.message, "mb-6")}>
+              <h2 className={cn(styles.title, "!text-lg mb-2")}>Project Overview</h2>
+              <p className={styles.text}>{projectSummary}</p>
             </div>
           )}
 
           {/* Estimate Groups */}
-          {renderTableContent()}
+          {groups?.map((group, index) => (
+            <div key={index} className={styles.section}>
+              <h3 className={styles.groupTitle}>{group.name}</h3>
+              
+              {templateSettings.estimate_template_style === 'classic' ? (
+                <div className="space-y-2">
+                  {group.subgroups?.map(subgroup => (
+                    <div key={subgroup.name} className="space-y-1">
+                      {subgroup.items?.map((item, itemIndex) => (
+                        <div key={`${subgroup.name}-${itemIndex}`} className={styles.tableRow}>
+                          <div className={styles.tableCell}>
+                            <span className="font-medium">{item.title}</span>
+                            {item.unit && ` (${formatUnit(item.unit)})`}
+                            {item.description && (
+                              <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                            )}
+                            <div className="text-sm text-gray-600 mt-1">
+                              {item.quantity.toLocaleString()} × {formatCurrency(item.unitAmount)} = {formatCurrency(item.totalPrice)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {!templateSettings.estimate_hide_subtotals && (
+                        <div className={styles.subtotal}>
+                          Subtotal for {subgroup.name}: {formatCurrency(subgroup.subtotal)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="overflow-hidden">
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th className={styles.tableHeader}>Item</th>
+                        <th className={styles.tableHeader}>Description</th>
+                        <th className={cn(styles.tableHeader, "text-right")}>Qty</th>
+                        <th className={cn(styles.tableHeader, "text-right")}>Unit Price</th>
+                        <th className={cn(styles.tableHeader, "text-right")}>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.subgroups?.map(subgroup => 
+                        subgroup.items?.map((item, itemIndex) => (
+                          <tr key={`${subgroup.name}-${itemIndex}`} className={styles.tableRow}>
+                            <td className={styles.tableCell} data-label="Item">
+                              {item.title} {item.unit && `(${formatUnit(item.unit)})`}
+                            </td>
+                            <td className={styles.tableCell} data-label="Description">
+                              {item.description}
+                            </td>
+                            <td className={cn(styles.tableCell, "text-right")} data-label="Qty">
+                              {item.quantity.toLocaleString()}
+                            </td>
+                            <td className={cn(styles.tableCell, "text-right")} data-label="Unit Price">
+                              {formatCurrency(item.unitAmount)}
+                            </td>
+                            <td className={cn(styles.tableCell, "text-right font-medium")} data-label="Total">
+                              {formatCurrency(item.totalPrice)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
+              {/* Group Subtotal */}
+              {!templateSettings.estimate_hide_subtotals && templateSettings.estimate_template_style !== 'minimal' && (
+                <div className={cn(styles.subtotal, "mt-4 pt-3 border-t")}>
+                  <span className={styles.text}>Subtotal for {group.name}</span>
+                  <span className="font-semibold ml-4">
+                    {formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0))}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+          
           {/* Total */}
           {templateSettings.estimate_template_style === 'excel' ? (
-            <div className={getTemplateStyles('excel').totalsSection}>
-              <table className={getTemplateStyles('excel').totalsTable}>
-                <tbody>
-                  <tr className={getTemplateStyles('excel').totalsRow}>
-                    <td className={getTemplateStyles('excel').totalsLabel}>Subtotal</td>
-                    <td className={getTemplateStyles('excel').totalsValue}>
-                      {isEstimateReady ? formatCurrency(totalCost) : (
-                        <div className="inline-block h-4 w-24 relative overflow-hidden">
-                          <EstimateAnimation />
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                  <tr className={getTemplateStyles('excel').totalsRow}>
-                    <td className={getTemplateStyles('excel').totalsLabel}>Tax (8.5%)</td>
-                    <td className={getTemplateStyles('excel').totalsValue}>
-                      {isEstimateReady ? formatCurrency(totalCost * 0.085) : (
-                        <div className="inline-block h-4 w-24 relative overflow-hidden">
-                          <EstimateAnimation />
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                  <tr className={cn(getTemplateStyles('excel').totalsRow, "font-bold")}>
-                    <td className={getTemplateStyles('excel').totalsLabel}>Total Estimate</td>
-                    <td className={cn(getTemplateStyles('excel').totalsValue, "font-bold")}>
-                      {isEstimateReady ? formatCurrency(totalCost * 1.085) : (
-                        <div className="inline-block h-4 w-32 relative overflow-hidden">
-                          <EstimateAnimation />
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className={styles.totalsSection}>
+              <div className={styles.totalsRow}>
+                <span>Subtotal</span>
+                <span className="text-right">{formatCurrency(totalCost)}</span>
+              </div>
+              <div className={styles.totalsRow}>
+                <span>Tax (8.5%)</span>
+                <span className="text-right">{formatCurrency(totalCost * 0.085)}</span>
+              </div>
+              <div className={cn(styles.totalsRow, "font-bold")}>
+                <span>Total Estimate</span>
+                <span className="text-right">{formatCurrency(totalCost * 1.085)}</span>
+              </div>
             </div>
           ) : (
             <div className={cn("mt-8 pt-6 border-t space-y-4", templateSettings.estimate_compact_view ? "md:space-y-3" : "md:space-y-6")}>
               <div className="flex justify-between items-center">
-                <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>Subtotal</p>
-                {isEstimateReady ? (
-                  <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).text, "text-lg")}>
-                    {formatCurrency(totalCost)}
-                  </p>
-                ) : (
-                  <div className="h-6 w-24 bg-gray-200 animate-pulse rounded relative overflow-hidden">
-                    <EstimateAnimation />
-                  </div>
-                )}
+                <p className={styles.text}>Subtotal</p>
+                <p className={cn(styles.text, "text-lg")}>{formatCurrency(totalCost)}</p>
               </div>
               <div className="flex justify-between items-center">
-                <p className={getTemplateStyles(templateSettings.estimate_template_style).text}>Tax (8.5%)</p>
-                {isEstimateReady ? (
-                  <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).text, "text-lg")}>
-                    {formatCurrency(totalCost * 0.085)}
-                  </p>
-                ) : (
-                  <div className="h-6 w-24 bg-gray-200 animate-pulse rounded relative overflow-hidden">
-                    <EstimateAnimation />
-                  </div>
-                )}
+                <p className={styles.text}>Tax (8.5%)</p>
+                <p className={cn(styles.text, "text-lg")}>{formatCurrency(totalCost * 0.085)}</p>
               </div>
               <div className="flex justify-between items-center pt-4 border-t">
-                <p className={cn(getTemplateStyles(templateSettings.estimate_template_style).title, "!text-xl")}>Total Estimate</p>
-                {isEstimateReady ? (
-                  <p className={getTemplateStyles(templateSettings.estimate_template_style).total}>
-                    {formatCurrency(totalCost * 1.085)}
-                  </p>
-                ) : (
-                  <div className="h-8 w-32 bg-gray-200 animate-pulse rounded relative overflow-hidden">
-                    <EstimateAnimation />
-                  </div>
-                )}
+                <p className={cn(styles.title, "!text-xl")}>Total Estimate</p>
+                <p className={styles.total}>{formatCurrency(totalCost * 1.085)}</p>
               </div>
             </div>
           )}
@@ -794,48 +481,17 @@ ${templateSettings.estimate_footer_text || ''}
 
         {/* Signature Section */}
         {templateSettings?.estimate_signature_enabled && (
-          <div className={cn("mt-8 pt-6 border-t space-y-6", getTemplateStyles(templateSettings.estimate_template_style).text)}>
-            <h3 className={cn(getTemplateStyles(templateSettings.estimate_template_style).title, "!text-xl")}>Signatures</h3>
+          <div className={cn("mt-8 pt-6 border-t space-y-6", styles.text)}>
+            <h3 className={cn(styles.title, "!text-xl")}>Signatures</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <p className="text-sm font-medium">Client Signature</p>
-                {!isEstimateReady ? (
-                  <div className="h-32 w-full bg-gray-200 animate-pulse rounded relative overflow-hidden" />
-                ) : (
-                  <div 
-                    className={cn(
-                      getTemplateStyles(templateSettings.estimate_template_style).signatureBox,
-                      !signature ? "bg-yellow-50 hover:bg-yellow-100 cursor-pointer flex items-center justify-center" : "bg-white"
-                    )}
-                    onClick={() => !signature && setShowSignatureDialog(true)}
-                  >
-                    {signature ? (
-                      <div className="p-4">
-                        <p className={getTemplateStyles(templateSettings.estimate_template_style).signatureText}>
-                          {signature}
-                        </p>
-                        <p className={getTemplateStyles(templateSettings.estimate_template_style).signatureDate}>
-                          {new Date().toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </p>
-                      </div>
-                    ) : (
-                      <Button variant="ghost">Sign Here</Button>
-                    )}
-                  </div>
-                )}
+                <div className={cn("h-32 rounded-lg", styles.message)}></div>
                 <p className="text-sm">Sign above to approve this estimate</p>
               </div>
               <div className="space-y-3">
                 <p className="text-sm font-medium">Contractor Signature</p>
-                {!isEstimateReady ? (
-                  <div className="h-32 w-full bg-gray-200 animate-pulse rounded relative overflow-hidden" />
-                ) : (
-                  <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).signatureBox, "bg-gray-50")}></div>
-                )}
+                <div className={cn("h-32 rounded-lg", styles.message)}></div>
                 <p className="text-sm">Contractor approval</p>
               </div>
             </div>
@@ -844,7 +500,7 @@ ${templateSettings.estimate_footer_text || ''}
 
         {/* Footer Text */}
         {templateSettings?.estimate_footer_text && (
-          <div className={cn("mt-8 pt-6 border-t", getTemplateStyles(templateSettings.estimate_template_style).text)}>
+          <div className={cn("mt-8 pt-6 border-t", styles.text)}>
             <p className="whitespace-pre-wrap text-sm">
               {templateSettings.estimate_footer_text}
             </p>
@@ -852,31 +508,15 @@ ${templateSettings.estimate_footer_text || ''}
         )}
       </Card>
 
-      <SignatureDialog
-        isOpen={showSignatureDialog}
-        onClose={() => setShowSignatureDialog(false)}
-        onSign={handleSignature}
-      />
-
       {isContractor && (
-        <>
-          <SettingsDialog
-            title="Estimate Settings"
-            description="Customize how your estimates appear to clients"
-            isOpen={showSettings}
-            onClose={() => setShowSettings(false)}
-          >
-            <EstimateTemplateSettings />
-          </SettingsDialog>
-          <SettingsDialog
-            title="AI Preferences"
-            description="Configure AI settings for estimate generation"
-            isOpen={showAIPreferences}
-            onClose={() => setShowAIPreferences(false)}
-          >
-            <AIPreferencesSettings />
-          </SettingsDialog>
-        </>
+        <SettingsDialog
+          title="Estimate Settings"
+          description="Customize how your estimates appear to clients"
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+        >
+          <EstimateTemplateSettings />
+        </SettingsDialog>
       )}
     </>
   );
