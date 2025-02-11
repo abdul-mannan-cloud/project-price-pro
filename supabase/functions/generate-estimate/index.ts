@@ -73,6 +73,7 @@ serve(async (req) => {
                   cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
                 ).join('\n')}`
               }],
+              model: "llama3.2-11b-vision",
               temperature: 0.2,
               response_format: { type: "text" }
             }),
@@ -103,6 +104,7 @@ serve(async (req) => {
                   cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
                 ).join('\n')}`
               }],
+              model: "llama3.2-11b-vision",
               temperature: 0.2,
               response_format: { type: "text" }
             }),
@@ -163,6 +165,7 @@ serve(async (req) => {
               Category: ${cat.category}
               ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
             }],
+            model: "llama3.2-11b-vision",
             temperature: 0.2,
             response_format: { type: "json_object" }
           }),
@@ -242,4 +245,3 @@ serve(async (req) => {
     );
   }
 });
-
