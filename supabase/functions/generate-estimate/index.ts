@@ -1,4 +1,5 @@
 
+// Import necessary dependencies
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3"
@@ -52,25 +53,31 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
       throw new Error(`Llama API error: ${response.status}`);
     }
 
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('Invalid response format: expected JSON');
+    const data = await response.json();
+    console.log('Llama API response data:', data);
+
+    // Extract the content from the response and parse it
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error('Invalid response format from Llama API');
     }
 
-    const text = await response.text();
+    let parsedContent;
     try {
-      JSON.parse(text); // Validate JSON structure
-      console.log(`Attempt ${attempt}: Successfully received and validated JSON response`);
-      return new Response(text, { 
-        headers: { 
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        } 
-      });
+      // If content is a string, parse it; if it's already an object, use it directly
+      parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
     } catch (e) {
-      console.error('Invalid JSON response:', text);
-      throw new Error('Invalid JSON response from Llama API');
+      console.error('Error parsing content:', e);
+      throw new Error('Invalid JSON in Llama API response');
     }
+
+    // Return a new response with the parsed content
+    return new Response(JSON.stringify(parsedContent), {
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders
+      }
+    });
   } catch (error) {
     if (error.name === 'AbortError') {
       console.log(`Request aborted after ${timeout}ms (attempt ${attempt})`);
@@ -109,16 +116,9 @@ serve(async (req) => {
     console.log('Generating estimate for:', { category, projectDescription, answers });
 
     // Format answers for better prompt context
-    const formattedAnswers = Object.entries(answers || {}).map(([category, categoryAnswers]) => {
-      const questions = Object.entries(categoryAnswers || {}).map(([_, qa]) => ({
-        question: qa.question,
-        answer: qa.answers.map(ans => {
-          const option = qa.options.find(opt => opt.value === ans);
-          return option ? option.label : ans;
-        }).join(', ')
-      }));
-      return { category, questions };
-    });
+    const formattedAnswers = Object.entries(answers || {}).map(([_, value]) => {
+      return `Q: ${value.question}\nA: ${value.answers.join(', ')}`;
+    }).join('\n');
 
     // Generate estimate
     const llamaPayload = {
@@ -158,9 +158,7 @@ serve(async (req) => {
         Category: ${category || 'General Construction'}
         Description: ${projectDescription || 'Project estimate'}
         Questions and Answers:
-        ${formattedAnswers.map(cat => `
-        Category: ${cat.category}
-        ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
+        ${formattedAnswers}`
       }],
       model: "llama3.2-11b-vision",
       temperature: 0.2,
@@ -169,15 +167,8 @@ serve(async (req) => {
 
     const response = await callLlamaAPI(llamaPayload);
     const data = await response.json();
-    console.log('Llama API response:', data);
+    console.log('Successfully generated estimate:', data);
 
-    const estimateData = data.choices?.[0]?.message?.content;
-    if (!estimateData) {
-      throw new Error('Invalid estimate response format');
-    }
-
-    const parsedEstimate = typeof estimateData === 'string' ? JSON.parse(estimateData) : estimateData;
-    
     // Update the lead with the estimate if we have a leadId
     if (leadId) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -192,9 +183,9 @@ serve(async (req) => {
       const { error: updateError } = await supabaseAdmin
         .from('leads')
         .update({ 
-          estimate_data: parsedEstimate,
+          estimate_data: data,
           status: 'complete',
-          estimated_cost: parsedEstimate.totalCost || 0
+          estimated_cost: data.totalCost || 0
         })
         .eq('id', leadId);
 
@@ -203,15 +194,12 @@ serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify(parsedEstimate),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        } 
+    return new Response(JSON.stringify(data), {
+      headers: { 
+        ...corsHeaders,
+        'Content-Type': 'application/json'
       }
-    );
+    });
   } catch (error) {
     console.error('Error in generate-estimate function:', error);
     return new Response(
