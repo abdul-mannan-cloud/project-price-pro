@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Question, CategoryQuestions, AnswersState, QuestionAnswer } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
@@ -113,6 +114,34 @@ export const useQuestionManager = (
     setIsGeneratingEstimate(true);
     
     try {
+      // Create a new lead first
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .insert({
+          status: 'pending',
+          project_description: answers[questionSets[0]?.category]?.Q1?.question || 'New project',
+          project_title: `${questionSets[0]?.category || 'New'} Project`,
+          answers: answers,
+          category: questionSets[0]?.category
+        })
+        .select()
+        .single();
+
+      if (leadError) throw leadError;
+
+      // Start estimate generation immediately
+      const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          answers,
+          projectDescription: answers[questionSets[0]?.category]?.Q1?.question || 'New project',
+          category: questionSets[0]?.category,
+          leadId: lead.id
+        }
+      });
+
+      if (generateError) throw generateError;
+
+      // Call onComplete with the answers
       await onComplete(answers);
     } catch (error) {
       console.error('Error completing questions:', error);
