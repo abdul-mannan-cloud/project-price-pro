@@ -115,19 +115,8 @@ export const EstimateDisplay = ({
   const [isEstimateReady, setIsEstimateReady] = useState(false);
 
   useEffect(() => {
-    const hasGroups = Array.isArray(groups) && groups.length > 0;
-    const hasValidTotal = typeof totalCost === 'number' && totalCost > 0;
-    const hasValidData = hasGroups && hasValidTotal;
-    
-    console.log('Estimate data check:', {
-      hasGroups,
-      groupsLength: groups.length,
-      hasValidTotal,
-      totalCost,
-      isEstimateReady: hasValidData
-    });
-    
-    setIsEstimateReady(hasValidData);
+    const hasValidEstimate = groups?.length > 0 && totalCost > 0;
+    setIsEstimateReady(hasValidEstimate);
   }, [groups, totalCost]);
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
@@ -159,13 +148,6 @@ export const EstimateDisplay = ({
   const handleRefreshEstimate = async () => {
     try {
       setIsLoading(true);
-      setIsEstimateReady(false); // Reset ready state while refreshing
-      
-      console.log('Refreshing estimate:', {
-        leadId: estimate?.id,
-        contractorId
-      });
-
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId: estimate?.id,
@@ -181,11 +163,9 @@ export const EstimateDisplay = ({
         description: "Your estimate will be updated shortly.",
       });
 
-      // Wait for the estimate to be processed
       await new Promise(resolve => setTimeout(resolve, 3000));
 
-      if (onEstimateChange && data) {
-        console.log('Updating estimate with new data:', data);
+      if (onEstimateChange) {
         onEstimateChange(data);
       }
     } catch (error) {
@@ -409,11 +389,6 @@ ${templateSettings.estimate_footer_text || ''}
 
   const renderTableContent = () => {
     if (!isEstimateReady) {
-      console.log('Rendering loading state:', {
-        isEstimateReady,
-        groups: groups.length,
-        totalCost
-      });
       return (
         <div className="space-y-8">
           {[1, 2].map((groupIndex) => (
