@@ -9,65 +9,15 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Optimized timeout and retry settings
-const MAX_RETRIES = 2;
-const INITIAL_RETRY_DELAY = 1000; // 1 second
 const TIMEOUT = 30000; // 30 seconds
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-async function makeRequestWithRetry(
-  url: string,
-  options: RequestInit,
-  controller: AbortController,
-  retries = MAX_RETRIES,
-  delay = INITIAL_RETRY_DELAY
-): Promise<Response> {
-  try {
-    if (controller.signal.aborted) {
-      throw new Error('Request aborted due to timeout');
-    }
-
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API request failed: ${errorText}`);
-    }
-    
-    return response;
-  } catch (error) {
-    if (error.name === 'AbortError' || controller.signal.aborted) {
-      throw new Error('Request timed out');
-    }
-    
-    if (retries === 0) throw error;
-    
-    console.log(`Request failed, retrying... (${retries} attempts remaining)`);
-    await sleep(delay);
-    
-    return makeRequestWithRetry(
-      url,
-      options,
-      controller,
-      retries - 1,
-      delay * 2
-    );
-  }
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  const controller = new AbortController();
   const timeoutId = setTimeout(() => {
-    controller.abort();
-    console.log('Request aborted due to timeout');
+    console.log('Request timeout reached');
   }, TIMEOUT);
 
   try {
@@ -108,100 +58,130 @@ serve(async (req) => {
       return { category, questions };
     });
 
-    const messages = [{
-      role: 'system',
-      content: `You are a construction cost estimator. Return ONLY a valid JSON object with no additional text. Format costs as numbers, not strings.
+    // Prepare the message content
+    let messageContent = `Based on the following information, generate a construction cost estimate:
+    Category: ${category || 'General Construction'}
+    Description: ${projectDescription || 'Project estimate'}
+    Questions and Answers:
+    ${formattedAnswers.map(cat => `
+    Category: ${cat.category}
+    ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`;
 
-Example format:
-{
-  "groups": [
-    {
-      "name": "Material & Labor",
-      "subgroups": [
-        {
-          "name": "Paint Materials",
-          "items": [
-            {
-              "title": "Interior Paint",
-              "description": "Premium quality interior paint",
-              "quantity": 5,
-              "unit": "gallons",
-              "unitAmount": 45.99,
-              "totalPrice": 229.95
+    // Prepare the function schema for cost estimation
+    const estimateFunction = {
+      name: "generate_construction_estimate",
+      description: "Generate a detailed construction cost estimate",
+      parameters: {
+        type: "object",
+        properties: {
+          groups: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                subgroups: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string" },
+                      items: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            title: { type: "string" },
+                            description: { type: "string" },
+                            quantity: { type: "number" },
+                            unit: { type: "string" },
+                            unitAmount: { type: "number" },
+                            totalPrice: { type: "number" }
+                          }
+                        }
+                      },
+                      subtotal: { type: "number" }
+                    }
+                  }
+                }
+              }
             }
-          ],
-          "subtotal": 229.95
+          },
+          totalCost: { type: "number" },
+          ai_generated_title: { type: "string" },
+          ai_generated_message: { type: "string" }
+        },
+        required: ["groups", "totalCost", "ai_generated_title", "ai_generated_message"]
+      }
+    };
+
+    // Prepare the API request
+    const apiRequest = {
+      messages: [
+        {
+          role: "system",
+          content: "You are a construction cost estimator. Generate detailed cost estimates based on project requirements."
+        },
+        {
+          role: "user",
+          content: messageContent
         }
-      ]
-    }
-  ],
-  "totalCost": 229.95,
-  "ai_generated_title": "Interior Painting Project",
-  "ai_generated_message": "Professional interior painting project including premium materials."
-}`
-    }];
+      ],
+      functions: [estimateFunction],
+      function_call: {
+        name: "generate_construction_estimate"
+      },
+      model: "llama-13b-chat",
+      max_tokens: 500,
+      temperature: 0.1,
+      top_p: 1.0,
+      frequency_penalty: 1.0,
+      stream: false
+    };
 
     if (imageUrl) {
-      messages.push({
-        role: 'user',
+      apiRequest.messages.splice(1, 0, {
+        role: "user",
         content: [
           {
-            type: 'image_url',
+            type: "image_url",
             image_url: imageUrl
           },
           {
-            type: 'text',
-            text: 'Analyze this image and consider it when generating the estimate.'
+            type: "text",
+            text: "Consider this image when generating the estimate."
           }
         ]
       });
     }
 
-    messages.push({
-      role: 'user',
-      content: `Based on the following information, generate ONLY a JSON response:
-      Category: ${category || 'General Construction'}
-      Description: ${projectDescription || 'Project estimate'}
-      Questions and Answers:
-      ${formattedAnswers.map(cat => `
-      Category: ${cat.category}
-      ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
-    });
-
     try {
       console.log('Making request to LLaMA API...');
-      const response = await makeRequestWithRetry(
-        'https://api.llama-api.com/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${llamaApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages,
-            model: "llama3.2-11b-vision",
-            temperature: 0.2,
-            stream: false,
-            max_tokens: 500, // Reduced for faster response
-            response_format: { type: "json_object" }
-          })
+      const response = await fetch('https://api.llama-api.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${llamaApiKey}`,
+          'Content-Type': 'application/json',
         },
-        controller
-      );
+        body: JSON.stringify(apiRequest)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`LLaMA API request failed: ${errorText}`);
+      }
 
       const data = await response.json();
       console.log('Received response from LLaMA API');
 
       let parsedEstimate;
       try {
-        const content = data.choices?.[0]?.message?.content;
-        
-        if (typeof content !== 'string') {
-          throw new Error('Invalid response format: content is not a string');
+        const functionCall = data.choices[0]?.message?.function_call;
+        if (!functionCall || !functionCall.arguments) {
+          throw new Error('Invalid response format: missing function call arguments');
         }
 
-        parsedEstimate = JSON.parse(content);
+        parsedEstimate = JSON.parse(functionCall.arguments);
       } catch (parseError) {
         console.error('Error parsing LLM response:', parseError);
         throw new Error('Failed to parse estimate data');
