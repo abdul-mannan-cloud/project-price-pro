@@ -7,8 +7,6 @@ import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { Database } from "@/integrations/supabase/types";
 import { useEffect } from "react";
 import { BrandingColors } from "@/types/settings";
-import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
 
 type EstimateData = {
   groups: Array<{
@@ -33,31 +31,14 @@ type ContractorWithSettings = Database["public"]["Tables"]["contractors"]["Row"]
   contractor_settings: Database["public"]["Tables"]["contractor_settings"]["Row"];
 };
 
-const DEFAULT_CONTRACTOR = {
-  id: "098bcb69-99c6-445b-bf02-94dc7ef8c938",
-  business_name: "Demo Contractor",
-  contact_email: "demo@example.com",
-  business_logo_url: null,
-  contact_phone: null,
-  business_address: null,
-  website: null,
-  license_number: null,
-  subscription_status: "trial",
-  branding_colors: {
-    primary: "#6366F1",
-    secondary: "#4F46E5"
-  }
-};
+const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
 const PublicEstimate = () => {
   const { id } = useParams();
-  const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
-  const { toast } = useToast();
 
-  const { data: lead, isLoading: isLeadLoading } = useQuery({
+  const { data: lead } = useQuery({
     queryKey: ["public-estimate", id],
     queryFn: async () => {
-      console.log("Fetching lead data for ID:", id);
       const { data, error } = await supabase
         .from("leads")
         .select(`
@@ -81,16 +62,10 @@ const PublicEstimate = () => {
         .eq("id", id)
         .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching lead:", error);
-        throw error;
-      }
-      
-      if (!data) {
-        console.log("No lead found, using default values");
+      if (error || !data) {
         return {
           id,
-          contractor_id: DEFAULT_CONTRACTOR.id,
+          contractor_id: DEFAULT_CONTRACTOR_ID,
           estimate_data: null,
           estimated_cost: 0,
           project_title: "New Estimate",
@@ -101,60 +76,14 @@ const PublicEstimate = () => {
         };
       }
 
-      console.log("Lead data fetched:", data);
-
-      // If the lead is in processing status and doesn't have estimate data yet,
-      // trigger the estimate generation
-      if (data.status === 'processing' && !data.estimate_data) {
-        console.log("Starting estimate generation");
-        setIsGeneratingEstimate(true);
-        try {
-          const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
-            body: { 
-              projectDescription: data.project_description,
-              answers: data.answers,
-              contractorId: data.contractor_id,
-              leadId: data.id,
-              category: data.category
-            }
-          });
-
-          if (estimateError) {
-            console.error("Error generating estimate:", estimateError);
-            throw estimateError;
-          }
-          
-          console.log("Estimate generated successfully:", estimateData);
-          // Update will happen via the backend, no need to manually update here
-          return {
-            ...data,
-            estimate_data: estimateData,
-            status: 'complete'
-          };
-        } catch (error) {
-          console.error('Error generating estimate:', error);
-          toast({
-            title: "Error",
-            description: "Failed to generate estimate. Please try again.",
-            variant: "destructive",
-          });
-        } finally {
-          setIsGeneratingEstimate(false);
-        }
-      }
-
       return data;
     },
   });
 
-  // Ensure contractor exists before querying it
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
-    queryKey: ["contractor", lead?.contractor_id || DEFAULT_CONTRACTOR.id],
+    queryKey: ["contractor", lead?.contractor_id || DEFAULT_CONTRACTOR_ID],
     queryFn: async () => {
-      const contractorId = lead?.contractor_id || DEFAULT_CONTRACTOR.id;
-      console.log("Fetching contractor data for ID:", contractorId);
-      
-      // First try to get the existing contractor
+      const contractorId = lead?.contractor_id || DEFAULT_CONTRACTOR_ID;
       const { data, error } = await supabase
         .from("contractors")
         .select(`
@@ -162,41 +91,9 @@ const PublicEstimate = () => {
           contractor_settings (*)
         `)
         .eq("id", contractorId)
-        .maybeSingle();
+        .single();
 
-      if (error) {
-        console.error("Error fetching contractor:", error);
-        throw error;
-      }
-
-      // If no contractor exists and we're using the default ID, create it
-      if (!data && contractorId === DEFAULT_CONTRACTOR.id) {
-        console.log("Creating default contractor");
-        const { data: newContractor, error: createError } = await supabase
-          .from("contractors")
-          .insert({
-            ...DEFAULT_CONTRACTOR
-          })
-          .select(`
-            *,
-            contractor_settings (*)
-          `)
-          .single();
-
-        if (createError) {
-          console.error("Error creating default contractor:", createError);
-          throw createError;
-        }
-
-        return newContractor as ContractorWithSettings;
-      }
-
-      if (!data) {
-        console.error("No contractor found for ID:", contractorId);
-        throw new Error("Contractor not found");
-      }
-
-      console.log("Contractor data fetched:", data);
+      if (error) throw error;
       return data as ContractorWithSettings;
     },
     enabled: !!lead,
@@ -233,8 +130,8 @@ const PublicEstimate = () => {
     }
   }, [contractor]);
 
-  if (isLeadLoading || isGeneratingEstimate) {
-    return <LoadingScreen message="Generating your estimate..." isEstimate={true} />;
+  if (isContractorLoading) {
+    return <LoadingScreen message="Loading estimate..." />;
   }
 
   if (!contractor) {
