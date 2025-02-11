@@ -123,14 +123,30 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log('Received response from LLaMA API:', data);
+      console.log('Full API Response:', data); // Log the complete response
 
-      const aiResponse = data.choices[0]?.message?.content;
-      if (!aiResponse) {
-        throw new Error('Invalid API response format');
+      // Safely access the response data with proper type checks
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid API response: not an object');
       }
 
-      // Simple estimate structure
+      if (!Array.isArray(data.choices)) {
+        throw new Error('Invalid API response: choices is not an array');
+      }
+
+      const firstChoice = data.choices[0];
+      if (!firstChoice || !firstChoice.message) {
+        throw new Error('Invalid API response: no message in first choice');
+      }
+
+      const aiResponse = firstChoice.message.content;
+      if (typeof aiResponse !== 'string') {
+        throw new Error('Invalid API response: message content is not a string');
+      }
+
+      console.log('Processed AI Response:', aiResponse);
+
+      // Create the estimate object
       const estimate = {
         groups: [
           {
