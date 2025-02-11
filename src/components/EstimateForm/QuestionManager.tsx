@@ -28,6 +28,17 @@ export const QuestionManager = ({
     handleMultipleChoiceNext
   } = useQuestionManager(questionSets, onComplete, onProgressChange);
 
+  console.log('QuestionManager state:', {
+    currentQuestion,
+    currentSet,
+    isLoadingQuestions,
+    isGeneratingEstimate,
+    hasFollowUpQuestion,
+    currentStage,
+    totalStages,
+    currentSetAnswers
+  });
+
   if (isLoadingQuestions) {
     return <LoadingScreen message="Loading questions..." />;
   }

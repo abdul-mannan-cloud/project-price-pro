@@ -95,6 +95,7 @@ export const useQuestionManager = (
   };
 
   const moveToNextQuestionSet = () => {
+    console.log('Moving to next question set, current index:', currentSetIndex, 'total sets:', questionSets.length);
     if (currentSetIndex < questionSets.length - 1) {
       setCurrentSetIndex(prev => prev + 1);
     } else {
@@ -108,9 +109,11 @@ export const useQuestionManager = (
       return;
     }
 
+    console.log('Starting estimate generation with answers:', answers);
     setIsGeneratingEstimate(true);
+    
     try {
-      onComplete(answers);
+      await onComplete(answers);
     } catch (error) {
       console.error('Error completing questions:', error);
       toast({
@@ -118,6 +121,8 @@ export const useQuestionManager = (
         description: "Failed to process your answers. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsGeneratingEstimate(false);
     }
   };
 
@@ -225,8 +230,9 @@ export const useQuestionManager = (
 
   useEffect(() => {
     const progress = calculateProgress();
+    console.log('Updating progress:', progress);
     onProgressChange(progress);
-  }, [answers, questionSets, onProgressChange]);
+  }, [answers, questionSets]);
 
   return {
     currentQuestion: questionSequence.find(q => q.id === currentQuestionId),
