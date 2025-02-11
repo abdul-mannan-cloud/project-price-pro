@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,7 @@ import { EstimateHeader } from "./components/EstimateHeader";
 import { EstimateBody } from "./components/EstimateBody";
 import { EstimateFooter } from "./components/EstimateFooter";
 import { EstimateDisplayProps } from "./types";
-import { formatItemTitle } from "./utils/estimateUtils";
+import { formatItemTitle, formatCurrency } from "./utils/estimateUtils";
 import { getTemplateStyles } from "./styles/templateStyles";
 
 interface ContractorSettings {

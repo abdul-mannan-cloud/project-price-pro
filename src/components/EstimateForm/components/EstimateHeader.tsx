@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Mail, Phone, RefreshCw, Settings, Copy, FileDown } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ContractorDisplay } from '../types';
 import { getTemplateStyles } from '../styles/templateStyles';
+import { BrandingColors } from "@/types/settings";
 
 interface EstimateHeaderProps {
   contractor?: ContractorDisplay;
@@ -29,7 +29,10 @@ export const EstimateHeader: React.FC<EstimateHeaderProps> = ({
   isLoading,
   templateStyle = 'modern'
 }) => {
-  const styles = getTemplateStyles(templateStyle, contractor?.branding_colors);
+  const styles = getTemplateStyles(
+    templateStyle, 
+    contractor?.branding_colors as BrandingColors | null
+  );
   const defaultCompany = {
     business_name: "Example Company",
     contact_email: "contact@example.com",
