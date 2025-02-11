@@ -45,7 +45,70 @@ serve(async (req) => {
       return { category, questions };
     });
 
-    // Generate AI title and message
+    const fetchWithTimeout = async (url: string, options: RequestInit & { timeout?: number }) => {
+      const { timeout = 30000, ...fetchOptions } = options;
+      
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      
+      try {
+        const response = await fetch(url, {
+          ...fetchOptions,
+          signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+      } catch (error) {
+        clearTimeout(id);
+        throw error;
+      }
+    };
+
+    const makeAPIRequest = async (prompt: string, type: 'title' | 'message' | 'estimate') => {
+      console.log(`Making ${type} API request with prompt:`, prompt);
+      
+      try {
+        const response = await fetchWithTimeout('https://api.llama-api.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${llamaApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: [{
+              role: 'system',
+              content: type === 'estimate' 
+                ? 'You are a construction cost estimator. Generate estimates in JSON format only.'
+                : type === 'title' 
+                  ? 'Generate a concise project title.'
+                  : 'Generate a clear project overview.'
+            }, {
+              role: 'user',
+              content: prompt
+            }],
+            temperature: 0.2,
+            response_format: type === 'estimate' ? { type: "json_object" } : { type: "text" }
+          }),
+          timeout: 45000 // 45 second timeout
+        });
+
+        if (!response.ok) {
+          console.error(`${type} API error:`, await response.text());
+          throw new Error(`${type} API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(`${type} API response:`, data);
+        return data;
+      } catch (error) {
+        console.error(`Error in ${type} API call:`, error);
+        if (error.name === 'AbortError') {
+          throw new Error(`${type} API request timed out after 45 seconds`);
+        }
+        throw error;
+      }
+    };
+
     const titlePrompt = `Based on this project description and answers, generate a concise project title (4 words or less):
     Category: ${category || 'General Construction'}
     Description: ${projectDescription || 'Project estimate'}
@@ -60,70 +123,25 @@ serve(async (req) => {
       cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
     ).join('\n')}`;
 
-    console.log('Sending title prompt:', titlePrompt);
-    console.log('Sending message prompt:', messagePrompt);
+    console.log('Starting API requests...');
 
-    const [titleResponse, messageResponse] = await Promise.all([
-      fetch('https://api.llama-api.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${llamaApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [{
-            role: 'system',
-            content: 'Generate a concise project title.'
-          }, {
-            role: 'user',
-            content: titlePrompt
-          }],
-          temperature: 0.2,
-          response_format: { type: "text" }
-        }),
-      }),
-      fetch('https://api.llama-api.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${llamaApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [{
-            role: 'system',
-            content: 'Generate a clear project overview.'
-          }, {
-            role: 'user',
-            content: messagePrompt
-          }],
-          temperature: 0.2,
-          response_format: { type: "text" }
-        }),
-      })
-    ]);
+    let aiTitle, aiMessage;
+    try {
+      const [titleData, messageData] = await Promise.all([
+        makeAPIRequest(titlePrompt, 'title'),
+        makeAPIRequest(messagePrompt, 'message')
+      ]);
 
-    if (!titleResponse.ok) {
-      console.error('Title API error:', await titleResponse.text());
-      throw new Error(`Title API error: ${titleResponse.status}`);
+      aiTitle = titleData.choices?.[0]?.message?.content?.trim() || 'Project Estimate';
+      aiMessage = messageData.choices?.[0]?.message?.content?.trim() || 'Custom project estimate based on provided specifications.';
+    } catch (error) {
+      console.error('Error generating title/message:', error);
+      // Use fallback values if API calls fail
+      aiTitle = 'Project Estimate';
+      aiMessage = 'Custom project estimate based on provided specifications.';
     }
 
-    if (!messageResponse.ok) {
-      console.error('Message API error:', await messageResponse.text());
-      throw new Error(`Message API error: ${messageResponse.status}`);
-    }
-
-    const [titleData, messageData] = await Promise.all([
-      titleResponse.json(),
-      messageResponse.json()
-    ]);
-
-    console.log('Title API response:', titleData);
-    console.log('Message API response:', messageData);
-
-    const aiTitle = titleData.choices?.[0]?.message?.content?.trim() || 'Project Estimate';
-    const aiMessage = messageData.choices?.[0]?.message?.content?.trim() || 'Custom project estimate based on provided specifications.';
-
-    const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format only. Do not include any markdown or text before or after the JSON:
+    const estimatePrompt = `Based on the following project details, generate a detailed construction estimate in JSON format only. Do not include any markdown or text before or after the JSON:
 
 Project Category: ${category || 'General Construction'}
 Project Description: ${projectDescription || 'Project estimate'}
@@ -164,118 +182,96 @@ Response must be valid JSON with this structure:
 
     console.log('Sending estimate prompt to Llama API');
 
-    const response = await fetch('https://api.llama-api.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${llamaApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messages: [{
-          role: 'system',
-          content: 'You are a construction cost estimator. Generate estimates in JSON format only. Do not include any markdown formatting or additional text.'
-        }, {
-          role: 'user',
-          content: prompt
-        }],
-        temperature: 0.2,
-        response_format: { type: "json_object" }
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Llama API estimate error:', errorText);
-      throw new Error(`Llama API error: ${response.status} ${response.statusText}`);
-    }
-
-    const aiResponse = await response.json();
-    console.log('Received estimate response:', aiResponse);
-
-    const content = aiResponse.choices?.[0]?.message?.content;
-    if (!content) {
-      throw new Error('Invalid estimate response format');
-    }
-
-    console.log('Parsing estimate content:', content);
-
-    let parsedEstimate;
     try {
-      // If content is already an object, use it directly
-      parsedEstimate = typeof content === 'string' ? JSON.parse(content) : content;
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      throw new Error('Failed to parse estimate response. Expected valid JSON.');
-    }
-
-    if (!parsedEstimate || typeof parsedEstimate !== 'object') {
-      throw new Error('Invalid estimate format: must be an object');
-    }
-
-    if (!Array.isArray(parsedEstimate.groups)) {
-      throw new Error('Invalid estimate structure: groups must be an array');
-    }
-
-    if (typeof parsedEstimate.totalCost !== 'number') {
-      throw new Error('Invalid estimate structure: totalCost must be a number');
-    }
-
-    // Add the AI generated title and message
-    parsedEstimate.ai_generated_title = aiTitle;
-    parsedEstimate.ai_generated_message = aiMessage;
-
-    // Validate structure and types
-    parsedEstimate.groups.forEach((group, groupIndex) => {
-      if (!group.name || typeof group.name !== 'string') {
-        throw new Error(`Invalid group name at index ${groupIndex}`);
+      const estimateData = await makeAPIRequest(estimatePrompt, 'estimate');
+      
+      const content = estimateData.choices?.[0]?.message?.content;
+      if (!content) {
+        throw new Error('Invalid estimate response format');
       }
 
-      if (!Array.isArray(group.subgroups)) {
-        throw new Error(`Invalid subgroups array in group ${group.name}`);
+      console.log('Parsing estimate content:', content);
+
+      let parsedEstimate;
+      try {
+        parsedEstimate = typeof content === 'string' ? JSON.parse(content) : content;
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        throw new Error('Failed to parse estimate response. Expected valid JSON.');
       }
 
-      group.subgroups.forEach((subgroup, subgroupIndex) => {
-        if (!subgroup.name || typeof subgroup.name !== 'string') {
-          throw new Error(`Invalid subgroup name in group ${group.name}`);
+      if (!parsedEstimate || typeof parsedEstimate !== 'object') {
+        throw new Error('Invalid estimate format: must be an object');
+      }
+
+      if (!Array.isArray(parsedEstimate.groups)) {
+        throw new Error('Invalid estimate structure: groups must be an array');
+      }
+
+      if (typeof parsedEstimate.totalCost !== 'number') {
+        throw new Error('Invalid estimate structure: totalCost must be a number');
+      }
+
+      // Add the AI generated title and message
+      parsedEstimate.ai_generated_title = aiTitle;
+      parsedEstimate.ai_generated_message = aiMessage;
+
+      // Validate structure and types
+      parsedEstimate.groups.forEach((group, groupIndex) => {
+        if (!group.name || typeof group.name !== 'string') {
+          throw new Error(`Invalid group name at index ${groupIndex}`);
         }
 
-        if (!Array.isArray(subgroup.items)) {
-          throw new Error(`Invalid items array in subgroup ${subgroup.name}`);
+        if (!Array.isArray(group.subgroups)) {
+          throw new Error(`Invalid subgroups array in group ${group.name}`);
         }
 
-        if (typeof subgroup.subtotal !== 'number') {
-          throw new Error(`Invalid subtotal in subgroup ${subgroup.name}`);
-        }
+        group.subgroups.forEach((subgroup, subgroupIndex) => {
+          if (!subgroup.name || typeof subgroup.name !== 'string') {
+            throw new Error(`Invalid subgroup name in group ${group.name}`);
+          }
 
-        subgroup.items.forEach((item, itemIndex) => {
-          if (!item.title || typeof item.title !== 'string') {
-            throw new Error(`Invalid item title in subgroup ${subgroup.name}`);
+          if (!Array.isArray(subgroup.items)) {
+            throw new Error(`Invalid items array in subgroup ${subgroup.name}`);
           }
-          if (typeof item.quantity !== 'number') {
-            throw new Error(`Invalid quantity in item ${item.title}`);
+
+          if (typeof subgroup.subtotal !== 'number') {
+            throw new Error(`Invalid subtotal in subgroup ${subgroup.name}`);
           }
-          if (typeof item.unitAmount !== 'number') {
-            throw new Error(`Invalid unitAmount in item ${item.title}`);
-          }
-          if (typeof item.totalPrice !== 'number') {
-            throw new Error(`Invalid totalPrice in item ${item.title}`);
-          }
+
+          subgroup.items.forEach((item, itemIndex) => {
+            if (!item.title || typeof item.title !== 'string') {
+              throw new Error(`Invalid item title in subgroup ${subgroup.name}`);
+            }
+            if (typeof item.quantity !== 'number') {
+              throw new Error(`Invalid quantity in item ${item.title}`);
+            }
+            if (typeof item.unitAmount !== 'number') {
+              throw new Error(`Invalid unitAmount in item ${item.title}`);
+            }
+            if (typeof item.totalPrice !== 'number') {
+              throw new Error(`Invalid totalPrice in item ${item.title}`);
+            }
+          });
         });
       });
-    });
 
-    console.log('Estimate validation successful');
-    return new Response(
-      JSON.stringify(parsedEstimate),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        } 
-      }
-    );
+      console.log('Estimate validation successful');
+      return new Response(
+        JSON.stringify(parsedEstimate),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+    } catch (estimateError) {
+      console.error('Error generating estimate:', estimateError);
+      throw new Error(`Failed to generate estimate: ${estimateError.message}`);
+    }
   } catch (error) {
-    console.error('Error generating estimate:', error);
+    console.error('Error in generate-estimate function:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Failed to generate estimate',
