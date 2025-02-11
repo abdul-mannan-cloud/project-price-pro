@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Question, CategoryQuestions, AnswersState, QuestionAnswer } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
@@ -17,7 +16,6 @@ export const useQuestionManager = (
   const [queuedNextQuestions, setQueuedNextQuestions] = useState<string[]>([]);
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
   const [pendingBranchTransition, setPendingBranchTransition] = useState(false);
-  const [showingEstimate, setShowingEstimate] = useState(false);
 
   const calculateProgress = () => {
     if (questionSets.length === 0) return 0;
@@ -61,7 +59,7 @@ export const useQuestionManager = (
 
   const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {
-      onComplete(answers);
+      handleComplete();
       return;
     }
 
@@ -107,31 +105,19 @@ export const useQuestionManager = (
   const handleComplete = async () => {
     if (currentSetIndex < questionSets.length - 1) {
       moveToNextQuestionSet();
-    } else {
-      setIsGeneratingEstimate(true);
-      try {
-        const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
-          body: { answers }
-        });
+      return;
+    }
 
-        if (error) throw error;
-        
-        if (!estimateData) {
-          throw new Error('No estimate data received');
-        }
-
-        setShowingEstimate(true);
-        onComplete(answers);
-      } catch (error) {
-        console.error('Error generating estimate:', error);
-        toast({
-          title: "Error",
-          description: "Failed to generate estimate. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsGeneratingEstimate(false);
-      }
+    setIsGeneratingEstimate(true);
+    try {
+      onComplete(answers);
+    } catch (error) {
+      console.error('Error completing questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process your answers. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
