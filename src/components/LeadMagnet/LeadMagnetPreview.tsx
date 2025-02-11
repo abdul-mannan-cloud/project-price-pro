@@ -9,6 +9,8 @@ import { ProgressSteps } from "@/components/ui/progress-steps";
 import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
 import { Question } from "@/types/estimate";
 import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
+import { ContactForm } from "@/components/EstimateForm/ContactForm";
+import { EstimateSkeleton } from "@/components/EstimateForm/EstimateSkeleton";
 
 interface BrandingColors {
   primary: string;
@@ -30,6 +32,9 @@ export const LeadMagnetPreview = () => {
   const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
   const [questions, setQuestions] = useState<Question[]>([]);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
+  const [estimate, setEstimate] = useState<any>(null);
+  const [leadId, setLeadId] = useState<string | null>(null);
+  const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
 
   const { data: contractor } = useQuery({
     queryKey: ["contractor"],
@@ -47,6 +52,31 @@ export const LeadMagnetPreview = () => {
       return data;
     },
   });
+
+  const generateEstimateInBackground = async () => {
+    try {
+      setIsGeneratingEstimate(true);
+      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          answers: selectedOptions,
+          projectDescription: "New project inquiry",
+          leadId,
+          category: "General"
+        }
+      });
+
+      if (error) throw error;
+      setEstimate(estimateData);
+    } catch (error) {
+      console.error('Error generating estimate:', error);
+      toast({
+        title: "Processing Estimate",
+        description: "Your estimate is being generated and will be emailed to you shortly.",
+      });
+    } finally {
+      setIsGeneratingEstimate(false);
+    }
+  };
 
   const generateQuestions = async () => {
     try {
@@ -91,11 +121,80 @@ export const LeadMagnetPreview = () => {
     }));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep === 0) {
       generateQuestions();
     } else if (currentStep < questions.length) {
       setCurrentStep(prev => prev + 1);
+    } else {
+      // Create a lead and move to contact form
+      try {
+        const { data: lead, error: leadError } = await supabase
+          .from('leads')
+          .insert({
+            status: 'pending',
+            contractor_id: contractor?.id,
+            project_description: "New project inquiry",
+            answers: selectedOptions,
+            project_images: uploadedPhotos,
+            project_title: "New Project"
+          })
+          .select()
+          .single();
+
+        if (leadError) throw leadError;
+        
+        setLeadId(lead.id);
+        setCurrentStep(questions.length + 1);
+        
+        // Start estimate generation in background
+        generateEstimateInBackground();
+      } catch (error) {
+        console.error('Error creating lead:', error);
+        toast({
+          title: "Error",
+          description: "Failed to process your request. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleContactFormSubmit = async (contactData: any) => {
+    if (!leadId) return;
+
+    try {
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update({
+          user_name: contactData.fullName,
+          user_email: contactData.email,
+          user_phone: contactData.phone,
+          project_address: contactData.address,
+          status: estimate ? 'complete' : 'processing'
+        })
+        .eq('id', leadId);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Success!",
+        description: "Your estimate request has been submitted. You'll receive an email shortly.",
+      });
+
+      // Reset form
+      setCurrentStep(0);
+      setSelectedOptions({});
+      setUploadedPhotos([]);
+      setEstimate(null);
+      setLeadId(null);
+    } catch (error) {
+      console.error('Error updating lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save your information. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -116,9 +215,25 @@ export const LeadMagnetPreview = () => {
 
   const handlePhotosSelected = (urls: string[]) => {
     setUploadedPhotos(urls);
-    // Automatically advance to next step when photos are uploaded
     handleNext();
   };
+
+  // Show contact form immediately after questions
+  if (currentStep === questions.length + 1) {
+    return isGeneratingEstimate ? (
+      <div className="card p-8">
+        <EstimateSkeleton />
+      </div>
+    ) : (
+      <ContactForm
+        onSubmit={handleContactFormSubmit}
+        leadId={leadId || undefined}
+        contractorId={contractor?.id}
+        estimate={estimate}
+        contractor={contractor}
+      />
+    );
+  }
 
   return (
     <div className="w-full mx-auto space-y-8 animate-fadeIn" style={{
