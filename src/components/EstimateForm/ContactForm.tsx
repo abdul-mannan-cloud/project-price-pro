@@ -52,6 +52,12 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
       console.log('Submitting contact form with:', { leadId, contractorId, formData });
       console.log('Estimate data being sent:', estimate);
 
+      // Verify estimate data structure
+      if (!estimate || !estimate.groups || !Array.isArray(estimate.groups)) {
+        console.error('Invalid estimate data structure:', estimate);
+        throw new Error("Invalid estimate data structure");
+      }
+
       // Update the lead with the form data
       const { error: updateError } = await supabase
         .from('leads')
@@ -80,7 +86,10 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
           body: {
             name: formData.fullName,
             email: formData.email,
-            estimateData: estimate,
+            estimateData: {
+              groups: estimate.groups || [],
+              totalCost: estimate.totalCost || 0
+            },
             estimateUrl,
             contractor
           }
@@ -98,6 +107,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
       ]);
 
       if (emailResponse.error) {
+        console.error('Email function error:', emailResponse.error);
         throw new Error(emailResponse.error);
       }
 
@@ -249,3 +259,4 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
     </div>
   );
 };
+
