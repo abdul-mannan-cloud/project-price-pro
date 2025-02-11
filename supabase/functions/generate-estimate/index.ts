@@ -83,34 +83,44 @@ serve(async (req) => {
       const messages = [{
         role: 'system',
         content: `You are a construction cost estimator. Your task is to return ONLY a valid JSON object with no additional text or explanation.
-        The JSON must follow this exact format:
+        
+Here is an example of the EXACT format required:
+{
+  "groups": [
+    {
+      "name": "Labor",
+      "subgroups": [
         {
-          "ai_generated_title": "string (4 words or less)",
-          "ai_generated_message": "string (2-3 sentences)",
-          "groups": [
+          "name": "Installation",
+          "items": [
             {
-              "name": "Group Name",
-              "description": "Optional group description",
-              "subgroups": [
-                {
-                  "name": "Subgroup Name",
-                  "items": [
-                    {
-                      "title": "Item Title",
-                      "description": "Item description",
-                      "quantity": number,
-                      "unit": "optional unit",
-                      "unitAmount": number,
-                      "totalPrice": number
-                    }
-                  ],
-                  "subtotal": number
-                }
-              ]
+              "title": "General Labor",
+              "description": "Basic installation work",
+              "quantity": 8,
+              "unit": "hours",
+              "unitAmount": 75,
+              "totalPrice": 600
             }
           ],
-          "totalCost": number
-        }`
+          "subtotal": 600
+        }
+      ]
+    }
+  ],
+  "totalCost": 600,
+  "ai_generated_title": "Basic Installation Project",
+  "ai_generated_message": "Simple installation project with standard labor rates. Includes necessary tools and equipment."
+}
+
+Your response must:
+1. Be a single JSON object
+2. Follow the exact structure shown above
+3. Include all required fields
+4. Use correct number types for quantities and costs
+5. Ensure all subtotals and totalCost are accurate
+6. Keep ai_generated_title to 4 words or less
+7. Keep ai_generated_message to 2-3 sentences
+8. Include "unit" field for each item`
       }];
 
       if (imageUrl) {
