@@ -414,14 +414,26 @@ ${templateSettings.estimate_footer_text || ''}
                         <p className="text-sm text-gray-600 mt-1">{item.description}</p>
                       )}
                       <div className="text-sm text-gray-600 mt-1">
-                        {item.quantity.toLocaleString()} × {formatCurrency(item.unitAmount)} = {formatCurrency(item.totalPrice)}
+                        {isEstimateReady ? (
+                          <>{item.quantity.toLocaleString()} × {formatCurrency(item.unitAmount)} = {formatCurrency(item.totalPrice)}</>
+                        ) : (
+                          <div className="h-4 w-32 relative overflow-hidden">
+                            <EstimateAnimation />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
                 {!templateSettings.estimate_hide_subtotals && (
                   <div className={getTemplateStyles(templateSettings.estimate_template_style).subtotal}>
-                    Subtotal for {subgroup.name}: {formatCurrency(subgroup.subtotal)}
+                    Subtotal for {subgroup.name}: {
+                      isEstimateReady ? formatCurrency(subgroup.subtotal) : (
+                        <div className="inline-block h-4 w-24 relative overflow-hidden">
+                          <EstimateAnimation />
+                        </div>
+                      )
+                    }
                   </div>
                 )}
               </div>
@@ -450,13 +462,31 @@ ${templateSettings.estimate_footer_text || ''}
                         {item.description}
                       </td>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                        {isEstimateReady ? item.quantity.toLocaleString() : '0'}
+                        {isEstimateReady ? (
+                          item.quantity.toLocaleString()
+                        ) : (
+                          <div className="h-4 w-full relative overflow-hidden">
+                            <EstimateAnimation />
+                          </div>
+                        )}
                       </td>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                        {isEstimateReady ? formatCurrency(item.unitAmount) : formatCurrency(0)}
+                        {isEstimateReady ? (
+                          formatCurrency(item.unitAmount)
+                        ) : (
+                          <div className="h-4 w-full relative overflow-hidden">
+                            <EstimateAnimation />
+                          </div>
+                        )}
                       </td>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[6%] text-right font-medium")}>
-                        {isEstimateReady ? formatCurrency(item.totalPrice) : formatCurrency(0)}
+                        {isEstimateReady ? (
+                          formatCurrency(item.totalPrice)
+                        ) : (
+                          <div className="h-4 w-full relative overflow-hidden">
+                            <EstimateAnimation />
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -471,7 +501,13 @@ ${templateSettings.estimate_footer_text || ''}
           <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).subtotal, "mt-4 pt-3 border-t")}>
             <span className={getTemplateStyles(templateSettings.estimate_template_style).text}>Subtotal for {group.name}</span>
             <span className="font-semibold ml-4">
-              {isEstimateReady ? formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0)) : formatCurrency(0)}
+              {isEstimateReady ? (
+                formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0))
+              ) : (
+                <div className="inline-block h-4 w-24 relative overflow-hidden">
+                  <EstimateAnimation />
+                </div>
+              )}
             </span>
           </div>
         )}
