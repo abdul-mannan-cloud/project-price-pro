@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Info, DollarSign, Plus } from "lucide-react";
@@ -21,8 +22,8 @@ import {
 
 interface AIRate {
   title: string;
-  description: string;
-  rate: string;
+  description: string | null;
+  rate: number;  // Changed from string to number to match database
   unit: string;
   type: string;
   instructions?: string;
@@ -67,7 +68,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
   const [newRate, setNewRate] = useState<AIRate>({
     title: "",
     description: "",
-    rate: "",
+    rate: 0,  // Changed initial value to number
     unit: "",
     type: "material_labor",
     instructions: ""
@@ -79,7 +80,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
     setNewRate({
       title: "",
       description: "",
-      rate: "",
+      rate: 0,  // Changed initial value to number
       unit: "",
       type: "material_labor",
       instructions: ""
@@ -160,7 +161,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
             />
             <Input
               label="Description"
-              value={newRate.description}
+              value={newRate.description || ""}
               onChange={(e) => setNewRate({ ...newRate, description: e.target.value })}
               placeholder="Brief description of the rate"
             />
@@ -168,7 +169,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
               label="Rate"
               type="number"
               value={newRate.rate}
-              onChange={(e) => setNewRate({ ...newRate, rate: e.target.value })}
+              onChange={(e) => setNewRate({ ...newRate, rate: parseFloat(e.target.value) || 0 })}  // Parse as number
               placeholder="e.g., 75"
             />
             <div className="space-y-2">

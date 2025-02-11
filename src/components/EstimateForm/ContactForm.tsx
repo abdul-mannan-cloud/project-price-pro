@@ -130,8 +130,13 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
   // Check if the current user is a contractor
   const isContractor = !!contractorId;
 
+  // Get contractor's primary color from branding_colors
+  const buttonStyle = contractor?.branding_colors?.primary 
+    ? { backgroundColor: contractor.branding_colors.primary }
+    : undefined; // Let the default button styling handle it if no color is set
+
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/13 flex items-center justify-center z-50">
       <div className="w-full max-w-md mx-auto bg-background rounded-xl p-6 shadow-lg animate-fadeIn">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="text-center mb-8 pt-4">
@@ -202,6 +207,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
             type="submit" 
             className="w-full mt-6" 
             disabled={isSubmitting}
+            style={buttonStyle}
           >
             {isSubmitting ? "Processing..." : "View Your Custom Estimate"}
           </Button>

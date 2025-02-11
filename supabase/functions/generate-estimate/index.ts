@@ -1,300 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
-interface RequestBody {
-  projectDescription: string;
-  imageUrls?: string[];  // Updated to handle multiple images
-  answers: Record<string, any>;
-  contractorId?: string;
-  leadId?: string;
-  category?: string;
-}
-
-interface LocationData {
-  city: string;
-  region: string;
-  country: string;
-  latitude: number;
-  longitude: number;
-}
-
-async function fetchAISettings(supabase: any, contractorId: string) {
-  // Fetch AI instructions
-  const { data: instructions, error: instructionsError } = await supabase
-    .from('ai_instructions')
-    .select('*')
-    .eq('contractor_id', contractorId);
-
-  if (instructionsError) {
-    console.error('Error fetching AI instructions:', instructionsError);
-  }
-
-  // Fetch AI rates
-  const { data: rates, error: ratesError } = await supabase
-    .from('ai_rates')
-    .select('*')
-    .eq('contractor_id', contractorId);
-
-  if (ratesError) {
-    console.error('Error fetching AI rates:', ratesError);
-  }
-
-  return {
-    instructions: instructions || [],
-    rates: rates || []
-  };
-}
-
-function applyAIInstructions(estimate: any, instructions: any[]) {
-  instructions.forEach(instruction => {
-    // Apply each instruction based on its type or category
-    if (instruction.instructions) {
-      console.log(`Applying instruction: ${instruction.title}`);
-      // Add instruction-specific logic here
-      // For example, adjusting costs, adding line items, etc.
-    }
-  });
-  return estimate;
-}
-
-function applyAIRates(lineItems: any[], rates: any[]) {
-  return lineItems.map(item => {
-    const matchingRate = rates.find(rate => {
-      // Match rate based on type and unit
-      return rate.type === item.type && rate.unit === item.unit;
-    });
-
-    if (matchingRate) {
-      console.log(`Applying rate: ${matchingRate.title} (${matchingRate.rate} per ${matchingRate.unit})`);
-      return {
-        ...item,
-        unitAmount: matchingRate.rate,
-        totalPrice: matchingRate.rate * item.quantity
-      };
-    }
-
-    return item;
-  });
-}
-
-async function getLocationData(ip: string): Promise<LocationData | null> {
-  try {
-    const response = await fetch(`https://ipapi.co/${ip}/json/?key=AzZ4jUj0F5eFNjhgWgLpikGJxYdf5IzcsfB`);
-    if (!response.ok) throw new Error('Failed to fetch location data');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching location data:', error);
-    return null;
-  }
-}
-
-function generateProjectSummary(projectDescription: string, answers: Record<string, any>, category?: string): string {
-  const categoryText = category ? `${category} project` : 'home improvement project';
-  const details = Object.entries(answers).map(([_, categoryAnswers]) => {
-    const selections = Object.values(categoryAnswers).map((answer: any) => {
-      if (answer.answers && answer.answers.length > 0) {
-        const selectedOptions = answer.options
-          .filter((opt: any) => answer.answers.includes(opt.value))
-          .map((opt: any) => opt.label);
-        return `${answer.question}: ${selectedOptions.join(', ')}`;
-      }
-      return null;
-    }).filter(Boolean);
-    return selections.join('. ');
-  }).join(' ');
-
-  return `This ${categoryText} involves ${details}. ${projectDescription}`;
-}
-
-function adjustPriceForLocation(basePrice: number, location: LocationData | null, settings: any): number {
-  if (!location) return basePrice;
-
-  // Use contractor settings if available
-  if (settings?.regional_pricing?.[location.region]) {
-    return basePrice * settings.regional_pricing[location.region];
-  }
-
-  // Default regional factors based on cost of living index
-  const regionalFactors: Record<string, number> = {
-    'CA': 1.4,  // California
-    'NY': 1.35, // New York
-    'TX': 0.9,  // Texas
-    'FL': 1.1,  // Florida
-    'IL': 1.2,  // Illinois
-    'WA': 1.25, // Washington
-    'MA': 1.3,  // Massachusetts
-    'OR': 1.2,  // Oregon
-    'CO': 1.15, // Colorado
-    'AZ': 1.0,  // Arizona
-  };
-
-  const factor = regionalFactors[location.region] || 1;
-  console.log(`Adjusting price for ${location.region} with factor ${factor}`);
-  return basePrice * factor;
-}
-
-function generateLineItems(answer: any, location: LocationData | null, settings: any, aiRates: any[]) {
-  const items: any[] = [];
-  const { question, answers: selectedAnswers, options, type } = answer;
-
-  // Enhanced base costs with more granular categories
-  const baseCosts: Record<string, { labor: number; materials: number }> = {
-    'installation': { labor: 85, materials: 150 },
-    'repair': { labor: 95, materials: 100 },
-    'renovation': { labor: 125, materials: 250 },
-    'maintenance': { labor: 75, materials: 50 },
-    'custom': { labor: 150, materials: 300 },
-    'electrical': { labor: 110, materials: 200 },
-    'plumbing': { labor: 120, materials: 180 },
-    'carpentry': { labor: 95, materials: 160 },
-    'painting': { labor: 65, materials: 90 },
-    'flooring': { labor: 85, materials: 200 },
-    'demolition': { labor: 70, materials: 50 },
-  };
-
-  const complexityMultipliers: Record<string, number> = {
-    'simple': 0.8,
-    'standard': 1.0,
-    'complex': 1.5,
-    'custom': 2.0
-  };
-
-  selectedAnswers.forEach((selected: string) => {
-    const option = options.find((opt: any) => opt.value === selected);
-    if (!option) return;
-
-    // Determine work type and complexity from the answer
-    const workType = determineWorkType(option.value, question);
-    const complexity = determineComplexity(option.value, question);
-
-    const { labor: baseLaborCost, materials: baseMaterialCost } = baseCosts[workType] || baseCosts['custom'];
-    const complexityMultiplier = complexityMultipliers[complexity];
-
-    const adjustedLaborCost = adjustPriceForLocation(
-      baseLaborCost * complexityMultiplier,
-      location,
-      settings
-    );
-
-    const adjustedMaterialCost = adjustPriceForLocation(
-      baseMaterialCost * complexityMultiplier,
-      location,
-      settings
-    );
-
-    const laborHours = Math.max(2, Math.ceil(complexityMultiplier * 3));
-    const materialQuantity = Math.max(1, Math.ceil(complexityMultiplier * 2));
-
-    // Generate more descriptive items
-    const generatedItems = [];
-    
-    // Add labor line item with enhanced description
-    generatedItems.push({
-      title: `${option.label} - Professional Labor`,
-      description: generateDescription(workType, option.label, 'labor'),
-      quantity: laborHours,
-      unit: 'HR',
-      type: 'labor',
-      unitAmount: adjustedLaborCost,
-      totalPrice: adjustedLaborCost * laborHours
-    });
-
-    // Add materials line item with enhanced description
-    generatedItems.push({
-      title: `${option.label} - Materials`,
-      description: generateDescription(workType, option.label, 'materials'),
-      quantity: materialQuantity,
-      unit: 'EA',
-      type: 'material',
-      unitAmount: adjustedMaterialCost,
-      totalPrice: adjustedMaterialCost * materialQuantity
-    });
-
-    // Apply AI rates to the generated items
-    const itemsWithRates = applyAIRates(generatedItems, aiRates);
-    items.push(...itemsWithRates);
-
-    // Add specialized items for custom work
-    if (workType === 'custom' || complexity === 'complex') {
-      const baseCustomCost = 200 * complexityMultiplier;
-      const customWorkCost = adjustPriceForLocation(baseCustomCost, location, settings);
-      items.push({
-        title: `${option.label} - Design & Planning`,
-        description: `Professional design and planning services for ${option.label.toLowerCase()}`,
-        quantity: 1,
-        unit: 'EA',
-        type: 'planning',
-        unitAmount: customWorkCost,
-        totalPrice: customWorkCost
-      });
-    }
-  });
-
-  return items;
-}
-
-function determineWorkType(value: string, question: string): string {
-  const combinedText = `${value} ${question}`.toLowerCase();
-  
-  if (combinedText.includes('electrical')) return 'electrical';
-  if (combinedText.includes('plumbing')) return 'plumbing';
-  if (combinedText.includes('carpentry')) return 'carpentry';
-  if (combinedText.includes('painting')) return 'painting';
-  if (combinedText.includes('floor')) return 'flooring';
-  if (combinedText.includes('demolition')) return 'demolition';
-  if (combinedText.includes('install')) return 'installation';
-  if (combinedText.includes('repair')) return 'repair';
-  if (combinedText.includes('renovate')) return 'renovation';
-  if (combinedText.includes('maintain')) return 'maintenance';
-  
-  return 'custom';
-}
-
-function determineComplexity(value: string, question: string): string {
-  const combinedText = `${value} ${question}`.toLowerCase();
-  
-  if (combinedText.includes('complex') || combinedText.includes('extensive')) return 'complex';
-  if (combinedText.includes('custom')) return 'custom';
-  if (combinedText.includes('simple') || combinedText.includes('basic')) return 'simple';
-  
-  return 'standard';
-}
-
-function generateDescription(workType: string, itemLabel: string, type: 'labor' | 'materials'): string {
-  const baseDescription = type === 'labor' 
-    ? 'Professional installation and labor for'
-    : 'High-quality materials and supplies for';
-
-  const details = {
-    electrical: {
-      labor: 'Licensed electrical work including installation, wiring, and safety testing for',
-      materials: 'Professional-grade electrical components and materials for'
-    },
-    plumbing: {
-      labor: 'Expert plumbing services including installation, testing, and certification for',
-      materials: 'Industry-standard plumbing fixtures and materials for'
-    },
-    carpentry: {
-      labor: 'Skilled carpentry work including custom fitting and finishing for',
-      materials: 'Premium wood and carpentry materials for'
-    },
-    painting: {
-      labor: 'Professional painting services including preparation and finishing for',
-      materials: 'High-quality paint and painting supplies for'
-    },
-    flooring: {
-      labor: 'Expert flooring installation including subfloor preparation for',
-      materials: 'Premium flooring materials and underlayment for'
-    },
-    demolition: {
-      labor: 'Professional demolition services including debris removal for',
-      materials: 'Demolition equipment and disposal materials for'
-    }
-  };
-
-  const description = details[workType as keyof typeof details]?.[type] || baseDescription;
-  return `${description} ${itemLabel.toLowerCase()}`;
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
@@ -303,96 +13,248 @@ serve(async (req) => {
   }
 
   try {
-    const { projectDescription, imageUrls, answers, contractorId, leadId, category } = await req.json() as RequestBody;
-    console.log('Generating estimate for:', { projectDescription, category, contractorId, imageCount: imageUrls?.length });
-
-    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
-    const locationData = await getLocationData(clientIP);
-    console.log('Location data:', locationData);
-
-    let settings = null;
-    let aiSettings = { instructions: [], rates: [] };
-
-    if (contractorId) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Missing Supabase environment variables');
-      }
-
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      // Fetch contractor settings and AI settings
-      const [
-        { data: contractor },
-        aiSettingsData
-      ] = await Promise.all([
-        supabase
-          .from('contractors')
-          .select(`
-            *,
-            contractor_settings(*)
-          `)
-          .eq('id', contractorId)
-          .single(),
-        fetchAISettings(supabase, contractorId)
-      ]);
-
-      if (contractor) {
-        settings = contractor.contractor_settings;
-        aiSettings = aiSettingsData;
-        console.log('Contractor settings:', settings);
-        console.log('AI settings:', aiSettings);
-      }
+    if (req.method !== 'POST') {
+      throw new Error('Method not allowed');
     }
 
-    const projectSummary = generateProjectSummary(projectDescription, answers, category);
-    let { groups, totalCost } = generateEstimateGroups(answers, locationData, settings, aiSettings.rates);
+    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
+    if (!llamaApiKey) {
+      throw new Error('Missing LLAMA_API_KEY');
+    }
 
-    // Apply AI instructions to modify the estimate
-    const estimateWithInstructions = applyAIInstructions({ 
-      groups, 
-      totalCost,
-      projectSummary 
-    }, aiSettings.instructions);
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (error) {
+      console.error('Error parsing request body:', error);
+      throw new Error('Invalid request body');
+    }
 
-    groups = estimateWithInstructions.groups;
-    totalCost = estimateWithInstructions.totalCost;
+    const { answers, projectDescription, category } = requestData;
+    console.log('Generating estimate for:', { category, projectDescription });
 
-    // Apply contractor markup and tax if available
-    const markupPercentage = settings?.markup_percentage || 20;
-    const taxRate = settings?.tax_rate || 8.5;
-    const markup = totalCost * (markupPercentage / 100);
-    const tax = totalCost * (taxRate / 100);
-    const finalTotal = totalCost + markup + tax;
-
-    console.log('Generated estimate:', {
-      totalCost,
-      markup,
-      tax,
-      finalTotal,
-      groupCount: groups.length
+    const formattedAnswers = Object.entries(answers).map(([category, categoryAnswers]) => {
+      const questions = Object.values(categoryAnswers).map(qa => ({
+        question: qa.question,
+        answer: qa.answers.map(ans => {
+          const option = qa.options.find(opt => opt.value === ans);
+          return option ? option.label : ans;
+        }).join(', ')
+      }));
+      return { category, questions };
     });
 
-    const estimate = {
-      projectSummary,
-      groups,
-      subtotal: totalCost,
-      markup,
-      tax,
-      totalCost: finalTotal,
-      location: locationData ? `${locationData.city}, ${locationData.region}` : undefined,
-      notes: [
-        "This estimate includes both labor and materials",
-        "Final costs may vary based on site conditions and specific requirements",
-        `Prices are adjusted based on ${locationData?.city || 'your'} location and market rates`,
-        "Contact us for a detailed on-site assessment"
+    // Generate AI title and message
+    const titlePrompt = `Based on this project description and answers, generate a concise project title (4 words or less):
+    Category: ${category}
+    Description: ${projectDescription}
+    ${formattedAnswers.map(cat => 
+      cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
+    ).join('\n')}`;
+
+    const messagePrompt = `Based on this project description and answers, generate a clear, professional overview of the project scope (2-3 sentences):
+    Category: ${category}
+    Description: ${projectDescription}
+    ${formattedAnswers.map(cat => 
+      cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
+    ).join('\n')}`;
+
+    const [titleResponse, messageResponse] = await Promise.all([
+      fetch('https://api.llama-api.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${llamaApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{
+            role: 'system',
+            content: 'Generate a concise project title.'
+          }, {
+            role: 'user',
+            content: titlePrompt
+          }],
+          temperature: 0.2
+        }),
+      }),
+      fetch('https://api.llama-api.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${llamaApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{
+            role: 'system',
+            content: 'Generate a clear project overview.'
+          }, {
+            role: 'user',
+            content: messagePrompt
+          }],
+          temperature: 0.2
+        }),
+      })
+    ]);
+
+    const [titleData, messageData] = await Promise.all([
+      titleResponse.json(),
+      messageResponse.json()
+    ]);
+
+    const aiTitle = titleData.choices[0].message.content.trim();
+    const aiMessage = messageData.choices[0].message.content.trim();
+
+    const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format.
+    
+Project Category: ${category || 'General Construction'}
+${projectDescription ? `Project Description: ${projectDescription}` : ''}
+
+Questions and Answers:
+${formattedAnswers.map(cat => `
+Category: ${cat.category}
+${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}
+
+Generate a detailed estimate with the following JSON structure:
+{
+  "groups": [
+    {
+      "name": "string",
+      "description": "string",
+      "subgroups": [
+        {
+          "name": "string",
+          "items": [
+            {
+              "title": "string",
+              "description": "string",
+              "quantity": number,
+              "unit": "string",
+              "unitAmount": number,
+              "totalPrice": number
+            }
+          ],
+          "subtotal": number
+        }
       ]
+    }
+  ],
+  "totalCost": number
+}
+
+Important:
+1. Return ONLY valid JSON, no additional text
+2. Ensure all numbers are valid and calculations are accurate
+3. Include realistic market prices
+4. Break down costs into logical groups
+5. Include both labor and materials`;
+
+    console.log('Sending prompt to Llama API...');
+
+    const response = await fetch('https://api.llama-api.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${llamaApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: [{
+          role: 'system',
+          content: 'You are a construction cost estimator. Generate detailed estimates in JSON format only.'
+        }, {
+          role: 'user',
+          content: prompt
+        }],
+        temperature: 0.2,
+        response_format: { type: "json_object" }
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Llama API error:', errorText);
+      throw new Error(`Llama API error: ${response.status} ${response.statusText}`);
+    }
+
+    const aiResponse = await response.json();
+    console.log('Received AI response:', aiResponse);
+
+    if (!aiResponse.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response format from Llama API');
+    }
+
+    let content = aiResponse.choices[0].message.content.trim();
+    console.log('Parsing content:', content);
+
+    content = content.replace(/```json\n?|\n?```/g, '').trim();
+
+    let parsedEstimate;
+    try {
+      parsedEstimate = JSON.parse(content);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error(`Failed to parse JSON: ${parseError.message}`);
+    }
+
+    if (!parsedEstimate || typeof parsedEstimate !== 'object') {
+      throw new Error('Invalid estimate format: must be an object');
+    }
+
+    if (!Array.isArray(parsedEstimate.groups)) {
+      throw new Error('Invalid estimate structure: groups must be an array');
+    }
+
+    if (typeof parsedEstimate.totalCost !== 'number') {
+      throw new Error('Invalid estimate structure: totalCost must be a number');
+    }
+
+    parsedEstimate.groups.forEach((group, groupIndex) => {
+      if (!group.name || typeof group.name !== 'string') {
+        throw new Error(`Invalid group name at index ${groupIndex}`);
+      }
+
+      if (!Array.isArray(group.subgroups)) {
+        throw new Error(`Invalid subgroups array in group ${group.name}`);
+      }
+
+      group.subgroups.forEach((subgroup, subgroupIndex) => {
+        if (!subgroup.name || typeof subgroup.name !== 'string') {
+          throw new Error(`Invalid subgroup name in group ${group.name}`);
+        }
+
+        if (!Array.isArray(subgroup.items)) {
+          throw new Error(`Invalid items array in subgroup ${subgroup.name}`);
+        }
+
+        if (typeof subgroup.subtotal !== 'number') {
+          throw new Error(`Invalid subtotal in subgroup ${subgroup.name}`);
+        }
+
+        subgroup.items.forEach((item, itemIndex) => {
+          if (!item.title || typeof item.title !== 'string') {
+            throw new Error(`Invalid item title in subgroup ${subgroup.name}`);
+          }
+          if (typeof item.quantity !== 'number') {
+            throw new Error(`Invalid quantity in item ${item.title}`);
+          }
+          if (typeof item.unitAmount !== 'number') {
+            throw new Error(`Invalid unitAmount in item ${item.title}`);
+          }
+          if (typeof item.totalPrice !== 'number') {
+            throw new Error(`Invalid totalPrice in item ${item.title}`);
+          }
+        });
+      });
+    });
+
+    const estimateJson = {
+      ...parsedEstimate,
+      ai_generated_title: aiTitle,
+      ai_generated_message: aiMessage
     };
 
+    console.log('Estimate validation successful');
     return new Response(
-      JSON.stringify(estimate),
+      JSON.stringify(estimateJson),
       { 
         headers: { 
           ...corsHeaders,
@@ -402,7 +264,6 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error generating estimate:', error);
-    
     return new Response(
       JSON.stringify({ 
         error: 'Failed to generate estimate',

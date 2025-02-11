@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Boxes } from "@/components/ui/background-boxes";
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -121,8 +122,11 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md p-8">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 relative overflow-hidden">
+      <div className="absolute inset-0 w-full h-full bg-slate-900 z-20 [mask-image:radial-gradient(transparent,white)] pointer-events-none" />
+      <Boxes />
+      
+      <Card className="w-full max-w-md p-8 relative z-30 bg-white">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold">
             {isSignUp ? "Create Account" : "Welcome Back"}
@@ -133,6 +137,7 @@ const Login = () => {
               : "Sign in to your account"}
           </p>
         </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {isSignUp && (
             <>
