@@ -408,26 +408,38 @@ ${templateSettings.estimate_footer_text || ''}
                   {[1, 2, 3].map((rowIndex) => (
                     <tr key={rowIndex} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%]")}>
-                        <div className="h-4 w-3/4 bg-gray-200 animate-pulse rounded" />
+                        <div className="h-4 w-3/4 bg-gray-200 animate-pulse rounded">
+                          <EstimateAnimation />
+                        </div>
                       </td>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%]")}>
-                        <div className="h-4 w-2/3 bg-gray-200 animate-pulse rounded" />
+                        <div className="h-4 w-2/3 bg-gray-200 animate-pulse rounded">
+                          <EstimateAnimation />
+                        </div>
                       </td>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                        <div className="h-4 w-12 bg-gray-200 animate-pulse rounded ml-auto" />
+                        <div className="h-4 w-12 bg-gray-200 animate-pulse rounded ml-auto">
+                          <EstimateAnimation />
+                        </div>
                       </td>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                        <div className="h-4 w-16 bg-gray-200 animate-pulse rounded ml-auto" />
+                        <div className="h-4 w-16 bg-gray-200 animate-pulse rounded ml-auto">
+                          <EstimateAnimation />
+                        </div>
                       </td>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[6%] text-right")}>
-                        <div className="h-4 w-20 bg-gray-200 animate-pulse rounded ml-auto" />
+                        <div className="h-4 w-20 bg-gray-200 animate-pulse rounded ml-auto">
+                          <EstimateAnimation />
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).subtotal, "mt-4 pt-3 border-t")}>
-                <div className="h-4 w-32 bg-gray-200 animate-pulse rounded ml-auto" />
+                <div className="h-4 w-32 bg-gray-200 animate-pulse rounded ml-auto">
+                  <EstimateAnimation />
+                </div>
               </div>
             </div>
           ))}
@@ -468,13 +480,7 @@ ${templateSettings.estimate_footer_text || ''}
                 ))}
                 {!templateSettings.estimate_hide_subtotals && (
                   <div className={getTemplateStyles(templateSettings.estimate_template_style).subtotal}>
-                    Subtotal for {subgroup.name}: {
-                      isEstimateReady ? formatCurrency(subgroup.subtotal) : (
-                        <div className="inline-block h-4 w-24 relative overflow-hidden">
-                          <EstimateAnimation />
-                        </div>
-                      )
-                    }
+                    Subtotal for {subgroup.name}: {formatCurrency(subgroup.subtotal)}
                   </div>
                 )}
               </div>
@@ -496,38 +502,20 @@ ${templateSettings.estimate_footer_text || ''}
                 {group.subgroups?.map(subgroup => 
                   subgroup.items?.map((item, itemIndex) => (
                     <tr key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%] break-words")}>
+                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%]")}>
                         {item.title} {item.unit && `(${formatUnit(item.unit)})`}
                       </td>
-                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%] break-words")}>
+                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%]")}>
                         {item.description}
                       </td>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                        {isEstimateReady ? (
-                          item.quantity.toLocaleString()
-                        ) : (
-                          <div className="h-4 w-full relative overflow-hidden">
-                            <EstimateAnimation />
-                          </div>
-                        )}
+                        {item.quantity.toLocaleString()}
                       </td>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                        {isEstimateReady ? (
-                          formatCurrency(item.unitAmount)
-                        ) : (
-                          <div className="h-4 w-full relative overflow-hidden">
-                            <EstimateAnimation />
-                          </div>
-                        )}
+                        {formatCurrency(item.unitAmount)}
                       </td>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[6%] text-right font-medium")}>
-                        {isEstimateReady ? (
-                          formatCurrency(item.totalPrice)
-                        ) : (
-                          <div className="h-4 w-full relative overflow-hidden">
-                            <EstimateAnimation />
-                          </div>
-                        )}
+                        {formatCurrency(item.totalPrice)}
                       </td>
                     </tr>
                   ))
@@ -537,18 +525,13 @@ ${templateSettings.estimate_footer_text || ''}
           </div>
         )}
 
-        {/* Group Subtotal */}
         {!templateSettings.estimate_hide_subtotals && templateSettings.estimate_template_style !== 'minimal' && (
           <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).subtotal, "mt-4 pt-3 border-t")}>
-            <span className={getTemplateStyles(templateSettings.estimate_template_style).text}>Subtotal for {group.name}</span>
+            <span className={getTemplateStyles(templateSettings.estimate_template_style).text}>
+              Subtotal for {group.name}
+            </span>
             <span className="font-semibold ml-4">
-              {isEstimateReady ? (
-                formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0))
-              ) : (
-                <div className="inline-block h-4 w-24 relative overflow-hidden">
-                  <EstimateAnimation />
-                </div>
-              )}
+              {formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0))}
             </span>
           </div>
         )}
@@ -562,6 +545,17 @@ ${templateSettings.estimate_footer_text || ''}
 
   return (
     <>
+      {!isEstimateReady && (
+        <div className="fixed top-0 left-0 right-0 bg-primary text-white p-4 text-center z-50 animate-in fade-in-0">
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-4 h-4">
+              <EstimateAnimation className="!bg-white/20" />
+            </div>
+            <span>Calculating your estimate...</span>
+          </div>
+        </div>
+      )}
+      
       <Card className={cn(
         getTemplateStyles(templateSettings.estimate_template_style).card,
         isBlurred && "blur-md pointer-events-none"
@@ -708,7 +702,7 @@ ${templateSettings.estimate_footer_text || ''}
                     <td className={getTemplateStyles('excel').totalsLabel}>Subtotal</td>
                     <td className={getTemplateStyles('excel').totalsValue}>
                       {isEstimateReady ? formatCurrency(totalCost) : (
-                        <div className="h-6 w-24 bg-gray-200 animate-pulse rounded relative overflow-hidden">
+                        <div className="inline-block h-4 w-24 relative overflow-hidden">
                           <EstimateAnimation />
                         </div>
                       )}
@@ -718,7 +712,7 @@ ${templateSettings.estimate_footer_text || ''}
                     <td className={getTemplateStyles('excel').totalsLabel}>Tax (8.5%)</td>
                     <td className={getTemplateStyles('excel').totalsValue}>
                       {isEstimateReady ? formatCurrency(totalCost * 0.085) : (
-                        <div className="h-6 w-24 bg-gray-200 animate-pulse rounded relative overflow-hidden">
+                        <div className="inline-block h-4 w-24 relative overflow-hidden">
                           <EstimateAnimation />
                         </div>
                       )}
@@ -728,7 +722,7 @@ ${templateSettings.estimate_footer_text || ''}
                     <td className={getTemplateStyles('excel').totalsLabel}>Total Estimate</td>
                     <td className={cn(getTemplateStyles('excel').totalsValue, "font-bold")}>
                       {isEstimateReady ? formatCurrency(totalCost * 1.085) : (
-                        <div className="h-6 w-32 bg-gray-200 animate-pulse rounded relative overflow-hidden">
+                        <div className="inline-block h-4 w-32 relative overflow-hidden">
                           <EstimateAnimation />
                         </div>
                       )}
