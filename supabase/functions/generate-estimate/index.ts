@@ -19,9 +19,9 @@ serve(async (req) => {
       throw new Error('Method not allowed');
     }
 
-    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
-    if (!llamaApiKey) {
-      throw new Error('Missing LLAMA_API_KEY');
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) {
+      throw new Error('Missing OPENAI_API_KEY');
     }
 
     let requestData;
@@ -47,14 +47,15 @@ serve(async (req) => {
       return { category, questions };
     });
 
-    // Generate estimate
-    const response = await fetch('https://api.llama-api.com/chat/completions', {
+    // Generate estimate using OpenAI
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${llamaApiKey}`,
+        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        model: "gpt-4o-mini",
         messages: [{
           role: 'system',
           content: `You are a construction cost estimator. Generate detailed estimates in this exact JSON format:
@@ -95,19 +96,17 @@ serve(async (req) => {
           Category: ${cat.category}
           ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
         }],
-        model: "llama3.2-11b-vision",
-        temperature: 0.2,
         response_format: { type: "json_object" }
       }),
     });
 
     if (!response.ok) {
-      console.error('Llama API error:', await response.text());
-      throw new Error(`Llama API error: ${response.status}`);
+      console.error('OpenAI API error:', await response.text());
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('Llama API response:', data);
+    console.log('OpenAI API response:', data);
 
     const estimateData = data.choices?.[0]?.message?.content;
     if (!estimateData) {
