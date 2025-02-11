@@ -1,14 +1,12 @@
 
 import React from 'react';
 
-export const EstimateAnimation = ({ className, height = "h-6", width = "w-24" }: { 
+export const EstimateAnimation = ({ className = '', height = "h-6", width = "w-24" }: { 
   className?: string;
   height?: string;
   width?: string;
 }) => {
   return (
-    <div className={`relative w-full flex items-center justify-center ${className || ''}`}>
-      <div className={`${height} ${width} bg-gray-200 animate-pulse rounded relative overflow-hidden`} />
-    </div>
+    <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white to-transparent" />
   );
 };
