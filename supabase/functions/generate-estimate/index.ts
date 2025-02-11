@@ -50,7 +50,7 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
         return callLlamaAPI(payload, attempt + 1);
       }
       
-      throw new Error(`Llama API error: ${response.status}`);
+      throw new Error(`Llama API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -195,6 +195,7 @@ serve(async (req) => {
 
       if (updateError) {
         console.error('Error updating lead:', updateError);
+        throw updateError;
       }
     }
 
