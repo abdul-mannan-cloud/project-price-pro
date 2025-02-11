@@ -65,6 +65,7 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
       return new Response(text, {
         headers: {
           'content-type': 'application/json',
+          ...corsHeaders // Add CORS headers to successful response
         }
       });
     } catch (e) {
@@ -87,6 +88,7 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
