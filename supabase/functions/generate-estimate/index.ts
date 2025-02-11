@@ -18,31 +18,30 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function retryWithExponentialBackoff(
   operation: () => Promise<Response>,
+  controller: AbortController,
   retries = MAX_RETRIES,
   delay = INITIAL_RETRY_DELAY
 ): Promise<Response> {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT);
-
-    try {
-      const response = await operation();
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API request failed: ${errorText}`);
-      }
-      return response;
-    } finally {
-      clearTimeout(timeout);
+    const response = await operation();
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API request failed: ${errorText}`);
     }
+    return response;
   } catch (error) {
     if (retries === 0) throw error;
+    
+    if (controller.signal.aborted) {
+      throw new Error('Request aborted due to timeout');
+    }
     
     console.log(`Retry attempt remaining: ${retries}. Waiting ${delay}ms before next attempt...`);
     await sleep(delay);
     
     return retryWithExponentialBackoff(
       operation,
+      controller,
       retries - 1,
       delay * 2
     );
@@ -154,84 +153,97 @@ Example format:
       });
 
       console.log('Making request to LLaMA API...');
-      const response = await retryWithExponentialBackoff(async () => {
-        return fetch('https://api.llama-api.com/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${llamaApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages,
-            model: "llama3.2-11b-vision",
-            temperature: 0.2,
-            stream: false,
-            max_tokens: 1000,
-            response_format: { type: "json_object" }
-          })
-        });
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => {
+        controller.abort();
+        console.log('Request aborted due to timeout');
+      }, TIMEOUT);
 
-      const data = await response.json();
-      console.log('Raw LLM response:', data);
-
-      let parsedEstimate;
       try {
-        const content = data.choices?.[0]?.message?.content;
-        console.log('LLM content:', content);
+        const response = await retryWithExponentialBackoff(
+          () => fetch('https://api.llama-api.com/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${llamaApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages,
+              model: "llama3.2-11b-vision",
+              temperature: 0.2,
+              stream: false,
+              max_tokens: 1000,
+              response_format: { type: "json_object" }
+            }),
+            signal: controller.signal
+          }),
+          controller
+        );
+
+        const data = await response.json();
+        console.log('Raw LLM response:', data);
+
+        let parsedEstimate;
+        try {
+          const content = data.choices?.[0]?.message?.content;
+          console.log('LLM content:', content);
+          
+          if (typeof content !== 'string') {
+            throw new Error('Invalid response format: content is not a string');
+          }
+
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) {
+            throw new Error('No JSON object found in response');
+          }
+
+          parsedEstimate = JSON.parse(jsonMatch[0]);
+        } catch (parseError) {
+          console.error('Error parsing LLM response:', parseError);
+          throw new Error('Failed to parse estimate data');
+        }
+
+        if (!parsedEstimate || !parsedEstimate.groups || !Array.isArray(parsedEstimate.groups)) {
+          throw new Error('Invalid estimate format: missing required fields');
+        }
+
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
         
-        if (typeof content !== 'string') {
-          throw new Error('Invalid response format: content is not a string');
+        if (!supabaseUrl || !supabaseKey) {
+          throw new Error('Missing Supabase credentials');
         }
 
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          throw new Error('No JSON object found in response');
+        const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+
+        const { error: updateError } = await supabaseAdmin
+          .from('leads')
+          .update({ 
+            estimate_data: parsedEstimate,
+            status: 'complete',
+            estimated_cost: parsedEstimate.totalCost || 0,
+            ai_generated_title: parsedEstimate.ai_generated_title,
+            ai_generated_message: parsedEstimate.ai_generated_message
+          })
+          .eq('id', leadId);
+
+        if (updateError) {
+          throw updateError;
         }
 
-        parsedEstimate = JSON.parse(jsonMatch[0]);
-      } catch (parseError) {
-        console.error('Error parsing LLM response:', parseError);
-        throw new Error('Failed to parse estimate data');
+        return new Response(JSON.stringify({ 
+          message: "Estimate generated successfully",
+          leadId
+        }), { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          } 
+        });
+
+      } finally {
+        clearTimeout(timeout);
       }
-
-      if (!parsedEstimate || !parsedEstimate.groups || !Array.isArray(parsedEstimate.groups)) {
-        throw new Error('Invalid estimate format: missing required fields');
-      }
-
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Missing Supabase credentials');
-      }
-
-      const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
-
-      const { error: updateError } = await supabaseAdmin
-        .from('leads')
-        .update({ 
-          estimate_data: parsedEstimate,
-          status: 'complete',
-          estimated_cost: parsedEstimate.totalCost || 0,
-          ai_generated_title: parsedEstimate.ai_generated_title,
-          ai_generated_message: parsedEstimate.ai_generated_message
-        })
-        .eq('id', leadId);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      return new Response(JSON.stringify({ 
-        message: "Estimate generated successfully",
-        leadId
-      }), { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        } 
-      });
 
     } catch (error) {
       console.error('Error generating estimate:', error);
