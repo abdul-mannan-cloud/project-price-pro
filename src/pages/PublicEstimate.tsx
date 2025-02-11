@@ -33,7 +33,21 @@ type ContractorWithSettings = Database["public"]["Tables"]["contractors"]["Row"]
   contractor_settings: Database["public"]["Tables"]["contractor_settings"]["Row"];
 };
 
-const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
+const DEFAULT_CONTRACTOR = {
+  id: "098bcb69-99c6-445b-bf02-94dc7ef8c938",
+  business_name: "Demo Contractor",
+  contact_email: "demo@example.com",
+  business_logo_url: null,
+  contact_phone: null,
+  business_address: null,
+  website: null,
+  license_number: null,
+  subscription_status: "trial",
+  branding_colors: {
+    primary: "#6366F1",
+    secondary: "#4F46E5"
+  }
+};
 
 const PublicEstimate = () => {
   const { id } = useParams();
@@ -76,7 +90,7 @@ const PublicEstimate = () => {
         console.log("No lead found, using default values");
         return {
           id,
-          contractor_id: DEFAULT_CONTRACTOR_ID,
+          contractor_id: DEFAULT_CONTRACTOR.id,
           estimate_data: null,
           estimated_cost: 0,
           project_title: "New Estimate",
@@ -133,11 +147,14 @@ const PublicEstimate = () => {
     },
   });
 
+  // Ensure contractor exists before querying it
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
-    queryKey: ["contractor", lead?.contractor_id || DEFAULT_CONTRACTOR_ID],
+    queryKey: ["contractor", lead?.contractor_id || DEFAULT_CONTRACTOR.id],
     queryFn: async () => {
-      const contractorId = lead?.contractor_id || DEFAULT_CONTRACTOR_ID;
+      const contractorId = lead?.contractor_id || DEFAULT_CONTRACTOR.id;
       console.log("Fetching contractor data for ID:", contractorId);
+      
+      // First try to get the existing contractor
       const { data, error } = await supabase
         .from("contractors")
         .select(`
@@ -150,6 +167,28 @@ const PublicEstimate = () => {
       if (error) {
         console.error("Error fetching contractor:", error);
         throw error;
+      }
+
+      // If no contractor exists and we're using the default ID, create it
+      if (!data && contractorId === DEFAULT_CONTRACTOR.id) {
+        console.log("Creating default contractor");
+        const { data: newContractor, error: createError } = await supabase
+          .from("contractors")
+          .insert({
+            ...DEFAULT_CONTRACTOR
+          })
+          .select(`
+            *,
+            contractor_settings (*)
+          `)
+          .single();
+
+        if (createError) {
+          console.error("Error creating default contractor:", createError);
+          throw createError;
+        }
+
+        return newContractor as ContractorWithSettings;
       }
 
       if (!data) {
