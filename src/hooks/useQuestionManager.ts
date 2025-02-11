@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Question, CategoryQuestions, AnswersState, QuestionAnswer } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
+import { Database, Json } from "@/integrations/supabase/types";
 
 type LeadInsert = Database['public']['Tables']['leads']['Insert'];
 
