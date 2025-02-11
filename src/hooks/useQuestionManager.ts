@@ -135,13 +135,16 @@ export const useQuestionManager = (
         return acc;
       }, {} as Record<string, any>);
 
+      // First, create the lead
       const leadData: LeadInsert = {
-        project_description: answers[questionSets[0]?.category]?.Q1?.question || 'New project',
+        project_description: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
         project_title: `${questionSets[0]?.category || 'New'} Project`,
         answers: answersForDb as Json,
         category: questionSets[0]?.category,
         status: 'pending'
       };
+
+      console.log('Creating lead with data:', leadData);
 
       const { data: lead, error: leadError } = await supabase
         .from('leads')
@@ -149,18 +152,31 @@ export const useQuestionManager = (
         .select()
         .single();
 
-      if (leadError) throw leadError;
+      if (leadError) {
+        console.error('Error creating lead:', leadError);
+        throw leadError;
+      }
 
+      if (!lead?.id) {
+        throw new Error('Failed to create lead - no ID returned');
+      }
+
+      console.log('Lead created successfully:', lead.id);
+
+      // Then, generate the estimate
       const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           answers: answersForDb,
-          projectDescription: answers[questionSets[0]?.category]?.Q1?.question || 'New project',
+          projectDescription: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
           category: questionSets[0]?.category,
           leadId: lead.id
         }
       });
 
-      if (generateError) throw generateError;
+      if (generateError) {
+        console.error('Error generating estimate:', generateError);
+        throw generateError;
+      }
 
       await onComplete(answers);
     } catch (error) {
