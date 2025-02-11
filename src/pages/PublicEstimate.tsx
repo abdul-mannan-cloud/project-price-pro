@@ -136,8 +136,8 @@ const PublicEstimate = () => {
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", lead?.contractor_id || DEFAULT_CONTRACTOR_ID],
     queryFn: async () => {
-      console.log("Fetching contractor data");
       const contractorId = lead?.contractor_id || DEFAULT_CONTRACTOR_ID;
+      console.log("Fetching contractor data for ID:", contractorId);
       const { data, error } = await supabase
         .from("contractors")
         .select(`
@@ -145,12 +145,18 @@ const PublicEstimate = () => {
           contractor_settings (*)
         `)
         .eq("id", contractorId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching contractor:", error);
         throw error;
       }
+
+      if (!data) {
+        console.error("No contractor found for ID:", contractorId);
+        throw new Error("Contractor not found");
+      }
+
       console.log("Contractor data fetched:", data);
       return data as ContractorWithSettings;
     },
