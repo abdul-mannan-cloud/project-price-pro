@@ -12,7 +12,7 @@ const corsHeaders = {
 // Retry configuration
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 1000; // 1 second
-const TIMEOUT = 25000; // 25 seconds
+const TIMEOUT = 45000; // 45 seconds - increased to give more time
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -22,11 +22,19 @@ async function retryWithExponentialBackoff(
   delay = INITIAL_RETRY_DELAY
 ): Promise<Response> {
   try {
-    const timeoutPromise = new Promise<Response>((_, reject) => {
-      setTimeout(() => reject(new Error('Request timeout')), TIMEOUT);
-    });
-    
-    return await Promise.race([operation(), timeoutPromise]);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT);
+
+    try {
+      const response = await operation();
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${errorText}`);
+      }
+      return response;
+    } finally {
+      clearTimeout(timeout);
+    }
   } catch (error) {
     if (retries === 0) throw error;
     
@@ -145,37 +153,23 @@ Example format:
         ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
       });
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), TIMEOUT);
-
+      console.log('Making request to LLaMA API...');
       const response = await retryWithExponentialBackoff(async () => {
-        try {
-          const res = await fetch('https://api.llama-api.com/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${llamaApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messages,
-              model: "llama3.2-11b-vision",
-              temperature: 0.2,
-              stream: false,
-              max_tokens: 1000,
-              response_format: { type: "json_object" }
-            }),
-            signal: controller.signal
-          });
-
-          if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(`Estimate generation failed: ${errorText}`);
-          }
-
-          return res;
-        } finally {
-          clearTimeout(timeout);
-        }
+        return fetch('https://api.llama-api.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${llamaApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages,
+            model: "llama3.2-11b-vision",
+            temperature: 0.2,
+            stream: false,
+            max_tokens: 1000,
+            response_format: { type: "json_object" }
+          })
+        });
       });
 
       const data = await response.json();
