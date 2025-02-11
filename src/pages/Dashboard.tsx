@@ -270,51 +270,32 @@ const Dashboard = () => {
   ];
 
   return (
-    <>
-      <div className="min-h-screen bg-[#f5f5f7]">
-        <NavBar items={navItems} />
-        
-        <main className="container mx-auto px-4 py-8 max-w-7xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-semibold mb-2">
-              Welcome, {contractor?.business_name}
-            </h1>
-            <p className="text-muted-foreground">
-              Here's an overview of your business performance
-            </p>
-          </div>
+    <div className="min-h-screen bg-[#f5f5f7] pb-24">
+      <NavBar items={navItems} />
+      <div className="container mx-auto py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-semibold">Welcome, {contractor.business_name}</h1>
+        </div>
 
-          <div className="max-w-6xl mx-auto">
-            <BentoGrid 
-              className={`grid-cols-1 md:grid-cols-3 gap-6 ${isMobile ? 'auto-rows-[16rem]' : ''}`}
-            >
-              {features.map((feature) => (
-                <BentoCard 
-                  key={feature.name} 
-                  {...feature} 
-                  onClick={() => setSelectedFeature(feature.name)}
-                  showActions={isMobile}
-                  actionIcon={<ChevronRight className="w-4 h-4" />}
-                  className={`${feature.className} transform transition-all duration-200 hover:scale-[1.02]`}
-                />
-              ))}
-            </BentoGrid>
-          </div>
-        </main>
+        <BentoGrid className={`grid-cols-1 md:grid-cols-3 gap-4 ${isMobile ? 'auto-rows-[16rem]' : ''}`}>
+          {features.map((feature) => (
+            <BentoCard 
+              key={feature.name} 
+              {...feature} 
+              onClick={() => setSelectedFeature(feature.name)}
+              showActions={isMobile}
+              actionIcon={<ChevronRight className="w-4 h-4" />}
+            />
+          ))}
+        </BentoGrid>
+
+        <Dialog open={!!selectedFeature} onOpenChange={() => setSelectedFeature(null)}>
+          <DialogContent className="sm:max-w-[600px]">
+            {features.find(f => f.name === selectedFeature)?.detailContent}
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Dialog moved outside main container */}
-      <Dialog 
-        open={!!selectedFeature} 
-        onOpenChange={(open) => {
-          if (!open) setSelectedFeature(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-[600px]">
-          {selectedFeature ? features.find(f => f.name === selectedFeature)?.detailContent : null}
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   );
 };
 

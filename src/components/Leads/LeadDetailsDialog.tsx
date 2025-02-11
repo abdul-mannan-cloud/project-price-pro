@@ -9,7 +9,6 @@ import { LeadViewToggle } from "./LeadViewToggle";
 import { LeadQuestionsView } from "./LeadQuestionsView";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -34,23 +33,6 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState('');
   const isMobile = useIsMobile();
-
-  // Fetch contractor data
-  const { data: contractor } = useQuery({
-    queryKey: ['contractor', lead?.contractor_id],
-    queryFn: async () => {
-      if (!lead?.contractor_id) return null;
-      const { data, error } = await supabase
-        .from('contractors')
-        .select('*')
-        .eq('id', lead.contractor_id)
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!lead?.contractor_id
-  });
 
   useEffect(() => {
     if (lead?.user_email) {
@@ -206,11 +188,6 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
                         projectSummary={lead?.project_description}
                         isEditable={isEditing}
                         onEstimateChange={setEditedEstimate}
-                        contractor={{
-                          business_name: contractor?.business_name,
-                          business_logo_url: contractor?.business_logo_url || undefined,
-                          branding_colors: contractor?.branding_colors as { primary: string; secondary: string } || undefined
-                        }}
                       />
                     </div>
                   </>

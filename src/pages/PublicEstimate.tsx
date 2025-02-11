@@ -1,12 +1,9 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { Database } from "@/integrations/supabase/types";
-import { useEffect } from "react";
-import { BrandingColors } from "@/types/settings";
 
 type EstimateData = {
   groups: Array<{
@@ -83,52 +80,38 @@ const PublicEstimate = () => {
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", lead?.contractor_id || DEFAULT_CONTRACTOR_ID],
     queryFn: async () => {
-      const contractorId = lead?.contractor_id || DEFAULT_CONTRACTOR_ID;
       const { data, error } = await supabase
         .from("contractors")
         .select(`
           *,
           contractor_settings (*)
         `)
-        .eq("id", contractorId)
+        .eq("id", lead?.contractor_id || DEFAULT_CONTRACTOR_ID)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // If the specified contractor is not found, try to fetch the default contractor
+        if (lead?.contractor_id !== DEFAULT_CONTRACTOR_ID) {
+          const { data: defaultData, error: defaultError } = await supabase
+            .from("contractors")
+            .select(`
+              *,
+              contractor_settings (*)
+            `)
+            .eq("id", DEFAULT_CONTRACTOR_ID)
+            .single();
+
+          if (defaultError) throw defaultError;
+          return defaultData;
+        }
+        throw error;
+      }
+
       return data as ContractorWithSettings;
     },
     enabled: !!lead,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
-
-  // Apply branding colors when contractor data is loaded
-  useEffect(() => {
-    if (contractor?.branding_colors) {
-      const colors = contractor.branding_colors as BrandingColors;
-      
-      // Apply primary color and its variations
-      document.documentElement.style.setProperty('--primary', colors.primary);
-      document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
-
-      // Convert hex to RGB for creating variations
-      const primaryHex = colors.primary.replace('#', '');
-      const r = parseInt(primaryHex.slice(0, 2), 16);
-      const g = parseInt(primaryHex.slice(2, 4), 16);
-      const b = parseInt(primaryHex.slice(4, 6), 16);
-
-      // Set all primary color variations
-      document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
-      document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
-      document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
-      document.documentElement.style.setProperty('--primary-400', `rgba(${r}, ${g}, ${b}, 0.6)`);
-      document.documentElement.style.setProperty('--primary-500', `rgba(${r}, ${g}, ${b}, 0.8)`);
-      document.documentElement.style.setProperty('--primary-600', colors.primary);
-      document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
-
-      // Set secondary color
-      document.documentElement.style.setProperty('--secondary', colors.secondary);
-      document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
-    }
-  }, [contractor]);
 
   if (isContractorLoading) {
     return <LoadingScreen message="Loading estimate..." />;
@@ -156,11 +139,7 @@ const PublicEstimate = () => {
           groups={estimateData?.groups || []}
           totalCost={lead?.estimated_cost || 0}
           projectSummary={lead?.project_description}
-          contractor={{
-            business_name: contractor?.business_name,
-            business_logo_url: contractor?.business_logo_url || undefined,
-            branding_colors: contractor?.branding_colors as { primary: string; secondary: string } || undefined
-          }}
+          contractor={contractor}
         />
       </div>
     </div>
