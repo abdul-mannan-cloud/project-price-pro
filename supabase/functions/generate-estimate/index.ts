@@ -9,6 +9,49 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+const MAX_RETRIES = 3;
+const INITIAL_TIMEOUT = 30000; // 30 seconds
+
+async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
+  const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
+  if (!llamaApiKey) {
+    throw new Error('Missing LLAMA_API_KEY');
+  }
+
+  const timeout = INITIAL_TIMEOUT * attempt;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch('https://api.llama-api.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${llamaApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Llama API error (attempt ${attempt}):`, errorText);
+      
+      if (attempt < MAX_RETRIES) {
+        console.log(`Retrying... Attempt ${attempt + 1} of ${MAX_RETRIES}`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+        return callLlamaAPI(payload, attempt + 1);
+      }
+      
+      throw new Error(`Llama API error: ${response.status}`);
+    }
+
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -17,11 +60,6 @@ serve(async (req) => {
   try {
     if (req.method !== 'POST') {
       throw new Error('Method not allowed');
-    }
-
-    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
-    if (!llamaApiKey) {
-      throw new Error('Missing LLAMA_API_KEY');
     }
 
     let requestData;
@@ -48,64 +86,53 @@ serve(async (req) => {
     });
 
     // Generate estimate
-    const response = await fetch('https://api.llama-api.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${llamaApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messages: [{
-          role: 'system',
-          content: `You are a construction cost estimator. Generate detailed estimates in this exact JSON format:
-          {
-            "groups": [
-              {
-                "name": "Group Name",
-                "description": "Optional group description",
-                "subgroups": [
-                  {
-                    "name": "Subgroup Name",
-                    "items": [
-                      {
-                        "title": "Item Title",
-                        "description": "Item description",
-                        "quantity": number,
-                        "unit": "optional unit",
-                        "unitAmount": number,
-                        "totalPrice": number
-                      }
-                    ],
-                    "subtotal": number
-                  }
-                ]
-              }
-            ],
-            "totalCost": number,
-            "ai_generated_title": "Project Title",
-            "ai_generated_message": "Project Overview"
-          }`
-        }, {
-          role: 'user',
-          content: `Based on these project details, generate a detailed construction estimate:
-          Category: ${category || 'General Construction'}
-          Description: ${projectDescription || 'Project estimate'}
-          Questions and Answers:
-          ${formattedAnswers.map(cat => `
-          Category: ${cat.category}
-          ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
-        }],
-        model: "llama3.2-11b-vision",
-        temperature: 0.2,
-        response_format: { type: "json_object" }
-      }),
-    });
+    const llamaPayload = {
+      messages: [{
+        role: 'system',
+        content: `You are a construction cost estimator. Generate detailed estimates in this exact JSON format:
+        {
+          "groups": [
+            {
+              "name": "Group Name",
+              "description": "Optional group description",
+              "subgroups": [
+                {
+                  "name": "Subgroup Name",
+                  "items": [
+                    {
+                      "title": "Item Title",
+                      "description": "Item description",
+                      "quantity": number,
+                      "unit": "optional unit",
+                      "unitAmount": number,
+                      "totalPrice": number
+                    }
+                  ],
+                  "subtotal": number
+                }
+              ]
+            }
+          ],
+          "totalCost": number,
+          "ai_generated_title": "Project Title",
+          "ai_generated_message": "Project Overview"
+        }`
+      }, {
+        role: 'user',
+        content: `Based on these project details, generate a detailed construction estimate:
+        Category: ${category || 'General Construction'}
+        Description: ${projectDescription || 'Project estimate'}
+        Questions and Answers:
+        ${formattedAnswers.map(cat => `
+        Category: ${cat.category}
+        ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
+      }],
+      model: "llama3.2-11b-vision",
+      temperature: 0.2,
+      response_format: { type: "json_object" }
+    };
 
-    if (!response.ok) {
-      console.error('Llama API error:', await response.text());
-      throw new Error(`Llama API error: ${response.status}`);
-    }
-
+    const response = await callLlamaAPI(llamaPayload);
     const data = await response.json();
     console.log('Llama API response:', data);
 
