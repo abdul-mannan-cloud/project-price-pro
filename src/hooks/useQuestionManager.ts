@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Question, CategoryQuestions, AnswersState, QuestionAnswer } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
@@ -16,6 +17,7 @@ export const useQuestionManager = (
   const [queuedNextQuestions, setQueuedNextQuestions] = useState<string[]>([]);
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
   const [pendingBranchTransition, setPendingBranchTransition] = useState(false);
+  const [showingEstimate, setShowingEstimate] = useState(false);
 
   const calculateProgress = () => {
     if (questionSets.length === 0) return 0;
@@ -59,7 +61,7 @@ export const useQuestionManager = (
 
   const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {
-      handleComplete();
+      onComplete(answers);
       return;
     }
 
@@ -95,7 +97,6 @@ export const useQuestionManager = (
   };
 
   const moveToNextQuestionSet = () => {
-    console.log('Moving to next question set, current index:', currentSetIndex, 'total sets:', questionSets.length);
     if (currentSetIndex < questionSets.length - 1) {
       setCurrentSetIndex(prev => prev + 1);
     } else {
@@ -106,23 +107,31 @@ export const useQuestionManager = (
   const handleComplete = async () => {
     if (currentSetIndex < questionSets.length - 1) {
       moveToNextQuestionSet();
-      return;
-    }
+    } else {
+      setIsGeneratingEstimate(true);
+      try {
+        const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
+          body: { answers }
+        });
 
-    console.log('Starting estimate generation with answers:', answers);
-    setIsGeneratingEstimate(true);
-    
-    try {
-      await onComplete(answers);
-    } catch (error) {
-      console.error('Error completing questions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process your answers. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingEstimate(false);
+        if (error) throw error;
+        
+        if (!estimateData) {
+          throw new Error('No estimate data received');
+        }
+
+        setShowingEstimate(true);
+        onComplete(answers);
+      } catch (error) {
+        console.error('Error generating estimate:', error);
+        toast({
+          title: "Error",
+          description: "Failed to generate estimate. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsGeneratingEstimate(false);
+      }
     }
   };
 
@@ -230,9 +239,8 @@ export const useQuestionManager = (
 
   useEffect(() => {
     const progress = calculateProgress();
-    console.log('Updating progress:', progress);
     onProgressChange(progress);
-  }, [answers, questionSets]);
+  }, [answers, questionSets, onProgressChange]);
 
   return {
     currentQuestion: questionSequence.find(q => q.id === currentQuestionId),
