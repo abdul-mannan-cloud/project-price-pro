@@ -115,6 +115,35 @@ export const EstimateDisplay = ({
   const [isEstimateReady, setIsEstimateReady] = useState(false);
 
   useEffect(() => {
+    const checkEstimateStatus = async () => {
+      if (!contractorId) return;
+
+      try {
+        const { data: lead, error } = await supabase
+          .from('leads')
+          .select('estimate_data, status')
+          .eq('id', contractorId)
+          .single();
+
+        if (error) throw error;
+
+        // Set estimate ready when we have data and status is complete
+        setIsEstimateReady(!!lead?.estimate_data && lead?.status === 'complete');
+      } catch (error) {
+        console.error('Error checking estimate status:', error);
+      }
+    };
+
+    // Check immediately
+    checkEstimateStatus();
+
+    // Then poll every 3 seconds
+    const interval = setInterval(checkEstimateStatus, 3000);
+
+    return () => clearInterval(interval);
+  }, [contractorId]);
+
+  useEffect(() => {
     const hasValidEstimate = groups?.length > 0 && totalCost > 0;
     setIsEstimateReady(hasValidEstimate);
   }, [groups, totalCost]);
