@@ -372,6 +372,7 @@ const EstimatePage = () => {
   const handleQuestionComplete = async (answers: AnswersState) => {
     setIsProcessing(true);
     try {
+      console.log('Processing answers:', answers);
       const answersForSupabase = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
         acc[category] = Object.entries(categoryAnswers).reduce((catAcc, [questionId, answer]) => {
           catAcc[questionId] = {
@@ -401,6 +402,13 @@ const EstimatePage = () => {
       if (leadError) throw leadError;
 
       setCurrentLeadId(lead.id);
+
+      console.log('Generating estimate with:', {
+        projectDescription,
+        answers: answersForSupabase,
+        category: selectedCategory,
+        leadId: lead.id
+      });
 
       const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
