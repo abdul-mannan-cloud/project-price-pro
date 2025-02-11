@@ -93,23 +93,26 @@ serve(async (req) => {
     const formattedEstimate = {
       groups: [{
         name: category || 'Project Estimate',
+        description: projectDescription,
         subgroups: [{
-          name: 'Services',
+          name: 'Materials & Labor',
           items: estimateData.items.map((item: EstimateItem) => ({
             title: item.title,
             description: item.description,
             quantity: item.quantity,
             unit: item.variable,
-            unitAmount: item.amount / item.quantity,
+            unitAmount: item.unitAmount,
             totalPrice: item.amount
           })),
           subtotal: estimateData.items.reduce((sum: number, item: EstimateItem) => sum + item.amount, 0)
         }]
       }],
       totalCost: estimateData.items.reduce((sum: number, item: EstimateItem) => sum + item.amount, 0),
-      ai_generated_title: estimateData.title,
-      ai_generated_message: `Estimate for ${projectDescription}`
+      ai_generated_title: `${category || 'Project'} Estimate - ${new Date().toLocaleDateString()}`,
+      ai_generated_message: projectDescription || 'Custom project estimate based on your requirements.'
     };
+
+    console.log('Generated estimate:', formattedEstimate);
 
     return new Response(
       JSON.stringify(formattedEstimate),
@@ -138,7 +141,6 @@ serve(async (req) => {
   }
 });
 
-// Function to generate estimate using AI
 const generateEstimate = async ({ 
   projectDescription, 
   imageUrl, 
@@ -158,24 +160,32 @@ const generateEstimate = async ({
   aiRates: AIRate[];
   aiInstructions: AIInstruction[];
 }) => {
-  const estimateTitle = `Estimate for ${category || 'Project'}`;
+  console.log('Processing answers:', answers);
   
   const estimateItems = answers.map(answer => {
+    // Determine the type based on the answer content
+    const type = answer.labor && answer.material 
+      ? 'material_labor'
+      : answer.labor 
+        ? 'labor' 
+        : 'material';
+
     const variable = answer.variable || 'EA'; // Default to Each if no variable specified
     const description = answer.material 
       ? "Material + Labor" 
       : answer.labor 
         ? "Labor" 
         : "Material";
-    const title = `${answer.item} (${variable})`;
+    const title = `${answer.item || answer.question} (${variable})`;
 
     // Find applicable rate from the contractor's AI rates
-    const rate = aiRates.find(r => r.type === answer.type && r.unit === variable) || 
-                aiRates.find(r => r.type === answer.type) || // Fallback to matching just the type
+    const rate = aiRates.find(r => r.type === type && r.unit === variable) || 
+                aiRates.find(r => r.type === type) || // Fallback to matching just the type
                 { rate: 100, unit: 'EA', type: 'material_labor', title: 'Default Rate' };
 
     const quantity = answer.quantity || 1;
-    const amount = rate.rate * quantity;
+    const unitAmount = rate.rate;
+    const amount = unitAmount * quantity;
 
     return {
       title,
@@ -183,15 +193,13 @@ const generateEstimate = async ({
       variable,
       description,
       amount,
-      unitAmount: rate.rate,
+      unitAmount,
       totalPrice: amount
     };
   });
 
   return {
-    title: estimateTitle,
     items: estimateItems,
     totalCost: estimateItems.reduce((sum, item) => sum + item.amount, 0)
   };
 };
-
