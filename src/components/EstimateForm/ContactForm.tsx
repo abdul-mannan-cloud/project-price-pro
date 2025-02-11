@@ -1,6 +1,7 @@
+
 import { Button } from "@/components/ui/3d-button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,6 +27,17 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const [isCurrentUserContractor, setIsCurrentUserContractor] = useState(false);
+
+  // Check if current user is the contractor
+  useEffect(() => {
+    const checkCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsCurrentUserContractor(user?.id === contractorId);
+    };
+    
+    checkCurrentUser();
+  }, [contractorId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +50,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
       }
 
       console.log('Submitting contact form with:', { leadId, contractorId, formData });
+      console.log('Estimate data being sent:', estimate);
 
       // Update the lead with the form data
       const { error: updateError } = await supabase
@@ -60,20 +73,32 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
       // Generate the estimate URL
       const estimateUrl = `${window.location.origin}/estimate/${leadId}`;
 
-      // Send the email with the estimate
-      const { error: emailError } = await supabase.functions.invoke('send-estimate-email', {
-        body: {
-          name: formData.fullName,
-          email: formData.email,
-          estimateData: estimate,
-          estimateUrl,
-          contractor
-        }
-      });
+      // Send the email notifications
+      const [emailResponse] = await Promise.all([
+        // Send email to customer
+        supabase.functions.invoke('send-estimate-email', {
+          body: {
+            name: formData.fullName,
+            email: formData.email,
+            estimateData: estimate,
+            estimateUrl,
+            contractor
+          }
+        }),
+        // Send notification to contractor
+        supabase.functions.invoke('send-contractor-notification', {
+          body: {
+            customerInfo: formData,
+            estimate,
+            contractor,
+            questions: estimate.questions || [],
+            answers: estimate.answers || []
+          }
+        })
+      ]);
 
-      if (emailError) {
-        console.error('Error sending email:', emailError);
-        throw emailError;
+      if (emailResponse.error) {
+        throw new Error(emailResponse.error);
       }
 
       toast({
@@ -127,13 +152,10 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
     }
   };
 
-  // Check if the current user is a contractor
-  const isContractor = !!contractorId;
-
   // Get contractor's primary color from branding_colors
   const buttonStyle = contractor?.branding_colors?.primary 
     ? { backgroundColor: contractor.branding_colors.primary }
-    : undefined; // Let the default button styling handle it if no color is set
+    : undefined;
 
   return (
     <div className="fixed inset-0 bg-black/13 flex items-center justify-center z-50">
@@ -212,7 +234,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
             {isSubmitting ? "Processing..." : "View Your Custom Estimate"}
           </Button>
 
-          {isContractor && (
+          {isCurrentUserContractor && (
             <Button
               type="button"
               variant="outline"

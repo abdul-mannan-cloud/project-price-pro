@@ -1,7 +1,8 @@
+
 import { Button } from "@/components/ui/3d-button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +10,7 @@ import { Boxes } from "@/components/ui/background-boxes";
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -17,8 +19,19 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard");
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
   const validateForm = () => {
-    if (!email || !password) {
+    if (!email || (!isForgotPassword && !password)) {
       toast({
         title: "Missing Fields",
         description: "Please fill in all required fields.",
@@ -27,7 +40,7 @@ const Login = () => {
       return false;
     }
 
-    if (password.length < 6) {
+    if (!isForgotPassword && password.length < 6) {
       toast({
         title: "Invalid Password",
         description: "Password must be at least 6 characters long.",
@@ -46,6 +59,45 @@ const Login = () => {
     }
 
     return true;
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email) {
+      toast({
+        title: "Missing Email",
+        description: "Please enter your email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const resetUrl = `${window.location.origin}/reset-password`;
+      const response = await supabase.functions.invoke('send-password-reset', {
+        body: { email, resetUrl },
+      });
+
+      if (response.error) throw response.error;
+
+      toast({
+        title: "Check your email",
+        description: "If an account exists with this email, you will receive password reset instructions.",
+      });
+      setIsForgotPassword(false);
+    } catch (error: any) {
+      console.error("Forgot password error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred while processing your request",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,11 +138,17 @@ const Login = () => {
           throw signInError;
         }
 
+        // After successful login, get the user session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error("Failed to get session after login");
+        }
+
         // Check if contractor record exists
         const { data: contractor, error: contractorError } = await supabase
           .from("contractors")
           .select("*")
-          .eq("id", (await supabase.auth.getUser()).data.user?.id)
+          .eq("id", session.user.id)
           .maybeSingle();
 
         if (contractorError) throw contractorError;
@@ -122,24 +180,30 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 relative overflow-hidden">
-      <div className="absolute inset-0 w-full h-full bg-slate-900 z-20 [mask-image:radial-gradient(transparent,white)] pointer-events-none" />
-      <Boxes />
+    <div className="min-h-screen flex items-center justify-center bg-black p-4 relative overflow-hidden">
+      <div className="absolute inset-0 w-full h-full bg-black z-20 [mask-image:radial-gradient(transparent,white)] pointer-events-none opacity-90" />
+      <Boxes className="!opacity-10 filter contrast-150 saturate-0" />
       
-      <Card className="w-full max-w-md p-8 relative z-30 bg-white">
+      <Card className="w-full max-w-md p-8 relative z-30 bg-white/10 backdrop-blur-xl border border-white/20">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">
-            {isSignUp ? "Create Account" : "Welcome Back"}
+          <h1 className="text-2xl font-bold text-white">
+            {isForgotPassword 
+              ? "Reset Password"
+              : isSignUp 
+                ? "Create Account" 
+                : "Welcome Back"}
           </h1>
-          <p className="mt-2">
-            {isSignUp
-              ? "Sign up to start estimating projects"
-              : "Sign in to your account"}
+          <p className="mt-2 text-gray-400">
+            {isForgotPassword
+              ? "Enter your email to receive reset instructions"
+              : isSignUp
+                ? "Sign up to start estimating projects"
+                : "Sign in to your account"}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {isSignUp && (
+        <form onSubmit={isForgotPassword ? handleForgotPassword : handleSubmit} className="space-y-6">
+          {isSignUp && !isForgotPassword && (
             <>
               <Input
                 label="First Name"
@@ -147,6 +211,7 @@ const Login = () => {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
+                className="bg-white/5 border-white/10 text-white"
               />
               <Input
                 label="Last Name"
@@ -154,6 +219,7 @@ const Login = () => {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
+                className="bg-white/5 border-white/10 text-white"
               />
             </>
           )}
@@ -164,43 +230,64 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className="bg-white/5 border-white/10 text-white"
           />
-          <Input
-            label="Password"
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
+          {!isForgotPassword && (
+            <Input
+              label="Password"
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              className="bg-white/5 border-white/10 text-white"
+            />
+          )}
           <Button
             type="submit"
-            className="w-full"
+            className="w-full bg-white text-black hover:bg-gray-200 transition-colors"
             disabled={loading}
           >
             {loading
               ? "Loading..."
-              : isSignUp
-              ? "Create Account"
-              : "Sign In"}
+              : isForgotPassword
+                ? "Send Reset Instructions"
+                : isSignUp
+                  ? "Create Account"
+                  : "Sign In"}
           </Button>
         </form>
-        <div className="mt-6 text-center">
+
+        <div className="mt-6 text-center space-y-4">
+          {!isForgotPassword && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setEmail("");
+                setPassword("");
+                setFirstName("");
+                setLastName("");
+              }}
+              className="text-gray-400 hover:text-white transition-colors border-none"
+            >
+              {isSignUp
+                ? "Already have an account? Sign in"
+                : "Don't have an account? Sign up"}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
-              setIsSignUp(!isSignUp);
-              setEmail("");
+              setIsForgotPassword(!isForgotPassword);
               setPassword("");
-              setFirstName("");
-              setLastName("");
             }}
-            className="text-primary hover:text-primary-700 transition-colors border-none"
+            className="block w-full text-gray-400 hover:text-white transition-colors border-none"
           >
-            {isSignUp
-              ? "Already have an account? Sign in"
-              : "Don't have an account? Sign up"}
+            {isForgotPassword
+              ? "Back to login"
+              : "Forgot your password?"}
           </button>
         </div>
       </Card>
