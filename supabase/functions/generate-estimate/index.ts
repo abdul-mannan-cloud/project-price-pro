@@ -9,28 +9,38 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Increased timeout and adjusted retry settings
+// Optimized timeout and retry settings
 const MAX_RETRIES = 2;
-const INITIAL_RETRY_DELAY = 2000; // 2 seconds
-const TIMEOUT = 60000; // 60 seconds
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+const TIMEOUT = 30000; // 30 seconds
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function makeRequestWithRetry(
   url: string,
   options: RequestInit,
+  controller: AbortController,
   retries = MAX_RETRIES,
   delay = INITIAL_RETRY_DELAY
 ): Promise<Response> {
   try {
-    const response = await fetch(url, options);
+    if (controller.signal.aborted) {
+      throw new Error('Request aborted due to timeout');
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`API request failed: ${errorText}`);
     }
+    
     return response;
   } catch (error) {
-    if (error.name === 'AbortError') {
+    if (error.name === 'AbortError' || controller.signal.aborted) {
       throw new Error('Request timed out');
     }
     
@@ -39,7 +49,13 @@ async function makeRequestWithRetry(
     console.log(`Request failed, retrying... (${retries} attempts remaining)`);
     await sleep(delay);
     
-    return makeRequestWithRetry(url, options, retries - 1, delay * 2);
+    return makeRequestWithRetry(
+      url,
+      options,
+      controller,
+      retries - 1,
+      delay * 2
+    );
   }
 }
 
@@ -167,11 +183,11 @@ Example format:
             model: "llama3.2-11b-vision",
             temperature: 0.2,
             stream: false,
-            max_tokens: 800,
+            max_tokens: 500, // Reduced for faster response
             response_format: { type: "json_object" }
-          }),
-          signal: controller.signal
-        }
+          })
+        },
+        controller
       );
 
       const data = await response.json();
