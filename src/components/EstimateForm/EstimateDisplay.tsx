@@ -66,6 +66,7 @@ interface EstimateDisplayProps {
   onSignatureComplete?: (initials: string) => void;
   projectImages?: string[];
   estimate?: any; // Added to access AI generated title and message
+  leadId?: string;
 }
 
 interface ContractorSettings {
@@ -101,7 +102,8 @@ export const EstimateDisplay = ({
   onEstimateChange,
   onSignatureComplete,
   projectImages = [],
-  estimate
+  estimate,
+  leadId
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
@@ -150,9 +152,12 @@ export const EstimateDisplay = ({
       setIsLoading(true);
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
-          leadId: estimate?.id,
+          leadId: estimate?.id || leadId,
           contractorId,
-          refreshOnly: true
+          refreshOnly: true,
+          answers: estimate?.answers,
+          projectDescription: estimate?.project_description || projectSummary,
+          category: estimate?.category
         }
       });
 

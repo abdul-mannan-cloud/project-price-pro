@@ -1,7 +1,11 @@
 
 import React from 'react';
 
-export const EstimateAnimation = ({ className, height = "h-6", width = "w-24" }: { 
+export const EstimateAnimation = ({ 
+  className, 
+  height = "h-6", 
+  width = "w-24" 
+}: { 
   className?: string;
   height?: string;
   width?: string;
