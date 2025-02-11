@@ -415,27 +415,56 @@ const EstimatePage = () => {
 
       if (error) throw error;
       
-      const { error: updateError } = await supabase
-        .from('leads')
-        .update({ 
-          estimate_data: estimateData,
-          estimated_cost: estimateData.totalCost || 0
-        })
-        .eq('id', lead.id);
+      // Poll for the estimate until it's ready
+      const pollInterval = setInterval(async () => {
+        const { data: updatedLead, error: pollError } = await supabase
+          .from('leads')
+          .select('*')
+          .eq('id', lead.id)
+          .single();
+        
+        if (pollError) {
+          console.error('Error polling lead:', pollError);
+          return;
+        }
 
-      if (updateError) throw updateError;
+        if (updatedLead.status === 'complete') {
+          clearInterval(pollInterval);
+          setEstimate(updatedLead.estimate_data);
+          setStage('contact');
+          setIsProcessing(false);
+        } else if (updatedLead.status === 'error') {
+          clearInterval(pollInterval);
+          setIsProcessing(false);
+          toast({
+            title: "Error",
+            description: updatedLead.ai_generated_message || "Failed to generate estimate. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }, 2000); // Poll every 2 seconds
 
-      setEstimate(estimateData);
-      setStage('contact');
+      // Clear interval after 2 minutes to prevent infinite polling
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (isProcessing) {
+          setIsProcessing(false);
+          toast({
+            title: "Error",
+            description: "Estimate generation timed out. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }, 120000);
+
     } catch (error) {
       console.error('Error generating estimate:', error);
+      setIsProcessing(false);
       toast({
         title: "Error",
         description: "Failed to generate estimate. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsProcessing(false);
     }
   };
 
