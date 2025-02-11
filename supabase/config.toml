@@ -1,3 +1,6 @@
+
 project_id = "sflysnodxcufeszuymxk"
+[functions.generate-estimate]
+verify_jwt = false
 [functions.shorten-url]
 verify_jwt = false

@@ -61,11 +61,11 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
     try {
       JSON.parse(text); // Validate JSON structure
       console.log(`Attempt ${attempt}: Successfully received and validated JSON response`);
-      return new Response(text, {
-        headers: {
+      return new Response(text, { 
+        headers: { 
           'Content-Type': 'application/json',
           ...corsHeaders
-        }
+        } 
       });
     } catch (e) {
       console.error('Invalid JSON response:', text);
@@ -89,7 +89,7 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
