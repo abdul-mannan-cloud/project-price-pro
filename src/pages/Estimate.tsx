@@ -386,6 +386,7 @@ const EstimatePage = () => {
         return acc;
       }, {} as Record<string, any>);
 
+      // First create the lead
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert({
@@ -394,56 +395,25 @@ const EstimatePage = () => {
           project_title: `${selectedCategory || ''} Project`,
           project_description: projectDescription,
           contractor_id: contractorId,
-          status: 'pending'
+          status: 'processing'
         })
         .select()
         .single();
 
       if (leadError) throw leadError;
-
       setCurrentLeadId(lead.id);
-
-      console.log('Generating estimate with:', {
-        projectDescription,
-        answers: answersForSupabase,
-        category: selectedCategory,
-        leadId: lead.id
-      });
-
-      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          projectDescription, 
-          imageUrl: uploadedImageUrl, 
-          answers: answersForSupabase,
-          contractorId,
-          leadId: lead.id,
-          category: selectedCategory
-        }
-      });
-
-      if (error) throw error;
+      setStage('questions');
       
-      const { error: updateError } = await supabase
-        .from('leads')
-        .update({ 
-          estimate_data: estimateData,
-          estimated_cost: estimateData.totalCost || 0
-        })
-        .eq('id', lead.id);
+      // Now navigate to the estimate view which will handle the loading state
+      navigate(`/estimate/${lead.id}`);
 
-      if (updateError) throw updateError;
-
-      setEstimate(estimateData);
-      setStage('contact');
     } catch (error) {
-      console.error('Error generating estimate:', error);
+      console.error('Error creating lead:', error);
       toast({
         title: "Error",
-        description: "Failed to generate estimate. Please try again.",
+        description: "Failed to process your request. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsProcessing(false);
     }
   };
 

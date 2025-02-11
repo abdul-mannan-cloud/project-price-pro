@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +6,8 @@ import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { Database } from "@/integrations/supabase/types";
 import { useEffect } from "react";
 import { BrandingColors } from "@/types/settings";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 type EstimateData = {
   groups: Array<{
@@ -35,8 +36,10 @@ const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
 const PublicEstimate = () => {
   const { id } = useParams();
+  const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
+  const { toast } = useToast();
 
-  const { data: lead } = useQuery({
+  const { data: lead, isLoading: isLeadLoading } = useQuery({
     queryKey: ["public-estimate", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -62,7 +65,9 @@ const PublicEstimate = () => {
         .eq("id", id)
         .maybeSingle();
 
-      if (error || !data) {
+      if (error) throw error;
+      
+      if (!data) {
         return {
           id,
           contractor_id: DEFAULT_CONTRACTOR_ID,
@@ -74,6 +79,41 @@ const PublicEstimate = () => {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
+      }
+
+      // If the lead is in processing status and doesn't have estimate data yet,
+      // trigger the estimate generation
+      if (data.status === 'processing' && !data.estimate_data) {
+        setIsGeneratingEstimate(true);
+        try {
+          const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
+            body: { 
+              projectDescription: data.project_description,
+              answers: data.answers,
+              contractorId: data.contractor_id,
+              leadId: data.id,
+              category: data.category
+            }
+          });
+
+          if (estimateError) throw estimateError;
+          
+          // Update will happen via the backend, no need to manually update here
+          return {
+            ...data,
+            estimate_data: estimateData,
+            status: 'complete'
+          };
+        } catch (error) {
+          console.error('Error generating estimate:', error);
+          toast({
+            title: "Error",
+            description: "Failed to generate estimate. Please try again.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsGeneratingEstimate(false);
+        }
       }
 
       return data;
@@ -130,8 +170,8 @@ const PublicEstimate = () => {
     }
   }, [contractor]);
 
-  if (isContractorLoading) {
-    return <LoadingScreen message="Loading estimate..." />;
+  if (isLeadLoading || isGeneratingEstimate) {
+    return <LoadingScreen message="Generating your estimate..." isEstimate={true} />;
   }
 
   if (!contractor) {
