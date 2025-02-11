@@ -10,7 +10,8 @@ const corsHeaders = {
 }
 
 const MAX_RETRIES = 3;
-const INITIAL_TIMEOUT = 30000; // 30 seconds
+const INITIAL_TIMEOUT = 60000; // Increased to 60 seconds
+const BACKOFF_MULTIPLIER = 1.5;
 
 async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
   const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
@@ -18,11 +19,15 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
     throw new Error('Missing LLAMA_API_KEY');
   }
 
-  const timeout = INITIAL_TIMEOUT * attempt;
+  const timeout = INITIAL_TIMEOUT * Math.pow(BACKOFF_MULTIPLIER, attempt - 1);
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const timeoutId = setTimeout(() => {
+    console.log(`Request timeout after ${timeout}ms (attempt ${attempt})`);
+    controller.abort();
+  }, timeout);
 
   try {
+    console.log(`Attempt ${attempt}: Making request to Llama API with ${timeout}ms timeout`);
     const response = await fetch('https://api.llama-api.com/chat/completions', {
       method: 'POST',
       headers: {
@@ -39,14 +44,27 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
       
       if (attempt < MAX_RETRIES) {
         console.log(`Retrying... Attempt ${attempt + 1} of ${MAX_RETRIES}`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+        // Add exponential backoff delay
+        const delayMs = 1000 * Math.pow(2, attempt - 1);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
         return callLlamaAPI(payload, attempt + 1);
       }
       
       throw new Error(`Llama API error: ${response.status}`);
     }
 
+    console.log(`Attempt ${attempt}: Successfully received response from Llama API`);
     return response;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error(`Request aborted after ${timeout}ms (attempt ${attempt})`);
+      if (attempt < MAX_RETRIES) {
+        console.log(`Retrying after timeout... Attempt ${attempt + 1} of ${MAX_RETRIES}`);
+        return callLlamaAPI(payload, attempt + 1);
+      }
+      throw new Error('All attempts timed out');
+    }
+    throw error;
   } finally {
     clearTimeout(timeoutId);
   }
