@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import { Question, CategoryQuestions, AnswersState, QuestionAnswer } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+type LeadInsert = Database['public']['Tables']['leads']['Insert'];
 
 export const useQuestionManager = (
   questionSets: CategoryQuestions[],
@@ -114,16 +117,19 @@ export const useQuestionManager = (
     setIsGeneratingEstimate(true);
     
     try {
-      // Create a new lead first
+      // Create the lead insert data with proper typing
+      const leadData: LeadInsert = {
+        project_description: answers[questionSets[0]?.category]?.Q1?.question || 'New project',
+        project_title: `${questionSets[0]?.category || 'New'} Project`,
+        answers: answers as unknown as Json,
+        category: questionSets[0]?.category,
+        status: 'pending' as const
+      };
+
+      // Create a new lead with properly typed data
       const { data: lead, error: leadError } = await supabase
         .from('leads')
-        .insert({
-          status: 'pending',
-          project_description: answers[questionSets[0]?.category]?.Q1?.question || 'New project',
-          project_title: `${questionSets[0]?.category || 'New'} Project`,
-          answers: answers,
-          category: questionSets[0]?.category
-        })
+        .insert(leadData)
         .select()
         .single();
 
