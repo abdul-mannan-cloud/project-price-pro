@@ -373,6 +373,7 @@ const EstimatePage = () => {
         return acc;
       }, {} as Record<string, any>);
 
+      console.log('Creating lead record...');
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert({
@@ -390,19 +391,34 @@ const EstimatePage = () => {
 
       setCurrentLeadId(lead.id);
 
-      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          projectDescription, 
-          imageUrl: uploadedImageUrl, 
-          answers: answersForSupabase,
-          contractorId,
-          leadId: lead.id,
-          category: selectedCategory
+      console.log('Generating estimate...');
+      const { data: estimateData, error } = await supabase.functions.invoke(
+        'generate-estimate',
+        {
+          body: { 
+            projectDescription, 
+            imageUrl: uploadedImageUrl, 
+            answers: answersForSupabase,
+            contractorId,
+            leadId: lead.id,
+            category: selectedCategory
+          },
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
-      if (error) throw error;
-      
+      if (error) {
+        console.error('Error from generate-estimate function:', error);
+        throw error;
+      }
+
+      if (!estimateData) {
+        throw new Error('No estimate data received');
+      }
+
+      console.log('Updating lead with estimate data...');
       const { error: updateError } = await supabase
         .from('leads')
         .update({ 
