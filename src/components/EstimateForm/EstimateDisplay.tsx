@@ -438,6 +438,9 @@ ${templateSettings.estimate_footer_text || ''}
     return groups?.map((group, index) => (
       <div key={index} className={getTemplateStyles(templateSettings.estimate_template_style).section}>
         <h3 className={getTemplateStyles(templateSettings.estimate_template_style).groupTitle}>{group.name}</h3>
+        {group.description && (
+          <p className="text-sm text-gray-600 mb-4">{group.description}</p>
+        )}
         
         {templateSettings.estimate_template_style === 'classic' ? (
           <div className="space-y-2">
