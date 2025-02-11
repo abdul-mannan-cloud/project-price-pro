@@ -53,8 +53,8 @@ serve(async (req) => {
     });
 
     try {
-      // Get AI-generated title and overview
-      const titleResponse = await fetch('https://api.llama-api.com/chat/completions', {
+      // Single request to generate everything
+      const response = await fetch('https://api.llama-api.com/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${llamaApiKey}`,
@@ -63,76 +63,13 @@ serve(async (req) => {
         body: JSON.stringify({
           messages: [{
             role: 'system',
-            content: 'Generate a concise project title (4 words or less). The title should be professional and descriptive.'
-          }, {
-            role: 'user',
-            content: `Based on this project description and answers, generate a concise project title:
-            Category: ${category || 'General Construction'}
-            Description: ${projectDescription || 'Project estimate'}
-            ${formattedAnswers.map(cat => 
-              cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
-            ).join('\n')}`
-          }],
-          model: "llama3.2-11b",
-          temperature: 0.2,
-          stream: false,
-          max_tokens: 500
-        }),
-      });
-
-      if (!titleResponse.ok) {
-        throw new Error(`Title generation failed: ${await titleResponse.text()}`);
-      }
-
-      const titleData = await titleResponse.json();
-      const aiTitle = titleData.choices?.[0]?.message?.content?.trim() || 'Project Estimate';
-
-      // Get AI-generated overview
-      const messageResponse = await fetch('https://api.llama-api.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${llamaApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [{
-            role: 'system',
-            content: 'Generate a clear, professional project overview (2-3 sentences).'
-          }, {
-            role: 'user',
-            content: `Based on this project description and answers, generate a clear overview:
-            Category: ${category || 'General Construction'}
-            Description: ${projectDescription || 'Project estimate'}
-            ${formattedAnswers.map(cat => 
-              cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
-            ).join('\n')}`
-          }],
-          model: "llama3.2-11b",
-          temperature: 0.2,
-          stream: false,
-          max_tokens: 500
-        }),
-      });
-
-      if (!messageResponse.ok) {
-        throw new Error(`Overview generation failed: ${await messageResponse.text()}`);
-      }
-
-      const messageData = await messageResponse.json();
-      const aiMessage = messageData.choices?.[0]?.message?.content?.trim() || 'Custom project estimate based on provided specifications.';
-
-      // Generate the main estimate with cost breakdown
-      const estimateResponse = await fetch('https://api.llama-api.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${llamaApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [{
-            role: 'system',
-            content: `You are a construction cost estimator. Generate detailed estimates with realistic costs in this exact JSON format:
+            content: `You are a construction cost estimator assistant. Generate an estimate with the following components:
+            1. A concise project title (4 words or less)
+            2. A brief project overview (2-3 sentences)
+            3. A detailed cost breakdown in this exact JSON format:
             {
+              "ai_generated_title": "string (4 words or less)",
+              "ai_generated_message": "string (2-3 sentences)",
               "groups": [
                 {
                   "name": "Group Name",
@@ -159,7 +96,7 @@ serve(async (req) => {
             }`
           }, {
             role: 'user',
-            content: `Generate a detailed construction estimate in JSON format based on:
+            content: `Generate a complete estimate based on:
             Category: ${category || 'General Construction'}
             Description: ${projectDescription || 'Project estimate'}
             Questions and Answers:
@@ -175,22 +112,18 @@ serve(async (req) => {
         }),
       });
 
-      if (!estimateResponse.ok) {
-        throw new Error(`Estimate generation failed: ${await estimateResponse.text()}`);
+      if (!response.ok) {
+        throw new Error(`Estimate generation failed: ${await response.text()}`);
       }
 
-      const estimateData = await estimateResponse.json();
-      const parsedEstimate = typeof estimateData.choices?.[0]?.message?.content === 'string' 
-        ? JSON.parse(estimateData.choices[0].message.content)
-        : estimateData.choices?.[0]?.message?.content;
+      const data = await response.json();
+      const parsedEstimate = typeof data.choices?.[0]?.message?.content === 'string' 
+        ? JSON.parse(data.choices[0].message.content)
+        : data.choices?.[0]?.message?.content;
 
       if (!parsedEstimate) {
         throw new Error('Invalid estimate response format');
       }
-
-      // Add the AI generated title and message
-      parsedEstimate.ai_generated_title = aiTitle;
-      parsedEstimate.ai_generated_message = aiMessage;
 
       // Update the lead with the estimate
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -208,8 +141,8 @@ serve(async (req) => {
           estimate_data: parsedEstimate,
           status: 'complete',
           estimated_cost: parsedEstimate.totalCost || 0,
-          ai_generated_title: aiTitle,
-          ai_generated_message: aiMessage
+          ai_generated_title: parsedEstimate.ai_generated_title,
+          ai_generated_message: parsedEstimate.ai_generated_message
         })
         .eq('id', leadId);
 
