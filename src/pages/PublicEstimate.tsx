@@ -84,52 +84,17 @@ const PublicEstimate = () => {
     queryKey: ["contractor", lead?.contractor_id || DEFAULT_CONTRACTOR_ID],
     queryFn: async () => {
       const contractorId = lead?.contractor_id || DEFAULT_CONTRACTOR_ID;
-      
-      // First try to get the existing contractor
-      const { data: existingContractor, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from("contractors")
         .select(`
           *,
           contractor_settings (*)
         `)
         .eq("id", contractorId)
-        .maybeSingle();
-
-      // If contractor exists, return it
-      if (existingContractor) {
-        return existingContractor as ContractorWithSettings;
-      }
-
-      // If contractor doesn't exist, create a default one
-      const { data: newContractor, error: insertError } = await supabase
-        .from("contractors")
-        .insert({
-          id: contractorId,
-          business_name: "Demo Company",
-          contact_email: "demo@example.com",
-          business_logo_url: null,
-          contact_phone: null,
-          business_address: null,
-          website: null,
-          license_number: null,
-          subscription_status: "trial" as const,
-          branding_colors: {
-            primary: "#2563eb",
-            secondary: "#e5e7eb"
-          }
-        })
-        .select(`
-          *,
-          contractor_settings (*)
-        `)
         .single();
 
-      if (insertError) {
-        console.error("Error creating default contractor:", insertError);
-        throw insertError;
-      }
-
-      return newContractor as ContractorWithSettings;
+      if (error) throw error;
+      return data as ContractorWithSettings;
     },
     enabled: !!lead,
     staleTime: 5 * 60 * 1000,
