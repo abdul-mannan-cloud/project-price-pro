@@ -105,7 +105,7 @@ export const EstimateDisplay = ({
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
-  const { contractorId } = useParams();
+  const { id, contractorId } = useParams();
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
@@ -116,16 +116,19 @@ export const EstimateDisplay = ({
 
   useEffect(() => {
     const checkEstimateStatus = async () => {
-      if (!contractorId) return;
+      if (!id) return;
 
       try {
         const { data: lead, error } = await supabase
           .from('leads')
           .select('estimate_data, status')
-          .eq('id', contractorId)
-          .single();
+          .eq('id', id)
+          .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching lead:', error);
+          return;
+        }
 
         // Set estimate ready when we have data and status is complete
         setIsEstimateReady(!!lead?.estimate_data && lead?.status === 'complete');
@@ -141,7 +144,7 @@ export const EstimateDisplay = ({
     const interval = setInterval(checkEstimateStatus, 3000);
 
     return () => clearInterval(interval);
-  }, [contractorId]);
+  }, [id]);
 
   useEffect(() => {
     const hasValidEstimate = groups?.length > 0 && totalCost > 0;
