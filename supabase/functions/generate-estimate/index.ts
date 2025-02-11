@@ -32,8 +32,8 @@ serve(async (req) => {
       throw new Error('Invalid request body');
     }
 
-    const { answers, projectDescription, category } = requestData;
-    console.log('Generating estimate for:', { category, projectDescription });
+    const { answers, projectDescription, category, leadId } = requestData;
+    console.log('Generating estimate for:', { category, projectDescription, leadId });
 
     // Start background tasks using EdgeRuntime.waitUntil
     EdgeRuntime.waitUntil((async () => {
@@ -63,10 +63,10 @@ serve(async (req) => {
             body: JSON.stringify({
               messages: [{
                 role: 'system',
-                content: 'Generate a concise project title.'
+                content: 'Generate a concise project title (4 words or less). The title should be professional and descriptive.'
               }, {
                 role: 'user',
-                content: `Based on this project description and answers, generate a concise project title (4 words or less):
+                content: `Based on this project description and answers, generate a concise project title:
                 Category: ${category || 'General Construction'}
                 Description: ${projectDescription || 'Project estimate'}
                 ${formattedAnswers.map(cat => 
@@ -79,10 +79,13 @@ serve(async (req) => {
             }),
           });
 
-          if (titleResponse.ok) {
-            const titleData = await titleResponse.json();
-            aiTitle = titleData.choices?.[0]?.message?.content?.trim() || aiTitle;
+          if (!titleResponse.ok) {
+            throw new Error(`Llama API error: ${titleResponse.status}`);
           }
+
+          const titleData = await titleResponse.json();
+          aiTitle = titleData.choices?.[0]?.message?.content?.trim() || aiTitle;
+          console.log('Generated title:', aiTitle);
 
           // Get AI-generated message/overview
           const messageResponse = await fetch('https://api.llama-api.com/chat/completions', {
@@ -94,10 +97,10 @@ serve(async (req) => {
             body: JSON.stringify({
               messages: [{
                 role: 'system',
-                content: 'Generate a clear project overview.'
+                content: 'Generate a clear, professional project overview (2-3 sentences).'
               }, {
                 role: 'user',
-                content: `Based on this project description and answers, generate a clear, professional overview of the project scope (2-3 sentences):
+                content: `Based on this project description and answers, generate a clear overview:
                 Category: ${category || 'General Construction'}
                 Description: ${projectDescription || 'Project estimate'}
                 ${formattedAnswers.map(cat => 
@@ -110,10 +113,13 @@ serve(async (req) => {
             }),
           });
 
-          if (messageResponse.ok) {
-            const messageData = await messageResponse.json();
-            aiMessage = messageData.choices?.[0]?.message?.content?.trim() || aiMessage;
+          if (!messageResponse.ok) {
+            throw new Error(`Llama API error: ${messageResponse.status}`);
           }
+
+          const messageData = await messageResponse.json();
+          aiMessage = messageData.choices?.[0]?.message?.content?.trim() || aiMessage;
+          console.log('Generated message:', aiMessage);
         } catch (error) {
           console.error('Error generating title or message:', error);
           // Continue with default values if title/message generation fails
@@ -129,7 +135,7 @@ serve(async (req) => {
           body: JSON.stringify({
             messages: [{
               role: 'system',
-              content: `You are a construction cost estimator. Generate estimates in JSON format with this structure:
+              content: `You are a construction cost estimator. Generate detailed estimates with realistic costs in this exact JSON format:
               {
                 "groups": [
                   {
@@ -157,7 +163,7 @@ serve(async (req) => {
               }`
             }, {
               role: 'user',
-              content: `Based on the following project details, generate a detailed construction estimate in JSON format only:
+              content: `Generate a detailed construction estimate in JSON format based on:
               Category: ${category || 'General Construction'}
               Description: ${projectDescription || 'Project estimate'}
               Questions and Answers:
@@ -197,24 +203,29 @@ serve(async (req) => {
 
         const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
-        if (requestData.leadId) {
+        if (leadId) {
+          console.log('Updating lead with estimate:', leadId);
           const { error: updateError } = await supabaseAdmin
             .from('leads')
             .update({ 
               estimate_data: parsedEstimate,
               status: 'complete',
-              estimated_cost: parsedEstimate.totalCost || 0
+              estimated_cost: parsedEstimate.totalCost || 0,
+              ai_generated_title: aiTitle,
+              ai_generated_message: aiMessage
             })
-            .eq('id', requestData.leadId);
+            .eq('id', leadId);
 
           if (updateError) {
             console.error('Error updating lead:', updateError);
+            throw updateError;
           }
+          console.log('Successfully updated lead with estimate');
         }
 
-        console.log('Background estimate generation completed successfully');
       } catch (error) {
         console.error('Background task error:', error);
+        throw error;
       }
     })());
 
@@ -245,3 +256,4 @@ serve(async (req) => {
     );
   }
 });
+
