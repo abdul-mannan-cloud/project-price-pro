@@ -33,13 +33,13 @@ serve(async (req) => {
       throw new Error('Invalid request body');
     }
 
-    const { answers, projectDescription, category, leadId } = requestData;
+    const { answers, projectDescription, category, leadId, imageUrl } = requestData;
 
     if (!leadId) {
       throw new Error('Missing leadId');
     }
 
-    console.log('Generating estimate for:', { category, projectDescription, leadId });
+    console.log('Generating estimate for:', { category, projectDescription, leadId, imageUrl });
 
     const formattedAnswers = Object.entries(answers || {}).map(([category, categoryAnswers]) => {
       const questions = Object.entries(categoryAnswers || {}).map(([_, qa]) => ({
@@ -53,6 +53,68 @@ serve(async (req) => {
     });
 
     try {
+      const messages = [{
+        role: 'system',
+        content: `You are a construction cost estimator. Your task is to return ONLY a valid JSON object with no additional text or explanation.
+        The JSON must follow this exact format:
+        {
+          "ai_generated_title": "string (4 words or less)",
+          "ai_generated_message": "string (2-3 sentences)",
+          "groups": [
+            {
+              "name": "Group Name",
+              "description": "Optional group description",
+              "subgroups": [
+                {
+                  "name": "Subgroup Name",
+                  "items": [
+                    {
+                      "title": "Item Title",
+                      "description": "Item description",
+                      "quantity": number,
+                      "unit": "optional unit",
+                      "unitAmount": number,
+                      "totalPrice": number
+                    }
+                  ],
+                  "subtotal": number
+                }
+              ]
+            }
+          ],
+          "totalCost": number
+        }`
+      }];
+
+      // Add image analysis message if image URL is provided
+      if (imageUrl) {
+        messages.push({
+          role: 'user',
+          content: [
+            {
+              type: 'image_url',
+              image_url: imageUrl
+            },
+            {
+              type: 'text',
+              text: 'Analyze this image and consider it when generating the estimate.'
+            }
+          ]
+        });
+      }
+
+      // Add the main request message
+      messages.push({
+        role: 'user',
+        content: `Based on the following information, generate ONLY a JSON response:
+        Category: ${category || 'General Construction'}
+        Description: ${projectDescription || 'Project estimate'}
+        Questions and Answers:
+        ${formattedAnswers.map(cat => `
+        Category: ${cat.category}
+        ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
+      });
+
       const response = await fetch('https://api.llama-api.com/chat/completions', {
         method: 'POST',
         headers: {
@@ -60,48 +122,8 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [{
-            role: 'system',
-            content: `You are a construction cost estimator. Your task is to return ONLY a valid JSON object with no additional text or explanation.
-            The JSON must follow this exact format:
-            {
-              "ai_generated_title": "string (4 words or less)",
-              "ai_generated_message": "string (2-3 sentences)",
-              "groups": [
-                {
-                  "name": "Group Name",
-                  "description": "Optional group description",
-                  "subgroups": [
-                    {
-                      "name": "Subgroup Name",
-                      "items": [
-                        {
-                          "title": "Item Title",
-                          "description": "Item description",
-                          "quantity": number,
-                          "unit": "optional unit",
-                          "unitAmount": number,
-                          "totalPrice": number
-                        }
-                      ],
-                      "subtotal": number
-                    }
-                  ]
-                }
-              ],
-              "totalCost": number
-            }`
-          }, {
-            role: 'user',
-            content: `Based on the following information, generate ONLY a JSON response:
-            Category: ${category || 'General Construction'}
-            Description: ${projectDescription || 'Project estimate'}
-            Questions and Answers:
-            ${formattedAnswers.map(cat => `
-            Category: ${cat.category}
-            ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
-          }],
-          model: "llama3.2-11b",
+          messages,
+          model: "llama3.2-11b-vision",
           temperature: 0.2,
           stream: false,
           max_tokens: 2000,
