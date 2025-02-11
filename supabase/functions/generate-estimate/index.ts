@@ -106,7 +106,7 @@ serve(async (req) => {
     }
 
     try {
-      console.log('Making request to LLaMA API...');
+      console.log('Making request to LLaMA API with:', JSON.stringify(apiRequest, null, 2));
       const response = await fetch('https://api.llama-api.com/chat/completions', {
         method: 'POST',
         headers: {
@@ -122,29 +122,43 @@ serve(async (req) => {
         throw new Error(`LLaMA API request failed: ${errorText}`);
       }
 
-      const data = await response.json();
-      console.log('Full API Response:', data); // Log the complete response
+      const rawResponse = await response.text();
+      console.log('Raw API Response:', rawResponse);
 
-      // Safely access the response data with proper type checks
-      if (!data || typeof data !== 'object') {
-        throw new Error('Invalid API response: not an object');
+      let data;
+      try {
+        data = JSON.parse(rawResponse);
+      } catch (e) {
+        console.error('Failed to parse API response:', e);
+        throw new Error('Invalid JSON response from API');
       }
 
-      if (!Array.isArray(data.choices)) {
-        throw new Error('Invalid API response: choices is not an array');
+      console.log('Parsed API Response:', data);
+
+      // Extract AI response with fallbacks for different response formats
+      let aiResponse: string;
+
+      if (data.choices && Array.isArray(data.choices) && data.choices[0]?.message?.content) {
+        // Standard format
+        aiResponse = data.choices[0].message.content;
+      } else if (data.response) {
+        // Alternative format 1
+        aiResponse = data.response;
+      } else if (data.generated_text) {
+        // Alternative format 2
+        aiResponse = data.generated_text;
+      } else if (data.output) {
+        // Alternative format 3
+        aiResponse = typeof data.output === 'string' ? data.output : JSON.stringify(data.output);
+      } else if (data.text) {
+        // Alternative format 4
+        aiResponse = data.text;
+      } else {
+        // If we can't find a valid response format, use the entire response
+        aiResponse = JSON.stringify(data);
       }
 
-      const firstChoice = data.choices[0];
-      if (!firstChoice || !firstChoice.message) {
-        throw new Error('Invalid API response: no message in first choice');
-      }
-
-      const aiResponse = firstChoice.message.content;
-      if (typeof aiResponse !== 'string') {
-        throw new Error('Invalid API response: message content is not a string');
-      }
-
-      console.log('Processed AI Response:', aiResponse);
+      console.log('Extracted AI Response:', aiResponse);
 
       // Create the estimate object
       const estimate = {
