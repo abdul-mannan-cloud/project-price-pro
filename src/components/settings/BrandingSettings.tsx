@@ -1,110 +1,123 @@
+
 import { useState, useEffect } from "react";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Json } from "@/integrations/supabase/types";
+import { BrandingColors } from "@/types/settings";
+import { supabase } from "@/integrations/supabase/client";
 
-interface BrandingColors {
-  primary: string;
-  secondary: string;
+interface BrandingSettingsProps {
+  initialColors: BrandingColors;
+  onSave: (colors: BrandingColors) => Promise<void>;
 }
 
-export const BrandingSettings = ({ 
-  initialColors,
-  onSave 
-}: { 
-  initialColors: BrandingColors;
-  onSave: (colors: BrandingColors) => void;
-}) => {
+export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProps) => {
   const [brandingColors, setBrandingColors] = useState<BrandingColors>(initialColors);
   const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
 
-  const { data: currentColors } = useQuery({
-    queryKey: ["brandingColors"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
-      const { data, error } = await supabase
-        .from("contractors")
-        .select("branding_colors")
-        .eq("id", user.id)
-        .single();
-
-      if (error) throw error;
-      
-      // Safely type cast the branding_colors from Json to BrandingColors
-      const colors = data?.branding_colors as { primary: string; secondary: string } | null;
-      return colors || initialColors;
-    },
-  });
-
+  // Load and apply saved colors on component mount
   useEffect(() => {
-    if (currentColors) {
-      setBrandingColors(currentColors);
-      document.documentElement.style.setProperty('--primary', currentColors.primary);
-      document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
-      document.documentElement.style.setProperty('--secondary', currentColors.secondary);
-      document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
-    }
-  }, [currentColors]);
+    const loadAndApplyColors = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-  const updateBrandingColors = useMutation({
-    mutationFn: async (colors: BrandingColors) => {
+        const { data: contractor, error } = await supabase
+          .from('contractors')
+          .select('branding_colors')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (contractor?.branding_colors) {
+          const colors = contractor.branding_colors as BrandingColors;
+          setBrandingColors(colors);
+          applyGlobalColors(colors);
+        }
+      } catch (error) {
+        console.error('Error loading branding colors:', error);
+      }
+    };
+
+    loadAndApplyColors();
+  }, []);
+
+  // Apply colors whenever they change
+  useEffect(() => {
+    if (initialColors) {
+      setBrandingColors(initialColors);
+      applyGlobalColors(initialColors);
+    }
+  }, [initialColors]);
+
+  const applyGlobalColors = (colors: BrandingColors) => {
+    // Set primary color and its variations
+    document.documentElement.style.setProperty('--primary', colors.primary);
+    document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
+
+    // Convert hex to RGB for creating variations
+    const primaryHex = colors.primary.replace('#', '');
+    const r = parseInt(primaryHex.slice(0, 2), 16);
+    const g = parseInt(primaryHex.slice(2, 4), 16);
+    const b = parseInt(primaryHex.slice(4, 6), 16);
+
+    // Set all primary color variations
+    document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
+    document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
+    document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
+    document.documentElement.style.setProperty('--primary-400', `rgba(${r}, ${g}, ${b}, 0.6)`);
+    document.documentElement.style.setProperty('--primary-500', `rgba(${r}, ${g}, ${b}, 0.8)`);
+    document.documentElement.style.setProperty('--primary-600', colors.primary);
+    document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
+
+    // Set secondary color
+    document.documentElement.style.setProperty('--secondary', colors.secondary);
+    document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
+  };
+
+  const handleColorChange = (type: 'primary' | 'secondary', color: string) => {
+    const newColors = {
+      ...brandingColors,
+      [type]: color
+    };
+    setBrandingColors(newColors);
+    applyGlobalColors(newColors);
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await onSave(brandingColors);
+      
+      // Update the colors in Supabase directly
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
-
-      const brandingColorsJson: Json = {
-        primary: colors.primary,
-        secondary: colors.secondary
-      };
 
       const { error } = await supabase
-        .from("contractors")
-        .update({
-          branding_colors: brandingColorsJson
-        })
-        .eq("id", user.id);
+        .from('contractors')
+        .update({ branding_colors: brandingColors })
+        .eq('id', user.id);
 
       if (error) throw error;
-      
-      document.documentElement.style.setProperty('--primary', colors.primary);
-      document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
-      document.documentElement.style.setProperty('--secondary', colors.secondary);
-      document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
 
-      // Update primary color variations
-      const primaryHex = colors.primary.replace('#', '');
-      const r = parseInt(primaryHex.slice(0, 2), 16);
-      const g = parseInt(primaryHex.slice(2, 4), 16);
-      const b = parseInt(primaryHex.slice(4, 6), 16);
-
-      document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
-      document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
-      document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
-      document.documentElement.style.setProperty('--primary-400', `rgba(${r}, ${g}, ${b}, 0.6)`);
-      document.documentElement.style.setProperty('--primary-500', `rgba(${r}, ${g}, ${b}, 0.8)`);
-      document.documentElement.style.setProperty('--primary-600', colors.primary);
-      document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
-    },
-    onSuccess: () => {
       toast({
         title: "Branding colors updated",
-        description: "Your brand colors have been updated successfully.",
+        description: "Your brand colors have been updated and saved successfully.",
       });
-      onSave(brandingColors);
-    },
-    onError: (error: any) => {
+    } catch (error) {
+      console.error('Error saving branding colors:', error);
       toast({
         title: "Error",
         description: "Failed to update branding colors. Please try again.",
         variant: "destructive",
       });
-    },
-  });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -117,9 +130,7 @@ export const BrandingSettings = ({
             </label>
             <ColorPicker
               color={brandingColors.primary}
-              onChange={(color) => {
-                setBrandingColors(prev => ({ ...prev, primary: color }));
-              }}
+              onChange={(color) => handleColorChange('primary', color)}
             />
           </div>
           <div>
@@ -128,17 +139,11 @@ export const BrandingSettings = ({
             </label>
             <ColorPicker
               color={brandingColors.secondary}
-              onChange={(color) => {
-                setBrandingColors(prev => ({ ...prev, secondary: color }));
-              }}
+              onChange={(color) => handleColorChange('secondary', color)}
             />
           </div>
-          <Button 
-            onClick={() => updateBrandingColors.mutate(brandingColors)}
-            disabled={updateBrandingColors.isPending}
-            variant="default"
-          >
-            {updateBrandingColors.isPending ? "Saving..." : "Save Changes"}
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
 
@@ -148,23 +153,14 @@ export const BrandingSettings = ({
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Buttons</h3>
               <div className="space-y-2">
-                <Button 
-                  className="w-full"
-                  variant="default"
-                >
+                <Button className="w-full">
                   Primary Button
                 </Button>
-                <Button 
-                  variant="secondary"
-                  className="w-full"
-                >
+                <Button variant="secondary" className="w-full">
                   Secondary Button
                 </Button>
-                <Button 
-                  variant="select"
-                  className="w-full"
-                >
-                  Dropdown Button (Unaffected)
+                <Button variant="outline" className="w-full">
+                  Outline Button
                 </Button>
               </div>
             </Card>
