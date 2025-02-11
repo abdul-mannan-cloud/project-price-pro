@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +43,7 @@ const PublicEstimate = () => {
   const { data: lead, isLoading: isLeadLoading } = useQuery({
     queryKey: ["public-estimate", id],
     queryFn: async () => {
+      console.log("Fetching lead data for ID:", id);
       const { data, error } = await supabase
         .from("leads")
         .select(`
@@ -65,9 +67,13 @@ const PublicEstimate = () => {
         .eq("id", id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching lead:", error);
+        throw error;
+      }
       
       if (!data) {
+        console.log("No lead found, using default values");
         return {
           id,
           contractor_id: DEFAULT_CONTRACTOR_ID,
@@ -81,9 +87,12 @@ const PublicEstimate = () => {
         };
       }
 
+      console.log("Lead data fetched:", data);
+
       // If the lead is in processing status and doesn't have estimate data yet,
       // trigger the estimate generation
       if (data.status === 'processing' && !data.estimate_data) {
+        console.log("Starting estimate generation");
         setIsGeneratingEstimate(true);
         try {
           const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
@@ -96,8 +105,12 @@ const PublicEstimate = () => {
             }
           });
 
-          if (estimateError) throw estimateError;
+          if (estimateError) {
+            console.error("Error generating estimate:", estimateError);
+            throw estimateError;
+          }
           
+          console.log("Estimate generated successfully:", estimateData);
           // Update will happen via the backend, no need to manually update here
           return {
             ...data,
@@ -123,6 +136,7 @@ const PublicEstimate = () => {
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", lead?.contractor_id || DEFAULT_CONTRACTOR_ID],
     queryFn: async () => {
+      console.log("Fetching contractor data");
       const contractorId = lead?.contractor_id || DEFAULT_CONTRACTOR_ID;
       const { data, error } = await supabase
         .from("contractors")
@@ -133,7 +147,11 @@ const PublicEstimate = () => {
         .eq("id", contractorId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching contractor:", error);
+        throw error;
+      }
+      console.log("Contractor data fetched:", data);
       return data as ContractorWithSettings;
     },
     enabled: !!lead,
