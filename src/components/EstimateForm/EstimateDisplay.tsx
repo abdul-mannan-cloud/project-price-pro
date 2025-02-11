@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -167,7 +166,7 @@ export const EstimateDisplay: React.FC<EstimateDisplayProps> = ({
       contact_phone: "(555) 123-4567"
     };
 
-    return `
+    let text = `
 ${companyInfo.business_name}
 ${companyInfo.contact_email}
 ${companyInfo.contact_phone || ''}
@@ -186,4 +185,20 @@ ${group.subgroups.map(subgroup => `
     - ${formatItemTitle(item.title, item.unit)}
       Quantity: ${item.quantity.toLocaleString()}
       Unit Price: ${formatCurrency(item.unitAmount)}
-      Total: ${formatCurrency(item.totalPrice
+      Total: ${formatCurrency(item.totalPrice)}
+  `).join('')}
+  Subtotal: ${formatCurrency(subgroup.subtotal)}
+`).join('')}
+`).join('')}
+
+Total Cost: ${formatCurrency(totalCost)}`;
+
+    return text;
+  };
+
+  return (
+    <div>
+      {/* Component content */}
+    </div>
+  );
+};
