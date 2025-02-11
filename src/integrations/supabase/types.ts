@@ -126,7 +126,6 @@ export type Database = {
           ai_instructions: string | null
           ai_preferences: Json | null
           ai_prompt_template: string | null
-          ai_rates: Json | null
           branding_colors: Json | null
           created_at: string | null
           estimate_client_message: string | null
@@ -147,7 +146,6 @@ export type Database = {
           ai_instructions?: string | null
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
-          ai_rates?: Json | null
           branding_colors?: Json | null
           created_at?: string | null
           estimate_client_message?: string | null
@@ -168,7 +166,6 @@ export type Database = {
           ai_instructions?: string | null
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
-          ai_rates?: Json | null
           branding_colors?: Json | null
           created_at?: string | null
           estimate_client_message?: string | null

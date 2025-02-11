@@ -45,7 +45,6 @@ const EstimatePage = () => {
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
-  const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
 
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
@@ -402,7 +401,6 @@ const EstimatePage = () => {
       if (leadError) throw leadError;
 
       setCurrentLeadId(lead.id);
-      setIsGeneratingEstimate(true);
 
       const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
@@ -416,7 +414,7 @@ const EstimatePage = () => {
       });
 
       if (error) throw error;
-
+      
       const { error: updateError } = await supabase
         .from('leads')
         .update({ 
@@ -438,7 +436,6 @@ const EstimatePage = () => {
       });
     } finally {
       setIsProcessing(false);
-      setIsGeneratingEstimate(false);
     }
   };
 
