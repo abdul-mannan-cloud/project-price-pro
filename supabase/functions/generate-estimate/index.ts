@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
@@ -9,8 +8,15 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { 
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Max-Age': '86400',
+        'Access-Control-Allow-Credentials': 'true'
+      }
+    });
   }
 
   try {
@@ -261,7 +267,8 @@ Important:
       { 
         headers: { 
           ...corsHeaders,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Credentials': 'true'
         } 
       }
     );
@@ -276,7 +283,8 @@ Important:
         status: 500,
         headers: { 
           ...corsHeaders,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Credentials': 'true'
         } 
       }
     );
