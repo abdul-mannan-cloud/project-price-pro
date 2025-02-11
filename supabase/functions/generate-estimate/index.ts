@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3"
@@ -82,20 +81,34 @@ serve(async (req) => {
     try {
       const messages = [{
         role: 'system',
-        content: `You are a construction cost estimator. Your task is to return ONLY a valid JSON object with no additional text or explanation.
-        
-Here is an example of the EXACT format required:
+        content: `You are a construction cost estimator. Return ONLY a valid JSON object with no additional text. Format costs as numbers, not strings.
+
+Example format:
 {
   "groups": [
     {
-      "name": "Labor",
+      "name": "Material & Labor",
       "subgroups": [
         {
-          "name": "Installation",
+          "name": "Paint Materials",
           "items": [
             {
-              "title": "General Labor",
-              "description": "Basic installation work",
+              "title": "Interior Paint",
+              "description": "Premium quality interior paint",
+              "quantity": 5,
+              "unit": "gallons",
+              "unitAmount": 45.99,
+              "totalPrice": 229.95
+            }
+          ],
+          "subtotal": 229.95
+        },
+        {
+          "name": "Labor",
+          "items": [
+            {
+              "title": "Painter",
+              "description": "Professional painting service",
               "quantity": 8,
               "unit": "hours",
               "unitAmount": 75,
@@ -107,20 +120,10 @@ Here is an example of the EXACT format required:
       ]
     }
   ],
-  "totalCost": 600,
-  "ai_generated_title": "Basic Installation Project",
-  "ai_generated_message": "Simple installation project with standard labor rates. Includes necessary tools and equipment."
-}
-
-Your response must:
-1. Be a single JSON object
-2. Follow the exact structure shown above
-3. Include all required fields
-4. Use correct number types for quantities and costs
-5. Ensure all subtotals and totalCost are accurate
-6. Keep ai_generated_title to 4 words or less
-7. Keep ai_generated_message to 2-3 sentences
-8. Include "unit" field for each item`
+  "totalCost": 829.95,
+  "ai_generated_title": "Interior Painting Project",
+  "ai_generated_message": "Professional interior painting project including premium materials and skilled labor. Includes surface preparation and two coats of paint."
+}`
       }];
 
       if (imageUrl) {

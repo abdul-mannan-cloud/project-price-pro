@@ -543,14 +543,22 @@ const EstimatePage = () => {
 
   if (isProcessing) {
     return (
-      <LoadingScreen
-        message={
-          stage === 'questions' && currentQuestionIndex === questions.length - 1
-            ? "Generating your estimate..."
-            : "Processing your request..."
-        }
-        isEstimate={stage === 'questions' && currentQuestionIndex === questions.length - 1}
-      />
+      <div className="min-h-screen bg-gray-100">
+        {showProgressBar && (
+          <Progress 
+            value={progress} 
+            className="h-8 rounded-none transition-all duration-500 ease-in-out"
+          />
+        )}
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          <EstimateDisplay 
+            groups={[]}
+            totalCost={0}
+            isLoading={true}
+            contractor={contractor}
+          />
+        </div>
+      </div>
     );
   }
 
