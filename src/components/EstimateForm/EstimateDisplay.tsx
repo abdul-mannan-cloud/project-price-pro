@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, FileDown, Settings, Phone, Mail, RefreshCw } from "lucide-react";
+import { Camera, SkipForward, ArrowLeft, Copy, FileDown, Settings, Phone, Mail, RefreshCw } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Database } from "@/integrations/supabase/types";
 import { Json } from "@/integrations/supabase/types";
@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { SignatureDialog } from "./SignatureDialog";
 import { EstimateSkeleton } from "./EstimateSkeleton";
+import { EstimateAnimation } from "./EstimateAnimation";
 
 interface LineItem {
   title: string;
@@ -111,6 +112,12 @@ export const EstimateDisplay = ({
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isEstimateReady, setIsEstimateReady] = useState(false);
+
+  useEffect(() => {
+    const hasValidEstimate = groups?.length > 0 && totalCost > 0;
+    setIsEstimateReady(hasValidEstimate);
+  }, [groups, totalCost]);
 
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ["contractor-settings", contractorId],
@@ -156,7 +163,6 @@ export const EstimateDisplay = ({
         description: "Your estimate will be updated shortly.",
       });
 
-      // Wait a bit to allow the background task to complete
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       if (onEstimateChange) {
@@ -381,6 +387,98 @@ ${templateSettings.estimate_footer_text || ''}
     }
   };
 
+  const renderTableContent = () => {
+    if (!isEstimateReady) {
+      return (
+        <div className="py-12">
+          <EstimateAnimation />
+          <p className="text-center text-gray-500 mt-4">Generating estimate...</p>
+        </div>
+      );
+    }
+
+    return groups?.map((group, index) => (
+      <div key={index} className={getTemplateStyles(templateSettings.estimate_template_style).section}>
+        <h3 className={getTemplateStyles(templateSettings.estimate_template_style).groupTitle}>{group.name}</h3>
+        
+        {templateSettings.estimate_template_style === 'classic' ? (
+          <div className="space-y-2">
+            {group.subgroups?.map(subgroup => (
+              <div key={subgroup.name} className="space-y-1">
+                {subgroup.items?.map((item, itemIndex) => (
+                  <div key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
+                    <div className={getTemplateStyles(templateSettings.estimate_template_style).tableCell}>
+                      <span className="font-medium">{item.title}</span>
+                      {item.unit && ` (${formatUnit(item.unit)})`}
+                      {item.description && (
+                        <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                      )}
+                      <div className="text-sm text-gray-600 mt-1">
+                        {item.quantity.toLocaleString()} × {formatCurrency(item.unitAmount)} = {formatCurrency(item.totalPrice)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {!templateSettings.estimate_hide_subtotals && (
+                  <div className={getTemplateStyles(templateSettings.estimate_template_style).subtotal}>
+                    Subtotal for {subgroup.name}: {formatCurrency(subgroup.subtotal)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="w-full">
+            <table className={getTemplateStyles(templateSettings.estimate_template_style).table}>
+              <thead>
+                <tr>
+                  <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[45%]")}>Item</th>
+                  <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[35%]")}>Description</th>
+                  <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Qty</th>
+                  <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Price</th>
+                  <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[6%] text-right")}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {group.subgroups?.map(subgroup => 
+                  subgroup.items?.map((item, itemIndex) => (
+                    <tr key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
+                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%] break-words")}>
+                        {item.title} {item.unit && `(${formatUnit(item.unit)})`}
+                      </td>
+                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%] break-words")}>
+                        {item.description}
+                      </td>
+                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
+                        {isEstimateReady ? item.quantity.toLocaleString() : '0'}
+                      </td>
+                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
+                        {isEstimateReady ? formatCurrency(item.unitAmount) : formatCurrency(0)}
+                      </td>
+                      <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[6%] text-right font-medium")}>
+                        {isEstimateReady ? formatCurrency(item.totalPrice) : formatCurrency(0)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Group Subtotal */}
+        {!templateSettings.estimate_hide_subtotals && templateSettings.estimate_template_style !== 'minimal' && (
+          <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).subtotal, "mt-4 pt-3 border-t")}>
+            <span className={getTemplateStyles(templateSettings.estimate_template_style).text}>Subtotal for {group.name}</span>
+            <span className="font-semibold ml-4">
+              {isEstimateReady ? formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0)) : formatCurrency(0)}
+            </span>
+          </div>
+        )}
+      </div>
+    ));
+  };
+
   if (isSettingsLoading || isLoading) {
     return <EstimateSkeleton />;
   }
@@ -522,87 +620,8 @@ ${templateSettings.estimate_footer_text || ''}
           )}
 
           {/* Estimate Groups */}
-          {groups?.map((group, index) => (
-            <div key={index} className={getTemplateStyles(templateSettings.estimate_template_style).section}>
-              <h3 className={getTemplateStyles(templateSettings.estimate_template_style).groupTitle}>{group.name}</h3>
-              
-              {templateSettings.estimate_template_style === 'classic' ? (
-                <div className="space-y-2">
-                  {group.subgroups?.map(subgroup => (
-                    <div key={subgroup.name} className="space-y-1">
-                      {subgroup.items?.map((item, itemIndex) => (
-                        <div key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
-                          <div className={getTemplateStyles(templateSettings.estimate_template_style).tableCell}>
-                            <span className="font-medium">{item.title}</span>
-                            {item.unit && ` (${formatUnit(item.unit)})`}
-                            {item.description && (
-                              <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                            )}
-                            <div className="text-sm text-gray-600 mt-1">
-                              {item.quantity.toLocaleString()} × {formatCurrency(item.unitAmount)} = {formatCurrency(item.totalPrice)}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {!templateSettings.estimate_hide_subtotals && (
-                        <div className={getTemplateStyles(templateSettings.estimate_template_style).subtotal}>
-                          Subtotal for {subgroup.name}: {formatCurrency(subgroup.subtotal)}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="w-full">
-                  <table className={getTemplateStyles(templateSettings.estimate_template_style).table}>
-                    <thead>
-                      <tr>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[45%]")}>Item</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[35%]")}>Description</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Qty</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[7%] text-right")}>Price</th>
-                        <th className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableHeader, "w-[6%] text-right")}>Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {group.subgroups?.map(subgroup => 
-                        subgroup.items?.map((item, itemIndex) => (
-                          <tr key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%] break-words")}>
-                              {item.title} {item.unit && `(${formatUnit(item.unit)})`}
-                            </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%] break-words")}>
-                              {item.description}
-                            </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                              {item.quantity.toLocaleString()}
-                            </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[7%] text-right")}>
-                              {formatCurrency(item.unitAmount)}
-                            </td>
-                            <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[6%] text-right font-medium")}>
-                              {formatCurrency(item.totalPrice)}
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+          {renderTableContent()}
 
-              {/* Group Subtotal */}
-              {!templateSettings.estimate_hide_subtotals && templateSettings.estimate_template_style !== 'minimal' && (
-                <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).subtotal, "mt-4 pt-3 border-t")}>
-                  <span className={getTemplateStyles(templateSettings.estimate_template_style).text}>Subtotal for {group.name}</span>
-                  <span className="font-semibold ml-4">
-                    {formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0))}
-                  </span>
-                </div>
-              )}
-            </div>
-          ))}
-          
           {/* Total */}
           {templateSettings.estimate_template_style === 'excel' ? (
             <div className={getTemplateStyles('excel').totalsSection}>
