@@ -28,30 +28,17 @@ export const QuestionManager = ({
     handleMultipleChoiceNext
   } = useQuestionManager(questionSets, onComplete, onProgressChange);
 
-  console.log('QuestionManager state:', {
-    currentQuestion,
-    currentSet,
-    isLoadingQuestions,
-    isGeneratingEstimate,
-    hasFollowUpQuestion,
-    currentStage,
-    totalStages,
-    currentSetAnswers
-  });
-
   if (isLoadingQuestions) {
     return <LoadingScreen message="Loading questions..." />;
   }
 
   if (isGeneratingEstimate) {
-    return <LoadingScreen message="Generating your estimate..." isEstimate={true} />;
+    return <LoadingScreen message="Generating your estimate..." />;
   }
 
   if (!currentQuestion) {
     return <LoadingScreen message="Loading questions..." />;
   }
-
-  const isLastQuestion = currentStage === totalStages && !hasFollowUpQuestion;
 
   return (
     <QuestionCard
@@ -59,7 +46,7 @@ export const QuestionManager = ({
       selectedAnswers={currentSetAnswers[currentQuestion.id]?.answers || []}
       onSelect={handleAnswer}
       onNext={currentQuestion.type === 'multiple_choice' ? handleMultipleChoiceNext : undefined}
-      isLastQuestion={isLastQuestion}
+      isLastQuestion={currentStage === totalStages}
       currentStage={currentStage}
       totalStages={totalStages}
       hasFollowUpQuestion={hasFollowUpQuestion}
