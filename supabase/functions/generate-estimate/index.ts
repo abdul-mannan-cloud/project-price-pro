@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,16 +8,36 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+// Retry configuration
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function retryWithExponentialBackoff(
+  operation: () => Promise<Response>,
+  retries = MAX_RETRIES,
+  delay = INITIAL_RETRY_DELAY
+): Promise<Response> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (retries === 0) throw error;
+    
+    console.log(`Retry attempt remaining: ${retries}. Waiting ${delay}ms before next attempt...`);
+    await sleep(delay);
+    
+    return retryWithExponentialBackoff(
+      operation,
+      retries - 1,
+      delay * 2
+    );
+  }
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
-      headers: {
-        ...corsHeaders,
-        'Access-Control-Max-Age': '86400',
-        'Access-Control-Allow-Credentials': 'true'
-      }
-    });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
@@ -32,13 +53,19 @@ serve(async (req) => {
     let requestData;
     try {
       requestData = await req.json();
+      console.log('Request data:', requestData);
     } catch (error) {
       console.error('Error parsing request body:', error);
       throw new Error('Invalid request body');
     }
 
-    const { answers, projectDescription, category } = requestData;
-    console.log('Generating estimate for:', { category, projectDescription });
+    const { answers, projectDescription, category, leadId, imageUrl } = requestData;
+
+    if (!leadId) {
+      throw new Error('Missing leadId');
+    }
+
+    console.log('Generating estimate for:', { category, projectDescription, leadId, imageUrl });
 
     const formattedAnswers = Object.entries(answers || {}).map(([category, categoryAnswers]) => {
       const questions = Object.entries(categoryAnswers || {}).map(([_, qa]) => ({
@@ -51,229 +78,186 @@ serve(async (req) => {
       return { category, questions };
     });
 
-    // Generate AI title and message
-    const titlePrompt = `Based on this project description and answers, generate a concise project title (4 words or less):
-    Category: ${category}
-    Description: ${projectDescription}
-    ${formattedAnswers.map(cat => 
-      cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
-    ).join('\n')}`;
+    try {
+      const messages = [{
+        role: 'system',
+        content: `You are a construction cost estimator. Return ONLY a valid JSON object with no additional text. Format costs as numbers, not strings.
 
-    const messagePrompt = `Based on this project description and answers, generate a clear, professional overview of the project scope (2-3 sentences):
-    Category: ${category}
-    Description: ${projectDescription}
-    ${formattedAnswers.map(cat => 
-      cat.questions.map(q => `${q.question}: ${q.answer}`).join('\n')
-    ).join('\n')}`;
-
-    const makeRequest = async (url: string, body: any) => {
-      console.log('Making API request to:', url);
-      console.log('Request body:', body);
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${llamaApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body)
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        console.error('API error response:', text);
-        try {
-          // Try to parse error as JSON
-          const errorJson = JSON.parse(text);
-          throw new Error(`API error: ${errorJson.error || response.status}`);
-        } catch (e) {
-          // If not JSON, throw with text content
-          throw new Error(`API error (${response.status}): ${text.substring(0, 200)}`);
-        }
-      }
-
-      let responseText;
-      try {
-        responseText = await response.text();
-        return JSON.parse(responseText);
-      } catch (error) {
-        console.error('Error parsing response:', error);
-        console.error('Response text:', responseText);
-        throw new Error('Invalid JSON response from API');
-      }
-    };
-
-    console.log('Making title and message requests...');
-
-    const [titleResponse, messageResponse] = await Promise.all([
-      makeRequest('https://api.llama-api.com/chat/completions', {
-        messages: [{
-          role: 'system',
-          content: 'Generate a concise project title.'
-        }, {
-          role: 'user',
-          content: titlePrompt
-        }],
-        temperature: 0.2
-      }),
-      makeRequest('https://api.llama-api.com/chat/completions', {
-        messages: [{
-          role: 'system',
-          content: 'Generate a clear project overview.'
-        }, {
-          role: 'user',
-          content: messagePrompt
-        }],
-        temperature: 0.2
-      })
-    ]);
-
-    const aiTitle = titleResponse.choices[0].message.content.trim();
-    const aiMessage = messageResponse.choices[0].message.content.trim();
-
-    const prompt = `Based on the following project details, generate a detailed construction estimate in JSON format.
-    
-Project Category: ${category || 'General Construction'}
-${projectDescription ? `Project Description: ${projectDescription}` : ''}
-
-Questions and Answers:
-${formattedAnswers.map(cat => `
-Category: ${cat.category}
-${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}
-
-Generate a detailed estimate with the following JSON structure:
+Example format:
 {
   "groups": [
     {
-      "name": "string",
-      "description": "string",
+      "name": "Material & Labor",
       "subgroups": [
         {
-          "name": "string",
+          "name": "Paint Materials",
           "items": [
             {
-              "title": "string",
-              "description": "string",
-              "quantity": number,
-              "unit": "string",
-              "unitAmount": number,
-              "totalPrice": number
+              "title": "Interior Paint",
+              "description": "Premium quality interior paint",
+              "quantity": 5,
+              "unit": "gallons",
+              "unitAmount": 45.99,
+              "totalPrice": 229.95
             }
           ],
-          "subtotal": number
+          "subtotal": 229.95
+        },
+        {
+          "name": "Labor",
+          "items": [
+            {
+              "title": "Painter",
+              "description": "Professional painting service",
+              "quantity": 8,
+              "unit": "hours",
+              "unitAmount": 75,
+              "totalPrice": 600
+            }
+          ],
+          "subtotal": 600
         }
       ]
     }
   ],
-  "totalCost": number
-}
+  "totalCost": 829.95,
+  "ai_generated_title": "Interior Painting Project",
+  "ai_generated_message": "Professional interior painting project including premium materials and skilled labor. Includes surface preparation and two coats of paint."
+}`
+      }];
 
-Important:
-1. Return ONLY valid JSON, no additional text
-2. Ensure all numbers are valid and calculations are accurate
-3. Include realistic market prices
-4. Break down costs into logical groups
-5. Include both labor and materials`;
-
-    console.log('Making estimate request...');
-
-    const aiResponse = await makeRequest('https://api.llama-api.com/chat/completions', {
-      messages: [{
-        role: 'system',
-        content: 'You are a construction cost estimator. Generate detailed estimates in JSON format only.'
-      }, {
-        role: 'user',
-        content: prompt
-      }],
-      temperature: 0.2,
-      response_format: { type: "json_object" }
-    });
-
-    if (!aiResponse.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response format from Llama API');
-    }
-
-    let content = aiResponse.choices[0].message.content.trim();
-    console.log('Parsing content:', content);
-
-    let parsedEstimate;
-    try {
-      parsedEstimate = typeof content === 'string' ? JSON.parse(content) : content;
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      throw new Error(`Failed to parse JSON: ${parseError.message}`);
-    }
-
-    if (!parsedEstimate || typeof parsedEstimate !== 'object') {
-      throw new Error('Invalid estimate format: must be an object');
-    }
-
-    if (!Array.isArray(parsedEstimate.groups)) {
-      throw new Error('Invalid estimate structure: groups must be an array');
-    }
-
-    if (typeof parsedEstimate.totalCost !== 'number') {
-      throw new Error('Invalid estimate structure: totalCost must be a number');
-    }
-
-    parsedEstimate.groups.forEach((group, groupIndex) => {
-      if (!group.name || typeof group.name !== 'string') {
-        throw new Error(`Invalid group name at index ${groupIndex}`);
-      }
-
-      if (!Array.isArray(group.subgroups)) {
-        throw new Error(`Invalid subgroups array in group ${group.name}`);
-      }
-
-      group.subgroups.forEach((subgroup, subgroupIndex) => {
-        if (!subgroup.name || typeof subgroup.name !== 'string') {
-          throw new Error(`Invalid subgroup name in group ${group.name}`);
-        }
-
-        if (!Array.isArray(subgroup.items)) {
-          throw new Error(`Invalid items array in subgroup ${subgroup.name}`);
-        }
-
-        if (typeof subgroup.subtotal !== 'number') {
-          throw new Error(`Invalid subtotal in subgroup ${subgroup.name}`);
-        }
-
-        subgroup.items.forEach((item, itemIndex) => {
-          if (!item.title || typeof item.title !== 'string') {
-            throw new Error(`Invalid item title in subgroup ${subgroup.name}`);
-          }
-          if (typeof item.quantity !== 'number') {
-            throw new Error(`Invalid quantity in item ${item.title}`);
-          }
-          if (typeof item.unitAmount !== 'number') {
-            throw new Error(`Invalid unitAmount in item ${item.title}`);
-          }
-          if (typeof item.totalPrice !== 'number') {
-            throw new Error(`Invalid totalPrice in item ${item.title}`);
-          }
+      if (imageUrl) {
+        messages.push({
+          role: 'user',
+          content: [
+            {
+              type: 'image_url',
+              image_url: imageUrl
+            },
+            {
+              type: 'text',
+              text: 'Analyze this image and consider it when generating the estimate.'
+            }
+          ]
         });
+      }
+
+      messages.push({
+        role: 'user',
+        content: `Based on the following information, generate ONLY a JSON response:
+        Category: ${category || 'General Construction'}
+        Description: ${projectDescription || 'Project estimate'}
+        Questions and Answers:
+        ${formattedAnswers.map(cat => `
+        Category: ${cat.category}
+        ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
       });
-    });
 
-    const estimateJson = {
-      ...parsedEstimate,
-      ai_generated_title: aiTitle,
-      ai_generated_message: aiMessage
-    };
+      const response = await retryWithExponentialBackoff(async () => {
+        const res = await fetch('https://api.llama-api.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${llamaApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages,
+            model: "llama3.2-11b-vision",
+            temperature: 0.2,
+            stream: false,
+            max_tokens: 2000,
+            response_format: { type: "json_object" }
+          }),
+        });
 
-    console.log('Estimate generation successful');
-    return new Response(
-      JSON.stringify(estimateJson),
-      { 
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Estimate generation failed: ${errorText}`);
+        }
+
+        return res;
+      });
+
+      const data = await response.json();
+      console.log('Raw LLM response:', data);
+
+      let parsedEstimate;
+      try {
+        const content = data.choices?.[0]?.message?.content;
+        console.log('LLM content:', content);
+        
+        if (typeof content !== 'string') {
+          throw new Error('Invalid response format: content is not a string');
+        }
+
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error('No JSON object found in response');
+        }
+
+        parsedEstimate = JSON.parse(jsonMatch[0]);
+      } catch (parseError) {
+        console.error('Error parsing LLM response:', parseError);
+        throw new Error('Failed to parse estimate data');
+      }
+
+      if (!parsedEstimate || !parsedEstimate.groups || !Array.isArray(parsedEstimate.groups)) {
+        throw new Error('Invalid estimate format: missing required fields');
+      }
+
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Missing Supabase credentials');
+      }
+
+      const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+
+      const { error: updateError } = await supabaseAdmin
+        .from('leads')
+        .update({ 
+          estimate_data: parsedEstimate,
+          status: 'complete',
+          estimated_cost: parsedEstimate.totalCost || 0,
+          ai_generated_title: parsedEstimate.ai_generated_title,
+          ai_generated_message: parsedEstimate.ai_generated_message
+        })
+        .eq('id', leadId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      return new Response(JSON.stringify({ 
+        message: "Estimate generated successfully",
+        leadId
+      }), { 
         headers: { 
           ...corsHeaders,
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Credentials': 'true'
+          'Content-Type': 'application/json'
         } 
+      });
+
+    } catch (error) {
+      console.error('Error generating estimate:', error);
+      if (leadId) {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+        
+        await supabaseAdmin
+          .from('leads')
+          .update({ 
+            status: 'error',
+            error_message: error.message || 'Failed to generate estimate'
+          })
+          .eq('id', leadId);
       }
-    );
+      throw error;
+    }
   } catch (error) {
-    console.error('Error generating estimate:', error);
+    console.error('Error in generate-estimate function:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Failed to generate estimate',
@@ -283,8 +267,7 @@ Important:
         status: 500,
         headers: { 
           ...corsHeaders,
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Credentials': 'true'
+          'Content-Type': 'application/json'
         } 
       }
     );

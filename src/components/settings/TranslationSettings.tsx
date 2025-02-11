@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,6 +8,7 @@ import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import i18next from "@/i18n/config";
 import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 const languages = [
   { code: "en", name: "English", nativeName: "English" },
@@ -20,30 +22,36 @@ export const TranslationSettings = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ["contractorSettings"],
+  // First, fetch the authenticated user
+  const { data: authData, isLoading: isAuthLoading } = useQuery({
+    queryKey: ["auth"],
+    queryFn: async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('Auth error:', error);
+        navigate("/login");
+        return null;
+      }
+      return user;
+    },
+  });
+
+  // Then fetch settings only if we have a valid user
+  const { data: settings, isLoading: isSettingsLoading } = useQuery({
+    queryKey: ["contractorSettings", authData?.id],
+    enabled: !!authData?.id,
     queryFn: async () => {
       try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError) throw authError;
-        if (!user) {
-          navigate("/login");
-          return null;
-        }
-
         const { data, error } = await supabase
           .from("contractor_settings")
           .select("preferred_language")
-          .eq("id", user.id)
-          .single();
+          .eq("id", authData?.id)
+          .maybeSingle();
 
         if (error) throw error;
         return data;
       } catch (error) {
         console.error('Error fetching settings:', error);
-        if (error.message?.includes('JWT')) {
-          navigate("/login");
-        }
         return null;
       }
     },
@@ -51,13 +59,12 @@ export const TranslationSettings = () => {
 
   const updateLanguage = useMutation({
     mutationFn: async (language: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
+      if (!authData?.id) throw new Error("No authenticated user");
 
       const { error } = await supabase
         .from("contractor_settings")
         .update({ preferred_language: language })
-        .eq("id", user.id);
+        .eq("id", authData.id);
 
       if (error) throw error;
       
@@ -79,7 +86,8 @@ export const TranslationSettings = () => {
         description: t("Your language preference has been saved."),
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Language update error:', error);
       toast({
         title: t("Error"),
         description: t("Failed to update language preference."),
@@ -91,8 +99,7 @@ export const TranslationSettings = () => {
   useEffect(() => {
     const setupLanguage = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        if (!authData?.id) {
           navigate("/login");
           return;
         }
@@ -123,10 +130,19 @@ export const TranslationSettings = () => {
     };
 
     setupLanguage();
-  }, [settings, navigate]);
+  }, [settings, navigate, authData]);
 
-  if (isLoading) {
-    return <div>{t("Loading language preferences...")}</div>;
+  if (isAuthLoading || isSettingsLoading) {
+    return (
+      <Card className="p-8 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-muted-foreground">{t("Loading language preferences...")}</span>
+      </Card>
+    );
+  }
+
+  if (!authData) {
+    return null;
   }
 
   return (

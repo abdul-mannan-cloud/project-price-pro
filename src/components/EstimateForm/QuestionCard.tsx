@@ -1,18 +1,16 @@
+
 import { useState, useEffect, useRef } from "react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/3d-button";
-import { Question } from "@/types/estimate";
 import { Card } from "@/components/ui/card";
-import { Check, AlertTriangle, Square, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Question } from "@/types/estimate";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { VoiceInput } from "./VoiceInput";
+import { QuestionOption } from "./QuestionOption";
+import { ContinueButton } from "./ContinueButton";
 
 type Contractor = Database['public']['Tables']['contractors']['Row'];
 
@@ -41,11 +39,9 @@ export const QuestionCard = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const questionLoadTime = useRef<number>(0);
   const isMobile = useIsMobile();
-  const { toast, dismiss } = useToast();
   const { contractorId } = useParams();
   const toastRef = useRef<string | null>(null);
 
-  // Fetch contractor data to get branding colors
   const { data: contractor } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
@@ -61,13 +57,7 @@ export const QuestionCard = ({
     enabled: !!contractorId
   });
 
-  // Safely extract primary color from branding_colors
-  const primaryColor = typeof contractor?.branding_colors === 'object' && contractor?.branding_colors !== null
-    ? (contractor.branding_colors as { primary?: string })?.primary
-    : "#9b87f5";
-
   useEffect(() => {
-    // Reset the load time whenever the question changes
     questionLoadTime.current = Date.now();
     setShowNextButton(question.type === 'multiple_choice' ? selectedAnswers.length > 0 : selectedAnswers.length === 1);
     setIsProcessing(false);
@@ -82,52 +72,6 @@ export const QuestionCard = ({
     } else {
       if (isProcessing) return;
       setIsProcessing(true);
-      
-      const currentTime = Date.now();
-      const timeSinceQuestionLoad = currentTime - questionLoadTime.current;
-      
-      if (timeSinceQuestionLoad < 400) {
-        // Dismiss previous toast if it exists
-        if (toastRef.current) {
-          dismiss(toastRef.current);
-        }
-
-        // Show new toast and store its ID
-        const { id } = toast({
-          title: "Please read carefully",
-          description: (
-            <div className="bg-white rounded-lg p-6 shadow-lg text-center">
-              <div className="flex flex-col items-center gap-4">
-                <AlertTriangle className="h-12 w-12 text-yellow-500" />
-                <p className="text-gray-700">
-                  Take a moment to review your selection before proceeding
-                </p>
-                <Button 
-                  onClick={() => {
-                    if (toastRef.current) {
-                      dismiss(toastRef.current);
-                      toastRef.current = null;
-                    }
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="mx-auto"
-                >
-                  OK
-                </Button>
-              </div>
-            </div>
-          ),
-          duration: 2000,
-          className: "fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-50",
-          variant: "warning",
-        });
-        
-        toastRef.current = id;
-        setIsProcessing(false);
-        return;
-      }
-      
       onSelect(question.id, [value]);
       
       setTimeout(() => {
@@ -146,113 +90,45 @@ export const QuestionCard = ({
 
   const options = Array.isArray(question?.options) ? question.options : [];
 
-  const buttonStyle = {
-    backgroundColor: primaryColor,
-    borderColor: primaryColor,
-    borderBottomColor: `${primaryColor}dd`,
-    "--tw-border-opacity": "1",
-    borderBottomWidth: "4px",
-  } as React.CSSProperties;
-
   return (
-    <>
-      <Card className={cn(
-        "w-full max-w-6xl mx-auto relative bg-white",
-        isMobile ? "px-0 py-4 rounded-none" : "p-6 rounded-xl"
-      )}>
+    <Card className={cn(
+      "w-full max-w-6xl mx-auto relative bg-white",
+      isMobile ? "px-0 py-4 rounded-none" : "p-6 rounded-xl"
+    )}>
+      <div className="flex items-center justify-between mb-6">
         <h2 className={cn(
-          "font-semibold mb-6",
+          "font-semibold",
           isMobile ? "text-base px-4" : "text-xl"
         )}>{question?.question}</h2>
+        <VoiceInput 
+          question={question} 
+          onSelect={(value) => handleOptionClick(value)} 
+        />
+      </div>
 
-        <div className={cn(
-          "grid gap-4 mb-12", // Changed from mb-20 to mb-12 to reduce space before button
-          isMobile ? "grid-cols-1 px-4" : question.type === 'multiple_choice' ? "grid-cols-2" : "grid-cols-1"
-        )}>
-          {options.map((option) => {
-            const isSelected = selectedAnswers.includes(option.value);
-            const showImage = shouldShowImage(option);
-            
-            return (
-              <div
-                key={option.value}
-                onClick={() => handleOptionClick(option.value)}
-                className={cn(
-                  "cursor-pointer transition-all hover:text-primary border-b border-gray-100 last:border-0 pb-4",
-                  showImage ? "py-4" : "py-3",
-                )}
-              >
-                {showImage && (
-                  <div className="w-full h-32 relative mb-2">
-                    <img
-                      src={option.image_url}
-                      alt={option.label}
-                      className="rounded-md w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="flex items-center gap-3 w-full">
-                  {question.type === 'multiple_choice' ? (
-                    <div className={cn(
-                      "flex-shrink-0 h-6 w-6 rounded border mt-0.5",
-                      isSelected ? "bg-primary border-primary" : "border-gray-300",
-                      "flex items-center justify-center"
-                    )}>
-                      {isSelected && <Check className="w-4 h-4 text-white" />}
-                    </div>
-                  ) : (
-                    <div className={cn(
-                      "flex-shrink-0 h-6 w-6 rounded-full border mt-0.5",
-                      isSelected ? "bg-primary border-primary" : "border-gray-300"
-                    )}>
-                      {isSelected && (
-                        <div className="w-3 h-3 rounded-full bg-white m-1" />
-                      )}
-                    </div>
-                  )}
-                  <div className="flex flex-col w-full">
-                    <span className={cn(
-                      "text-lg flex-grow",
-                      isSelected && "text-primary font-medium"
-                    )}>{option.label}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      <div className={cn(
+        "grid gap-4 mb-12",
+        isMobile ? "grid-cols-1 px-4" : question.type === 'multiple_choice' ? "grid-cols-2" : "grid-cols-1"
+      )}>
+        {options.map((option) => (
+          <QuestionOption
+            key={option.value}
+            option={option}
+            isSelected={selectedAnswers.includes(option.value)}
+            type={question.type}
+            onClick={() => handleOptionClick(option.value)}
+            showImage={shouldShowImage(option)}
+          />
+        ))}
+      </div>
 
-        {/* Desktop continue button */}
-        {!isMobile && question.type === 'multiple_choice' && showNextButton && (
-          <div className="hidden md:block w-full mt-8"> {/* Added mt-8 for top margin */}
-            <Button 
-              onClick={onNext}
-              className="button button-primary w-full"
-              style={buttonStyle}
-              size="lg"
-            >
-              {hasFollowUpQuestion ? 'Continue' : 'Complete'}
-            </Button>
-          </div>
-        )}
-
-        {/* Bottom button bar - only show on mobile */}
-        {isMobile && question.type === 'multiple_choice' && showNextButton && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">
-            <div className="container max-w-6xl mx-auto">
-              <Button 
-                onClick={onNext}
-                disabled={!showNextButton}
-                className="button button-primary w-full"
-                style={buttonStyle}
-                size="lg"
-              >
-                {hasFollowUpQuestion ? 'Continue' : 'Complete'}
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
-    </>
+      <ContinueButton
+        showButton={showNextButton}
+        onNext={onNext}
+        hasFollowUpQuestion={hasFollowUpQuestion}
+        contractor={contractor}
+        isMobile={isMobile}
+      />
+    </Card>
   );
 };

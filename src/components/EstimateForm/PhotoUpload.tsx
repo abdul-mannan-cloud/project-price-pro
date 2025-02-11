@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Camera, X, Plus, Loader2 } from "lucide-react";
@@ -55,6 +56,7 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
         uploadedUrls.push(publicUrl);
       }
 
+      // Only update photos once all uploads are complete
       onPhotosSelected([...uploadedPhotos, ...uploadedUrls]);
       toast.success("Photos uploaded successfully");
     } catch (error) {
