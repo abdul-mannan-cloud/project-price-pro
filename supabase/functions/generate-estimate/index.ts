@@ -53,10 +53,14 @@ serve(async (req) => {
         let aiTitle = 'Project Estimate';
         let aiMessage = 'Custom project estimate based on provided specifications.';
 
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+
         try {
-          // Get AI-generated title
+          // Get AI-generated title with timeout
           const titleResponse = await fetch('https://api.llama-api.com/chat/completions', {
             method: 'POST',
+            signal: controller.signal,
             headers: {
               'Authorization': `Bearer ${llamaApiKey}`,
               'Content-Type': 'application/json',
@@ -81,19 +85,28 @@ serve(async (req) => {
             }),
           });
 
+          clearTimeout(timeout);
+
           if (!titleResponse.ok) {
             console.error('Title response error:', await titleResponse.text());
-            throw new Error(`Llama API error: ${titleResponse.status}`);
+            // Continue with default title instead of throwing
+            console.log('Using default title due to API error');
+          } else {
+            const titleData = await titleResponse.json();
+            console.log('Title API response:', titleData);
+            if (titleData.choices?.[0]?.message?.content) {
+              aiTitle = titleData.choices[0].message.content.trim();
+            }
+            console.log('Generated title:', aiTitle);
           }
 
-          const titleData = await titleResponse.json();
-          console.log('Title API response:', titleData);
-          aiTitle = titleData.choices?.[0]?.message?.content?.trim() || aiTitle;
-          console.log('Generated title:', aiTitle);
+          // Get AI-generated message/overview with timeout
+          const messageController = new AbortController();
+          const messageTimeout = setTimeout(() => messageController.abort(), 20000);
 
-          // Get AI-generated message/overview
           const messageResponse = await fetch('https://api.llama-api.com/chat/completions', {
             method: 'POST',
+            signal: messageController.signal,
             headers: {
               'Authorization': `Bearer ${llamaApiKey}`,
               'Content-Type': 'application/json',
@@ -118,121 +131,155 @@ serve(async (req) => {
             }),
           });
 
+          clearTimeout(messageTimeout);
+
           if (!messageResponse.ok) {
             console.error('Message response error:', await messageResponse.text());
-            throw new Error(`Llama API error: ${messageResponse.status}`);
+            // Continue with default message instead of throwing
+            console.log('Using default message due to API error');
+          } else {
+            const messageData = await messageResponse.json();
+            console.log('Message API response:', messageData);
+            if (messageData.choices?.[0]?.message?.content) {
+              aiMessage = messageData.choices[0].message.content.trim();
+            }
+            console.log('Generated message:', aiMessage);
           }
-
-          const messageData = await messageResponse.json();
-          console.log('Message API response:', messageData);
-          aiMessage = messageData.choices?.[0]?.message?.content?.trim() || aiMessage;
-          console.log('Generated message:', aiMessage);
         } catch (error) {
           console.error('Error generating title or message:', error);
-          // Continue with default values if title/message generation fails
+          // Continue with default values
+          console.log('Using default title and message due to API error');
         }
 
         // Generate the main estimate with cost breakdown
-        const response = await fetch('https://api.llama-api.com/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${llamaApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: [{
-              role: 'system',
-              content: `You are a construction cost estimator. Generate detailed estimates with realistic costs in this exact JSON format:
-              {
-                "groups": [
-                  {
-                    "name": "Group Name",
-                    "description": "Optional group description",
-                    "subgroups": [
-                      {
-                        "name": "Subgroup Name",
-                        "items": [
-                          {
-                            "title": "Item Title",
-                            "description": "Item description",
-                            "quantity": number,
-                            "unit": "optional unit",
-                            "unitAmount": number,
-                            "totalPrice": number
-                          }
-                        ],
-                        "subtotal": number
-                      }
-                    ]
-                  }
-                ],
-                "totalCost": number
-              }`
-            }, {
-              role: 'user',
-              content: `Generate a detailed construction estimate in JSON format based on:
-              Category: ${category || 'General Construction'}
-              Description: ${projectDescription || 'Project estimate'}
-              Questions and Answers:
-              ${formattedAnswers.map(cat => `
-              Category: ${cat.category}
-              ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
-            }],
-            model: "llama3.2-11b",
-            temperature: 0.2,
-            stream: false,
-            max_tokens: 2000,
-            response_format: { type: "json_object" }
-          }),
-        });
+        const estimateController = new AbortController();
+        const estimateTimeout = setTimeout(() => estimateController.abort(), 30000); // 30 second timeout for main estimate
 
-        if (!response.ok) {
-          console.error('Estimate response error:', await response.text());
-          throw new Error(`Llama API error: ${response.status}`);
-        }
+        try {
+          const response = await fetch('https://api.llama-api.com/chat/completions', {
+            method: 'POST',
+            signal: estimateController.signal,
+            headers: {
+              'Authorization': `Bearer ${llamaApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: [{
+                role: 'system',
+                content: `You are a construction cost estimator. Generate detailed estimates with realistic costs in this exact JSON format:
+                {
+                  "groups": [
+                    {
+                      "name": "Group Name",
+                      "description": "Optional group description",
+                      "subgroups": [
+                        {
+                          "name": "Subgroup Name",
+                          "items": [
+                            {
+                              "title": "Item Title",
+                              "description": "Item description",
+                              "quantity": number,
+                              "unit": "optional unit",
+                              "unitAmount": number,
+                              "totalPrice": number
+                            }
+                          ],
+                          "subtotal": number
+                        }
+                      ]
+                    }
+                  ],
+                  "totalCost": number
+                }`
+              }, {
+                role: 'user',
+                content: `Generate a detailed construction estimate in JSON format based on:
+                Category: ${category || 'General Construction'}
+                Description: ${projectDescription || 'Project estimate'}
+                Questions and Answers:
+                ${formattedAnswers.map(cat => `
+                Category: ${cat.category}
+                ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
+              }],
+              model: "llama3.2-11b",
+              temperature: 0.2,
+              stream: false,
+              max_tokens: 2000,
+              response_format: { type: "json_object" }
+            }),
+          });
 
-        const aiResponse = await response.json();
-        console.log('Estimate API response:', aiResponse);
-        const content = aiResponse.choices?.[0]?.message?.content;
-        if (!content) {
-          throw new Error('Invalid estimate response format');
-        }
+          clearTimeout(estimateTimeout);
 
-        const parsedEstimate = typeof content === 'string' ? JSON.parse(content) : content;
-        console.log('Parsed estimate:', parsedEstimate);
-        
-        // Add the AI generated title and message
-        parsedEstimate.ai_generated_title = aiTitle;
-        parsedEstimate.ai_generated_message = aiMessage;
-
-        // Update the lead with the estimate
-        const supabaseUrl = Deno.env.get('SUPABASE_URL');
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-        
-        if (!supabaseUrl || !supabaseKey) {
-          throw new Error('Missing Supabase credentials');
-        }
-
-        const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
-
-        if (leadId) {
-          console.log('Updating lead with estimate:', leadId);
-          const { error: updateError } = await supabaseAdmin
-            .from('leads')
-            .update({ 
-              estimate_data: parsedEstimate,
-              status: 'complete',
-              estimated_cost: parsedEstimate.totalCost || 0,
-              ai_generated_title: aiTitle,
-              ai_generated_message: aiMessage
-            })
-            .eq('id', leadId);
-
-          if (updateError) {
-            console.error('Error updating lead:', updateError);
-            throw updateError;
+          if (!response.ok) {
+            console.error('Estimate response error:', await response.text());
+            throw new Error(`Llama API error: ${response.status}`);
           }
-          console.log('Successfully updated lead with estimate');
+
+          const aiResponse = await response.json();
+          console.log('Estimate API response:', aiResponse);
+          const content = aiResponse.choices?.[0]?.message?.content;
+          if (!content) {
+            throw new Error('Invalid estimate response format');
+          }
+
+          const parsedEstimate = typeof content === 'string' ? JSON.parse(content) : content;
+          console.log('Parsed estimate:', parsedEstimate);
+          
+          // Add the AI generated title and message
+          parsedEstimate.ai_generated_title = aiTitle;
+          parsedEstimate.ai_generated_message = aiMessage;
+
+          // Update the lead with the estimate
+          const supabaseUrl = Deno.env.get('SUPABASE_URL');
+          const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+          
+          if (!supabaseUrl || !supabaseKey) {
+            throw new Error('Missing Supabase credentials');
+          }
+
+          const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+
+          if (leadId) {
+            console.log('Updating lead with estimate:', leadId);
+            const { error: updateError } = await supabaseAdmin
+              .from('leads')
+              .update({ 
+                estimate_data: parsedEstimate,
+                status: 'complete',
+                estimated_cost: parsedEstimate.totalCost || 0,
+                ai_generated_title: aiTitle,
+                ai_generated_message: aiMessage
+              })
+              .eq('id', leadId);
+
+            if (updateError) {
+              console.error('Error updating lead:', updateError);
+              throw updateError;
+            }
+            console.log('Successfully updated lead with estimate');
+          }
+
+        } catch (error) {
+          console.error('Error generating main estimate:', error);
+          // Update lead with error status
+          if (leadId) {
+            const supabaseUrl = Deno.env.get('SUPABASE_URL');
+            const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+            const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+            
+            await supabaseAdmin
+              .from('leads')
+              .update({ 
+                status: 'error',
+                error_message: error.message || 'Failed to generate estimate'
+              })
+              .eq('id', leadId);
+          }
+          throw error;
+        } finally {
+          clearTimeout(estimateTimeout);
         }
 
       } catch (error) {
