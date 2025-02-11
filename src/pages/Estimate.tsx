@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, SkipForward, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +16,8 @@ import { Question, Category, CategoryQuestions, AnswersState } from "@/types/est
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
+import { Mic, MicOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
@@ -39,6 +41,10 @@ const EstimatePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
@@ -82,6 +88,12 @@ const EstimatePage = () => {
       loadQuestionSet(selectedCategory);
     }
   }, [selectedCategory]);
+
+  useEffect(() => {
+    // Check if speech recognition is supported
+    const isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+    setIsSpeechSupported(isSupported);
+  }, []);
 
   const loadCategories = async () => {
     try {
@@ -468,6 +480,67 @@ const EstimatePage = () => {
 
   const showProgressBar = stage !== 'estimate' && stage !== 'contact';
 
+  const toggleRecording = async () => {
+    if (isRecording) {
+      // Stop recording
+      mediaRecorderRef.current?.stop();
+      audioStream?.getTracks().forEach(track => track.stop());
+      setAudioStream(null);
+      setIsRecording(false);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setAudioStream(stream);
+
+        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+        const recognition = new SpeechRecognition();
+        
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        
+        recognition.onstart = () => {
+          setIsRecording(true);
+          toast({
+            title: "Recording started",
+            description: "Speak clearly into your microphone",
+          });
+        };
+        
+        recognition.onresult = (event: any) => {
+          const transcript = Array.from(event.results)
+            .map((result: any) => result[0])
+            .map((result: any) => result.transcript)
+            .join('');
+          
+          setProjectDescription(transcript);
+        };
+        
+        recognition.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setIsRecording(false);
+          toast({
+            title: "Error",
+            description: "Failed to recognize speech. Please try again.",
+            variant: "destructive",
+          });
+        };
+        
+        recognition.onend = () => {
+          setIsRecording(false);
+        };
+        
+        recognition.start();
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+        toast({
+          title: "Error",
+          description: "Failed to access microphone. Please check your permissions.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   if (isProcessing) {
     return (
       <LoadingScreen
@@ -567,19 +640,33 @@ const EstimatePage = () => {
 
         {stage === 'description' && (
           <div className="card p-8 animate-fadeIn">
-            <h2 className="text-2xl font-semibold mb-6">Describe Your Project</h2>
-            <div className="space-y-2">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold">Describe Your Project</h2>
+              {isSpeechSupported && (
+                <button
+                  onClick={toggleRecording}
+                  className={cn(
+                    "p-2 rounded-full transition-all duration-200",
+                    isRecording 
+                      ? "bg-red-100 text-red-600 hover:bg-red-200" 
+                      : "bg-gray-100 hover:bg-gray-200"
+                  )}
+                >
+                  {isRecording ? (
+                    <MicOff className="h-5 w-5" />
+                  ) : (
+                    <Mic className="h-5 w-5" />
+                  )}
+                </button>
+              )}
+            </div>
+            <div className="space-y-2 relative">
               <Textarea
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
                 placeholder="Describe what you need help with (e.g., paint my living room walls)..."
-                className="min-h-[150px]"
+                className="min-h-[150px] pr-12"
               />
-              {projectDescription.length > 0 && projectDescription.length < 30 && (
-                <p className="text-sm text-destructive">
-                  Please enter at least {30 - projectDescription.length} more characters
-                </p>
-              )}
             </div>
             <Button 
               className="w-full mt-6"

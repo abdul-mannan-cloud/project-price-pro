@@ -126,6 +126,7 @@ export type Database = {
           ai_instructions: string | null
           ai_preferences: Json | null
           ai_prompt_template: string | null
+          branding_colors: Json | null
           created_at: string | null
           estimate_client_message: string | null
           estimate_compact_view: boolean | null
@@ -145,6 +146,7 @@ export type Database = {
           ai_instructions?: string | null
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
+          branding_colors?: Json | null
           created_at?: string | null
           estimate_client_message?: string | null
           estimate_compact_view?: boolean | null
@@ -164,6 +166,7 @@ export type Database = {
           ai_instructions?: string | null
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
+          branding_colors?: Json | null
           created_at?: string | null
           estimate_client_message?: string | null
           estimate_compact_view?: boolean | null
@@ -242,6 +245,8 @@ export type Database = {
       }
       leads: {
         Row: {
+          ai_generated_message: string | null
+          ai_generated_title: string | null
           answers: Json | null
           category: string | null
           contractor_id: string | null
@@ -262,6 +267,8 @@ export type Database = {
           user_phone: string | null
         }
         Insert: {
+          ai_generated_message?: string | null
+          ai_generated_title?: string | null
           answers?: Json | null
           category?: string | null
           contractor_id?: string | null
@@ -282,6 +289,8 @@ export type Database = {
           user_phone?: string | null
         }
         Update: {
+          ai_generated_message?: string | null
+          ai_generated_title?: string | null
           answers?: Json | null
           category?: string | null
           contractor_id?: string | null
@@ -395,6 +404,33 @@ export type Database = {
           Plumber?: Json | null
           Repairs?: Json | null
           "Security System"?: Json | null
+        }
+        Relationships: []
+      }
+      password_resets: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          token: string
+          used: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          token: string
+          used?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          token?: string
+          used?: boolean | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -517,6 +553,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      estimate_template_style:
+        | "modern"
+        | "classic"
+        | "minimal"
+        | "bold"
+        | "excel"
       question_template_type: "single_choice" | "multi_choice"
       question_type: "multiple_choice" | "multi_select" | "yes_no"
       subscription_status: "active" | "inactive" | "trial"
