@@ -10,7 +10,7 @@ const corsHeaders = {
 }
 
 const MAX_RETRIES = 3;
-const INITIAL_TIMEOUT = 60000; // Increased to 60 seconds
+const INITIAL_TIMEOUT = 60000; // 60 seconds
 const BACKOFF_MULTIPLIER = 1.5;
 
 async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
@@ -44,7 +44,6 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
       
       if (attempt < MAX_RETRIES) {
         console.log(`Retrying... Attempt ${attempt + 1} of ${MAX_RETRIES}`);
-        // Add exponential backoff delay
         const delayMs = 1000 * Math.pow(2, attempt - 1);
         await new Promise(resolve => setTimeout(resolve, delayMs));
         return callLlamaAPI(payload, attempt + 1);
@@ -53,8 +52,25 @@ async function callLlamaAPI(payload: any, attempt = 1): Promise<Response> {
       throw new Error(`Llama API error: ${response.status}`);
     }
 
-    console.log(`Attempt ${attempt}: Successfully received response from Llama API`);
-    return response;
+    // Validate JSON response
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('Invalid response format: expected JSON');
+    }
+
+    const text = await response.text();
+    try {
+      JSON.parse(text); // Validate JSON structure
+      console.log(`Attempt ${attempt}: Successfully received and validated JSON response`);
+      return new Response(text, {
+        headers: {
+          'content-type': 'application/json',
+        }
+      });
+    } catch (e) {
+      console.error('Invalid JSON response:', text);
+      throw new Error('Invalid JSON response from Llama API');
+    }
   } catch (error) {
     if (error.name === 'AbortError') {
       console.error(`Request aborted after ${timeout}ms (attempt ${attempt})`);
