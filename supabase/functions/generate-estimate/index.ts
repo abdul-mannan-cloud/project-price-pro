@@ -23,6 +23,7 @@ interface AIRate {
   type: string;
   rate: number;
   unit: string;
+  title: string;
 }
 
 interface AIInstruction {
@@ -48,7 +49,7 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch contractor settings
+    // Fetch contractor settings including the new ai_rates and ai_instructions
     const { data: settings, error: settingsError } = await supabase
       .from('contractor_settings')
       .select('ai_rates, ai_instructions')
@@ -59,8 +60,8 @@ serve(async (req) => {
       throw new Error('Error fetching contractor settings');
     }
 
-    const aiRates = settings?.ai_rates || [];
-    const aiInstructions = settings?.ai_instructions || [];
+    const aiRates: AIRate[] = settings?.ai_rates || [];
+    const aiInstructions: AIInstruction[] = settings?.ai_instructions || [];
 
     // Generate estimate using AI
     const estimateData = await generateEstimate({
@@ -168,8 +169,11 @@ const generateEstimate = async ({
         : "Material";
     const title = `${answer.item} (${variable})`;
 
-    // Find applicable rate or use default
-    const rate = aiRates.find(r => r.type === answer.type) || { rate: 100, unit: 'EA' };
+    // Find applicable rate from the contractor's AI rates
+    const rate = aiRates.find(r => r.type === answer.type && r.unit === variable) || 
+                aiRates.find(r => r.type === answer.type) || // Fallback to matching just the type
+                { rate: 100, unit: 'EA', type: 'material_labor', title: 'Default Rate' };
+
     const quantity = answer.quantity || 1;
     const amount = rate.rate * quantity;
 
@@ -179,7 +183,8 @@ const generateEstimate = async ({
       variable,
       description,
       amount,
-      unitAmount: rate.rate
+      unitAmount: rate.rate,
+      totalPrice: amount
     };
   });
 
@@ -189,3 +194,4 @@ const generateEstimate = async ({
     totalCost: estimateItems.reduce((sum, item) => sum + item.amount, 0)
   };
 };
+
