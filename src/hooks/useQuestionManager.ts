@@ -113,20 +113,36 @@ export const useQuestionManager = (
       return;
     }
 
+    if (isGeneratingEstimate) {
+      console.log('Already generating estimate, skipping...');
+      return;
+    }
+
     console.log('Starting estimate generation with answers:', answers);
     setIsGeneratingEstimate(true);
     
     try {
-      // Create the lead insert data with proper typing
+      const answersForDb = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
+        acc[category] = Object.entries(categoryAnswers || {}).reduce((catAcc, [questionId, answer]) => {
+          catAcc[questionId] = {
+            question: answer.question,
+            type: answer.type,
+            answers: answer.answers,
+            options: answer.options
+          };
+          return catAcc;
+        }, {} as Record<string, any>);
+        return acc;
+      }, {} as Record<string, any>);
+
       const leadData: LeadInsert = {
         project_description: answers[questionSets[0]?.category]?.Q1?.question || 'New project',
         project_title: `${questionSets[0]?.category || 'New'} Project`,
-        answers: answers as unknown as Json,
+        answers: answersForDb as Json,
         category: questionSets[0]?.category,
-        status: 'pending' as const
+        status: 'pending'
       };
 
-      // Create a new lead with properly typed data
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert(leadData)
@@ -135,10 +151,9 @@ export const useQuestionManager = (
 
       if (leadError) throw leadError;
 
-      // Start estimate generation immediately
       const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
-          answers,
+          answers: answersForDb,
           projectDescription: answers[questionSets[0]?.category]?.Q1?.question || 'New project',
           category: questionSets[0]?.category,
           leadId: lead.id
@@ -147,7 +162,6 @@ export const useQuestionManager = (
 
       if (generateError) throw generateError;
 
-      // Call onComplete with the answers
       await onComplete(answers);
     } catch (error) {
       console.error('Error completing questions:', error);
