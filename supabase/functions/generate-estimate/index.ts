@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3"
@@ -11,6 +12,7 @@ const corsHeaders = {
 // Retry configuration
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 1000; // 1 second
+const TIMEOUT = 25000; // 25 seconds
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
