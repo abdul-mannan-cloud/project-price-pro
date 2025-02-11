@@ -55,6 +55,15 @@ type ContractorDisplay = {
   };
 };
 
+interface ContractorSettings {
+  estimate_template_style?: string;
+  estimate_client_message?: string;
+  estimate_footer_text?: string;
+  estimate_signature_enabled?: boolean;
+  estimate_hide_subtotals?: boolean;
+  estimate_compact_view?: boolean;
+}
+
 interface EstimateDisplayProps {
   groups: ItemGroup[];
   totalCost: number;
@@ -93,7 +102,7 @@ export const EstimateDisplay = ({
   onSignatureComplete,
   projectImages = [],
   estimate,
-  isLoading = false
+  isLoading: initialLoading = false
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
@@ -101,7 +110,7 @@ export const EstimateDisplay = ({
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(initialLoading);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isEstimateReady, setIsEstimateReady] = useState(false);
