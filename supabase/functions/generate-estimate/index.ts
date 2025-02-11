@@ -22,7 +22,11 @@ async function retryWithExponentialBackoff(
   delay = INITIAL_RETRY_DELAY
 ): Promise<Response> {
   try {
-    return await operation();
+    const timeoutPromise = new Promise<Response>((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), TIMEOUT);
+    });
+    
+    return await Promise.race([operation(), timeoutPromise]);
   } catch (error) {
     if (retries === 0) throw error;
     
@@ -104,27 +108,13 @@ Example format:
             }
           ],
           "subtotal": 229.95
-        },
-        {
-          "name": "Labor",
-          "items": [
-            {
-              "title": "Painter",
-              "description": "Professional painting service",
-              "quantity": 8,
-              "unit": "hours",
-              "unitAmount": 75,
-              "totalPrice": 600
-            }
-          ],
-          "subtotal": 600
         }
       ]
     }
   ],
-  "totalCost": 829.95,
+  "totalCost": 229.95,
   "ai_generated_title": "Interior Painting Project",
-  "ai_generated_message": "Professional interior painting project including premium materials and skilled labor. Includes surface preparation and two coats of paint."
+  "ai_generated_message": "Professional interior painting project including premium materials."
 }`
       }];
 
@@ -155,29 +145,37 @@ Example format:
         ${cat.questions.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n')}`).join('\n')}`
       });
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), TIMEOUT);
+
       const response = await retryWithExponentialBackoff(async () => {
-        const res = await fetch('https://api.llama-api.com/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${llamaApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages,
-            model: "llama3.2-11b-vision",
-            temperature: 0.2,
-            stream: false,
-            max_tokens: 2000,
-            response_format: { type: "json_object" }
-          }),
-        });
+        try {
+          const res = await fetch('https://api.llama-api.com/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${llamaApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages,
+              model: "llama3.2-11b-vision",
+              temperature: 0.2,
+              stream: false,
+              max_tokens: 1000,
+              response_format: { type: "json_object" }
+            }),
+            signal: controller.signal
+          });
 
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`Estimate generation failed: ${errorText}`);
+          if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Estimate generation failed: ${errorText}`);
+          }
+
+          return res;
+        } finally {
+          clearTimeout(timeout);
         }
-
-        return res;
       });
 
       const data = await response.json();
