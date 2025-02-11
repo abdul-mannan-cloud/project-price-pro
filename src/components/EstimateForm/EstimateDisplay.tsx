@@ -745,35 +745,43 @@ ${templateSettings.estimate_footer_text || ''}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <p className="text-sm font-medium">Client Signature</p>
-                <div 
-                  className={cn(
-                    getTemplateStyles(templateSettings.estimate_template_style).signatureBox,
-                    !signature ? "bg-yellow-50 hover:bg-yellow-100 cursor-pointer flex items-center justify-center" : "bg-white"
-                  )}
-                  onClick={() => !signature && setShowSignatureDialog(true)}
-                >
-                  {signature ? (
-                    <div className="p-4">
-                      <p className={getTemplateStyles(templateSettings.estimate_template_style).signatureText}>
-                        {signature}
-                      </p>
-                      <p className={getTemplateStyles(templateSettings.estimate_template_style).signatureDate}>
-                        {new Date().toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                  ) : (
-                    <Button variant="ghost">Sign Here</Button>
-                  )}
-                </div>
+                {!isEstimateReady ? (
+                  <EstimateAnimation />
+                ) : (
+                  <div 
+                    className={cn(
+                      getTemplateStyles(templateSettings.estimate_template_style).signatureBox,
+                      !signature ? "bg-yellow-50 hover:bg-yellow-100 cursor-pointer flex items-center justify-center" : "bg-white"
+                    )}
+                    onClick={() => !signature && setShowSignatureDialog(true)}
+                  >
+                    {signature ? (
+                      <div className="p-4">
+                        <p className={getTemplateStyles(templateSettings.estimate_template_style).signatureText}>
+                          {signature}
+                        </p>
+                        <p className={getTemplateStyles(templateSettings.estimate_template_style).signatureDate}>
+                          {new Date().toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    ) : (
+                      <Button variant="ghost">Sign Here</Button>
+                    )}
+                  </div>
+                )}
                 <p className="text-sm">Sign above to approve this estimate</p>
               </div>
               <div className="space-y-3">
                 <p className="text-sm font-medium">Contractor Signature</p>
-                <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).signatureBox, "bg-gray-50")}></div>
+                {!isEstimateReady ? (
+                  <EstimateAnimation />
+                ) : (
+                  <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).signatureBox, "bg-gray-50")}></div>
+                )}
                 <p className="text-sm">Contractor approval</p>
               </div>
             </div>
