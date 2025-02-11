@@ -7,3 +7,8 @@ command = "esbuild --bundle --format=esm --platform=node --external:__STATIC_CON
 [[global.functions]]
 name = "send-teammate-invitation"
 verify_jwt = true
+
+[[global.functions]]
+name = "generate-estimate"
+verify_jwt = false
+
