@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
@@ -21,6 +20,7 @@ interface Lead {
   status: string;
   error_message?: string | null;
   estimate_data?: any;
+  image_url?: string | null;
 }
 
 const EstimatePage = () => {
@@ -36,6 +36,7 @@ const EstimatePage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
@@ -204,7 +205,9 @@ const EstimatePage = () => {
         throw new Error('No lead ID found');
       }
 
+      setIsGeneratingEstimate(true);
       setStage('estimate');
+
       const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId: currentLeadId,
@@ -223,21 +226,22 @@ const EstimatePage = () => {
       const checkEstimate = async () => {
         const { data: lead, error } = await supabase
           .from('leads')
-          .select('estimate_data, status, error_message')
+          .select('estimate_data, status, error_message, image_url')
           .eq('id', currentLeadId)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
 
-        const typedLead = lead as Lead;
+        if (!lead) return false;
 
-        if (typedLead.status === 'error') {
-          throw new Error(typedLead.error_message || 'Failed to generate estimate');
+        if (lead.status === 'error') {
+          throw new Error(lead.error_message || 'Failed to generate estimate');
         }
 
-        if (typedLead.status === 'complete' && typedLead.estimate_data) {
-          console.log('Estimate generated:', typedLead.estimate_data);
-          setEstimate(typedLead.estimate_data);
+        if (lead.status === 'complete' && lead.estimate_data) {
+          console.log('Estimate generated:', lead.estimate_data);
+          setEstimate(lead.estimate_data);
+          setIsGeneratingEstimate(false);
           return true;
         }
 
@@ -253,6 +257,7 @@ const EstimatePage = () => {
           }
         } catch (error) {
           clearInterval(pollInterval);
+          setIsGeneratingEstimate(false);
           console.error('Error polling estimate:', error);
           toast({
             title: "Error",
@@ -266,10 +271,20 @@ const EstimatePage = () => {
       // Cleanup interval after 2 minutes (timeout)
       setTimeout(() => {
         clearInterval(pollInterval);
+        if (isGeneratingEstimate) {
+          setIsGeneratingEstimate(false);
+          toast({
+            title: "Error",
+            description: "Estimate generation timed out. Please try again.",
+            variant: "destructive",
+          });
+          setStage('contact');
+        }
       }, 120000);
 
     } catch (error) {
       console.error('Error generating estimate:', error);
+      setIsGeneratingEstimate(false);
       toast({
         title: "Error",
         description: "Failed to generate estimate. Please try again.",
@@ -360,14 +375,16 @@ const EstimatePage = () => {
           />
         )}
 
-        {stage === 'contact' && estimate && (
+        {stage === 'contact' && (
           <div className="animate-fadeIn">
-            <EstimateDisplay 
-              groups={estimate.groups} 
-              totalCost={estimate.totalCost} 
-              isBlurred={true}
-              contractor={contractor || undefined}
-            />
+            {estimate && (
+              <EstimateDisplay 
+                groups={estimate.groups} 
+                totalCost={estimate.totalCost} 
+                isBlurred={true}
+                contractor={contractor || undefined}
+              />
+            )}
             <ContactForm 
               onSubmit={handleContactSubmit} 
               leadId={currentLeadId || undefined}
@@ -382,11 +399,11 @@ const EstimatePage = () => {
           </div>
         )}
 
-        {stage === 'estimate' && !estimate && (
+        {stage === 'estimate' && isGeneratingEstimate && (
           <LoadingScreen message="Building your custom estimate..." isEstimate={true} />
         )}
 
-        {stage === 'estimate' && estimate && (
+        {stage === 'estimate' && !isGeneratingEstimate && estimate && (
           <div className="animate-fadeIn">
             <EstimateDisplay 
               groups={estimate.groups} 
