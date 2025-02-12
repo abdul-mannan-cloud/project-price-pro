@@ -11,6 +11,7 @@ import { Question } from "@/types/estimate";
 import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateSkeleton } from "@/components/EstimateForm/EstimateSkeleton";
+import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 
 interface BrandingColors {
   primary: string;
@@ -35,6 +36,7 @@ export const LeadMagnetPreview = () => {
   const [estimate, setEstimate] = useState<any>(null);
   const [leadId, setLeadId] = useState<string | null>(null);
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
+  const [showEstimate, setShowEstimate] = useState(false);
 
   const { data: contractor } = useQuery({
     queryKey: ["contractor"],
@@ -53,9 +55,28 @@ export const LeadMagnetPreview = () => {
     },
   });
 
-  const generateEstimateInBackground = async () => {
+  const generateEstimateInBackground = async (contactData?: any) => {
+    if (!leadId) return;
+    
     try {
       setIsGeneratingEstimate(true);
+      
+      // If contact data is provided, update the lead first
+      if (contactData) {
+        const { error: updateError } = await supabase
+          .from('leads')
+          .update({
+            user_name: contactData.fullName,
+            user_email: contactData.email,
+            user_phone: contactData.phone,
+            project_address: contactData.address,
+            status: 'processing'
+          })
+          .eq('id', leadId);
+
+        if (updateError) throw updateError;
+      }
+
       const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           answers: selectedOptions,
@@ -67,6 +88,7 @@ export const LeadMagnetPreview = () => {
 
       if (error) throw error;
       setEstimate(estimateData);
+      setShowEstimate(true);
     } catch (error) {
       console.error('Error generating estimate:', error);
       toast({
@@ -146,9 +168,6 @@ export const LeadMagnetPreview = () => {
         
         setLeadId(lead.id);
         setCurrentStep(questions.length + 1);
-        
-        // Start estimate generation in background
-        generateEstimateInBackground();
       } catch (error) {
         console.error('Error creating lead:', error);
         toast({
@@ -161,41 +180,11 @@ export const LeadMagnetPreview = () => {
   };
 
   const handleContactFormSubmit = async (contactData: any) => {
-    if (!leadId) return;
+    await generateEstimateInBackground(contactData);
+  };
 
-    try {
-      const { error: updateError } = await supabase
-        .from('leads')
-        .update({
-          user_name: contactData.fullName,
-          user_email: contactData.email,
-          user_phone: contactData.phone,
-          project_address: contactData.address,
-          status: estimate ? 'complete' : 'processing'
-        })
-        .eq('id', leadId);
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Success!",
-        description: "Your estimate request has been submitted. You'll receive an email shortly.",
-      });
-
-      // Reset form
-      setCurrentStep(0);
-      setSelectedOptions({});
-      setUploadedPhotos([]);
-      setEstimate(null);
-      setLeadId(null);
-    } catch (error) {
-      console.error('Error updating lead:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save your information. Please try again.",
-        variant: "destructive",
-      });
-    }
+  const handleSkip = async () => {
+    await generateEstimateInBackground();
   };
 
   const steps = [
@@ -218,19 +207,27 @@ export const LeadMagnetPreview = () => {
     handleNext();
   };
 
-  // Show contact form immediately after questions
-  if (currentStep === questions.length + 1) {
-    return isGeneratingEstimate ? (
+  if (isGeneratingEstimate) {
+    return <LoadingScreen message="Generating your estimate..." />;
+  }
+
+  if (showEstimate && estimate) {
+    return (
       <div className="card p-8">
-        <EstimateSkeleton />
+        <h2 className="text-2xl font-semibold mb-6">Your Estimate</h2>
+        {/* Add your estimate display component here */}
+        <pre className="whitespace-pre-wrap">{JSON.stringify(estimate, null, 2)}</pre>
       </div>
-    ) : (
+    );
+  }
+
+  if (currentStep === questions.length + 1) {
+    return (
       <ContactForm
         onSubmit={handleContactFormSubmit}
         leadId={leadId || undefined}
         contractorId={contractor?.id}
-        estimate={estimate}
-        contractor={contractor}
+        onSkip={handleSkip}
       />
     );
   }
