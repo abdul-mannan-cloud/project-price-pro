@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
@@ -14,6 +15,13 @@ import { ProjectDescriptionStep } from "@/components/EstimateForm/ProjectDescrip
 import { CategorySelectionStep } from "@/components/EstimateForm/CategorySelectionStep";
 import { ArrowLeft } from "lucide-react";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
+
+interface Lead {
+  id: string;
+  status: string;
+  error_message?: string | null;
+  estimate_data?: any;
+}
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
@@ -221,13 +229,15 @@ const EstimatePage = () => {
 
         if (error) throw error;
 
-        if (lead.status === 'error') {
-          throw new Error(lead.error_message || 'Failed to generate estimate');
+        const typedLead = lead as Lead;
+
+        if (typedLead.status === 'error') {
+          throw new Error(typedLead.error_message || 'Failed to generate estimate');
         }
 
-        if (lead.status === 'complete' && lead.estimate_data) {
-          console.log('Estimate generated:', lead.estimate_data);
-          setEstimate(lead.estimate_data);
+        if (typedLead.status === 'complete' && typedLead.estimate_data) {
+          console.log('Estimate generated:', typedLead.estimate_data);
+          setEstimate(typedLead.estimate_data);
           return true;
         }
 
