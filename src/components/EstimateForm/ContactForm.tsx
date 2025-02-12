@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useParams } from "react-router-dom";
 
 interface ContactFormProps {
   onSubmit: (data: {
@@ -19,7 +20,8 @@ interface ContactFormProps {
   onSkip?: () => Promise<void>;
 }
 
-export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contractor, onSkip }: ContactFormProps) => {
+export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: ContactFormProps) => {
+  const { contractorId } = useParams(); // Get contractorId from URL params
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -52,6 +54,13 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
         throw new Error("Unable to process your request at this time");
       }
 
+      if (!contractorId) {
+        console.error('Missing contractorId in URL');
+        throw new Error("Unable to identify the contractor");
+      }
+
+      console.log('Processing estimate with:', { leadId, contractorId });
+
       // Update the lead with the form data first
       const { error: updateError } = await supabase
         .from('leads')
@@ -61,7 +70,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
           user_phone: formData.phone,
           project_address: formData.address,
           status: 'processing',
-          ...(contractorId ? { contractor_id: contractorId } : {})
+          contractor_id: contractorId // Ensure contractor_id is always set
         })
         .eq('id', leadId);
 
@@ -74,7 +83,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
       const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId,
-          contractorId
+          contractorId // Pass the URL param contractorId
         }
       });
 
