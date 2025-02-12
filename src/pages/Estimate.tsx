@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
@@ -169,15 +168,95 @@ const EstimatePage = () => {
           project_title: `${selectedCategory || ''} Project`,
           project_description: projectDescription,
           contractor_id: contractorId,
-          status: 'pending'
+          status: 'pending',
+          image_url: uploadedImageUrl
         })
         .select()
         .single();
 
       if (leadError) throw leadError;
 
+      console.log('Created lead:', lead.id);
       setCurrentLeadId(lead.id);
       setStage('contact');
+
+    } catch (error) {
+      console.error('Error creating lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save your responses. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleContactSubmit = async (contactData: any) => {
+    try {
+      if (!currentLeadId) {
+        throw new Error('No lead ID found');
+      }
+
+      setStage('estimate');
+      const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          leadId: currentLeadId,
+          contractorId,
+          projectDescription,
+          category: selectedCategory,
+          imageUrl: uploadedImageUrl
+        }
+      });
+
+      if (estimateError) {
+        throw estimateError;
+      }
+
+      // Poll for the estimate data
+      const checkEstimate = async () => {
+        const { data: lead, error } = await supabase
+          .from('leads')
+          .select('estimate_data, status, error_message')
+          .eq('id', currentLeadId)
+          .single();
+
+        if (error) throw error;
+
+        if (lead.status === 'error') {
+          throw new Error(lead.error_message || 'Failed to generate estimate');
+        }
+
+        if (lead.status === 'complete' && lead.estimate_data) {
+          console.log('Estimate generated:', lead.estimate_data);
+          setEstimate(lead.estimate_data);
+          return true;
+        }
+
+        return false;
+      };
+
+      // Poll every 3 seconds until estimate is ready
+      const pollInterval = setInterval(async () => {
+        try {
+          const isComplete = await checkEstimate();
+          if (isComplete) {
+            clearInterval(pollInterval);
+          }
+        } catch (error) {
+          clearInterval(pollInterval);
+          console.error('Error polling estimate:', error);
+          toast({
+            title: "Error",
+            description: "Failed to generate estimate. Please try again.",
+            variant: "destructive",
+          });
+          setStage('contact');
+        }
+      }, 3000);
+
+      // Cleanup interval after 2 minutes (timeout)
+      setTimeout(() => {
+        clearInterval(pollInterval);
+      }, 120000);
 
     } catch (error) {
       console.error('Error generating estimate:', error);
@@ -186,11 +265,8 @@ const EstimatePage = () => {
         description: "Failed to generate estimate. Please try again.",
         variant: "destructive",
       });
+      setStage('contact');
     }
-  };
-
-  const handleContactSubmit = async (contactData: any) => {
-    setStage('estimate');
   };
 
   const getProgressValue = () => {
@@ -287,8 +363,17 @@ const EstimatePage = () => {
               leadId={currentLeadId || undefined}
               estimate={estimate}
               contractor={contractor}
+              onSkip={async () => {
+                if (currentLeadId) {
+                  await handleContactSubmit({});
+                }
+              }}
             />
           </div>
+        )}
+
+        {stage === 'estimate' && !estimate && (
+          <LoadingScreen message="Building your custom estimate..." isEstimate={true} />
         )}
 
         {stage === 'estimate' && estimate && (
@@ -297,6 +382,8 @@ const EstimatePage = () => {
               groups={estimate.groups} 
               totalCost={estimate.totalCost}
               contractor={contractor || undefined}
+              projectSummary={projectDescription}
+              estimate={estimate}
             />
           </div>
         )}
