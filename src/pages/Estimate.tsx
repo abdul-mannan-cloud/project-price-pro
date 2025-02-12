@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,7 @@ const EstimatePage = () => {
 
   const {
     stage,
+    setStage,
     uploadedImageUrl,
     projectDescription,
     currentLeadId,
@@ -145,7 +146,7 @@ const EstimatePage = () => {
           <QuestionManager
             questionSets={matchedQuestionSets}
             onComplete={handleQuestionComplete}
-            onProgressChange={setProgress}
+            onProgressChange={progress => setStage('questions')}
           />
         )}
 
