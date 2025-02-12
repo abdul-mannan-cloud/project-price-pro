@@ -7,6 +7,8 @@ export const EstimateAnimation = ({ className = '', height = "h-6", width = "w-2
   width?: string;
 }) => {
   return (
-    <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white to-transparent" />
+    <div className={`relative ${height} ${width} overflow-hidden ${className}`}>
+      <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white to-transparent" />
+    </div>
   );
 };

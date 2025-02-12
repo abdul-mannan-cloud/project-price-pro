@@ -258,6 +258,7 @@ export type Database = {
           estimate_data: Json | null
           estimated_cost: number | null
           id: string
+          image_url: string | null
           is_test_estimate: boolean | null
           preview_data: Json | null
           project_address: string | null
@@ -281,6 +282,7 @@ export type Database = {
           estimate_data?: Json | null
           estimated_cost?: number | null
           id?: string
+          image_url?: string | null
           is_test_estimate?: boolean | null
           preview_data?: Json | null
           project_address?: string | null
@@ -304,6 +306,7 @@ export type Database = {
           estimate_data?: Json | null
           estimated_cost?: number | null
           id?: string
+          image_url?: string | null
           is_test_estimate?: boolean | null
           preview_data?: Json | null
           project_address?: string | null
