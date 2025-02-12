@@ -15,6 +15,7 @@ interface LlamaRequest {
   frequency_penalty: number;
   presence_penalty: number;
   stream: boolean;
+  digest: string;
 }
 
 export async function generateLlamaResponse(
@@ -27,20 +28,21 @@ export async function generateLlamaResponse(
     messages: [
       {
         role: "system",
-        content: "You are a construction cost estimator. Return a focused, concise estimate."
+        content: "You are a construction cost estimator. Generate a detailed estimate in JSON format with the following structure: { groups: [{ name: string, subgroups: [{ name: string, items: [{ title: string, description: string, quantity: number, unitAmount: number, totalPrice: number }], subtotal: number }] }], totalCost: number }"
       },
       {
         role: "user",
         content: context
       }
     ],
-    model: "llama-13b-chat",
-    max_tokens: 300,
+    model: "llama-v2",
+    max_tokens: 800,
     temperature: 0.1,
     top_p: 1.0,
     frequency_penalty: 0.5,
     presence_penalty: 0.0,
-    stream: false
+    stream: false,
+    digest: "cef64461421c75d9a24d2660990a2dbc5e5f2526674b7acb2158aba0337f0f54"
   };
 
   if (imageUrl) {
@@ -53,7 +55,7 @@ export async function generateLlamaResponse(
         },
         {
           type: "text",
-          text: "Reference this image for the estimate."
+          text: "Consider this image while creating the estimate."
         }
       ]
     });
@@ -61,41 +63,36 @@ export async function generateLlamaResponse(
 
   console.log('Making request to LLaMA API with:', JSON.stringify(apiRequest, null, 2));
   
-  const response = await fetch('https://api.llama-api.com/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${llamaApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(apiRequest),
-    signal
-  });
+  try {
+    const response = await fetch('https://api.llama-api.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${llamaApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(apiRequest),
+      signal
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`LLaMA API request failed: ${errorText}`);
-  }
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('LLaMA API error response:', errorText);
+      throw new Error(`LLaMA API request failed with status ${response.status}: ${errorText}`);
+    }
 
-  const rawResponse = await response.text();
-  console.log('Raw API Response:', rawResponse);
+    const data = await response.json();
+    console.log('LLaMA API Response:', JSON.stringify(data, null, 2));
 
-  const data = JSON.parse(rawResponse);
-  console.log('Parsed API Response:', data);
+    if (!data.choices || !data.choices[0]?.message?.content) {
+      console.error('Unexpected API response format:', data);
+      throw new Error('Invalid response format from LLaMA API');
+    }
 
-  // Extract AI response with fallbacks for different response formats
-  if (data.choices && Array.isArray(data.choices) && data.choices[0]?.message?.content) {
     return data.choices[0].message.content;
-  } else if (data.response) {
-    return data.response;
-  } else if (data.generated_text) {
-    return data.generated_text;
-  } else if (data.output) {
-    return typeof data.output === 'string' ? data.output : JSON.stringify(data.output);
-  } else if (data.text) {
-    return data.text;
+  } catch (error) {
+    console.error('Error in generateLlamaResponse:', error);
+    throw error;
   }
-  
-  return JSON.stringify(data);
 }
 
 export function formatAnswersForContext(answers: Record<string, any>): CategoryAnswers[] {

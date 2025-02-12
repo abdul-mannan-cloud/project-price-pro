@@ -42,38 +42,6 @@ const EstimatePage = () => {
     handleContactSubmit
   } = useEstimateFlow(contractorId);
 
-  // Sample estimate data for loading state
-  const sampleEstimate = {
-    groups: [
-      {
-        name: "Project Overview",
-        subgroups: [
-          {
-            name: "Main Services",
-            items: [
-              {
-                title: "Service 1",
-                description: "Description of the service",
-                quantity: 1,
-                unitAmount: 0,
-                totalPrice: 0
-              },
-              {
-                title: "Service 2",
-                description: "Description of another service",
-                quantity: 1,
-                unitAmount: 0,
-                totalPrice: 0
-              }
-            ],
-            subtotal: 0
-          }
-        ]
-      }
-    ],
-    totalCost: 0
-  };
-
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
@@ -183,36 +151,28 @@ const EstimatePage = () => {
         )}
 
         {stage === 'contact' && (
-          <div className="animate-fadeIn">
-            <EstimateDisplay 
-              groups={sampleEstimate.groups}
-              totalCost={sampleEstimate.totalCost}
-              isBlurred={true}
-              contractor={contractor || undefined}
-              isLoading={true}
-            />
-            <ContactForm 
-              onSubmit={handleContactSubmit} 
-              leadId={currentLeadId || undefined}
-              estimate={estimate}
-              contractor={contractor}
-              onSkip={async () => {
-                if (currentLeadId) {
-                  await handleContactSubmit({});
-                }
-              }}
-            />
-          </div>
+          <ContactForm 
+            onSubmit={handleContactSubmit} 
+            leadId={currentLeadId || undefined}
+            estimate={estimate}
+            contractor={contractor}
+            onSkip={async () => {
+              if (currentLeadId) {
+                await handleContactSubmit({});
+              }
+            }}
+          />
         )}
 
-        {stage === 'estimate' && !isGeneratingEstimate && estimate && (
+        {stage === 'estimate' && (
           <div className="animate-fadeIn">
             <EstimateDisplay 
-              groups={estimate.groups} 
-              totalCost={estimate.totalCost}
+              groups={estimate?.groups || []} 
+              totalCost={estimate?.totalCost || 0}
               contractor={contractor || undefined}
               projectSummary={projectDescription}
               estimate={estimate}
+              isLoading={isGeneratingEstimate}
             />
           </div>
         )}
