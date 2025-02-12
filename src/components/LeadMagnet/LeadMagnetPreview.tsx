@@ -36,7 +36,6 @@ export const LeadMagnetPreview = () => {
   const [estimate, setEstimate] = useState<any>(null);
   const [leadId, setLeadId] = useState<string | null>(null);
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
-  const [showEstimate, setShowEstimate] = useState(false);
 
   const { data: contractor } = useQuery({
     queryKey: ["contractor"],
@@ -54,51 +53,6 @@ export const LeadMagnetPreview = () => {
       return data;
     },
   });
-
-  const generateEstimateInBackground = async (contactData?: any) => {
-    if (!leadId) return;
-    
-    try {
-      setIsGeneratingEstimate(true);
-      
-      // If contact data is provided, update the lead first
-      if (contactData) {
-        const { error: updateError } = await supabase
-          .from('leads')
-          .update({
-            user_name: contactData.fullName,
-            user_email: contactData.email,
-            user_phone: contactData.phone,
-            project_address: contactData.address,
-            status: 'processing'
-          })
-          .eq('id', leadId);
-
-        if (updateError) throw updateError;
-      }
-
-      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          answers: selectedOptions,
-          projectDescription: "New project inquiry",
-          leadId,
-          category: "General"
-        }
-      });
-
-      if (error) throw error;
-      setEstimate(estimateData);
-      setShowEstimate(true);
-    } catch (error) {
-      console.error('Error generating estimate:', error);
-      toast({
-        title: "Processing Estimate",
-        description: "Your estimate is being generated and will be emailed to you shortly.",
-      });
-    } finally {
-      setIsGeneratingEstimate(false);
-    }
-  };
 
   const generateQuestions = async () => {
     try {
@@ -180,11 +134,75 @@ export const LeadMagnetPreview = () => {
   };
 
   const handleContactFormSubmit = async (contactData: any) => {
-    await generateEstimateInBackground(contactData);
+    if (!leadId) return;
+
+    setIsGeneratingEstimate(true);
+    
+    try {
+      // Update lead with contact information
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update({
+          user_name: contactData.fullName,
+          user_email: contactData.email,
+          user_phone: contactData.phone,
+          project_address: contactData.address,
+          status: 'processing'
+        })
+        .eq('id', leadId);
+
+      if (updateError) throw updateError;
+
+      // Generate estimate
+      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          answers: selectedOptions,
+          projectDescription: "New project inquiry",
+          leadId,
+          category: "General"
+        }
+      });
+
+      if (error) throw error;
+      setEstimate(estimateData);
+    } catch (error) {
+      console.error('Error processing estimate:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate estimate. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingEstimate(false);
+    }
   };
 
   const handleSkip = async () => {
-    await generateEstimateInBackground();
+    if (!leadId) return;
+
+    setIsGeneratingEstimate(true);
+    try {
+      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          answers: selectedOptions,
+          projectDescription: "New project inquiry",
+          leadId,
+          category: "General"
+        }
+      });
+
+      if (error) throw error;
+      setEstimate(estimateData);
+    } catch (error) {
+      console.error('Error generating estimate:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate estimate. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingEstimate(false);
+    }
   };
 
   const steps = [
@@ -211,11 +229,10 @@ export const LeadMagnetPreview = () => {
     return <LoadingScreen message="Generating your estimate..." />;
   }
 
-  if (showEstimate && estimate) {
+  if (estimate) {
     return (
       <div className="card p-8">
         <h2 className="text-2xl font-semibold mb-6">Your Estimate</h2>
-        {/* Add your estimate display component here */}
         <pre className="whitespace-pre-wrap">{JSON.stringify(estimate, null, 2)}</pre>
       </div>
     );
