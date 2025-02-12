@@ -16,7 +16,7 @@ interface ContactFormProps {
   contractorId?: string;
   estimate?: any;
   contractor?: any;
-  onSkip?: () => Promise<void>;  // Added onSkip prop definition
+  onSkip?: () => Promise<void>;
 }
 
 export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contractor, onSkip }: ContactFormProps) => {
@@ -70,6 +70,20 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
         throw updateError;
       }
 
+      // Generate estimate with the updated lead
+      const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          leadId,
+          contractorId
+        }
+      });
+
+      if (estimateError) {
+        console.error('Error generating estimate:', estimateError);
+        throw estimateError;
+      }
+
+      console.log('Estimate generated successfully:', estimateData);
       onSubmit(formData);
     } catch (error) {
       console.error('Error processing form:', error);
