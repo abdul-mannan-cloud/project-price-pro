@@ -1,51 +1,37 @@
-import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Camera, SkipForward, ArrowLeft } from "lucide-react";
+
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
-import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { QuestionCard } from "@/components/EstimateForm/QuestionCard";
-import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
 import { ContactForm } from "@/components/EstimateForm/ContactForm";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
-import { CategoryGrid } from "@/components/EstimateForm/CategoryGrid";
-import { Question, Category, CategoryQuestions, AnswersState } from "@/types/estimate";
-import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
+import { LoadingScreen } from "@/components/EstimateForm/LoadingScreen";
+import { Category, CategoryQuestions, AnswersState } from "@/types/estimate";
 import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
-import { PhotoUpload } from "@/components/EstimateForm/PhotoUpload";
-import { Mic, MicOff } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { PhotoUploadStep } from "@/components/EstimateForm/PhotoUploadStep";
+import { ProjectDescriptionStep } from "@/components/EstimateForm/ProjectDescriptionStep";
+import { CategorySelectionStep } from "@/components/EstimateForm/CategorySelectionStep";
+import { ArrowLeft } from "lucide-react";
+import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 
 const EstimatePage = () => {
   const [stage, setStage] = useState<'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category'>('photo');
-  const [projectDescription, setProjectDescription] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
-  const [estimate, setEstimate] = useState<any>(null);
-  const [totalStages, setTotalStages] = useState(0);
+  const [projectDescription, setProjectDescription] = useState("");
+  const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [categoryData, setCategoryData] = useState<CategoryQuestions | null>(null);
   const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [estimate, setEstimate] = useState<any>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { contractorId } = useParams();
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
-  const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
 
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
@@ -58,13 +44,8 @@ const EstimatePage = () => {
         .select("*, contractor_settings(*)")
         .eq("id", contractorId)
         .maybeSingle();
-      if (error) {
-        console.error("Error fetching contractor:", error);
-        throw error;
-      }
-      if (!data) {
-        throw new Error("Contractor not found");
-      }
+      if (error) throw error;
+      if (!data) throw new Error("Contractor not found");
       return data;
     },
     enabled: !!contractorId,
@@ -82,19 +63,13 @@ const EstimatePage = () => {
 
   useEffect(() => {
     loadCategories();
+    checkSpeechSupport();
   }, []);
 
-  useEffect(() => {
-    if (selectedCategory) {
-      loadQuestionSet(selectedCategory);
-    }
-  }, [selectedCategory]);
-
-  useEffect(() => {
-    // Check if speech recognition is supported
+  const checkSpeechSupport = () => {
     const isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
     setIsSpeechSupported(isSupported);
-  }, []);
+  };
 
   const loadCategories = async () => {
     try {
@@ -133,245 +108,45 @@ const EstimatePage = () => {
     }
   };
 
-  const loadQuestionSet = async (categoryId: string) => {
-    try {
-      const { data: optionsData, error: optionsError } = await supabase
-        .from('Options')
-        .select('*')
-        .eq('Key Options', '42e64c9c-53b2-49bd-ad77-995ecb3106c6')
-        .single();
-
-      if (optionsError) throw optionsError;
-
-      const rawCategoryData = optionsData[categoryId] as Record<string, any>;
-      if (!rawCategoryData) throw new Error('Category data not found');
-
-      const questionSet: CategoryQuestions = {
-        category: categoryId,
-        keywords: Array.isArray(rawCategoryData.keywords) ? rawCategoryData.keywords : [],
-        questions: Array.isArray(rawCategoryData.questions) ? rawCategoryData.questions.map((q: any) => ({
-          id: q.id || crypto.randomUUID(),
-          question: q.question,
-          type: q.type || 'single_choice',
-          order: q.order || 0,
-          options: Array.isArray(q.options) ? q.options : [],
-          next: q.next
-        })) : []
-      };
-
-      setCategoryData(questionSet);
-    } catch (error) {
-      console.error('Error loading question set:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load questions",
-        variant: "destructive",
-      });
-    }
+  const handlePhotoUpload = (url: string) => {
+    setUploadedImageUrl(url);
+    setStage('description');
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setIsUploading(true);
-
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Invalid file type",
-          description: "Please upload an image file",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: "Please upload an image smaller than 5MB",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('project_images')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('project_images')
-        .getPublicUrl(fileName);
-
-      setUploadedImageUrl(publicUrl);
-      setStage('description');
-      toast({ title: "Success", description: "Image uploaded successfully" });
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: "Upload failed",
-        description: "There was an error uploading your image. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleDescriptionSubmit = async () => {
-    setIsProcessing(true);
-    try {
-      const categoriesForMatching: Category[] = categories.map(category => ({
-        id: category.id,
-        name: category.name,
-        description: category.description,
-        icon: category.icon,
-        keywords: category.keywords || [],
-        questions: category.questions || []
-      }));
-
-      console.log("Processing description:", projectDescription);
-      const matches = await findMatchingQuestionSets(projectDescription, categoriesForMatching);
-      console.log("Found matches:", matches);
-      
-      const consolidatedSets = consolidateQuestionSets(matches, projectDescription);
-      console.log("Consolidated sets:", consolidatedSets);
-
-      if (consolidatedSets.length === 0) {
-        console.log("No matches found, showing category grid");
-        setStage('category');
-        return;
-      }
-
-      // Set the first matched category as selected
-      if (consolidatedSets[0]?.category) {
-        setSelectedCategory(consolidatedSets[0].category);
-      }
-
-      setMatchedQuestionSets(consolidatedSets);
-      setStage('questions');
-    } catch (error) {
-      console.error('Error matching question sets:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process your description. Please try again.",
-        variant: "destructive",
-      });
-      setStage('category');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const formatQuestions = (rawQuestions: any[]): Question[] => {
-    if (!Array.isArray(rawQuestions)) {
-      console.error('Invalid questions format:', rawQuestions);
-      return [];
-    }
-    return rawQuestions.map((q: any) => {
-      const selectionData = q.selections || q.options || [];
-      return {
-        id: q.id || `q-${q.order}`,
-        order: q.order || 0,
-        question: q.question,
-        type: q.type || (q.multi_choice
-                  ? 'multiple_choice'
-                  : (selectionData.length === 2 && selectionData[0] === 'Yes' && selectionData[1] === 'No'
-                      ? 'yes_no'
-                      : 'single_choice')),
-        options: Array.isArray(selectionData)
-          ? selectionData.map((opt: any, optIndex: number) => ({
-              label: typeof opt === 'string' ? opt : opt.label,
-              value: typeof opt === 'string' ? opt.toLowerCase() : opt.value,
-              image_url: (q.image_urls && q.image_urls[optIndex]) || ""
-            }))
-          : [],
-        next: q.next_question
-      };
-    });
-  };
-
-  const handleAnswerSubmit = async (questionId: string, value: string | string[]) => {
-    const currentQuestion = questions[currentQuestionIndex];
-    setAnswers(prev => ({ 
-      ...prev, 
-      [currentQuestionIndex]: Array.isArray(value) ? value : [value]
+  const handleDescriptionSubmit = async (description: string) => {
+    setProjectDescription(description);
+    const categoriesForMatching = categories.map(category => ({
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      icon: category.icon,
+      keywords: category.keywords || [],
+      questions: category.questions || []
     }));
 
-    if (currentQuestion.type !== 'multiple_choice') {
-      if (currentQuestionIndex < questions.length - 1) {
-        setTimeout(() => setCurrentQuestionIndex(prev => prev + 1), 300);
-      } else {
-        setIsProcessing(true);
-        await generateEstimate();
-      }
+    const matches = await findMatchingQuestionSets(description, categoriesForMatching);
+    const consolidatedSets = consolidateQuestionSets(matches, description);
+
+    if (consolidatedSets.length === 0) {
+      setStage('category');
+      return;
     }
+
+    if (consolidatedSets[0]?.category) {
+      setSelectedCategory(consolidatedSets[0].category);
+    }
+
+    setMatchedQuestionSets(consolidatedSets);
+    setStage('questions');
   };
 
-  const handleCategoryComplete = (categoryId: string) => {
-    setCompletedCategories(prev => [...prev, categoryId]);
-    setStage('category');
-  };
-
-  const generateEstimate = async () => {
-    try {
-      const formattedAnswers = Object.entries(answers).map(([index, value]) => {
-        const question = questions[parseInt(index)];
-        return {
-          question: question.question,
-          answer: Array.isArray(value) 
-            ? value.map(v => question.options.find(opt => opt.value === v)?.label || v)
-            : question.options.find(opt => opt.value === value)?.label || value
-        };
-      });
-
-      const { data, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          projectDescription, 
-          imageUrl: uploadedImageUrl, 
-          answers: formattedAnswers,
-          contractorId,
-          leadId: currentLeadId,
-          category: selectedCategory
-        }
-      });
-
-      if (error) throw error;
-      setEstimate(data);
-      setStage('contact');
-    } catch (error) {
-      console.error('Error generating estimate:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate estimate. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleContactSubmit = async (contactData: any) => {
-    try {
-      if (!contractorId || !currentLeadId) {
-        throw new Error("Missing contractor ID or lead ID");
-      }
-      setStage('estimate');
-    } catch (error) {
-      console.error('Error saving lead:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save your information. Please try again.",
-        variant: "destructive",
-      });
-    }
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    // Load question set and move to questions stage
+    setStage('questions');
   };
 
   const handleQuestionComplete = async (answers: AnswersState) => {
-    setIsGeneratingEstimate(true);
     try {
       const answersForSupabase = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
         acc[category] = Object.entries(categoryAnswers).reduce((catAcc, [questionId, answer]) => {
@@ -411,9 +186,11 @@ const EstimatePage = () => {
         description: "Failed to generate estimate. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsGeneratingEstimate(false);
     }
+  };
+
+  const handleContactSubmit = async (contactData: any) => {
+    setStage('estimate');
   };
 
   const getProgressValue = () => {
@@ -425,22 +202,7 @@ const EstimatePage = () => {
       case 'category':
         return 45;
       case 'questions':
-        const baseProgress = 45;
-        const maxProgress = 85;
-        const progressRange = maxProgress - baseProgress;
-        
-        if (matchedQuestionSets.length === 0) return baseProgress;
-        
-        const totalQuestions = matchedQuestionSets.reduce((acc, set) => 
-          acc + (Array.isArray(set.questions) ? set.questions.length : 0), 0);
-        
-        const completedQuestions = Object.keys(answers).length;
-        
-        const progressPercentage = totalQuestions > 0 
-          ? (completedQuestions / totalQuestions) 
-          : 0;
-        
-        return baseProgress + (progressRange * progressPercentage);
+        return progress;
       case 'contact':
         return 90;
       case 'estimate':
@@ -450,94 +212,7 @@ const EstimatePage = () => {
     }
   };
 
-  const handleCategorySelect = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-    loadQuestionSet(categoryId);
-  };
-
   const showProgressBar = stage !== 'estimate' && stage !== 'contact';
-
-  const toggleRecording = async () => {
-    if (isRecording) {
-      // Stop recording
-      mediaRecorderRef.current?.stop();
-      audioStream?.getTracks().forEach(track => track.stop());
-      setAudioStream(null);
-      setIsRecording(false);
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        setAudioStream(stream);
-
-        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-        const recognition = new SpeechRecognition();
-        
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        
-        recognition.onstart = () => {
-          setIsRecording(true);
-          toast({
-            title: "Recording started",
-            description: "Speak clearly into your microphone",
-          });
-        };
-        
-        recognition.onresult = (event: any) => {
-          const transcript = Array.from(event.results)
-            .map((result: any) => result[0])
-            .map((result: any) => result.transcript)
-            .join('');
-          
-          setProjectDescription(transcript);
-        };
-        
-        recognition.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error);
-          setIsRecording(false);
-          toast({
-            title: "Error",
-            description: "Failed to recognize speech. Please try again.",
-            variant: "destructive",
-          });
-        };
-        
-        recognition.onend = () => {
-          setIsRecording(false);
-        };
-        
-        recognition.start();
-      } catch (error) {
-        console.error('Error accessing microphone:', error);
-        toast({
-          title: "Error",
-          description: "Failed to access microphone. Please check your permissions.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  if (isProcessing) {
-    return (
-      <div className="min-h-screen bg-gray-100">
-        {showProgressBar && (
-          <Progress 
-            value={progress} 
-            className="h-8 rounded-none transition-all duration-500 ease-in-out"
-          />
-        )}
-        <div className="max-w-4xl mx-auto px-4 py-12">
-          <EstimateDisplay 
-            groups={[]}
-            totalCost={0}
-            isLoading={true}
-            contractor={contractor}
-          />
-        </div>
-      </div>
-    );
-  }
 
   if (isLoading && stage === 'questions') {
     return <LoadingScreen message="Loading questions..." />;
@@ -547,7 +222,7 @@ const EstimatePage = () => {
     <div className="min-h-screen bg-gray-100">
       {showProgressBar && (
         <Progress 
-          value={progress} 
+          value={getProgressValue()} 
           className="h-8 rounded-none transition-all duration-500 ease-in-out"
         />
       )}
@@ -567,100 +242,36 @@ const EstimatePage = () => {
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-12">
-        {stage === 'category' && (
-          <div className="animate-fadeIn">
-            <h2 className="text-2xl font-semibold mb-2">Select Service Category</h2>
-            <p className="text-muted-foreground mb-6">
-              Sorry, we did not understand the scope of your project. Please select the category for which you need help with.
-            </p>
-            <CategoryGrid 
-              categories={categories}
-              selectedCategory={selectedCategory || undefined}
-              onSelectCategory={handleCategorySelect}
-              completedCategories={completedCategories}
-            />
-          </div>
-        )}
-
         {stage === 'photo' && (
-          <div className="card p-8 animate-fadeIn">
-            <div className="flex flex-col items-start gap-6">
-              <div className="flex items-center gap-6 w-full">
-                {contractor?.business_logo_url && (
-                  <img 
-                    src={contractor.business_logo_url} 
-                    alt={contractor.business_name}
-                    className="h-16 w-16 object-contain rounded-lg"
-                  />
-                )}
-                <h2 className="text-2xl font-semibold">
-                  {contractor?.business_name || "Project"} Estimator
-                </h2>
-              </div>
-              <p className="text-muted-foreground font-semibold">
-                Quickly estimate your project cost in minutes! Simply take or upload a photo of what you want to repair or modify (e.g., "paint this wall").
-              </p>
-            </div>
-            <div className="mt-8">
-              <PhotoUpload 
-                onPhotosSelected={(urls) => {
-                  setUploadedImageUrl(urls[0]);
-                  setStage('description');
-                }}
-                onNext={() => setStage('description')}
-                uploadedPhotos={uploadedImageUrl ? [uploadedImageUrl] : []}
-              />
-              <Button 
-                variant="ghost" 
-                className="w-full mt-4" 
-                size="lg" 
-                onClick={() => setStage('description')}
-              >
-                <SkipForward className="mr-2" />
-                Skip Photo
-              </Button>
-            </div>
-          </div>
+          <PhotoUploadStep
+            onPhotoUploaded={handlePhotoUpload}
+            onSkip={() => setStage('description')}
+            contractor={contractor}
+          />
         )}
 
         {stage === 'description' && (
-          <div className="card p-8 animate-fadeIn">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold">Describe Your Project</h2>
-              {isSpeechSupported && (
-                <button
-                  onClick={toggleRecording}
-                  className={cn(
-                    "p-2 rounded-full transition-all duration-200",
-                    isRecording 
-                      ? "bg-red-100 text-red-600 hover:bg-red-200" 
-                      : "bg-gray-100 hover:bg-gray-200"
-                  )}
-                >
-                  {isRecording ? (
-                    <MicOff className="h-5 w-5" />
-                  ) : (
-                    <Mic className="h-5 w-5" />
-                  )}
-                </button>
-              )}
-            </div>
-            <div className="space-y-2 relative">
-              <Textarea
-                value={projectDescription}
-                onChange={(e) => setProjectDescription(e.target.value)}
-                placeholder="Describe what you need help with (e.g., paint my living room walls)..."
-                className="min-h-[150px] pr-12"
-              />
-            </div>
-            <Button 
-              className="w-full mt-6"
-              onClick={handleDescriptionSubmit}
-              disabled={projectDescription.trim().length < 30}
-            >
-              Continue
-            </Button>
-          </div>
+          <ProjectDescriptionStep
+            onSubmit={handleDescriptionSubmit}
+            isSpeechSupported={isSpeechSupported}
+          />
+        )}
+
+        {stage === 'category' && (
+          <CategorySelectionStep
+            categories={categories}
+            selectedCategory={selectedCategory || undefined}
+            completedCategories={completedCategories}
+            onSelectCategory={handleCategorySelect}
+          />
+        )}
+
+        {stage === 'questions' && matchedQuestionSets.length > 0 && (
+          <QuestionManager
+            questionSets={matchedQuestionSets}
+            onComplete={handleQuestionComplete}
+            onProgressChange={setProgress}
+          />
         )}
 
         {stage === 'contact' && estimate && (
@@ -674,7 +285,8 @@ const EstimatePage = () => {
             <ContactForm 
               onSubmit={handleContactSubmit} 
               leadId={currentLeadId || undefined}
-              contractorId={contractorId}
+              estimate={estimate}
+              contractor={contractor}
             />
           </div>
         )}
@@ -687,18 +299,6 @@ const EstimatePage = () => {
               contractor={contractor || undefined}
             />
           </div>
-        )}
-
-        {stage === 'questions' && (
-          matchedQuestionSets.length > 0 ? (
-            <QuestionManager
-              questionSets={matchedQuestionSets}
-              onComplete={handleQuestionComplete}
-              onProgressChange={setProgress}
-            />
-          ) : (
-            <LoadingScreen message="Loading your questions..." />
-          )
         )}
       </div>
     </div>
