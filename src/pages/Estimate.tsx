@@ -42,6 +42,38 @@ const EstimatePage = () => {
     handleContactSubmit
   } = useEstimateFlow(contractorId);
 
+  // Sample estimate data for loading state
+  const sampleEstimate = {
+    groups: [
+      {
+        name: "Project Overview",
+        subgroups: [
+          {
+            name: "Main Services",
+            items: [
+              {
+                title: "Service 1",
+                description: "Description of the service",
+                quantity: 1,
+                unitAmount: 0,
+                totalPrice: 0
+              },
+              {
+                title: "Service 2",
+                description: "Description of another service",
+                quantity: 1,
+                unitAmount: 0,
+                totalPrice: 0
+              }
+            ],
+            subtotal: 0
+          }
+        ]
+      }
+    ],
+    totalCost: 0
+  };
+
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
@@ -152,14 +184,13 @@ const EstimatePage = () => {
 
         {stage === 'contact' && (
           <div className="animate-fadeIn">
-            {estimate && (
-              <EstimateDisplay 
-                groups={estimate.groups} 
-                totalCost={estimate.totalCost} 
-                isBlurred={true}
-                contractor={contractor || undefined}
-              />
-            )}
+            <EstimateDisplay 
+              groups={sampleEstimate.groups}
+              totalCost={sampleEstimate.totalCost}
+              isBlurred={true}
+              contractor={contractor || undefined}
+              isLoading={true}
+            />
             <ContactForm 
               onSubmit={handleContactSubmit} 
               leadId={currentLeadId || undefined}
@@ -172,10 +203,6 @@ const EstimatePage = () => {
               }}
             />
           </div>
-        )}
-
-        {stage === 'estimate' && isGeneratingEstimate && (
-          <LoadingScreen message="Building your custom estimate..." isEstimate={true} />
         )}
 
         {stage === 'estimate' && !isGeneratingEstimate && estimate && (
