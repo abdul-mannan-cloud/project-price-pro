@@ -1,10 +1,11 @@
 
-import { Button } from "@/components/ui/3d-button";
-import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from "react-router-dom";
+import { ContactFormHeader } from "./ContactFormHeader";
+import { ContactFormFields } from "./ContactFormFields";
+import { ContactFormButtons } from "./ContactFormButtons";
 
 interface ContactFormProps {
   onSubmit: (data: {
@@ -21,7 +22,7 @@ interface ContactFormProps {
 }
 
 export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: ContactFormProps) => {
-  const { contractorId } = useParams(); // Get contractorId from URL params
+  const { contractorId } = useParams();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -33,7 +34,6 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
   const { toast } = useToast();
   const [isCurrentUserContractor, setIsCurrentUserContractor] = useState(false);
 
-  // Check if current user is the contractor
   useEffect(() => {
     const checkCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -61,7 +61,6 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
 
       console.log('Processing estimate with:', { leadId, contractorId });
 
-      // Update the lead with the form data first
       const { error: updateError } = await supabase
         .from('leads')
         .update({
@@ -70,7 +69,7 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
           user_phone: formData.phone,
           project_address: formData.address,
           status: 'processing',
-          contractor_id: contractorId // Ensure contractor_id is always set
+          contractor_id: contractorId
         })
         .eq('id', leadId);
 
@@ -79,11 +78,10 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
         throw updateError;
       }
 
-      // Generate estimate with the updated lead
       const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId,
-          contractorId // Pass the URL param contractorId
+          contractorId
         }
       });
 
@@ -110,7 +108,6 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
     if (!leadId) return;
 
     try {
-      // Mark the lead as a test estimate
       const { error: updateError } = await supabase
         .from('leads')
         .update({
@@ -121,7 +118,6 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
 
       if (updateError) throw updateError;
 
-      // Call the onSkip prop if provided
       if (onSkip) {
         await onSkip();
       }
@@ -135,7 +131,6 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
     }
   };
 
-  // Get contractor's primary color from branding_colors
   const buttonStyle = contractor?.branding_colors?.primary 
     ? { backgroundColor: contractor.branding_colors.primary }
     : undefined;
@@ -143,90 +138,20 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
   return (
     <div className="fixed inset-0 bg-black/13 flex items-center justify-center z-50">
       <div className="w-full max-w-md mx-auto bg-background rounded-xl p-6 shadow-lg animate-fadeIn">
-        <div className="text-center mb-8 pt-4">
-          <h2 className="text-2xl font-semibold mb-3">Almost There!</h2>
-          <p className="text-muted-foreground">
-            Enter your contact details below to view your personalized project estimate. 
-            We've analyzed your requirements and prepared a detailed breakdown just for you.
-          </p>
-        </div>
+        <ContactFormHeader />
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-5">
-            <div className="form-group relative">
-              <Input
-                placeholder="Full Name"
-                value={formData.fullName}
-                onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                required
-                className="h-12 px-4 pt-2"
-              />
-              <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
-                Full Name
-              </label>
-            </div>
-            
-            <div className="form-group relative">
-              <Input
-                type="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                required
-                className="h-12 px-4 pt-2"
-              />
-              <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
-                Email
-              </label>
-            </div>
-            
-            <div className="form-group relative">
-              <Input
-                type="tel"
-                placeholder="Phone Number"
-                value={formData.phone}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                required
-                className="h-12 px-4 pt-2"
-              />
-              <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
-                Phone Number
-              </label>
-            </div>
-            
-            <div className="form-group relative">
-              <Input
-                placeholder="Project Address"
-                value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                required
-                className="h-12 px-4 pt-2"
-              />
-              <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
-                Project Address
-              </label>
-            </div>
-          </div>
+          <ContactFormFields 
+            formData={formData}
+            onChange={(field, value) => setFormData(prev => ({ ...prev, [field]: value }))}
+          />
           
-          <Button 
-            type="submit" 
-            className="w-full mt-6" 
-            disabled={isSubmitting}
-            style={buttonStyle}
-          >
-            {isSubmitting ? "Processing..." : "View Your Custom Estimate"}
-          </Button>
-
-          {isCurrentUserContractor && (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full mt-2"
-              onClick={handleSkipForm}
-            >
-              Skip Form (Preview Mode)
-            </Button>
-          )}
+          <ContactFormButtons 
+            isSubmitting={isSubmitting}
+            buttonStyle={buttonStyle}
+            isCurrentUserContractor={isCurrentUserContractor}
+            onSkip={handleSkipForm}
+          />
         </form>
       </div>
     </div>
