@@ -1,8 +1,9 @@
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
 import ResetPassword from "@/pages/ResetPassword";
@@ -28,20 +29,23 @@ const queryClient = new QueryClient({
 });
 
 function GlobalBrandingLoader() {
+  const { data: session } = useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    },
+  });
+
   useQuery({
-    queryKey: ["globalBranding"],
+    queryKey: ["globalBranding", session?.user?.id],
+    enabled: !!session?.user?.id,
     queryFn: async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.log("No authenticated user found");
-          return null;
-        }
-
         const { data: contractor, error } = await supabase
           .from("contractors")
           .select("branding_colors")
-          .eq("id", user.id)
+          .eq("id", session.user.id)
           .maybeSingle();
 
         if (error) {
@@ -51,7 +55,7 @@ function GlobalBrandingLoader() {
 
         // If no contractor found, return null without setting colors
         if (!contractor) {
-          console.log("No contractor found for user:", user.id);
+          console.log("No contractor found for user:", session.user.id);
           return null;
         }
         
@@ -87,6 +91,46 @@ function GlobalBrandingLoader() {
 }
 
 function App() {
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
+
+  // Initialize auth state
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        // Get the initial session
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Initial session:", session ? "Found" : "Not found");
+        
+        // Set up auth state change listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log("Auth state change:", event, session ? "Session exists" : "No session");
+          
+          if (event === 'SIGNED_OUT') {
+            // Clear any cached data when user signs out
+            queryClient.clear();
+          }
+        });
+
+        setIsAuthInitialized(true);
+        
+        // Cleanup subscription
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+        setIsAuthInitialized(true); // Still set to true so app can render
+      }
+    };
+
+    initialize();
+  }, []);
+
+  // Show loading state while auth is initializing
+  if (!isAuthInitialized) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <GlobalBrandingLoader />
