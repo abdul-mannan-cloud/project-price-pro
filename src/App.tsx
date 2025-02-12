@@ -17,16 +17,43 @@ import Onboarding from "@/pages/Onboarding";
 import TeamOnboarding from "@/pages/TeamOnboarding";
 import "./App.css";
 
-// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
     },
   },
 });
+
+const setColorVariables = (colors: { primary: string; secondary: string }) => {
+  const { primary, secondary } = colors;
+  const primaryHex = primary.replace('#', '');
+  const [r, g, b] = [
+    parseInt(primaryHex.slice(0, 2), 16),
+    parseInt(primaryHex.slice(2, 4), 16),
+    parseInt(primaryHex.slice(4, 6), 16)
+  ];
+
+  const colorVars = {
+    '--primary': primary,
+    '--primary-foreground': '#FFFFFF',
+    '--secondary': secondary,
+    '--secondary-foreground': '#1d1d1f',
+    '--primary-100': `rgba(${r}, ${g}, ${b}, 0.1)`,
+    '--primary-200': `rgba(${r}, ${g}, ${b}, 0.2)`,
+    '--primary-300': `rgba(${r}, ${g}, ${b}, 0.4)`,
+    '--primary-400': `rgba(${r}, ${g}, ${b}, 0.6)`,
+    '--primary-500': `rgba(${r}, ${g}, ${b}, 0.8)`,
+    '--primary-600': primary,
+    '--primary-700': `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`,
+  };
+
+  Object.entries(colorVars).forEach(([key, value]) => {
+    document.documentElement.style.setProperty(key, value);
+  });
+};
 
 function GlobalBrandingLoader() {
   const { data: session } = useQuery({
@@ -41,49 +68,23 @@ function GlobalBrandingLoader() {
     queryKey: ["globalBranding", session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
-      try {
-        const { data: contractor, error } = await supabase
-          .from("contractors")
-          .select("branding_colors")
-          .eq("id", session.user.id)
-          .maybeSingle();
+      const { data: contractor, error } = await supabase
+        .from("contractors")
+        .select("branding_colors")
+        .eq("id", session.user.id)
+        .maybeSingle();
 
-        if (error) {
-          console.error("Error fetching contractor:", error);
-          return null;
-        }
-
-        // If no contractor found, return null without setting colors
-        if (!contractor) {
-          console.log("No contractor found for user:", session.user.id);
-          return null;
-        }
-        
-        const colors = contractor.branding_colors as { primary: string; secondary: string } | null;
-        if (colors) {
-          document.documentElement.style.setProperty('--primary', colors.primary);
-          document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
-          document.documentElement.style.setProperty('--secondary', colors.secondary);
-          document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
-
-          const primaryHex = colors.primary.replace('#', '');
-          const r = parseInt(primaryHex.slice(0, 2), 16);
-          const g = parseInt(primaryHex.slice(2, 4), 16);
-          const b = parseInt(primaryHex.slice(4, 6), 16);
-
-          document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
-          document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
-          document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
-          document.documentElement.style.setProperty('--primary-400', `rgba(${r}, ${g}, ${b}, 0.6)`);
-          document.documentElement.style.setProperty('--primary-500', `rgba(${r}, ${g}, ${b}, 0.8)`);
-          document.documentElement.style.setProperty('--primary-600', colors.primary);
-          document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
-        }
-        return colors;
-      } catch (error) {
-        console.error("Error in GlobalBrandingLoader:", error);
+      if (error || !contractor) {
+        console.error(error ? `Error fetching contractor: ${error.message}` : 
+                            `No contractor found for user: ${session.user.id}`);
         return null;
       }
+
+      const colors = contractor.branding_colors as { primary: string; secondary: string } | null;
+      if (colors) {
+        setColorVariables(colors);
+      }
+      return colors;
     },
   });
 
@@ -93,43 +94,29 @@ function GlobalBrandingLoader() {
 function App() {
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
 
-  // Initialize auth state
   useEffect(() => {
     const initialize = async () => {
       try {
-        // Get the initial session
         const { data: { session } } = await supabase.auth.getSession();
         console.log("Initial session:", session ? "Found" : "Not found");
         
-        // Set up auth state change listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
           console.log("Auth state change:", event, session ? "Session exists" : "No session");
-          
-          if (event === 'SIGNED_OUT') {
-            // Clear any cached data when user signs out
-            queryClient.clear();
-          }
+          if (event === 'SIGNED_OUT') queryClient.clear();
         });
 
         setIsAuthInitialized(true);
-        
-        // Cleanup subscription
-        return () => {
-          subscription.unsubscribe();
-        };
+        return () => subscription.unsubscribe();
       } catch (error) {
         console.error("Error initializing auth:", error);
-        setIsAuthInitialized(true); // Still set to true so app can render
+        setIsAuthInitialized(true);
       }
     };
 
     initialize();
   }, []);
 
-  // Show loading state while auth is initializing
-  if (!isAuthInitialized) {
-    return <div>Loading...</div>;
-  }
+  if (!isAuthInitialized) return <div>Loading...</div>;
 
   return (
     <QueryClientProvider client={queryClient}>
