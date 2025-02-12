@@ -16,7 +16,7 @@ interface ContactFormProps {
   contractorId?: string;
   estimate?: any;
   contractor?: any;
-  onSkip?: () => void;  // Added onSkip as optional prop
+  onSkip?: () => Promise<void>;  // Added onSkip prop definition
 }
 
 export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contractor, onSkip }: ContactFormProps) => {
@@ -100,7 +100,7 @@ export const ContactForm = ({ onSubmit, leadId, contractorId, estimate, contract
 
       // Call the onSkip prop if provided
       if (onSkip) {
-        onSkip();
+        await onSkip();
       }
     } catch (error) {
       console.error('Error skipping form:', error);
