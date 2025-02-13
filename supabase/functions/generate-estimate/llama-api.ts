@@ -61,7 +61,7 @@ export async function generateLlamaResponse(
         content: context
       }
     ],
-    model: "llama-2-70b-chat",  // Updated model name
+    model: "llama-2-70b-chat",
     max_tokens: 800,
     temperature: 0.1,
     top_p: 1.0,
@@ -99,7 +99,11 @@ export async function generateLlamaResponse(
 
       console.log('Using API key (first 10 chars):', llamaApiKey.substring(0, 10));
       
-      const response = await fetch('https://api.llama-api.com/chat/completions', {
+      // Changed the API endpoint URL structure
+      const url = 'https://api.llama-api.com/v1/chat/completions';
+      console.log('Making request to:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers,
         body: JSON.stringify(apiRequest),
@@ -112,20 +116,20 @@ export async function generateLlamaResponse(
       console.log('Raw response text:', responseText);
 
       if (!response.ok) {
+        console.error('API request failed:', response.status, responseText);
         throw new Error(`LLaMA API request failed with status ${response.status}: ${responseText}`);
       }
 
       let data;
       try {
         data = JSON.parse(responseText);
+        console.log('Successfully parsed response data:', JSON.stringify(data, null, 2));
       } catch (parseError) {
         console.error('Failed to parse API response as JSON:', responseText);
         throw new Error(`Invalid JSON response from API: ${parseError.message}`);
       }
 
-      console.log('Parsed response data:', JSON.stringify(data, null, 2));
-
-      // Check various possible response formats
+      // Extract content from response, trying multiple possible formats
       const content = data.choices?.[0]?.message?.content || 
                      data.choices?.[0]?.text || 
                      data.response || 
@@ -134,41 +138,58 @@ export async function generateLlamaResponse(
 
       if (!content) {
         console.error('Response structure:', JSON.stringify(data, null, 2));
-        throw new Error('No content found in API response');
+        throw new Error(`No content found in API response. Response structure: ${JSON.stringify(data)}`);
       }
 
       console.log('Extracted content:', content);
 
-      // Try to extract JSON from the content
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      // Extract JSON object from content
+      let jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        console.error('No JSON object found in content:', content);
-        throw new Error('No JSON object found in response');
+        // If no JSON object is found in response, try to parse the entire content as JSON
+        try {
+          const contentAsJson = JSON.parse(content);
+          if (contentAsJson.groups && Array.isArray(contentAsJson.groups)) {
+            jsonMatch = [JSON.stringify(contentAsJson)];
+          } else {
+            console.error('Content is valid JSON but missing required structure:', content);
+            throw new Error('Content is valid JSON but missing required structure');
+          }
+        } catch (e) {
+          console.error('No JSON object found in content and content is not valid JSON:', content);
+          throw new Error('No valid JSON structure found in response');
+        }
       }
 
       const parsedJson = JSON.parse(jsonMatch[0]);
+      console.log('Parsed estimate JSON:', JSON.stringify(parsedJson, null, 2));
       
-      // Validate the structure
+      // Validate JSON structure
       if (!parsedJson.groups || !Array.isArray(parsedJson.groups)) {
         console.error('Invalid estimate structure:', parsedJson);
         throw new Error('Invalid estimate structure - missing or invalid groups array');
       }
 
+      // Validate each group and subgroup
       for (const group of parsedJson.groups) {
         if (!group.subgroups || !Array.isArray(group.subgroups)) {
+          console.error('Invalid group:', group);
           throw new Error('Invalid group structure - missing or invalid subgroups array');
         }
         for (const subgroup of group.subgroups) {
           if (!subgroup.items || !Array.isArray(subgroup.items)) {
+            console.error('Invalid subgroup:', subgroup);
             throw new Error('Invalid subgroup structure - missing or invalid items array');
           }
           if (typeof subgroup.subtotal !== 'number') {
+            console.error('Invalid subgroup subtotal:', subgroup);
             throw new Error('Invalid subgroup structure - missing or invalid subtotal');
           }
         }
       }
 
       if (typeof parsedJson.totalCost !== 'number') {
+        console.error('Invalid total cost:', parsedJson.totalCost);
         throw new Error('Invalid estimate structure - missing or invalid totalCost');
       }
 
