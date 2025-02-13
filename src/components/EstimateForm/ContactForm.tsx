@@ -142,7 +142,7 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
         <LoadingScreen message="Preparing your estimate..." isEstimate={true} isBackdrop={true} />
       </div>
       <div className="fixed inset-0 bg-black/5 flex items-center justify-center z-20">
-        <div className="w-full max-w-md mx-auto bg-background/95 backdrop-blur-sm rounded-xl p-6 shadow-lg animate-fadeIn">
+        <div className="w-full max-w-md mx-auto bg-white rounded-xl p-6 shadow-lg animate-fadeIn">
           <ContactFormHeader />
           
           <form onSubmit={handleSubmit} className="space-y-6">
