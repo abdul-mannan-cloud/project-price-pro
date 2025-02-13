@@ -25,41 +25,39 @@ export async function generateLlamaResponse(
   signal: AbortSignal
 ): Promise<string> {
   const systemPrompt = `You are a construction cost estimator. Generate a detailed estimate in JSON format.
-Follow this EXACT structure, including all required fields:
+Please provide a simple example estimate response following this structure:
 {
   "groups": [
     {
-      "name": "string",
+      "name": "Labor",
       "subgroups": [
         {
-          "name": "string",
+          "name": "General Labor",
           "items": [
             {
-              "title": "string",
-              "description": "string",
-              "quantity": number,
-              "unit": "string",
-              "unitAmount": number,
-              "totalPrice": number
+              "title": "Construction Worker",
+              "description": "General construction labor",
+              "quantity": 40,
+              "unit": "hours",
+              "unitAmount": 45,
+              "totalPrice": 1800
             }
           ],
-          "subtotal": number
+          "subtotal": 1800
         }
       ]
     }
   ],
-  "totalCost": number
+  "totalCost": 1800
 }
 
-IMPORTANT:
-- Every field shown above is required
-- All number values must be actual numbers, not strings
-- The response must be valid JSON
-- Do not include any text before or after the JSON
-- Ensure all mathematical calculations are correct
-- totalPrice should be quantity * unitAmount
-- subtotal should be the sum of all totalPrice values in items
-- totalCost should be the sum of all subtotal values`;
+Rules:
+1. Response must be valid JSON
+2. Include only the JSON, no other text
+3. All numbers must be actual numbers, not strings
+4. Each item's totalPrice must be quantity * unitAmount
+5. Each subgroup's subtotal must be the sum of its items' totalPrices
+6. totalCost must be the sum of all subtotals`;
 
   const apiRequest: LlamaRequest = {
     messages: [
@@ -142,42 +140,36 @@ IMPORTANT:
     try {
       const parsed = JSON.parse(content);
       
-      // Validate structure and convert any string numbers to actual numbers
-      const sanitizedGroups = parsed.groups.map((group: any) => ({
-        name: String(group.name),
-        subgroups: group.subgroups.map((subgroup: any) => {
-          const items = subgroup.items.map((item: any) => ({
-            title: String(item.title),
-            description: String(item.description || ''),
-            quantity: Number(item.quantity),
-            unit: String(item.unit),
-            unitAmount: Number(item.unitAmount),
-            totalPrice: Number(item.quantity) * Number(item.unitAmount)
-          }));
+      // Basic validation of required fields
+      if (!parsed.groups || !Array.isArray(parsed.groups)) {
+        throw new Error('Missing or invalid groups array');
+      }
 
-          const subtotal = items.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
+      if (typeof parsed.totalCost !== 'number') {
+        throw new Error('Missing or invalid totalCost');
+      }
 
-          return {
-            name: String(subgroup.name),
-            items,
-            subtotal
-          };
-        })
-      }));
+      // Basic structure validation
+      for (const group of parsed.groups) {
+        if (!group.subgroups || !Array.isArray(group.subgroups)) {
+          throw new Error('Invalid subgroups structure');
+        }
 
-      const totalCost = sanitizedGroups.reduce((total: number, group: any) => 
-        total + group.subgroups.reduce((groupTotal: number, subgroup: any) => 
-          groupTotal + subgroup.subtotal, 0), 0);
+        for (const subgroup of group.subgroups) {
+          if (!subgroup.items || !Array.isArray(subgroup.items)) {
+            throw new Error('Invalid items structure');
+          }
 
-      const sanitizedResponse = {
-        groups: sanitizedGroups,
-        totalCost
-      };
+          if (typeof subgroup.subtotal !== 'number') {
+            throw new Error('Invalid subtotal');
+          }
+        }
+      }
 
-      return JSON.stringify(sanitizedResponse, null, 2);
+      return content;
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
-      throw new Error('Invalid JSON in LLaMA API response');
+      throw new Error(`Invalid JSON in LLaMA API response: ${parseError.message}`);
     }
   } catch (error) {
     console.error('Error in generateLlamaResponse:', error);
