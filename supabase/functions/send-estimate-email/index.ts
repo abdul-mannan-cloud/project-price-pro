@@ -11,11 +11,11 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  name: string;
-  email: string;
+  estimateId: string;
+  contractorEmail: string;
   estimateData: any;
   estimateUrl: string;
-  contractor?: any;
+  clientName: string;
 }
 
 function formatCurrency(amount: number): string {
@@ -25,115 +25,71 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-function generateEstimateHtml(data: any, estimateUrl: string, contractor?: any): string {
-  console.log('Generating HTML with data:', { data, estimateUrl, contractor });
-
-  if (!data || typeof data !== 'object') {
-    console.error('Invalid estimate data:', data);
-    throw new Error('Invalid estimate data provided');
-  }
-
-  const groups = Array.isArray(data.groups) ? data.groups : [];
-  const totalCost = typeof data.totalCost === 'number' ? data.totalCost : 0;
-
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Project Estimate</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
-      ${contractor?.business_logo_url ? 
-        `<img src="${contractor.business_logo_url}" alt="${contractor.business_name}" style="max-width: 200px; margin-bottom: 20px;">` 
-        : ''}
-      
-      <h1 style="color: #333; margin-bottom: 30px;">Your Project Estimate</h1>
-      
-      ${groups.map((group: any) => `
-        <div style="margin-bottom: 30px; background: #f9f9f9; padding: 20px; border-radius: 8px;">
-          <h2 style="color: #444; margin-top: 0;">${group.name || 'Unnamed Group'}</h2>
-          ${group.subgroups?.map((subgroup: any) => `
-            <div style="margin-left: 20px; margin-bottom: 20px;">
-              <h3 style="color: #666; margin-bottom: 10px;">${subgroup.name || 'Unnamed Subgroup'}</h3>
-              ${subgroup.items?.map((item: any) => `
-                <div style="margin-bottom: 15px; padding: 10px; background: #fff; border-radius: 4px;">
-                  <p style="margin: 5px 0; color: #666;">
-                    <strong>${item.title || 'Unnamed Item'}</strong>
-                    ${item.description ? `<br><span style="font-size: 14px;">${item.description}</span>` : ''}
-                    <br>
-                    <span style="color: #0066cc;">
-                      ${item.quantity || 0} ${item.unit || 'units'} × ${formatCurrency(item.unitAmount || 0)} = 
-                      ${formatCurrency(item.totalPrice || 0)}
-                    </span>
-                  </p>
-                </div>
-              `).join('') || 'No items'}
-              <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
-                <strong>Subtotal: ${formatCurrency(subgroup.subtotal || 0)}</strong>
-              </div>
-            </div>
-          `).join('') || 'No subgroups'}
-        </div>
-      `).join('')}
-      
-      <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; margin-top: 30px;">
-        <h2 style="color: #333; margin: 0;">Total Estimated Cost: ${formatCurrency(totalCost)}</h2>
-      </div>
-      
-      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-        <p>You can view your detailed estimate online at: <a href="${estimateUrl}" style="color: #0066cc;">${estimateUrl}</a></p>
-        
-        ${contractor ? `
-          <div style="margin-top: 20px;">
-            <h3 style="color: #333;">Contact Information</h3>
-            ${contractor.contact_phone ? `<p>Phone: ${contractor.contact_phone}</p>` : ''}
-            ${contractor.contact_email ? `<p>Email: ${contractor.contact_email}</p>` : ''}
-            ${contractor.business_address ? `<p>Address: ${contractor.business_address}</p>` : ''}
-          </div>
-        ` : ''}
-      </div>
-    </body>
-    </html>
-  `;
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('Received request with method:', req.method);
-    
-    const requestBody = await req.json();
-    console.log('Request body:', JSON.stringify(requestBody, null, 2));
-    
-    const { name, email, estimateData, estimateUrl, contractor }: EmailRequest = requestBody;
+    const { estimateId, contractorEmail, estimateData, estimateUrl, clientName }: EmailRequest = await req.json();
 
-    if (!estimateData || !estimateData.groups) {
-      console.error('Invalid or missing estimate data:', estimateData);
-      throw new Error('Invalid or missing estimate data structure');
-    }
-
-    if (!email) {
-      console.error('No email address provided');
-      throw new Error('No email address provided');
-    }
-
-    if (!estimateUrl) {
-      console.error('No estimate URL provided');
-      throw new Error('No estimate URL provided');
-    }
+    console.log('Sending estimate email to contractor:', {
+      estimateId,
+      contractorEmail,
+      clientName,
+      estimateUrl
+    });
 
     const emailResponse = await resend.emails.send({
-      from: contractor?.business_name 
-        ? `${contractor.business_name} <onboarding@resend.dev>`
-        : "Estimate <onboarding@resend.dev>",
-      to: [email],
-      subject: "Your Project Estimate",
-      html: generateEstimateHtml(estimateData, estimateUrl, contractor),
+      from: "Estimate Signature Required <onboarding@resend.dev>",
+      to: [contractorEmail],
+      subject: `Estimate Signature Required - Client ${clientName} has signed`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Estimate Signature Required</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .button { 
+              display: inline-block; 
+              padding: 12px 24px; 
+              background-color: #4F46E5; 
+              color: white; 
+              text-decoration: none; 
+              border-radius: 6px;
+              margin: 20px 0;
+            }
+            .estimate-details {
+              background: #f9f9f9;
+              padding: 20px;
+              border-radius: 8px;
+              margin: 20px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Estimate Signature Required</h1>
+            <p>Hello,</p>
+            <p>${clientName} has signed the estimate and your signature is now required to complete the process.</p>
+            
+            <div class="estimate-details">
+              <h2>Estimate Summary</h2>
+              <p>Total Amount: ${formatCurrency(estimateData.totalCost)}</p>
+              <p>Client: ${clientName}</p>
+            </div>
+
+            <p>Please review and sign the estimate by clicking the button below:</p>
+            <a href="${estimateUrl}" class="button">Review and Sign Estimate</a>
+            
+            <p>Best regards,<br>Your Estimation System</p>
+          </div>
+        </body>
+        </html>
+      `
     });
 
     console.log("Email sent successfully:", emailResponse);
@@ -147,12 +103,8 @@ serve(async (req) => {
     });
   } catch (error: any) {
     console.error("Error in send-estimate-email function:", error);
-    console.error("Error details:", error.stack);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error.stack 
-      }),
+      JSON.stringify({ error: error.message }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
