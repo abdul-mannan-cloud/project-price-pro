@@ -61,7 +61,7 @@ export async function generateLlamaResponse(
         content: context
       }
     ],
-    model: "llama-v2",
+    model: "llama-2-70b-chat",  // Updated model name
     max_tokens: 800,
     temperature: 0.1,
     top_p: 1.0,
@@ -91,7 +91,6 @@ export async function generateLlamaResponse(
   let retries = 3;
   while (retries > 0) {
     try {
-      // Use custom headers for LLaMA API
       const headers = {
         'Authorization': `Bearer ${llamaApiKey}`,
         'Content-Type': 'application/json',
