@@ -61,7 +61,7 @@ export async function generateLlamaResponse(
         content: context
       }
     ],
-    model: "llama-2-13b-chat",  // Changed to a different model
+    model: "llama-2-13b-chat",
     max_tokens: 800,
     temperature: 0.1,
     top_p: 1.0,
@@ -99,7 +99,6 @@ export async function generateLlamaResponse(
 
       console.log('Using API key (first 10 chars):', llamaApiKey.substring(0, 10));
       
-      // Changed to bare API endpoint
       const url = 'https://api.llama-api.com/chat/completions';
       console.log('Making request to:', url);
       
@@ -129,50 +128,62 @@ export async function generateLlamaResponse(
         throw new Error(`Invalid JSON response from API: ${parseError.message}`);
       }
 
-      // Extract content from response, trying multiple possible formats
-      let content;
+      // First try to extract text content from the response
+      let content = null;
       
-      if (data.choices?.[0]?.message?.content) {
-        content = data.choices[0].message.content;
-      } else if (data.choices?.[0]?.text) {
-        content = data.choices[0].text;
-      } else if (typeof data.response === 'string') {
-        content = data.response;
-      } else if (typeof data === 'string') {
+      // Try different response formats
+      if (typeof data === 'string') {
         content = data;
-      } else if (data.choices?.[0]) {
-        content = JSON.stringify(data.choices[0]);
-      } else {
-        console.error('Unrecognized response format:', JSON.stringify(data, null, 2));
-        throw new Error('Unrecognized response format from API');
+      } else if (data.choices && Array.isArray(data.choices)) {
+        const choice = data.choices[0];
+        if (choice.message?.content) {
+          content = choice.message.content;
+        } else if (choice.text) {
+          content = choice.text;
+        } else if (typeof choice === 'string') {
+          content = choice;
+        } else {
+          content = JSON.stringify(choice);
+        }
+      } else if (data.response) {
+        content = data.response;
+      } else if (data.output?.text) {
+        content = data.output.text;
+      } else if (data.generated_text) {
+        content = data.generated_text;
       }
+
+      console.log('Extracted raw content:', content);
 
       if (!content) {
-        console.error('Response structure:', JSON.stringify(data, null, 2));
-        throw new Error(`No content found in API response. Response structure: ${JSON.stringify(data)}`);
+        console.error('Could not extract content from response:', JSON.stringify(data, null, 2));
+        throw new Error('Could not extract content from API response');
       }
 
-      console.log('Extracted content:', content);
-
-      // Extract JSON object from content or parse content itself if it's JSON
+      // Try to parse the content as JSON or extract JSON from it
       let estimateJson;
       
       try {
-        // First try to parse the entire content as JSON
+        // First try to parse the content directly as JSON
         estimateJson = JSON.parse(content);
       } catch {
-        // If that fails, try to extract JSON from the content
+        // If that fails, try to find a JSON object in the content
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
-          console.error('No JSON object found in content:', content);
+          console.error('No JSON structure found in content:', content);
           throw new Error('No valid JSON structure found in response');
         }
-        estimateJson = JSON.parse(jsonMatch[0]);
+        try {
+          estimateJson = JSON.parse(jsonMatch[0]);
+        } catch (parseError) {
+          console.error('Failed to parse extracted JSON:', jsonMatch[0]);
+          throw new Error('Failed to parse JSON structure from response');
+        }
       }
 
       console.log('Parsed estimate JSON:', JSON.stringify(estimateJson, null, 2));
       
-      // Validate JSON structure
+      // Validate the estimate structure
       if (!estimateJson.groups || !Array.isArray(estimateJson.groups)) {
         console.error('Invalid estimate structure:', estimateJson);
         throw new Error('Invalid estimate structure - missing or invalid groups array');
