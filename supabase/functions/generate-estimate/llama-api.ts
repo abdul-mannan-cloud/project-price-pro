@@ -24,11 +24,48 @@ export async function generateLlamaResponse(
   llamaApiKey: string,
   signal: AbortSignal
 ): Promise<string> {
+  const systemPrompt = `You are a construction cost estimator. Generate a detailed estimate in JSON format.
+Follow this EXACT structure, including all required fields:
+{
+  "groups": [
+    {
+      "name": "string",
+      "subgroups": [
+        {
+          "name": "string",
+          "items": [
+            {
+              "title": "string",
+              "description": "string",
+              "quantity": number,
+              "unit": "string",
+              "unitAmount": number,
+              "totalPrice": number
+            }
+          ],
+          "subtotal": number
+        }
+      ]
+    }
+  ],
+  "totalCost": number
+}
+
+IMPORTANT:
+- Every field shown above is required
+- All number values must be actual numbers, not strings
+- The response must be valid JSON
+- Do not include any text before or after the JSON
+- Ensure all mathematical calculations are correct
+- totalPrice should be quantity * unitAmount
+- subtotal should be the sum of all totalPrice values in items
+- totalCost should be the sum of all subtotal values`;
+
   const apiRequest: LlamaRequest = {
     messages: [
       {
         role: "system",
-        content: "You are a construction cost estimator. Generate a detailed estimate in JSON format with the following structure: { groups: [{ name: string, subgroups: [{ name: string, items: [{ title: string, description: string, quantity: number, unitAmount: number, totalPrice: number }], subtotal: number }] }], totalCost: number }"
+        content: systemPrompt
       },
       {
         role: "user",
@@ -55,7 +92,7 @@ export async function generateLlamaResponse(
         },
         {
           type: "text",
-          text: "Consider this image while creating the estimate."
+          text: "Consider this image in your estimate. Identify visible elements and include them in the calculation."
         }
       ]
     });
@@ -81,14 +118,27 @@ export async function generateLlamaResponse(
     }
 
     const data = await response.json();
-    console.log('LLaMA API Response:', JSON.stringify(data, null, 2));
+    console.log('LLaMA API raw response:', JSON.stringify(data, null, 2));
 
     if (!data.choices || !data.choices[0]?.message?.content) {
       console.error('Unexpected API response format:', data);
       throw new Error('Invalid response format from LLaMA API');
     }
 
-    return data.choices[0].message.content;
+    const content = data.choices[0].message.content.trim();
+    console.log('LLaMA API content:', content);
+
+    // Try to parse the response to validate JSON
+    try {
+      const parsed = JSON.parse(content);
+      if (!parsed.groups || !Array.isArray(parsed.groups) || !parsed.totalCost) {
+        throw new Error('Response missing required fields');
+      }
+      return content;
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error('Invalid JSON in LLaMA API response');
+    }
   } catch (error) {
     console.error('Error in generateLlamaResponse:', error);
     throw error;
