@@ -24,40 +24,41 @@ export async function generateLlamaResponse(
   llamaApiKey: string,
   signal: AbortSignal
 ): Promise<string> {
-  const systemPrompt = `You are a construction cost estimator. Generate a detailed estimate in JSON format.
-Please provide a simple example estimate response following this structure:
+  const systemPrompt = `You are a construction cost estimator AI. Your task is to generate a detailed cost estimate in JSON format based on the provided context. Always follow these rules:
+
+1. Use this EXACT format:
 {
   "groups": [
     {
-      "name": "Labor",
+      "name": "Category Name",
       "subgroups": [
         {
-          "name": "General Labor",
+          "name": "Subcategory Name",
           "items": [
             {
-              "title": "Construction Worker",
-              "description": "General construction labor",
-              "quantity": 40,
-              "unit": "hours",
-              "unitAmount": 45,
-              "totalPrice": 1800
+              "title": "Item Name",
+              "description": "Item Description",
+              "quantity": 1,
+              "unit": "units",
+              "unitAmount": 100,
+              "totalPrice": 100
             }
           ],
-          "subtotal": 1800
+          "subtotal": 100
         }
       ]
     }
   ],
-  "totalCost": 1800
+  "totalCost": 100
 }
 
-Rules:
-1. Response must be valid JSON
-2. Include only the JSON, no other text
-3. All numbers must be actual numbers, not strings
-4. Each item's totalPrice must be quantity * unitAmount
-5. Each subgroup's subtotal must be the sum of its items' totalPrices
-6. totalCost must be the sum of all subtotals`;
+2. IMPORTANT RULES:
+- Return ONLY the JSON object, no explanations or text before or after
+- All numbers must be actual numbers, not strings
+- Ensure each field has a value
+- Total price = quantity × unit amount
+- Subtotal = sum of all item total prices
+- Total cost = sum of all subtotals`;
 
   const apiRequest: LlamaRequest = {
     messages: [
@@ -118,59 +119,80 @@ Rules:
     const data = await response.json();
     console.log('LLaMA API raw response:', JSON.stringify(data, null, 2));
 
-    if (!data.choices || !data.choices[0]?.message?.content) {
+    if (!data.choices?.[0]?.message?.content) {
       console.error('Unexpected API response format:', data);
-      throw new Error('Invalid response format from LLaMA API');
+      throw new Error('Invalid response format from LLaMA API: missing content in response');
     }
 
     let content = data.choices[0].message.content.trim();
-    console.log('LLaMA API content:', content);
+    console.log('Raw content from LLaMA:', content);
 
     // Try to extract JSON if there's any surrounding text
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        content = jsonMatch[0];
-      }
-    } catch (error) {
-      console.error('Error extracting JSON:', error);
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('No JSON object found in response');
+      throw new Error('No valid JSON found in LLaMA API response');
     }
 
-    // Try to parse the response to validate JSON
-    try {
-      const parsed = JSON.parse(content);
-      
-      // Basic validation of required fields
-      if (!parsed.groups || !Array.isArray(parsed.groups)) {
-        throw new Error('Missing or invalid groups array');
-      }
+    content = jsonMatch[0];
+    console.log('Extracted JSON content:', content);
 
-      if (typeof parsed.totalCost !== 'number') {
-        throw new Error('Missing or invalid totalCost');
-      }
-
-      // Basic structure validation
-      for (const group of parsed.groups) {
-        if (!group.subgroups || !Array.isArray(group.subgroups)) {
-          throw new Error('Invalid subgroups structure');
-        }
-
-        for (const subgroup of group.subgroups) {
-          if (!subgroup.items || !Array.isArray(subgroup.items)) {
-            throw new Error('Invalid items structure');
-          }
-
-          if (typeof subgroup.subtotal !== 'number') {
-            throw new Error('Invalid subtotal');
-          }
-        }
-      }
-
-      return content;
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      throw new Error(`Invalid JSON in LLaMA API response: ${parseError.message}`);
+    // Validate JSON structure
+    const parsed = JSON.parse(content);
+    
+    // Validate required fields and structure
+    if (!Array.isArray(parsed.groups)) {
+      throw new Error('Missing or invalid groups array');
     }
+
+    if (typeof parsed.totalCost !== 'number') {
+      throw new Error('Missing or invalid totalCost');
+    }
+
+    // Validate each group and its structure
+    for (const group of parsed.groups) {
+      if (!group.name || typeof group.name !== 'string') {
+        throw new Error('Invalid group name');
+      }
+
+      if (!Array.isArray(group.subgroups)) {
+        throw new Error('Invalid subgroups array');
+      }
+
+      for (const subgroup of group.subgroups) {
+        if (!subgroup.name || typeof subgroup.name !== 'string') {
+          throw new Error('Invalid subgroup name');
+        }
+
+        if (!Array.isArray(subgroup.items)) {
+          throw new Error('Invalid items array');
+        }
+
+        if (typeof subgroup.subtotal !== 'number') {
+          throw new Error('Invalid subgroup subtotal');
+        }
+
+        for (const item of subgroup.items) {
+          if (!item.title || typeof item.title !== 'string') {
+            throw new Error('Invalid item title');
+          }
+          if (typeof item.quantity !== 'number') {
+            throw new Error('Invalid item quantity');
+          }
+          if (!item.unit || typeof item.unit !== 'string') {
+            throw new Error('Invalid item unit');
+          }
+          if (typeof item.unitAmount !== 'number') {
+            throw new Error('Invalid item unitAmount');
+          }
+          if (typeof item.totalPrice !== 'number') {
+            throw new Error('Invalid item totalPrice');
+          }
+        }
+      }
+    }
+
+    return content;
   } catch (error) {
     console.error('Error in generateLlamaResponse:', error);
     throw error;
