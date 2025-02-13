@@ -7,6 +7,7 @@ import { ContactFormHeader } from "./ContactFormHeader";
 import { ContactFormFields } from "./ContactFormFields";
 import { ContactFormButtons } from "./ContactFormButtons";
 import { LoadingScreen } from "./LoadingScreen";
+import { EstimateAnimation } from "./EstimateAnimation";
 
 interface ContactFormProps {
   onSubmit: (data: {
@@ -139,7 +140,7 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
   return (
     <div className="relative">
       <div className="fixed inset-0 z-10">
-        <LoadingScreen message="Preparing your estimate..." isEstimate={true} isBackdrop={true} />
+        <EstimateAnimation />
       </div>
       <div className="fixed inset-0 bg-black/5 flex items-center justify-center z-20">
         <div className="w-full max-w-md mx-auto bg-white rounded-xl p-6 shadow-lg animate-fadeIn">
