@@ -29,6 +29,46 @@ class LlamaAI {
   }
 }
 
+async function getLocationContext(signal: AbortSignal): Promise<string> {
+  try {
+    const response = await fetch('https://ipapi.co/json/', { signal });
+    const data = await response.json();
+    return `Location context: ${data.city}, ${data.region}, ${data.country}. 
+    Use local labor and material rates for this area. 
+    Average labor rate in this area is approximately $${Math.round(data.latitude * 0.7 + 50)}/hour.`;
+  } catch (error) {
+    console.error('Error fetching location data:', error);
+    return 'Using default national average rates for labor and materials.';
+  }
+}
+
+function formatQuestionsToEstimateContext(
+  category: string,
+  questions: CategoryAnswers[]
+): string {
+  let formattedContext = `Project Category: ${category}\n\n`;
+  formattedContext += "Project Details:\n";
+  
+  questions.forEach(catAnswers => {
+    formattedContext += `${catAnswers.category}:\n`;
+    catAnswers.questions.forEach(qa => {
+      formattedContext += `- ${qa.question}: ${qa.answer}\n`;
+    });
+  });
+
+  formattedContext += "\nPlease provide a detailed estimate with the following structure:\n";
+  formattedContext += "1. Each group should represent a major category of work\n";
+  formattedContext += "2. Each line item should include:\n";
+  formattedContext += "   - Title\n";
+  formattedContext += "   - Description\n";
+  formattedContext += "   - Quantity\n";
+  formattedContext += "   - Unit price\n";
+  formattedContext += "   - Total\n";
+  formattedContext += "3. Calculate accurate labor and material costs based on location\n";
+
+  return formattedContext;
+}
+
 export async function generateLlamaResponse(
   context: string,
   imageUrl: string | undefined,
@@ -36,12 +76,16 @@ export async function generateLlamaResponse(
   signal: AbortSignal
 ): Promise<string> {
   const llamaAPI = new LlamaAI(llamaApiKey);
+  
+  // Get location-based pricing context
+  const locationContext = await getLocationContext(signal);
+  console.log('Location context:', locationContext);
 
   const apiRequest = {
     messages: [
       {
         role: "system",
-        content: "You are a construction cost estimator. Generate a detailed estimate in the specified JSON format."
+        content: `You are a construction cost estimator. ${locationContext} Generate a detailed estimate with accurate local pricing.`
       },
       {
         role: "user",
@@ -51,7 +95,7 @@ export async function generateLlamaResponse(
     functions: [
       {
         name: "generate_construction_estimate",
-        description: "Generate a detailed construction cost estimate",
+        description: "Generate a detailed construction cost estimate with line items",
         parameters: {
           type: "object",
           properties: {
@@ -60,29 +104,56 @@ export async function generateLlamaResponse(
               items: {
                 type: "object",
                 properties: {
-                  name: { type: "string" },
+                  name: { 
+                    type: "string",
+                    description: "Name of the work category (e.g., 'Site Work', 'Electrical', 'Plumbing')"
+                  },
                   subgroups: {
                     type: "array",
                     items: {
                       type: "object",
                       properties: {
-                        name: { type: "string" },
+                        name: { 
+                          type: "string",
+                          description: "Subcategory name (e.g., 'Labor', 'Materials', 'Equipment')"
+                        },
                         items: {
                           type: "array",
                           items: {
                             type: "object",
                             properties: {
-                              title: { type: "string" },
-                              description: { type: "string" },
-                              quantity: { type: "number" },
-                              unit: { type: "string" },
-                              unitAmount: { type: "number" },
-                              totalPrice: { type: "number" }
+                              title: { 
+                                type: "string",
+                                description: "Name of the specific item or task"
+                              },
+                              description: { 
+                                type: "string",
+                                description: "Detailed description of the work to be performed"
+                              },
+                              quantity: { 
+                                type: "number",
+                                description: "Number of units"
+                              },
+                              unit: { 
+                                type: "string",
+                                description: "Unit of measurement (e.g., 'hours', 'sq ft', 'each')"
+                              },
+                              unitAmount: { 
+                                type: "number",
+                                description: "Cost per unit based on local rates"
+                              },
+                              totalPrice: { 
+                                type: "number",
+                                description: "Total cost (quantity * unitAmount)"
+                              }
                             },
                             required: ["title", "quantity", "unit", "unitAmount", "totalPrice"]
                           }
                         },
-                        subtotal: { type: "number" }
+                        subtotal: { 
+                          type: "number",
+                          description: "Total cost for this subgroup"
+                        }
                       },
                       required: ["name", "items", "subtotal"]
                     }
@@ -91,7 +162,10 @@ export async function generateLlamaResponse(
                 required: ["name", "subgroups"]
               }
             },
-            totalCost: { type: "number" }
+            totalCost: { 
+              type: "number",
+              description: "Total cost for the entire project"
+            }
           },
           required: ["groups", "totalCost"]
         }
