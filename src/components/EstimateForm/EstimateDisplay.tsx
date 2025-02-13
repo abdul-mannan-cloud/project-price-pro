@@ -466,47 +466,15 @@ ${templateSettings.estimate_footer_text || ''}
       );
     }
 
-    return groups?.map((group, index) => (
-      <div key={index} className={getTemplateStyles(templateSettings.estimate_template_style).section}>
-        <h3 className={getTemplateStyles(templateSettings.estimate_template_style).groupTitle}>{group.name}</h3>
-        {group.description && (
-          <p className="text-sm text-gray-600 mb-4">{group.description}</p>
-        )}
-        
-        {templateSettings.estimate_template_style === 'classic' ? (
-          <div className="space-y-2">
-            {group.subgroups?.map(subgroup => (
-              <div key={subgroup.name} className="space-y-1">
-                {subgroup.items?.map((item, itemIndex) => (
-                  <div key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
-                    <div className={getTemplateStyles(templateSettings.estimate_template_style).tableCell}>
-                      <span className="font-medium">{item.title}</span>
-                      {item.unit && ` (${formatUnit(item.unit)})`}
-                      {item.description && (
-                        <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                      )}
-                      <div className="text-sm text-gray-600 mt-1">
-                        {isEstimateReady ? (
-                          <>{item.quantity.toLocaleString()} × {formatCurrency(item.unitAmount)} = {formatCurrency(item.totalPrice)}</>
-                        ) : (
-                          <div className="h-4 w-32 relative overflow-hidden">
-                            <EstimateAnimation />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {!templateSettings.estimate_hide_subtotals && (
-                  <div className={getTemplateStyles(templateSettings.estimate_template_style).subtotal}>
-                    Subtotal for {subgroup.name}: {formatCurrency(subgroup.subtotal)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="w-full">
+    return (
+      <div className="space-y-6">
+        {groups?.map((group, index) => (
+          <div key={index} className={getTemplateStyles(templateSettings.estimate_template_style).section}>
+            <h3 className={getTemplateStyles(templateSettings.estimate_template_style).groupTitle}>{group.name}</h3>
+            {group.description && (
+              <p className="text-sm text-gray-600 mb-4">{group.description}</p>
+            )}
+            
             <table className={getTemplateStyles(templateSettings.estimate_template_style).table}>
               <thead>
                 <tr>
@@ -522,7 +490,7 @@ ${templateSettings.estimate_footer_text || ''}
                   subgroup.items?.map((item, itemIndex) => (
                     <tr key={`${subgroup.name}-${itemIndex}`} className={getTemplateStyles(templateSettings.estimate_template_style).tableRow}>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[45%]")}>
-                        {item.title} {item.unit && `(${formatUnit(item.unit)})`}
+                        {item.title}
                       </td>
                       <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "w-[35%]")}>
                         {item.description}
@@ -539,23 +507,22 @@ ${templateSettings.estimate_footer_text || ''}
                     </tr>
                   ))
                 )}
+                {!templateSettings.estimate_hide_subtotals && (
+                  <tr className="border-t border-gray-200">
+                    <td colSpan={4} className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "text-right font-medium")}>
+                      Subtotal for {group.name}
+                    </td>
+                    <td className={cn(getTemplateStyles(templateSettings.estimate_template_style).tableCell, "text-right font-medium")}>
+                      {formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0))}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
-        )}
-
-        {!templateSettings.estimate_hide_subtotals && templateSettings.estimate_template_style !== 'minimal' && (
-          <div className={cn(getTemplateStyles(templateSettings.estimate_template_style).subtotal, "mt-4 pt-3 border-t")}>
-            <span className={getTemplateStyles(templateSettings.estimate_template_style).text}>
-              Subtotal for {group.name}
-            </span>
-            <span className="font-semibold ml-4">
-              {formatCurrency(group.subgroups?.reduce((sum, subgroup) => sum + (subgroup.subtotal || 0), 0))}
-            </span>
-          </div>
-        )}
+        ))}
       </div>
-    ));
+    );
   };
 
   if (isSettingsLoading || isLoading) {
