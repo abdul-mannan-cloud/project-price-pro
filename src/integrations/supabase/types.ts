@@ -252,7 +252,11 @@ export type Database = {
           ai_generated_title: string | null
           answers: Json | null
           category: string | null
+          client_signature: string | null
+          client_signature_date: string | null
           contractor_id: string | null
+          contractor_signature: string | null
+          contractor_signature_date: string | null
           created_at: string | null
           error_message: string | null
           error_timestamp: string | null
@@ -277,7 +281,11 @@ export type Database = {
           ai_generated_title?: string | null
           answers?: Json | null
           category?: string | null
+          client_signature?: string | null
+          client_signature_date?: string | null
           contractor_id?: string | null
+          contractor_signature?: string | null
+          contractor_signature_date?: string | null
           created_at?: string | null
           error_message?: string | null
           error_timestamp?: string | null
@@ -302,7 +310,11 @@ export type Database = {
           ai_generated_title?: string | null
           answers?: Json | null
           category?: string | null
+          client_signature?: string | null
+          client_signature_date?: string | null
           contractor_id?: string | null
+          contractor_signature?: string | null
+          contractor_signature_date?: string | null
           created_at?: string | null
           error_message?: string | null
           error_timestamp?: string | null
