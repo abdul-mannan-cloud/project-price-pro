@@ -42,33 +42,6 @@ async function getLocationContext(signal: AbortSignal): Promise<string> {
   }
 }
 
-function formatQuestionsToEstimateContext(
-  category: string,
-  questions: CategoryAnswers[]
-): string {
-  let formattedContext = `Project Category: ${category}\n\n`;
-  formattedContext += "Project Details:\n";
-  
-  questions.forEach(catAnswers => {
-    formattedContext += `${catAnswers.category}:\n`;
-    catAnswers.questions.forEach(qa => {
-      formattedContext += `- ${qa.question}: ${qa.answer}\n`;
-    });
-  });
-
-  formattedContext += "\nPlease provide a detailed estimate with the following structure:\n";
-  formattedContext += "1. Each group should represent a major category of work\n";
-  formattedContext += "2. Each line item should include:\n";
-  formattedContext += "   - Title\n";
-  formattedContext += "   - Description\n";
-  formattedContext += "   - Quantity\n";
-  formattedContext += "   - Unit price\n";
-  formattedContext += "   - Total\n";
-  formattedContext += "3. Calculate accurate labor and material costs based on location\n";
-
-  return formattedContext;
-}
-
 export async function generateLlamaResponse(
   context: string,
   imageUrl: string | undefined,
@@ -99,75 +72,45 @@ export async function generateLlamaResponse(
         parameters: {
           type: "object",
           properties: {
-            groups: {
+            lineItems: {
               type: "array",
               items: {
                 type: "object",
                 properties: {
-                  name: { 
+                  group: { 
                     type: "string",
-                    description: "Name of the work category (e.g., 'Site Work', 'Electrical', 'Plumbing')"
+                    description: "Category or group of work (e.g., 'Labor', 'Materials', 'Equipment')"
                   },
-                  subgroups: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        name: { 
-                          type: "string",
-                          description: "Subcategory name (e.g., 'Labor', 'Materials', 'Equipment')"
-                        },
-                        items: {
-                          type: "array",
-                          items: {
-                            type: "object",
-                            properties: {
-                              title: { 
-                                type: "string",
-                                description: "Name of the specific item or task"
-                              },
-                              description: { 
-                                type: "string",
-                                description: "Detailed description of the work to be performed"
-                              },
-                              quantity: { 
-                                type: "number",
-                                description: "Number of units"
-                              },
-                              unit: { 
-                                type: "string",
-                                description: "Unit of measurement (e.g., 'hours', 'sq ft', 'each')"
-                              },
-                              unitAmount: { 
-                                type: "number",
-                                description: "Cost per unit based on local rates"
-                              },
-                              totalPrice: { 
-                                type: "number",
-                                description: "Total cost (quantity * unitAmount)"
-                              }
-                            },
-                            required: ["title", "quantity", "unit", "unitAmount", "totalPrice"]
-                          }
-                        },
-                        subtotal: { 
-                          type: "number",
-                          description: "Total cost for this subgroup"
-                        }
-                      },
-                      required: ["name", "items", "subtotal"]
-                    }
+                  title: { 
+                    type: "string",
+                    description: "Title of the line item"
+                  },
+                  description: { 
+                    type: "string",
+                    description: "Detailed description of the work or item"
+                  },
+                  quantity: { 
+                    type: "number",
+                    description: "Number of units"
+                  },
+                  unitPrice: { 
+                    type: "number",
+                    description: "Price per unit"
+                  },
+                  total: { 
+                    type: "number",
+                    description: "Total cost (quantity * unitPrice)"
                   }
                 },
-                required: ["name", "subgroups"]
+                required: ["group", "title", "description", "quantity", "unitPrice", "total"]
               }
             },
-            totalCost: { 
+            totalCost: {
               type: "number",
               description: "Total cost for the entire project"
             }
           },
-          required: ["groups", "totalCost"]
+          required: ["lineItems", "totalCost"]
         }
       }
     ],

@@ -1,4 +1,3 @@
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { EstimateData } from "./types.ts";
 
@@ -16,66 +15,41 @@ export function createEstimate(
       throw new Error('Invalid JSON response');
     }
     
-    // Validate and normalize the response structure
-    const normalizedEstimate: EstimateData = {
+    // Transform the flat line items structure into the grouped structure expected by the frontend
+    const groupedEstimate: EstimateData = {
       groups: [],
-      totalCost: 0,
+      totalCost: parsedResponse.totalCost || 0,
       ai_generated_title: category || "Construction Project",
       ai_generated_message: projectDescription || "Project estimate"
     };
 
-    // If the response has the expected structure, use it
-    if (parsedResponse.groups && Array.isArray(parsedResponse.groups)) {
-      normalizedEstimate.groups = parsedResponse.groups.map(group => ({
-        name: group.name || "Unnamed Group",
-        subgroups: (group.subgroups || []).map(subgroup => ({
-          name: subgroup.name || "Unnamed Subgroup",
-          items: (subgroup.items || []).map(item => ({
-            title: item.title || "Unnamed Item",
-            description: item.description || "",
-            quantity: typeof item.quantity === 'number' ? item.quantity : 1,
-            unit: item.unit || "unit",
-            unitAmount: typeof item.unitAmount === 'number' ? item.unitAmount : 0,
-            totalPrice: typeof item.totalPrice === 'number' ? item.totalPrice : 0
-          })),
-          subtotal: typeof subgroup.subtotal === 'number' ? subgroup.subtotal : 
-            (subgroup.items || []).reduce((sum, item) => sum + (item.totalPrice || 0), 0)
-        }))
-      }));
+    // Group line items by their group property
+    const groupedItems = parsedResponse.lineItems.reduce((acc: any, item: any) => {
+      if (!acc[item.group]) {
+        acc[item.group] = [];
+      }
+      acc[item.group].push(item);
+      return acc;
+    }, {});
 
-      // Calculate total cost
-      normalizedEstimate.totalCost = normalizedEstimate.groups.reduce((total, group) => 
-        total + group.subgroups.reduce((groupTotal, subgroup) => 
-          groupTotal + subgroup.subtotal, 0), 0);
-    }
+    // Transform into the required structure
+    groupedEstimate.groups = Object.entries(groupedItems).map(([groupName, items]: [string, any[]]) => ({
+      name: groupName,
+      subgroups: [{
+        name: 'Items',
+        items: items.map(item => ({
+          title: item.title,
+          description: item.description,
+          quantity: item.quantity,
+          unit: 'unit', // Default unit since it's not in the simplified structure
+          unitAmount: item.unitPrice,
+          totalPrice: item.total
+        })),
+        subtotal: items.reduce((sum, item) => sum + (item.total || 0), 0)
+      }]
+    }));
 
-    // If no valid groups were created, create a default group
-    if (normalizedEstimate.groups.length === 0) {
-      normalizedEstimate.groups = [
-        {
-          name: "Labor and Materials",
-          subgroups: [
-            {
-              name: category || "General Work",
-              items: [
-                {
-                  title: "General Labor",
-                  description: projectDescription || "Construction work",
-                  quantity: 1,
-                  unit: "job",
-                  unitAmount: 1000,
-                  totalPrice: 1000
-                }
-              ],
-              subtotal: 1000
-            }
-          ]
-        }
-      ];
-      normalizedEstimate.totalCost = 1000;
-    }
-
-    return normalizedEstimate;
+    return groupedEstimate;
   } catch (error) {
     console.error('Error creating estimate:', error);
     // Return a basic fallback estimate
