@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { getTemplateStyles } from "@/lib/template-styles";
 import { Database } from "@/integrations/supabase/types";
 import { Json } from "@/integrations/supabase/types";
 import { BrandingColors } from "@/types/settings";
