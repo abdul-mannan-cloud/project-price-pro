@@ -9,44 +9,32 @@ interface EstimateProgressProps {
 
 export const EstimateProgress = ({ stage, progress }: EstimateProgressProps) => {
   const getProgressValue = () => {
-    const totalSteps = 5; // photo, description, category, questions, contact
-    const baseProgress = {
-      photo: 1,
-      description: 2,
-      category: 3,
-      questions: 4,
-      contact: 5,
-      estimate: 5,
-    }[stage];
+    // Define base progress values for each stage
+    const stageProgress = {
+      photo: 25,        // Photo upload or skip = 25%
+      description: 50,  // Description and question generation = 50%
+      category: 50,     // Keep at 50% as we prepare for questions
+      questions: 0,     // Will be calculated dynamically
+      contact: 100,     // Contact form shows after estimate generation
+      estimate: 100,    // Estimate complete
+    };
 
-    // Calculate progress percentage based on current stage and question progress
+    // For questions stage, calculate progress dynamically
     if (stage === 'questions') {
-      // Map the questions progress (0-100) to the range between category (60%) and contact (80%)
-      const questionBaseProgress = 60; // Progress after category selection
-      const questionMaxProgress = 80; // Progress before contact form
-      return questionBaseProgress + ((progress / 100) * (questionMaxProgress - questionBaseProgress));
+      // Start from 50% (after description) and progress to 100% (estimate generation)
+      // Map the questions progress (0-100) to the range between 50% and 100%
+      const questionStartProgress = 50;  // Start after description
+      const questionEndProgress = 100;   // End at estimate generation
+      const progressRange = questionEndProgress - questionStartProgress;
+      
+      return questionStartProgress + ((progress / 100) * progressRange);
     }
 
-    // Calculate base progress percentage for other stages
-    const basePercentage = (baseProgress / totalSteps) * 100;
-
-    switch (stage) {
-      case 'photo':
-        return 20;
-      case 'description':
-        return 40;
-      case 'category':
-        return 60;
-      case 'contact':
-        return 80;
-      case 'estimate':
-        return 100;
-      default:
-        return basePercentage;
-    }
+    // Return the base progress for other stages
+    return stageProgress[stage] || 0;
   };
 
-  const showProgressBar = stage !== 'estimate' && stage !== 'contact';
+  const showProgressBar = stage !== 'estimate';
 
   if (!showProgressBar) return null;
 
