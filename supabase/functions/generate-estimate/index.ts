@@ -29,12 +29,18 @@ serve(async (req) => {
       throw new Error('Method not allowed');
     }
 
-    // Get the API key using the exact secret name
-    const llamaApiKey = Deno.env.get('llama v2');
+    // Try both formats of the API key name
+    let llamaApiKey = Deno.env.get('LLAMA_API_KEY');
+    if (!llamaApiKey) {
+      llamaApiKey = Deno.env.get('llama v2');
+    }
+    
     if (!llamaApiKey) {
       console.error('Missing LLaMA API key in environment variables');
-      throw new Error('Missing LLaMA API key');
+      throw new Error('Missing LLaMA API key. Please ensure LLAMA_API_KEY is set in your environment variables.');
     }
+
+    console.log('API key found:', llamaApiKey ? 'Yes' : 'No');
 
     const requestData: EstimateRequest = await req.json();
     console.log('Request data:', requestData);
