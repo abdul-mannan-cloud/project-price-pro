@@ -137,10 +137,12 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
     : undefined;
 
   return (
-    <>
-      <LoadingScreen message="Preparing your estimate..." isEstimate={true} isBackdrop={true} />
-      <div className="fixed inset-0 bg-black/13 flex items-center justify-center z-30">
-        <div className="w-full max-w-md mx-auto bg-background rounded-xl p-6 shadow-lg animate-fadeIn">
+    <div className="relative">
+      <div className="fixed inset-0 z-10">
+        <LoadingScreen message="Preparing your estimate..." isEstimate={true} isBackdrop={true} />
+      </div>
+      <div className="fixed inset-0 bg-black/5 flex items-center justify-center z-20">
+        <div className="w-full max-w-md mx-auto bg-background/95 backdrop-blur-sm rounded-xl p-6 shadow-lg animate-fadeIn">
           <ContactFormHeader />
           
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -158,6 +160,6 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
           </form>
         </div>
       </div>
-    </>
+    </div>
   );
 };
