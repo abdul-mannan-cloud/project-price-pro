@@ -1,4 +1,3 @@
-
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,14 +67,9 @@ const Dashboard = () => {
     },
     enabled: !!userId,
     retry: false,
-    onError: (error) => {
-      console.error('Error fetching contractor:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load contractor data. Please try refreshing the page.",
-        variant: "destructive",
-      });
-    }
+    meta: {
+      errorMessage: "Failed to load contractor data",
+    },
   });
 
   const { data: leads = [], isError: isLeadsError } = useQuery({
@@ -94,15 +88,21 @@ const Dashboard = () => {
     },
     enabled: !!userId && !!contractor,
     retry: 1,
-    onError: (error) => {
-      console.error('Error fetching leads:', error);
+    meta: {
+      errorMessage: "Failed to load leads",
+    },
+  });
+
+  // Handle query errors with useEffect
+  useEffect(() => {
+    if (isLeadsError) {
       toast({
         title: "Error",
         description: "Failed to load leads. Please try refreshing the page.",
         variant: "destructive",
       });
     }
-  });
+  }, [isLeadsError, toast]);
 
   if (isContractorLoading) {
     return (
