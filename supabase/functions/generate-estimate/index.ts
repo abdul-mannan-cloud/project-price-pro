@@ -120,7 +120,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'Failed to generate estimate',
-        details: error.message 
+        details: error.message,
+        stack: error.stack // Adding stack trace for better debugging
       }),
       { 
         status: 500,
