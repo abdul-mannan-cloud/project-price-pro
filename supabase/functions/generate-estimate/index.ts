@@ -29,9 +29,10 @@ serve(async (req) => {
       throw new Error('Method not allowed');
     }
 
-    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
+    // Updated to use the correct secret name
+    const llamaApiKey = Deno.env.get('llama v2');
     if (!llamaApiKey) {
-      throw new Error('Missing LLAMA_API_KEY');
+      throw new Error('Missing llama v2 API key');
     }
 
     const requestData: EstimateRequest = await req.json();
@@ -121,7 +122,7 @@ serve(async (req) => {
       JSON.stringify({ 
         error: 'Failed to generate estimate',
         details: error.message,
-        stack: error.stack // Adding stack trace for better debugging
+        stack: error.stack
       }),
       { 
         status: 500,
