@@ -125,16 +125,56 @@ IMPORTANT:
       throw new Error('Invalid response format from LLaMA API');
     }
 
-    const content = data.choices[0].message.content.trim();
+    let content = data.choices[0].message.content.trim();
     console.log('LLaMA API content:', content);
+
+    // Try to extract JSON if there's any surrounding text
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        content = jsonMatch[0];
+      }
+    } catch (error) {
+      console.error('Error extracting JSON:', error);
+    }
 
     // Try to parse the response to validate JSON
     try {
       const parsed = JSON.parse(content);
-      if (!parsed.groups || !Array.isArray(parsed.groups) || !parsed.totalCost) {
-        throw new Error('Response missing required fields');
-      }
-      return content;
+      
+      // Validate structure and convert any string numbers to actual numbers
+      const sanitizedGroups = parsed.groups.map((group: any) => ({
+        name: String(group.name),
+        subgroups: group.subgroups.map((subgroup: any) => {
+          const items = subgroup.items.map((item: any) => ({
+            title: String(item.title),
+            description: String(item.description || ''),
+            quantity: Number(item.quantity),
+            unit: String(item.unit),
+            unitAmount: Number(item.unitAmount),
+            totalPrice: Number(item.quantity) * Number(item.unitAmount)
+          }));
+
+          const subtotal = items.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
+
+          return {
+            name: String(subgroup.name),
+            items,
+            subtotal
+          };
+        })
+      }));
+
+      const totalCost = sanitizedGroups.reduce((total: number, group: any) => 
+        total + group.subgroups.reduce((groupTotal: number, subgroup: any) => 
+          groupTotal + subgroup.subtotal, 0), 0);
+
+      const sanitizedResponse = {
+        groups: sanitizedGroups,
+        totalCost
+      };
+
+      return JSON.stringify(sanitizedResponse, null, 2);
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       throw new Error('Invalid JSON in LLaMA API response');
