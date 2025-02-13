@@ -91,52 +91,54 @@ export async function generateLlamaResponse(
   let retries = 3;
   while (retries > 0) {
     try {
+      // Use custom headers for LLaMA API
+      const headers = {
+        'Authorization': `Bearer ${llamaApiKey}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+
+      console.log('Using API key (first 10 chars):', llamaApiKey.substring(0, 10));
+      
       const response = await fetch('https://api.llama-api.com/chat/completions', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${llamaApiKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(apiRequest),
         signal
       });
 
+      const responseText = await response.text();
+      console.log('Raw response status:', response.status);
+      console.log('Raw response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('Raw response text:', responseText);
+
       if (!response.ok) {
-        const responseText = await response.text();
-        console.error('LLaMA API error response:', responseText);
         throw new Error(`LLaMA API request failed with status ${response.status}: ${responseText}`);
       }
-
-      const responseText = await response.text();
-      console.log('LLaMA API raw response:', responseText);
 
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
         console.error('Failed to parse API response as JSON:', responseText);
-        throw new Error('Invalid JSON response from API');
+        throw new Error(`Invalid JSON response from API: ${parseError.message}`);
       }
 
-      console.log('Parsed LLaMA response:', data);
+      console.log('Parsed response data:', JSON.stringify(data, null, 2));
 
-      // Check for the response in multiple possible locations
-      let content = null;
-      if (data.choices?.[0]?.message?.content) {
-        content = data.choices[0].message.content;
-      } else if (data.choices?.[0]?.text) {
-        content = data.choices[0].text;
-      } else if (data.response) {
-        content = data.response;
-      }
+      // Check various possible response formats
+      const content = data.choices?.[0]?.message?.content || 
+                     data.choices?.[0]?.text || 
+                     data.response || 
+                     data.generated_text ||
+                     data.output?.text;
 
       if (!content) {
-        console.error('Unexpected API response format:', data);
+        console.error('Response structure:', JSON.stringify(data, null, 2));
         throw new Error('No content found in API response');
       }
 
-      content = content.trim();
-      console.log('Content from LLaMA:', content);
+      console.log('Extracted content:', content);
 
       // Try to extract JSON from the content
       const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -145,22 +147,14 @@ export async function generateLlamaResponse(
         throw new Error('No JSON object found in response');
       }
 
-      // Validate the JSON structure before returning
-      let parsedJson;
-      try {
-        parsedJson = JSON.parse(jsonMatch[0]);
-      } catch (parseError) {
-        console.error('Failed to parse content as JSON:', jsonMatch[0]);
-        throw new Error('Invalid JSON structure in response');
-      }
-
+      const parsedJson = JSON.parse(jsonMatch[0]);
+      
       // Validate the structure
       if (!parsedJson.groups || !Array.isArray(parsedJson.groups)) {
         console.error('Invalid estimate structure:', parsedJson);
         throw new Error('Invalid estimate structure - missing or invalid groups array');
       }
 
-      // Additional validation of the structure
       for (const group of parsedJson.groups) {
         if (!group.subgroups || !Array.isArray(group.subgroups)) {
           throw new Error('Invalid group structure - missing or invalid subgroups array');
