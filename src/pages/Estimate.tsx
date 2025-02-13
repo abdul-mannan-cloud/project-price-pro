@@ -154,13 +154,13 @@ const EstimatePage = () => {
         <div className="relative">
           {/* Show estimate animation behind contact form */}
           {(stage === 'contact' || isGeneratingEstimate) && (
-            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 flex items-center justify-center">
-              <EstimateAnimation className="w-[200px] h-[200px]" height="h-[200px]" width="w-[200px]" />
+            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-20 flex items-center justify-center">
+              <LoadingScreen message="Generating your estimate..." isEstimate />
             </div>
           )}
 
           {stage === 'contact' && (
-            <div className="animate-fadeIn relative z-40">
+            <div className="animate-fadeIn relative z-30">
               <ContactForm 
                 onSubmit={handleContactSubmit} 
                 leadId={currentLeadId || undefined}
