@@ -88,7 +88,8 @@ export async function updateLeadWithEstimate(
         estimated_cost: estimate.totalCost,
         ai_generated_title: estimate.ai_generated_title,
         ai_generated_message: estimate.ai_generated_message,
-        error_message: null // Clear any previous error
+        error_message: null, // Clear any previous error
+        error_timestamp: null // Clear error timestamp when estimate succeeds
       })
       .eq('id', leadId);
 
@@ -111,12 +112,13 @@ export async function updateLeadWithError(
   const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
   
   try {
+    const timestamp = new Date().toISOString();
     const { error } = await supabaseAdmin
       .from('leads')
       .update({ 
         status: 'error',
         error_message: errorMessage,
-        error_timestamp: new Date().toISOString()
+        error_timestamp: timestamp
       })
       .eq('id', leadId);
 
