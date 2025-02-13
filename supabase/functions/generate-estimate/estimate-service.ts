@@ -1,3 +1,4 @@
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { EstimateData } from "./types.ts";
 
@@ -15,39 +16,53 @@ export function createEstimate(
       throw new Error('Invalid JSON response');
     }
     
-    // Transform the flat line items structure into the grouped structure expected by the frontend
+    // Transform into the expected grouped structure
     const groupedEstimate: EstimateData = {
-      groups: [],
-      totalCost: parsedResponse.totalCost || 0,
-      ai_generated_title: category || "Construction Project",
-      ai_generated_message: projectDescription || "Project estimate"
+      groups: [{
+        name: category || "Construction Work",
+        description: projectDescription,
+        subgroups: []
+      }],
+      totalCost: 0,
+      ai_generated_title: category ? `${category} Project Estimate` : "Construction Project Estimate",
+      ai_generated_message: projectDescription || "Detailed project estimate breakdown"
     };
 
-    // Group line items by their group property
-    const groupedItems = parsedResponse.lineItems.reduce((acc: any, item: any) => {
-      if (!acc[item.group]) {
-        acc[item.group] = [];
+    // Group items by their categories
+    const categories = new Map<string, Array<any>>();
+    
+    // First pass: organize items by category
+    parsedResponse.lineItems?.forEach((item: any) => {
+      const category = item.category || "General";
+      if (!categories.has(category)) {
+        categories.set(category, []);
       }
-      acc[item.group].push(item);
-      return acc;
-    }, {});
+      categories.get(category)?.push({
+        title: item.title,
+        description: item.description,
+        quantity: item.quantity || 1,
+        unit: item.unit || "unit",
+        unitAmount: item.unitPrice || item.price || 0,
+        totalPrice: item.total || (item.quantity || 1) * (item.unitPrice || item.price || 0)
+      });
+    });
 
-    // Transform into the required structure
-    groupedEstimate.groups = Object.entries(groupedItems).map(([groupName, items]: [string, any[]]) => ({
-      name: groupName,
-      subgroups: [{
-        name: 'Items',
-        items: items.map(item => ({
-          title: item.title,
-          description: item.description,
-          quantity: item.quantity,
-          unit: 'unit', // Default unit since it's not in the simplified structure
-          unitAmount: item.unitPrice,
-          totalPrice: item.total
-        })),
-        subtotal: items.reduce((sum, item) => sum + (item.total || 0), 0)
-      }]
+    // Second pass: create subgroups
+    groupedEstimate.groups[0].subgroups = Array.from(categories.entries()).map(([name, items]) => ({
+      name,
+      items,
+      subtotal: items.reduce((sum, item) => sum + item.totalPrice, 0)
     }));
+
+    // Calculate total cost
+    groupedEstimate.totalCost = groupedEstimate.groups[0].subgroups.reduce(
+      (sum, subgroup) => sum + subgroup.subtotal, 
+      0
+    );
+
+    if (groupedEstimate.totalCost === 0) {
+      throw new Error('Invalid estimate total');
+    }
 
     return groupedEstimate;
   } catch (error) {
@@ -56,14 +71,15 @@ export function createEstimate(
     return {
       groups: [
         {
-          name: "Labor and Materials",
+          name: category || "Construction Work",
+          description: projectDescription || "Project estimate",
           subgroups: [
             {
-              name: category || "General Work",
+              name: "General Work",
               items: [
                 {
-                  title: "General Labor",
-                  description: projectDescription || "Construction work",
+                  title: "Labor and Materials",
+                  description: "General construction work",
                   quantity: 1,
                   unit: "job",
                   unitAmount: 1000,
@@ -76,8 +92,8 @@ export function createEstimate(
         }
       ],
       totalCost: 1000,
-      ai_generated_title: category || "Construction Project",
-      ai_generated_message: projectDescription || "Project estimate"
+      ai_generated_title: category ? `${category} Project Estimate` : "Construction Project Estimate",
+      ai_generated_message: projectDescription || "Project estimate details"
     };
   }
 }
