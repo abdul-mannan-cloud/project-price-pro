@@ -112,7 +112,20 @@ export const useEstimateFlow = (contractorId?: string) => {
       setIsGeneratingEstimate(true);
       setStage('estimate');
 
-      const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
+      // Update lead with contact information
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update({
+          user_name: contactData.fullName,
+          user_email: contactData.email,
+          user_phone: contactData.phone,
+          project_address: contactData.address
+        })
+        .eq('id', currentLeadId);
+
+      if (updateError) throw updateError;
+
+      const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId: currentLeadId,
           contractorId,
@@ -129,7 +142,7 @@ export const useEstimateFlow = (contractorId?: string) => {
       const checkEstimate = async () => {
         const { data: lead, error } = await supabase
           .from('leads')
-          .select('estimate_data, status, error_message, image_url')
+          .select('estimate_data, status, error_message')
           .eq('id', currentLeadId)
           .maybeSingle();
 
@@ -164,7 +177,6 @@ export const useEstimateFlow = (contractorId?: string) => {
             description: "Failed to generate estimate. Please try again.",
             variant: "destructive",
           });
-          setStage('contact');
         }
       }, 3000);
 
@@ -177,7 +189,6 @@ export const useEstimateFlow = (contractorId?: string) => {
             description: "Estimate generation timed out. Please try again.",
             variant: "destructive",
           });
-          setStage('contact');
         }
       }, 120000);
 
@@ -189,7 +200,6 @@ export const useEstimateFlow = (contractorId?: string) => {
         description: "Failed to generate estimate. Please try again.",
         variant: "destructive",
       });
-      setStage('contact');
     }
   };
 
