@@ -24,9 +24,9 @@ export async function generateLlamaResponse(
   llamaApiKey: string,
   signal: AbortSignal
 ): Promise<string> {
-  const systemPrompt = `You are a construction cost estimator AI. Your task is to generate a detailed cost estimate in JSON format based on the provided context. Always follow these rules:
+  const systemPrompt = `You are a construction cost estimator AI. Generate a detailed estimate as a JSON object.
 
-1. Use this EXACT format:
+Follow this format exactly:
 {
   "groups": [
     {
@@ -52,13 +52,12 @@ export async function generateLlamaResponse(
   "totalCost": 100
 }
 
-2. IMPORTANT RULES:
-- Return ONLY the JSON object, no explanations or text before or after
-- All numbers must be actual numbers, not strings
-- Ensure each field has a value
-- Total price = quantity × unit amount
-- Subtotal = sum of all item total prices
-- Total cost = sum of all subtotals`;
+Important:
+1. Return only JSON, no other text
+2. Use numbers for all numeric values
+3. Make sure totalPrice = quantity × unitAmount
+4. Make sure subtotal = sum of item totalPrices
+5. Make sure totalCost = sum of all subtotals`;
 
   const apiRequest: LlamaRequest = {
     messages: [
@@ -110,89 +109,69 @@ export async function generateLlamaResponse(
       signal
     });
 
+    console.log('LLaMA API response status:', response.status);
+    
+    const responseText = await response.text();
+    console.log('LLaMA API raw response text:', responseText);
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('LLaMA API error response:', errorText);
-      throw new Error(`LLaMA API request failed with status ${response.status}: ${errorText}`);
+      throw new Error(`LLaMA API request failed with status ${response.status}: ${responseText}`);
     }
 
-    const data = await response.json();
-    console.log('LLaMA API raw response:', JSON.stringify(data, null, 2));
-
-    if (!data.choices?.[0]?.message?.content) {
-      console.error('Unexpected API response format:', data);
-      throw new Error('Invalid response format from LLaMA API: missing content in response');
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error('Failed to parse LLaMA API response as JSON:', error);
+      throw new Error(`Invalid JSON response from LLaMA API: ${responseText}`);
     }
 
-    let content = data.choices[0].message.content.trim();
-    console.log('Raw content from LLaMA:', content);
+    console.log('LLaMA API parsed response:', JSON.stringify(data, null, 2));
 
-    // Try to extract JSON if there's any surrounding text
+    if (!data || !data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+      console.error('Invalid response structure:', data);
+      throw new Error('Invalid response structure from LLaMA API');
+    }
+
+    const choice = data.choices[0];
+    if (!choice || !choice.message || typeof choice.message.content !== 'string') {
+      console.error('Invalid choice structure:', choice);
+      throw new Error('Invalid choice structure in LLaMA API response');
+    }
+
+    let content = choice.message.content.trim();
+    console.log('Content from LLaMA:', content);
+
+    // Try to extract JSON from the content
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('No JSON object found in response');
-      throw new Error('No valid JSON found in LLaMA API response');
+      console.error('No JSON found in content:', content);
+      throw new Error('No JSON object found in LLaMA API response');
     }
 
     content = jsonMatch[0];
-    console.log('Extracted JSON content:', content);
-
-    // Validate JSON structure
-    const parsed = JSON.parse(content);
     
-    // Validate required fields and structure
-    if (!Array.isArray(parsed.groups)) {
-      throw new Error('Missing or invalid groups array');
-    }
-
-    if (typeof parsed.totalCost !== 'number') {
-      throw new Error('Missing or invalid totalCost');
-    }
-
-    // Validate each group and its structure
-    for (const group of parsed.groups) {
-      if (!group.name || typeof group.name !== 'string') {
-        throw new Error('Invalid group name');
+    // Try to parse the JSON to validate it
+    try {
+      const parsed = JSON.parse(content);
+      
+      if (!parsed.groups || !Array.isArray(parsed.groups)) {
+        console.error('Invalid parsed response:', parsed);
+        throw new Error('Missing or invalid groups array in response');
       }
 
-      if (!Array.isArray(group.subgroups)) {
-        throw new Error('Invalid subgroups array');
+      // Check if we have any groups
+      if (parsed.groups.length === 0) {
+        console.error('No groups in response');
+        throw new Error('No estimate groups generated');
       }
 
-      for (const subgroup of group.subgroups) {
-        if (!subgroup.name || typeof subgroup.name !== 'string') {
-          throw new Error('Invalid subgroup name');
-        }
-
-        if (!Array.isArray(subgroup.items)) {
-          throw new Error('Invalid items array');
-        }
-
-        if (typeof subgroup.subtotal !== 'number') {
-          throw new Error('Invalid subgroup subtotal');
-        }
-
-        for (const item of subgroup.items) {
-          if (!item.title || typeof item.title !== 'string') {
-            throw new Error('Invalid item title');
-          }
-          if (typeof item.quantity !== 'number') {
-            throw new Error('Invalid item quantity');
-          }
-          if (!item.unit || typeof item.unit !== 'string') {
-            throw new Error('Invalid item unit');
-          }
-          if (typeof item.unitAmount !== 'number') {
-            throw new Error('Invalid item unitAmount');
-          }
-          if (typeof item.totalPrice !== 'number') {
-            throw new Error('Invalid item totalPrice');
-          }
-        }
-      }
+      // Return the valid JSON string
+      return content;
+    } catch (error) {
+      console.error('Error parsing content as JSON:', error);
+      throw new Error(`Invalid JSON structure in response: ${error.message}`);
     }
-
-    return content;
   } catch (error) {
     console.error('Error in generateLlamaResponse:', error);
     throw error;
