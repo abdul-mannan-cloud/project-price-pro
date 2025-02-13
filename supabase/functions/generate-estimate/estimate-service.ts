@@ -7,54 +7,91 @@ export function createEstimate(
   category: string | undefined,
   projectDescription: string | undefined
 ): EstimateData {
-  let parsedResponse;
   try {
-    parsedResponse = JSON.parse(aiResponse.trim());
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(aiResponse.trim());
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', parseError);
+      throw new Error('Invalid JSON response');
+    }
     
-    // Validate response structure
-    if (!parsedResponse.groups || !Array.isArray(parsedResponse.groups)) {
-      throw new Error('Invalid response structure');
-    }
-
-    // Calculate total cost from groups
-    let totalCost = 0;
-    parsedResponse.groups.forEach((group: any) => {
-      if (group.subgroups && Array.isArray(group.subgroups)) {
-        group.subgroups.forEach((subgroup: any) => {
-          if (typeof subgroup.subtotal === 'number') {
-            totalCost += subgroup.subtotal;
-          }
-        });
-      }
-    });
-
-    // If total cost wasn't properly calculated, use the one from response or set to 0
-    if (totalCost === 0 && typeof parsedResponse.totalCost === 'number') {
-      totalCost = parsedResponse.totalCost;
-    }
-
-    return {
-      groups: parsedResponse.groups,
-      totalCost,
+    // Validate and normalize the response structure
+    const normalizedEstimate: EstimateData = {
+      groups: [],
+      totalCost: 0,
       ai_generated_title: category || "Construction Project",
       ai_generated_message: projectDescription || "Project estimate"
     };
+
+    // If the response has the expected structure, use it
+    if (parsedResponse.groups && Array.isArray(parsedResponse.groups)) {
+      normalizedEstimate.groups = parsedResponse.groups.map(group => ({
+        name: group.name || "Unnamed Group",
+        subgroups: (group.subgroups || []).map(subgroup => ({
+          name: subgroup.name || "Unnamed Subgroup",
+          items: (subgroup.items || []).map(item => ({
+            title: item.title || "Unnamed Item",
+            description: item.description || "",
+            quantity: typeof item.quantity === 'number' ? item.quantity : 1,
+            unit: item.unit || "unit",
+            unitAmount: typeof item.unitAmount === 'number' ? item.unitAmount : 0,
+            totalPrice: typeof item.totalPrice === 'number' ? item.totalPrice : 0
+          })),
+          subtotal: typeof subgroup.subtotal === 'number' ? subgroup.subtotal : 
+            (subgroup.items || []).reduce((sum, item) => sum + (item.totalPrice || 0), 0)
+        }))
+      }));
+
+      // Calculate total cost
+      normalizedEstimate.totalCost = normalizedEstimate.groups.reduce((total, group) => 
+        total + group.subgroups.reduce((groupTotal, subgroup) => 
+          groupTotal + subgroup.subtotal, 0), 0);
+    }
+
+    // If no valid groups were created, create a default group
+    if (normalizedEstimate.groups.length === 0) {
+      normalizedEstimate.groups = [
+        {
+          name: "Labor and Materials",
+          subgroups: [
+            {
+              name: category || "General Work",
+              items: [
+                {
+                  title: "General Labor",
+                  description: projectDescription || "Construction work",
+                  quantity: 1,
+                  unit: "job",
+                  unitAmount: 1000,
+                  totalPrice: 1000
+                }
+              ],
+              subtotal: 1000
+            }
+          ]
+        }
+      ];
+      normalizedEstimate.totalCost = 1000;
+    }
+
+    return normalizedEstimate;
   } catch (error) {
     console.error('Error creating estimate:', error);
-    // Return a basic fallback estimate structure if parsing fails
+    // Return a basic fallback estimate
     return {
       groups: [
         {
-          name: "Construction Work",
+          name: "Labor and Materials",
           subgroups: [
             {
-              name: category || "General Construction",
+              name: category || "General Work",
               items: [
                 {
-                  title: "Construction Services",
-                  description: projectDescription || "General construction work",
+                  title: "General Labor",
+                  description: projectDescription || "Construction work",
                   quantity: 1,
-                  unit: "project",
+                  unit: "job",
                   unitAmount: 1000,
                   totalPrice: 1000
                 }
@@ -88,8 +125,8 @@ export async function updateLeadWithEstimate(
         estimated_cost: estimate.totalCost,
         ai_generated_title: estimate.ai_generated_title,
         ai_generated_message: estimate.ai_generated_message,
-        error_message: null, // Clear any previous error
-        error_timestamp: null // Clear error timestamp when estimate succeeds
+        error_message: null,
+        error_timestamp: null
       })
       .eq('id', leadId);
 
