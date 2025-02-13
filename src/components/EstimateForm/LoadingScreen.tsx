@@ -13,17 +13,22 @@ export const LoadingScreen = ({ message, isEstimate = false, isBackdrop = false 
     <div className={`fixed inset-0 ${isBackdrop ? 'bg-transparent' : 'bg-background/80'} backdrop-blur-sm ${isBackdrop ? 'z-10' : 'z-50'} flex items-center justify-center animate-in fade-in-0`}>
       <div className={`text-center space-y-4 p-6 ${!isBackdrop && 'rounded-lg bg-white shadow-lg'}`}>
         {isEstimate ? (
-          <div className="w-[200px] h-[200px] mx-auto mb-4">
-            <EstimateAnimation />
+          <div className="w-screen h-screen flex flex-col items-center justify-center">
+            <div className="w-[300px] h-[300px] mx-auto">
+              <EstimateAnimation />
+            </div>
+            <p className="text-xl font-medium text-foreground mt-8">{message}</p>
           </div>
         ) : (
-          <div className="flex justify-center space-x-2 mb-4">
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-          </div>
+          <>
+            <div className="flex justify-center space-x-2 mb-4">
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+            </div>
+            <p className="text-lg font-medium text-foreground">{message}</p>
+          </>
         )}
-        <p className="text-lg font-medium text-foreground">{message}</p>
       </div>
     </div>
   );
