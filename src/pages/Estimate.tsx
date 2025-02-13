@@ -150,32 +150,42 @@ const EstimatePage = () => {
           />
         )}
 
-        {stage === 'contact' && (
-          <ContactForm 
-            onSubmit={handleContactSubmit} 
-            leadId={currentLeadId || undefined}
-            estimate={estimate}
-            contractor={contractor}
-            onSkip={async () => {
-              if (currentLeadId) {
-                await handleContactSubmit({});
-              }
-            }}
-          />
-        )}
+        <div className="relative">
+          {isGeneratingEstimate && (
+            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 flex items-center justify-center">
+              <LoadingScreen message="Generating your estimate..." isEstimate />
+            </div>
+          )}
 
-        {stage === 'estimate' && (
-          <div className="animate-fadeIn">
-            <EstimateDisplay 
-              groups={estimate?.groups || []} 
-              totalCost={estimate?.totalCost || 0}
-              contractor={contractor || undefined}
-              projectSummary={projectDescription}
-              estimate={estimate}
-              isLoading={isGeneratingEstimate}
-            />
-          </div>
-        )}
+          {stage === 'contact' && (
+            <div className="animate-fadeIn">
+              <ContactForm 
+                onSubmit={handleContactSubmit} 
+                leadId={currentLeadId || undefined}
+                estimate={estimate}
+                contractor={contractor}
+                onSkip={async () => {
+                  if (currentLeadId) {
+                    await handleContactSubmit({});
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          {stage === 'estimate' && !isGeneratingEstimate && (
+            <div className="animate-fadeIn">
+              <EstimateDisplay 
+                groups={estimate?.groups || []} 
+                totalCost={estimate?.totalCost || 0}
+                contractor={contractor || undefined}
+                projectSummary={projectDescription}
+                estimate={estimate}
+                isLoading={false}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
