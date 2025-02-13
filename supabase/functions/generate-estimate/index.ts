@@ -61,6 +61,20 @@ serve(async (req) => {
         controller.signal
       );
 
+      console.log('AI Response:', aiResponse);
+
+      let parsedResponse;
+      try {
+        parsedResponse = JSON.parse(aiResponse.trim());
+        // Validate the response structure
+        if (!parsedResponse.groups || !Array.isArray(parsedResponse.groups)) {
+          throw new Error('Invalid response structure: missing or invalid groups array');
+        }
+      } catch (parseError) {
+        console.error('Failed to parse AI response:', parseError);
+        throw new Error('Failed to parse AI response as JSON');
+      }
+
       const estimate = createEstimate(aiResponse, category, projectDescription);
 
       const supabaseUrl = Deno.env.get('SUPABASE_URL');

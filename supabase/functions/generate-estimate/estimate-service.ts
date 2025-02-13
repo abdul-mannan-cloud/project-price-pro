@@ -7,32 +7,68 @@ export function createEstimate(
   category: string | undefined,
   projectDescription: string | undefined
 ): EstimateData {
-  return {
-    groups: [
-      {
-        name: "Project Estimate",
-        subgroups: [
-          {
-            name: "Total",
-            items: [
-              {
-                title: category || "Construction Work",
-                description: projectDescription || "Project work",
-                quantity: 1,
-                unit: "project",
-                unitAmount: 1000,
-                totalPrice: 1000
-              }
-            ],
-            subtotal: 1000
+  let parsedResponse;
+  try {
+    parsedResponse = JSON.parse(aiResponse.trim());
+    
+    // Validate response structure
+    if (!parsedResponse.groups || !Array.isArray(parsedResponse.groups)) {
+      throw new Error('Invalid response structure');
+    }
+
+    // Calculate total cost from groups
+    let totalCost = 0;
+    parsedResponse.groups.forEach((group: any) => {
+      if (group.subgroups && Array.isArray(group.subgroups)) {
+        group.subgroups.forEach((subgroup: any) => {
+          if (typeof subgroup.subtotal === 'number') {
+            totalCost += subgroup.subtotal;
           }
-        ]
+        });
       }
-    ],
-    totalCost: 1000,
-    ai_generated_title: category || "Construction Project",
-    ai_generated_message: aiResponse
-  };
+    });
+
+    // If total cost wasn't properly calculated, use the one from response or set to 0
+    if (totalCost === 0 && typeof parsedResponse.totalCost === 'number') {
+      totalCost = parsedResponse.totalCost;
+    }
+
+    return {
+      groups: parsedResponse.groups,
+      totalCost,
+      ai_generated_title: category || "Construction Project",
+      ai_generated_message: projectDescription || "Project estimate"
+    };
+  } catch (error) {
+    console.error('Error parsing AI response:', error);
+    // Return a basic estimate structure if parsing fails
+    return {
+      groups: [
+        {
+          name: "Project Estimate",
+          subgroups: [
+            {
+              name: "Total",
+              items: [
+                {
+                  title: category || "Construction Work",
+                  description: projectDescription || "Project work",
+                  quantity: 1,
+                  unit: "project",
+                  unitAmount: 1000,
+                  totalPrice: 1000
+                }
+              ],
+              subtotal: 1000
+            }
+          ]
+        }
+      ],
+      totalCost: 1000,
+      ai_generated_title: category || "Construction Project",
+      ai_generated_message: projectDescription || "Project estimate"
+    };
+  }
 }
 
 export async function updateLeadWithEstimate(
