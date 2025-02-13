@@ -58,7 +58,13 @@ export async function generateLlamaResponse(
     messages: [
       {
         role: "system",
-        content: `You are a construction cost estimator. ${locationContext} Generate a detailed estimate with accurate local pricing.`
+        content: `You are a construction cost estimator. Generate a detailed estimate following these rules:
+        1. Use the provided AI instructions and rates as the primary source for pricing
+        2. If no specific rates are provided, use ${locationContext}
+        3. Structure the response as a JSON with groups, subgroups, and line items
+        4. Each line item must include title, description, quantity, unit amount, and total price
+        5. Group similar items together under appropriate categories
+        6. Be specific with descriptions and include labor and material breakdowns where applicable`
       },
       {
         role: "user",
@@ -68,49 +74,52 @@ export async function generateLlamaResponse(
     functions: [
       {
         name: "generate_construction_estimate",
-        description: "Generate a detailed construction cost estimate with line items",
+        description: "Generate a detailed construction cost estimate with groups, subgroups and line items",
         parameters: {
           type: "object",
           properties: {
-            lineItems: {
+            groups: {
               type: "array",
               items: {
                 type: "object",
                 properties: {
-                  group: { 
-                    type: "string",
-                    description: "Category or group of work (e.g., 'Labor', 'Materials', 'Equipment')"
-                  },
-                  title: { 
-                    type: "string",
-                    description: "Title of the line item"
-                  },
-                  description: { 
-                    type: "string",
-                    description: "Detailed description of the work or item"
-                  },
-                  quantity: { 
-                    type: "number",
-                    description: "Number of units"
-                  },
-                  unitPrice: { 
-                    type: "number",
-                    description: "Price per unit"
-                  },
-                  total: { 
-                    type: "number",
-                    description: "Total cost (quantity * unitPrice)"
+                  name: { type: "string" },
+                  description: { type: "string" },
+                  subgroups: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        items: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              title: { type: "string" },
+                              description: { type: "string" },
+                              quantity: { type: "number" },
+                              unit: { type: "string" },
+                              unitAmount: { type: "number" },
+                              totalPrice: { type: "number" }
+                            },
+                            required: ["title", "quantity", "unit", "unitAmount", "totalPrice"]
+                          }
+                        },
+                        subtotal: { type: "number" }
+                      },
+                      required: ["name", "items", "subtotal"]
+                    }
                   }
                 },
-                required: ["group", "title", "description", "quantity", "unitPrice", "total"]
+                required: ["name", "subgroups"]
               }
             },
-            totalCost: {
-              type: "number",
-              description: "Total cost for the entire project"
-            }
+            totalCost: { type: "number" },
+            ai_generated_title: { type: "string" },
+            ai_generated_message: { type: "string" }
           },
-          required: ["lineItems", "totalCost"]
+          required: ["groups", "totalCost"]
         }
       }
     ],
