@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -152,39 +151,51 @@ const EstimatePage = () => {
         )}
 
         <div className="relative">
-          {/* Show estimate animation behind contact form */}
-          {(stage === 'contact' || isGeneratingEstimate) && (
-            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-20 flex items-center justify-center">
-              <LoadingScreen message="Generating your estimate..." isEstimate />
-            </div>
-          )}
-
-          {stage === 'contact' && (
-            <div className="animate-fadeIn relative z-30">
-              <ContactForm 
-                onSubmit={handleContactSubmit} 
-                leadId={currentLeadId || undefined}
-                estimate={estimate}
-                contractor={contractor}
-                onSkip={async () => {
-                  if (currentLeadId) {
-                    await handleContactSubmit({});
-                  }
-                }}
-              />
-            </div>
-          )}
-
-          {stage === 'estimate' && !isGeneratingEstimate && (
-            <div className="animate-fadeIn">
+          {/* Show estimate table behind contact form */}
+          {(stage === 'contact' || stage === 'estimate') && (
+            <div className={cn(
+              "transition-all duration-300",
+              stage === 'contact' ? "blur-sm" : ""
+            )}>
               <EstimateDisplay 
                 groups={estimate?.groups || []} 
                 totalCost={estimate?.totalCost || 0}
                 contractor={contractor || undefined}
                 projectSummary={projectDescription}
                 estimate={estimate}
-                isLoading={false}
+                isLoading={isGeneratingEstimate}
               />
+            </div>
+          )}
+
+          {/* Contact form overlay */}
+          {stage === 'contact' && (
+            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-20 flex items-center justify-center">
+              <div className="animate-fadeIn relative z-30 w-full max-w-lg">
+                <ContactForm 
+                  onSubmit={handleContactSubmit} 
+                  leadId={currentLeadId || undefined}
+                  estimate={estimate}
+                  contractor={contractor}
+                  onSkip={async () => {
+                    if (currentLeadId) {
+                      await handleContactSubmit({});
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Loading animation overlay */}
+          {isGeneratingEstimate && (
+            <div className="fixed inset-0 bg-background/50 backdrop-blur-[2px] z-10 flex items-center justify-center">
+              <div className="text-center">
+                <EstimateAnimation className="w-24 h-24 mx-auto mb-4" />
+                <p className="text-lg font-medium text-primary">
+                  Generating your estimate...
+                </p>
+              </div>
             </div>
           )}
         </div>
