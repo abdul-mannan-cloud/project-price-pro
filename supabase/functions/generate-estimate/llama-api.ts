@@ -124,95 +124,104 @@ export async function generateLlamaResponse(
         data = JSON.parse(responseText);
         console.log('Successfully parsed response data:', JSON.stringify(data, null, 2));
       } catch (parseError) {
-        console.error('Failed to parse API response as JSON:', responseText);
-        throw new Error(`Invalid JSON response from API: ${parseError.message}`);
+        // If response is not JSON, try to use it directly
+        data = responseText;
+        console.log('Using raw response text as data');
       }
 
-      // First try to extract text content from the response
-      let content = null;
-      
-      // Try different response formats
+      // Try different ways to extract content
+      let content: string | null = null;
+
       if (typeof data === 'string') {
         content = data;
-      } else if (data.choices && Array.isArray(data.choices)) {
+      } else if (typeof data?.content === 'string') {
+        content = data.content;
+      } else if (data?.message?.content) {
+        content = data.message.content;
+      } else if (data?.choices && Array.isArray(data.choices) && data.choices.length > 0) {
         const choice = data.choices[0];
-        if (choice.message?.content) {
-          content = choice.message.content;
-        } else if (choice.text) {
-          content = choice.text;
-        } else if (typeof choice === 'string') {
+        if (typeof choice === 'string') {
           content = choice;
+        } else if (choice?.message?.content) {
+          content = choice.message.content;
+        } else if (choice?.text) {
+          content = choice.text;
+        } else if (choice?.content) {
+          content = choice.content;
         } else {
           content = JSON.stringify(choice);
         }
-      } else if (data.response) {
-        content = data.response;
-      } else if (data.output?.text) {
+      } else if (data?.response) {
+        content = typeof data.response === 'string' ? data.response : JSON.stringify(data.response);
+      } else if (data?.result) {
+        content = typeof data.result === 'string' ? data.result : JSON.stringify(data.result);
+      } else if (data?.output?.text) {
         content = data.output.text;
-      } else if (data.generated_text) {
+      } else if (data?.generated_text) {
         content = data.generated_text;
+      } else if (typeof data === 'object') {
+        // If nothing else works, try to use the entire response
+        content = JSON.stringify(data);
       }
 
-      console.log('Extracted raw content:', content);
+      console.log('Extracted content type:', typeof content);
+      console.log('Extracted content:', content);
 
       if (!content) {
-        console.error('Could not extract content from response:', JSON.stringify(data, null, 2));
-        throw new Error('Could not extract content from API response');
+        throw new Error(`Could not extract content from API response. Full response: ${JSON.stringify(data)}`);
       }
 
-      // Try to parse the content as JSON or extract JSON from it
-      let estimateJson;
-      
-      try {
-        // First try to parse the content directly as JSON
-        estimateJson = JSON.parse(content);
-      } catch {
-        // If that fails, try to find a JSON object in the content
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          console.error('No JSON structure found in content:', content);
-          throw new Error('No valid JSON structure found in response');
-        }
+      // Try to find a JSON object in the content
+      const jsonMatches = content.match(/\{[\s\S]*?\}/g);
+      console.log('Found JSON matches:', jsonMatches);
+
+      if (!jsonMatches) {
+        throw new Error('No JSON objects found in the response content');
+      }
+
+      // Try each JSON object found
+      let validEstimate = null;
+      for (const jsonStr of jsonMatches) {
         try {
-          estimateJson = JSON.parse(jsonMatch[0]);
-        } catch (parseError) {
-          console.error('Failed to parse extracted JSON:', jsonMatch[0]);
-          throw new Error('Failed to parse JSON structure from response');
-        }
-      }
+          const parsedJson = JSON.parse(jsonStr);
+          console.log('Attempting to validate JSON structure:', parsedJson);
 
-      console.log('Parsed estimate JSON:', JSON.stringify(estimateJson, null, 2));
-      
-      // Validate the estimate structure
-      if (!estimateJson.groups || !Array.isArray(estimateJson.groups)) {
-        console.error('Invalid estimate structure:', estimateJson);
-        throw new Error('Invalid estimate structure - missing or invalid groups array');
-      }
+          // Validate the structure
+          if (parsedJson.groups && Array.isArray(parsedJson.groups)) {
+            let isValid = true;
+            
+            for (const group of parsedJson.groups) {
+              if (!group.subgroups || !Array.isArray(group.subgroups)) {
+                isValid = false;
+                break;
+              }
+              
+              for (const subgroup of group.subgroups) {
+                if (!subgroup.items || !Array.isArray(subgroup.items) || typeof subgroup.subtotal !== 'number') {
+                  isValid = false;
+                  break;
+                }
+              }
+              
+              if (!isValid) break;
+            }
 
-      // Validate each group and subgroup
-      for (const group of estimateJson.groups) {
-        if (!group.subgroups || !Array.isArray(group.subgroups)) {
-          console.error('Invalid group:', group);
-          throw new Error('Invalid group structure - missing or invalid subgroups array');
-        }
-        for (const subgroup of group.subgroups) {
-          if (!subgroup.items || !Array.isArray(subgroup.items)) {
-            console.error('Invalid subgroup:', subgroup);
-            throw new Error('Invalid subgroup structure - missing or invalid items array');
+            if (isValid && typeof parsedJson.totalCost === 'number') {
+              validEstimate = parsedJson;
+              break;
+            }
           }
-          if (typeof subgroup.subtotal !== 'number') {
-            console.error('Invalid subgroup subtotal:', subgroup);
-            throw new Error('Invalid subgroup structure - missing or invalid subtotal');
-          }
+        } catch (e) {
+          console.log('Failed to parse or validate JSON match:', e);
+          continue;
         }
       }
 
-      if (typeof estimateJson.totalCost !== 'number') {
-        console.error('Invalid total cost:', estimateJson.totalCost);
-        throw new Error('Invalid estimate structure - missing or invalid totalCost');
+      if (!validEstimate) {
+        throw new Error('No valid estimate structure found in any JSON object');
       }
 
-      return JSON.stringify(estimateJson);
+      return JSON.stringify(validEstimate);
     } catch (error) {
       console.error(`Attempt ${4 - retries} failed:`, error);
       retries--;
