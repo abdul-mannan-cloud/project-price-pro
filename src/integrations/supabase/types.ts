@@ -255,6 +255,7 @@ export type Database = {
           contractor_id: string | null
           created_at: string | null
           error_message: string | null
+          error_timestamp: string | null
           estimate_data: Json | null
           estimated_cost: number | null
           id: string
@@ -279,6 +280,7 @@ export type Database = {
           contractor_id?: string | null
           created_at?: string | null
           error_message?: string | null
+          error_timestamp?: string | null
           estimate_data?: Json | null
           estimated_cost?: number | null
           id?: string
@@ -303,6 +305,7 @@ export type Database = {
           contractor_id?: string | null
           created_at?: string | null
           error_message?: string | null
+          error_timestamp?: string | null
           estimate_data?: Json | null
           estimated_cost?: number | null
           id?: string
