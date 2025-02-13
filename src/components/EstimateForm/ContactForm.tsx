@@ -6,6 +6,7 @@ import { useParams } from "react-router-dom";
 import { ContactFormHeader } from "./ContactFormHeader";
 import { ContactFormFields } from "./ContactFormFields";
 import { ContactFormButtons } from "./ContactFormButtons";
+import { LoadingScreen } from "./LoadingScreen";
 
 interface ContactFormProps {
   onSubmit: (data: {
@@ -136,24 +137,27 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
     : undefined;
 
   return (
-    <div className="fixed inset-0 bg-black/13 flex items-center justify-center z-50">
-      <div className="w-full max-w-md mx-auto bg-background rounded-xl p-6 shadow-lg animate-fadeIn">
-        <ContactFormHeader />
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <ContactFormFields 
-            formData={formData}
-            onChange={(field, value) => setFormData(prev => ({ ...prev, [field]: value }))}
-          />
+    <>
+      <LoadingScreen message="Preparing your estimate..." isEstimate={true} isBackdrop={true} />
+      <div className="fixed inset-0 bg-black/13 flex items-center justify-center z-30">
+        <div className="w-full max-w-md mx-auto bg-background rounded-xl p-6 shadow-lg animate-fadeIn">
+          <ContactFormHeader />
           
-          <ContactFormButtons 
-            isSubmitting={isSubmitting}
-            buttonStyle={buttonStyle}
-            isCurrentUserContractor={isCurrentUserContractor}
-            onSkip={handleSkipForm}
-          />
-        </form>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <ContactFormFields 
+              formData={formData}
+              onChange={(field, value) => setFormData(prev => ({ ...prev, [field]: value }))}
+            />
+            
+            <ContactFormButtons 
+              isSubmitting={isSubmitting}
+              buttonStyle={buttonStyle}
+              isCurrentUserContractor={isCurrentUserContractor}
+              onSkip={handleSkipForm}
+            />
+          </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
