@@ -173,9 +173,15 @@ export const EstimateDisplay = ({
   const handleRefreshEstimate = async () => {
     try {
       setIsLoading(true);
+      console.log('Refreshing estimate with ID:', id); // Debug log
+      
+      if (!id) {
+        throw new Error('Missing lead ID');
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-estimate', {
         body: { 
-          leadId: estimate?.id,
+          leadId: id,
           contractorId,
           refreshOnly: true
         }
@@ -188,11 +194,44 @@ export const EstimateDisplay = ({
         description: "Your estimate will be updated shortly.",
       });
 
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Poll for updates
+      const checkEstimate = async () => {
+        const { data: lead, error: pollError } = await supabase
+          .from('leads')
+          .select('estimate_data, status')
+          .eq('id', id)
+          .maybeSingle();
 
-      if (onEstimateChange) {
-        onEstimateChange(data);
-      }
+        if (pollError) throw pollError;
+        
+        if (lead?.status === 'complete' && lead?.estimate_data) {
+          if (onEstimateChange) {
+            onEstimateChange(lead.estimate_data);
+          }
+          setIsLoading(false);
+          return true;
+        }
+        return false;
+      };
+
+      // Poll every 3 seconds for up to 30 seconds
+      let attempts = 0;
+      const pollInterval = setInterval(async () => {
+        try {
+          const isComplete = await checkEstimate();
+          attempts++;
+          
+          if (isComplete || attempts >= 10) {
+            clearInterval(pollInterval);
+            setIsLoading(false);
+          }
+        } catch (pollError) {
+          console.error('Error polling estimate:', pollError);
+          clearInterval(pollInterval);
+          setIsLoading(false);
+        }
+      }, 3000);
+
     } catch (error) {
       console.error('Error refreshing estimate:', error);
       toast({
@@ -200,7 +239,6 @@ export const EstimateDisplay = ({
         description: "Failed to refresh the estimate. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
