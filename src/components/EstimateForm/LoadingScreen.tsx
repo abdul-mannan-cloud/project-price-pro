@@ -1,15 +1,16 @@
+
 import { useEffect, useRef } from "react";
-import * as THREE from "three";
 import { EstimateAnimation } from "./EstimateAnimation";
 
 interface LoadingScreenProps {
   message: string;
   isEstimate?: boolean;
+  isBackdrop?: boolean;
 }
 
-export const LoadingScreen = ({ message, isEstimate = false }: LoadingScreenProps) => {
+export const LoadingScreen = ({ message, isEstimate = false, isBackdrop = false }: LoadingScreenProps) => {
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in-0">
+    <div className={`fixed inset-0 ${isBackdrop ? 'bg-background/50' : 'bg-background/80'} backdrop-blur-sm ${isBackdrop ? 'z-20' : 'z-50'} flex items-center justify-center animate-in fade-in-0`}>
       <div className="text-center space-y-4 p-6 rounded-lg bg-white shadow-lg">
         {isEstimate ? (
           <div className="w-[200px] h-[200px] mx-auto mb-4">
