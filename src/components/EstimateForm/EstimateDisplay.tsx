@@ -172,7 +172,7 @@ export const EstimateDisplay = ({
   const handleRefreshEstimate = async () => {
     try {
       setIsLoading(true);
-      console.log('Refreshing estimate with ID:', id); // Debug log
+      console.log('Refreshing estimate with ID:', id);
       
       if (!id) {
         throw new Error('Missing lead ID');
@@ -193,7 +193,6 @@ export const EstimateDisplay = ({
         description: "Your estimate will be updated shortly.",
       });
 
-      // Poll for updates
       const checkEstimate = async () => {
         const { data: lead, error: pollError } = await supabase
           .from('leads')
@@ -213,7 +212,6 @@ export const EstimateDisplay = ({
         return false;
       };
 
-      // Poll every 3 seconds for up to 30 seconds
       let attempts = 0;
       const pollInterval = setInterval(async () => {
         try {
@@ -292,14 +290,12 @@ export const EstimateDisplay = ({
             />
           </div>
 
-          {/* AI Generated Title */}
           {estimate?.ai_generated_title && (
             <h2 className={cn(styles.title, "mb-4 text-center")}>
               {estimate.ai_generated_title}
             </h2>
           )}
 
-          {/* AI Generated Message */}
           {(estimate?.ai_generated_message || projectSummary) && (
             <div className={cn(styles.message, "mb-6")}>
               <p className={styles.text}>
@@ -308,7 +304,6 @@ export const EstimateDisplay = ({
             </div>
           )}
 
-          {/* Project Images */}
           {projectImages && projectImages.length > 0 && (
             <div className="mb-6 overflow-x-auto">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -351,7 +346,6 @@ export const EstimateDisplay = ({
             />
           )}
 
-          {/* Footer Text */}
           {templateSettings?.estimate_footer_text && (
             <div className={cn("mt-8 pt-6 border-t", styles.text)}>
               <p className="whitespace-pre-wrap text-sm">
