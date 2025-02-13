@@ -1,15 +1,15 @@
+
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { LayoutDashboard, Users, Settings, Copy, LineChart, FileText, Bell, History, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useState } from "react";
 
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
@@ -19,6 +19,7 @@ const Dashboard = () => {
   const isMobile = useIsMobile();
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const [isCopyingUrl, setIsCopyingUrl] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -26,49 +27,7 @@ const Dashboard = () => {
     { name: "Settings", url: "/settings", icon: Settings }
   ];
 
-  const { data: contractor, isLoading } = useQuery({
-    queryKey: ["contractor"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
-      const { data, error } = await supabase
-        .from("contractors")
-        .select("*, contractor_settings(*)")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) {
-        navigate("/onboarding");
-        return null;
-      }
-      return data;
-    },
-    staleTime: 30000,
-    gcTime: 5 * 60 * 1000,
-  });
-
-  const { data: leads = [] } = useQuery({
-    queryKey: ["leads"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
-      const { data, error } = await supabase
-        .from("leads")
-        .select("*")
-        .eq("contractor_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!contractor,
-    staleTime: 30000,
-    gcTime: 5 * 60 * 1000,
-  });
-
+  // First check authentication
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -80,12 +39,72 @@ const Dashboard = () => {
           variant: "destructive",
         });
         navigate("/login");
+        return;
       }
+      
+      setUserId(user.id);
     };
+    
     checkAuth();
   }, [navigate, toast]);
 
-  if (isLoading) {
+  const { data: contractor, isLoading: isContractorLoading } = useQuery({
+    queryKey: ["contractor", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+
+      const { data, error } = await supabase
+        .from("contractors")
+        .select("*, contractor_settings(*)")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) {
+        navigate("/onboarding");
+        return null;
+      }
+      return data;
+    },
+    enabled: !!userId,
+    retry: false,
+    onError: (error) => {
+      console.error('Error fetching contractor:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load contractor data. Please try refreshing the page.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const { data: leads = [], isError: isLeadsError } = useQuery({
+    queryKey: ["leads", userId],
+    queryFn: async () => {
+      if (!userId) throw new Error("No user ID available");
+
+      const { data, error } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("contractor_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!userId && !!contractor,
+    retry: 1,
+    onError: (error) => {
+      console.error('Error fetching leads:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load leads. Please try refreshing the page.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  if (isContractorLoading) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -303,7 +322,6 @@ const Dashboard = () => {
         </main>
       </div>
 
-      {/* Dialog moved outside main container */}
       <Dialog 
         open={!!selectedFeature} 
         onOpenChange={(open) => {
