@@ -270,7 +270,7 @@ export const EstimateDisplay = ({
         <div className="fixed top-0 left-0 right-0 bg-primary text-white p-4 text-center z-50 animate-in fade-in-0">
           <div className="flex items-center justify-center gap-2">
             <div className="w-4 h-4">
-              <EstimateAnimation className="!bg-white/20" />
+              <EstimateAnimation />
             </div>
             <span>Generating your estimate...</span>
           </div>
