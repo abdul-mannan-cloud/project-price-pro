@@ -13,6 +13,7 @@ import { QuestionManager } from "@/components/EstimateForm/QuestionManager";
 import { PhotoUploadStep } from "@/components/EstimateForm/PhotoUploadStep";
 import { ProjectDescriptionStep } from "@/components/EstimateForm/ProjectDescriptionStep";
 import { CategorySelectionStep } from "@/components/EstimateForm/CategorySelectionStep";
+import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
 
 const EstimatePage = () => {
   const navigate = useNavigate();
@@ -151,14 +152,15 @@ const EstimatePage = () => {
         )}
 
         <div className="relative">
-          {isGeneratingEstimate && (
-            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 flex items-center justify-center">
-              <LoadingScreen message="Generating your estimate..." isEstimate />
+          {/* Show estimate animation behind contact form */}
+          {(stage === 'contact' || isGeneratingEstimate) && (
+            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 flex items-center justify-center">
+              <EstimateAnimation className="w-[200px] h-[200px]" height="h-[200px]" width="w-[200px]" />
             </div>
           )}
 
           {stage === 'contact' && (
-            <div className="animate-fadeIn">
+            <div className="animate-fadeIn relative z-40">
               <ContactForm 
                 onSubmit={handleContactSubmit} 
                 leadId={currentLeadId || undefined}

@@ -92,6 +92,21 @@ export const useEstimateFlow = (contractorId?: string) => {
 
       setCurrentLeadId(lead.id);
       setStage('contact');
+      // Start generating estimate as soon as we move to contact form
+      setIsGeneratingEstimate(true);
+
+      // Start the estimate generation process
+      const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          leadId: lead.id,
+          contractorId,
+          projectDescription,
+          category: selectedCategory,
+          imageUrl: uploadedImageUrl
+        }
+      });
+
+      if (estimateError) throw estimateError;
 
     } catch (error) {
       console.error('Error creating lead:', error);
