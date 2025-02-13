@@ -1,8 +1,8 @@
-
 import { Button } from "@/components/ui/button";
 import { Copy, FileDown, RefreshCw, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import html2pdf from 'html2pdf.js';
+import { cn } from "@/lib/utils";
 
 interface EstimateActionsProps {
   isContractor: boolean;
