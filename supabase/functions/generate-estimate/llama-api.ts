@@ -103,16 +103,18 @@ export async function generateLlamaResponse(
         signal
       });
 
-      const responseText = await response.text();
-      console.log('LLaMA API response status:', response.status);
-      console.log('LLaMA API raw response:', responseText);
-
       if (!response.ok) {
+        const responseText = await response.text();
+        console.error('LLaMA API error response:', responseText);
         throw new Error(`LLaMA API request failed with status ${response.status}: ${responseText}`);
       }
 
+      const responseText = await response.text();
+      console.log('LLaMA API raw response:', responseText);
+
       try {
         const data = JSON.parse(responseText);
+        console.log('Parsed LLaMA response:', data);
 
         if (!data.choices?.[0]?.message?.content) {
           console.error('Unexpected API response format:', data);
@@ -128,9 +130,29 @@ export async function generateLlamaResponse(
           throw new Error('No JSON object found in response');
         }
 
+        // Validate the JSON structure before returning
         const parsedJson = JSON.parse(jsonMatch[0]);
         if (!parsedJson.groups || !Array.isArray(parsedJson.groups)) {
           throw new Error('Invalid estimate structure');
+        }
+
+        // Additional validation of the structure
+        for (const group of parsedJson.groups) {
+          if (!group.subgroups || !Array.isArray(group.subgroups)) {
+            throw new Error('Invalid group structure - missing or invalid subgroups array');
+          }
+          for (const subgroup of group.subgroups) {
+            if (!subgroup.items || !Array.isArray(subgroup.items)) {
+              throw new Error('Invalid subgroup structure - missing or invalid items array');
+            }
+            if (typeof subgroup.subtotal !== 'number') {
+              throw new Error('Invalid subgroup structure - missing or invalid subtotal');
+            }
+          }
+        }
+
+        if (typeof parsedJson.totalCost !== 'number') {
+          throw new Error('Invalid estimate structure - missing or invalid totalCost');
         }
 
         return jsonMatch[0];
