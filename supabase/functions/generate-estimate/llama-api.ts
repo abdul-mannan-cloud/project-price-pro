@@ -24,40 +24,32 @@ export async function generateLlamaResponse(
   llamaApiKey: string,
   signal: AbortSignal
 ): Promise<string> {
-  const systemPrompt = `You are a construction cost estimator AI. Generate a detailed estimate as a JSON object.
+  const systemPrompt = `You are a construction cost estimator. Create a detailed estimate for the project. Respond with a valid JSON object using exactly this format:
 
-Follow this format exactly:
 {
   "groups": [
     {
-      "name": "Category Name",
+      "name": "Labor and Materials",
       "subgroups": [
         {
-          "name": "Subcategory Name",
+          "name": "Construction Labor",
           "items": [
             {
-              "title": "Item Name",
-              "description": "Item Description",
-              "quantity": 1,
-              "unit": "units",
-              "unitAmount": 100,
-              "totalPrice": 100
+              "title": "General Labor",
+              "description": "Construction work",
+              "quantity": 40,
+              "unit": "hours",
+              "unitAmount": 45,
+              "totalPrice": 1800
             }
           ],
-          "subtotal": 100
+          "subtotal": 1800
         }
       ]
     }
   ],
-  "totalCost": 100
-}
-
-Important:
-1. Return only JSON, no other text
-2. Use numbers for all numeric values
-3. Make sure totalPrice = quantity × unitAmount
-4. Make sure subtotal = sum of item totalPrices
-5. Make sure totalCost = sum of all subtotals`;
+  "totalCost": 1800
+}`;
 
   const apiRequest: LlamaRequest = {
     messages: [
@@ -98,84 +90,66 @@ Important:
 
   console.log('Making request to LLaMA API with:', JSON.stringify(apiRequest, null, 2));
   
-  try {
-    const response = await fetch('https://api.llama-api.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${llamaApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(apiRequest),
-      signal
-    });
-
-    console.log('LLaMA API response status:', response.status);
-    
-    const responseText = await response.text();
-    console.log('LLaMA API raw response text:', responseText);
-
-    if (!response.ok) {
-      throw new Error(`LLaMA API request failed with status ${response.status}: ${responseText}`);
-    }
-
-    let data;
+  let retries = 3;
+  while (retries > 0) {
     try {
-      data = JSON.parse(responseText);
-    } catch (error) {
-      console.error('Failed to parse LLaMA API response as JSON:', error);
-      throw new Error(`Invalid JSON response from LLaMA API: ${responseText}`);
-    }
+      const response = await fetch('https://api.llama-api.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${llamaApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiRequest),
+        signal
+      });
 
-    console.log('LLaMA API parsed response:', JSON.stringify(data, null, 2));
+      const responseText = await response.text();
+      console.log('LLaMA API response status:', response.status);
+      console.log('LLaMA API raw response:', responseText);
 
-    if (!data || !data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-      console.error('Invalid response structure:', data);
-      throw new Error('Invalid response structure from LLaMA API');
-    }
-
-    const choice = data.choices[0];
-    if (!choice || !choice.message || typeof choice.message.content !== 'string') {
-      console.error('Invalid choice structure:', choice);
-      throw new Error('Invalid choice structure in LLaMA API response');
-    }
-
-    let content = choice.message.content.trim();
-    console.log('Content from LLaMA:', content);
-
-    // Try to extract JSON from the content
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error('No JSON found in content:', content);
-      throw new Error('No JSON object found in LLaMA API response');
-    }
-
-    content = jsonMatch[0];
-    
-    // Try to parse the JSON to validate it
-    try {
-      const parsed = JSON.parse(content);
-      
-      if (!parsed.groups || !Array.isArray(parsed.groups)) {
-        console.error('Invalid parsed response:', parsed);
-        throw new Error('Missing or invalid groups array in response');
+      if (!response.ok) {
+        throw new Error(`LLaMA API request failed with status ${response.status}: ${responseText}`);
       }
 
-      // Check if we have any groups
-      if (parsed.groups.length === 0) {
-        console.error('No groups in response');
-        throw new Error('No estimate groups generated');
-      }
+      try {
+        const data = JSON.parse(responseText);
 
-      // Return the valid JSON string
-      return content;
+        if (!data.choices?.[0]?.message?.content) {
+          console.error('Unexpected API response format:', data);
+          throw new Error('Missing content in API response');
+        }
+
+        const content = data.choices[0].message.content.trim();
+        console.log('Content from LLaMA:', content);
+
+        // Try to extract JSON from the content
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error('No JSON object found in response');
+        }
+
+        const parsedJson = JSON.parse(jsonMatch[0]);
+        if (!parsedJson.groups || !Array.isArray(parsedJson.groups)) {
+          throw new Error('Invalid estimate structure');
+        }
+
+        return jsonMatch[0];
+      } catch (parseError) {
+        console.error('Error parsing LLaMA response:', parseError);
+        throw new Error(`Failed to parse LLaMA response: ${parseError.message}`);
+      }
     } catch (error) {
-      console.error('Error parsing content as JSON:', error);
-      throw new Error(`Invalid JSON structure in response: ${error.message}`);
+      console.error(`Attempt ${4 - retries} failed:`, error);
+      retries--;
+      if (retries === 0) {
+        throw error;
+      }
+      // Wait for 1 second before retrying
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
-  } catch (error) {
-    console.error('Error in generateLlamaResponse:', error);
-    throw error;
   }
+
+  throw new Error('All retries failed');
 }
 
 export function formatAnswersForContext(answers: Record<string, any>): CategoryAnswers[] {

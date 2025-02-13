@@ -40,19 +40,19 @@ export function createEstimate(
       ai_generated_message: projectDescription || "Project estimate"
     };
   } catch (error) {
-    console.error('Error parsing AI response:', error);
-    // Return a basic estimate structure if parsing fails
+    console.error('Error creating estimate:', error);
+    // Return a basic fallback estimate structure if parsing fails
     return {
       groups: [
         {
-          name: "Project Estimate",
+          name: "Construction Work",
           subgroups: [
             {
-              name: "Total",
+              name: category || "General Construction",
               items: [
                 {
-                  title: category || "Construction Work",
-                  description: projectDescription || "Project work",
+                  title: "Construction Services",
+                  description: projectDescription || "General construction work",
                   quantity: 1,
                   unit: "project",
                   unitAmount: 1000,
@@ -79,19 +79,26 @@ export async function updateLeadWithEstimate(
 ): Promise<void> {
   const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
-  const { error: updateError } = await supabaseAdmin
-    .from('leads')
-    .update({ 
-      estimate_data: estimate,
-      status: 'complete',
-      estimated_cost: estimate.totalCost,
-      ai_generated_title: estimate.ai_generated_title,
-      ai_generated_message: estimate.ai_generated_message
-    })
-    .eq('id', leadId);
+  try {
+    const { error: updateError } = await supabaseAdmin
+      .from('leads')
+      .update({ 
+        estimate_data: estimate,
+        status: 'complete',
+        estimated_cost: estimate.totalCost,
+        ai_generated_title: estimate.ai_generated_title,
+        ai_generated_message: estimate.ai_generated_message,
+        error_message: null // Clear any previous error
+      })
+      .eq('id', leadId);
 
-  if (updateError) {
-    throw updateError;
+    if (updateError) {
+      console.error('Error updating lead with estimate:', updateError);
+      throw updateError;
+    }
+  } catch (error) {
+    console.error('Failed to update lead with estimate:', error);
+    throw error;
   }
 }
 
@@ -103,15 +110,22 @@ export async function updateLeadWithError(
 ): Promise<void> {
   const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
   
-  const { error } = await supabaseAdmin
-    .from('leads')
-    .update({ 
-      status: 'error',
-      error_message: errorMessage
-    })
-    .eq('id', leadId);
+  try {
+    const { error } = await supabaseAdmin
+      .from('leads')
+      .update({ 
+        status: 'error',
+        error_message: errorMessage,
+        error_timestamp: new Date().toISOString()
+      })
+      .eq('id', leadId);
 
-  if (error) {
-    console.error('Failed to update lead with error status:', error);
+    if (error) {
+      console.error('Failed to update lead with error status:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Failed to update lead with error:', error);
+    throw error;
   }
 }
