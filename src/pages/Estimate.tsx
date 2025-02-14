@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -35,7 +36,12 @@ const EstimatePage = () => {
   const contractorId = (() => {
     try {
       let rawId = params.contractorId;
-      if (!rawId) return DEFAULT_CONTRACTOR_ID;
+      
+      // If the parameter is invalid or missing, use default
+      if (!rawId || rawId === ":contractorId?" || rawId === "undefined") {
+        console.log('Using default contractor ID due to invalid/missing parameter');
+        return DEFAULT_CONTRACTOR_ID;
+      }
 
       // Handle URL-encoded values
       rawId = decodeURIComponent(rawId);
@@ -54,7 +60,7 @@ const EstimatePage = () => {
         return cleaned;
       }
 
-      console.warn('Invalid contractor ID, using default:', cleaned);
+      console.warn('Invalid contractor ID format, using default:', cleaned);
       return DEFAULT_CONTRACTOR_ID;
 
     } catch (error) {
