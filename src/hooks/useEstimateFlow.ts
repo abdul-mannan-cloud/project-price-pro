@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -167,6 +168,23 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     setStage('contact');
   };
 
+  const formatAnswersForJson = (answers: AnswersState): Json => {
+    const formattedAnswers = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
+      acc[category] = Object.entries(categoryAnswers || {}).reduce((catAcc, [questionId, answer]) => {
+        catAcc[questionId] = {
+          question: answer.question,
+          type: answer.type,
+          answers: answer.answers,
+          options: answer.options
+        };
+        return catAcc;
+      }, {} as Record<string, any>);
+      return acc;
+    }, {} as Record<string, any>);
+
+    return formattedAnswers as Json;
+  };
+
   const handleContactSubmit = async (contactData: any) => {
     try {
       if (!config.contractorId) {
@@ -174,26 +192,16 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         throw new Error('Contractor ID is required');
       }
 
-      const answersForDb = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
-        acc[category] = Object.entries(categoryAnswers || {}).reduce((catAcc, [questionId, answer]) => {
-          catAcc[questionId] = {
-            question: answer.question,
-            type: answer.type,
-            answers: answer.answers,
-            options: answer.options
-          };
-          return catAcc;
-        }, {} as Record<string, any>);
-        return acc;
-      }, {} as Record<string, any>);
-
       const currentCategory = matchedQuestionSets[0]?.category;
       const firstAnswer = answers[currentCategory]?.Q1?.answers[0];
+
+      // Convert answers to Json type
+      const formattedAnswers = formatAnswersForJson(answers);
 
       const leadData: LeadInsert = {
         project_description: firstAnswer || projectDescription || 'New project',
         project_title: `${currentCategory || 'New'} Project`,
-        answers: answersForDb as Json,
+        answers: formattedAnswers,
         category: currentCategory,
         status: 'pending',
         contractor_id: config.contractorId,
@@ -244,10 +252,13 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     try {
       setIsGeneratingEstimate(true);
 
+      // Convert answers to Json type
+      const formattedAnswers = formatAnswersForJson(answers);
+
       const leadData: LeadInsert = {
         project_description: projectDescription || 'Test project',
         project_title: `Test Project`,
-        answers: answers as Json,
+        answers: formattedAnswers,
         category: selectedCategory,
         status: 'pending',
         contractor_id: config.contractorId,
