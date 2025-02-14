@@ -54,6 +54,21 @@ export interface EstimateFormState {
   isComplete: boolean;
 }
 
+export interface EstimateConfig {
+  contractorId: string;
+  isPreview?: boolean;
+  allowSignature?: boolean;
+  showSubtotals?: boolean;
+}
+
+export interface EstimateResponse {
+  estimate: any;
+  leadId: string;
+  contractorId: string;
+  status: 'pending' | 'complete' | 'error';
+  error?: string;
+}
+
 // Helper type for matching categories with questions
 export interface CategoryWithQuestions extends Category {
   questions: Question[];
