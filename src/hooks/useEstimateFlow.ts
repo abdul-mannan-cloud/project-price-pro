@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -155,7 +154,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       setIsGeneratingEstimate(true);
       setStage('estimate');
 
-      // Update lead with contact information
+      // Update lead with contact information and contractor_id
       const { error: updateError } = await supabase
         .from('leads')
         .update({
@@ -163,17 +162,24 @@ export const useEstimateFlow = (config: EstimateConfig) => {
           user_email: contactData.email,
           user_phone: contactData.phone,
           project_address: contactData.address,
-          contractor_id: config.contractorId
+          contractor_id: config.contractorId  // Ensure contractor_id is set
         })
         .eq('id', currentLeadId);
 
       if (updateError) throw updateError;
 
-      // Generate estimate with contractor ID
+      console.log('Generating estimate with data:', {
+        leadId: currentLeadId,
+        contractorId: config.contractorId,
+        projectDescription,
+        category: selectedCategory
+      });
+
+      // Generate estimate with explicit contractor ID
       const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: {
           leadId: currentLeadId,
-          contractorId: config.contractorId,
+          contractorId: config.contractorId,  // Always include the contractor ID
           projectDescription,
           category: selectedCategory,
           imageUrl: uploadedImageUrl,
