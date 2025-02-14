@@ -1,46 +1,37 @@
 
-export interface QuestionAnswer {
-  question: string;
-  answer: string;
-}
-
-export interface CategoryAnswers {
-  category: string;
-  questions: QuestionAnswer[];
-}
-
 export interface EstimateRequest {
+  leadId?: string;
+  contractorId?: string;
   answers?: Record<string, any>;
-  projectDescription?: string;
   category?: string;
-  leadId: string;
+  projectDescription?: string;
   imageUrl?: string;
-  contractorId?: string;  // Made contractorId optional
   projectImages?: string[];
 }
 
-export interface EstimateResponse {
-  message: string;
-  leadId: string;
+export interface ContractorSettings {
+  estimate_template_style?: string;
+  ai_preferences?: {
+    rate?: string;
+    type?: string;
+    instructions?: string;
+  };
+  minimum_project_cost?: number;
+  markup_percentage?: number;
+  tax_rate?: number;
 }
 
-export interface EstimateData {
-  groups: Array<{
-    name: string;
-    subgroups: Array<{
-      name: string;
-      items: Array<{
-        title: string;
-        description?: string;
-        quantity: number;
-        unit: string;
-        unitAmount: number;
-        totalPrice: number;
-      }>;
-      subtotal: number;
-    }>;
-  }>;
-  totalCost: number;
-  ai_generated_title: string;
-  ai_generated_message: string;
+export interface AIInstruction {
+  id: string;
+  title: string;
+  instructions: string;
+  system_prompt?: string;
+}
+
+export interface Contractor {
+  id: string;
+  business_name: string;
+  business_address?: string;
+  contractor_settings?: ContractorSettings;
+  ai_instructions?: AIInstruction[];
 }
