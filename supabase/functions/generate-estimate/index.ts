@@ -36,7 +36,7 @@ serve(async (req) => {
       throw new Error('No request data provided');
     }
 
-    const { answers, projectDescription, leadId, category, imageUrl } = requestData;
+    const { answers, projectDescription, leadId, category, imageUrl, contractorId } = requestData;
 
     if (!leadId) {
       throw new Error('leadId is required');
@@ -47,7 +47,8 @@ serve(async (req) => {
       hasProjectDescription: !!projectDescription,
       leadId,
       category,
-      hasImageUrl: !!imageUrl
+      hasImageUrl: !!imageUrl,
+      contractorId
     });
 
     // Initialize Supabase client
@@ -65,18 +66,21 @@ serve(async (req) => {
       .from('leads')
       .select('contractor_id')
       .eq('id', leadId)
-      .single();
+      .maybeSingle();
 
     if (leadError) {
       console.error('Error fetching lead:', leadError);
       throw new Error(`Failed to fetch lead: ${leadError.message}`);
     }
 
-    if (!lead) {
-      throw new Error('Lead not found');
+    // If lead doesn't have a contractor_id, use the one from the request
+    const effectiveContractorId = lead?.contractor_id || contractorId;
+
+    if (!effectiveContractorId) {
+      throw new Error('No contractor ID found. Please ensure either the lead has a contractor_id or provide it in the request.');
     }
 
-    console.log('Found lead with contractor_id:', lead.contractor_id);
+    console.log('Using contractor_id:', effectiveContractorId);
 
     // Get contractor settings and AI instructions
     const { data: contractor, error: contractorError } = await supabase
@@ -86,7 +90,7 @@ serve(async (req) => {
         contractor_settings(*),
         ai_instructions(*)
       `)
-      .eq('id', lead.contractor_id)
+      .eq('id', effectiveContractorId)
       .single();
 
     if (contractorError) {
@@ -94,11 +98,15 @@ serve(async (req) => {
       throw new Error(`Failed to fetch contractor: ${contractorError.message}`);
     }
 
+    if (!contractor) {
+      throw new Error(`Contractor not found with ID: ${effectiveContractorId}`);
+    }
+
     // Get AI rates for the category
     const { data: aiRates, error: ratesError } = await supabase
       .from('ai_rates')
       .select('*')
-      .eq('contractor_id', lead.contractor_id)
+      .eq('contractor_id', effectiveContractorId)
       .eq('type', category?.toLowerCase() || '');
 
     if (ratesError) {
