@@ -47,7 +47,7 @@ const Dashboard = () => {
     checkAuth();
   }, [navigate, toast]);
 
-  // Get contractor data using user ID
+  // Get contractor data using user_id instead of id
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", userId],
     queryFn: async () => {
@@ -57,7 +57,7 @@ const Dashboard = () => {
       const { data, error } = await supabase
         .from("contractors")
         .select("*, contractor_settings(*)")
-        .eq("id", userId)  // This will be updated in the migration to use user_id
+        .eq("user_id", userId)  // Updated to use user_id instead of id
         .maybeSingle();
 
       if (error) {
