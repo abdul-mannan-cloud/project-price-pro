@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -30,7 +31,6 @@ export const ContactForm = ({
   contractorId: propContractorId,
   onSkip 
 }: ContactFormProps) => {
-  const { contractorId: urlContractorId } = useParams();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -41,39 +41,16 @@ export const ContactForm = ({
   const [isProcessingEstimate, setIsProcessingEstimate] = useState(false);
   const { toast } = useToast();
   const [isCurrentUserContractor, setIsCurrentUserContractor] = useState(false);
-  
-  // Use contractor ID from props or URL, ensure it's cleaned
-  const effectiveContractorId = (() => {
-    try {
-      const rawId = propContractorId || urlContractorId;
-      if (!rawId) return null;
-      
-      // First decode the URL parameter
-      const decoded = decodeURIComponent(rawId);
-      // Remove special characters and clean
-      const cleaned = decoded.replace(/[:?]/g, '').trim();
-      
-      console.log('Processing contractor ID:', {
-        raw: rawId,
-        decoded,
-        cleaned
-      });
-      
-      return cleaned;
-    } catch (error) {
-      console.error('Error processing contractor ID:', error);
-      return null;
-    }
-  })();
 
   useEffect(() => {
     const checkCurrentUser = async () => {
+      if (!propContractorId) return;
       const { data: { user } } = await supabase.auth.getUser();
-      setIsCurrentUserContractor(user?.id === effectiveContractorId);
+      setIsCurrentUserContractor(user?.id === propContractorId);
     };
     
     checkCurrentUser();
-  }, [effectiveContractorId]);
+  }, [propContractorId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,14 +63,14 @@ export const ContactForm = ({
         throw new Error("Unable to process your request at this time");
       }
 
-      if (!effectiveContractorId) {
+      if (!propContractorId) {
         console.error('Missing contractorId in ContactForm');
         throw new Error("Unable to identify the contractor");
       }
 
       console.log('Processing estimate with:', { 
         leadId, 
-        contractorId: effectiveContractorId,
+        contractorId: propContractorId,
         formData 
       });
 
@@ -106,7 +83,7 @@ export const ContactForm = ({
           user_phone: formData.phone,
           project_address: formData.address,
           status: 'processing',
-          contractor_id: effectiveContractorId
+          contractor_id: propContractorId
         })
         .eq('id', leadId);
 
@@ -119,7 +96,7 @@ export const ContactForm = ({
       const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId,
-          contractorId: effectiveContractorId,
+          contractorId: propContractorId,
           formData 
         }
       });
@@ -144,7 +121,7 @@ export const ContactForm = ({
   };
 
   const handleSkipForm = async () => {
-    if (!leadId || !effectiveContractorId) return;
+    if (!leadId || !propContractorId) return;
 
     try {
       const { error: updateError } = await supabase
@@ -152,22 +129,11 @@ export const ContactForm = ({
         .update({
           is_test_estimate: true,
           status: 'test',
-          contractor_id: effectiveContractorId
+          contractor_id: propContractorId
         })
         .eq('id', leadId);
 
       if (updateError) throw updateError;
-
-      // Verify the update
-      const { data: verifiedLead, error: verifyError } = await supabase
-        .from('leads')
-        .select('contractor_id')
-        .eq('id', leadId)
-        .single();
-
-      if (verifyError) throw verifyError;
-
-      console.log('Lead marked as test with contractor:', verifiedLead);
 
       if (onSkip) {
         await onSkip();
