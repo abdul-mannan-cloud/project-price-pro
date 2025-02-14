@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +16,9 @@ import { ProjectDescriptionStep } from "@/components/EstimateForm/ProjectDescrip
 import { CategorySelectionStep } from "@/components/EstimateForm/CategorySelectionStep";
 import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
 import { Category, EstimateConfig } from "@/types/estimate";
+import { EstimateSkeleton } from "@/components/EstimateForm/EstimateSkeleton";
+
+const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
 const EstimatePage = () => {
   const navigate = useNavigate();
@@ -32,6 +36,22 @@ const EstimatePage = () => {
     allowSignature: true,
     showSubtotals: true
   };
+
+  const { data: contractor, isLoading: isContractorLoading } = useQuery({
+    queryKey: ["contractor", contractorId],
+    queryFn: async () => {
+      if (!contractorId) throw new Error("No contractor ID provided");
+      const { data, error } = await supabase
+        .from("contractors")
+        .select("*, contractor_settings(*)")
+        .eq("id", contractorId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error("Contractor not found");
+      return data;
+    },
+    enabled: !!contractorId,
+  });
 
   const {
     stage,
@@ -56,22 +76,6 @@ const EstimatePage = () => {
     handleQuestionComplete,
     handleContactSubmit
   } = useEstimateFlow(estimateConfig);
-
-  const { data: contractor, isError: isContractorError } = useQuery({
-    queryKey: ["contractor", contractorId],
-    queryFn: async () => {
-      if (!contractorId) throw new Error("No contractor ID provided");
-      const { data, error } = await supabase
-        .from("contractors")
-        .select("*, contractor_settings(*)")
-        .eq("id", contractorId)
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) throw new Error("Contractor not found");
-      return data;
-    },
-    enabled: !!contractorId,
-  });
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -113,6 +117,18 @@ const EstimatePage = () => {
     const isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
     setIsSpeechSupported(isSupported);
   }, []);
+
+  // Show loading state if contractor data is loading and it's not the default contractor
+  if (isContractorLoading && contractorId !== DEFAULT_CONTRACTOR_ID) {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <div className="w-full h-8 bg-gray-200 animate-pulse" /> {/* Progress bar skeleton */}
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          <EstimateSkeleton />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">

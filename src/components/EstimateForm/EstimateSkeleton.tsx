@@ -1,6 +1,4 @@
 
-import { cn } from "@/lib/utils";
-
 export const EstimateSkeleton = () => {
   return (
     <div className="card bg-white p-4 md:p-8 max-w-5xl mx-auto animate-pulse">
@@ -47,4 +45,3 @@ export const EstimateSkeleton = () => {
     </div>
   );
 };
-
