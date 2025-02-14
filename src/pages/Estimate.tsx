@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -81,7 +80,7 @@ const EstimatePage = () => {
               description: catData.description || `Get an estimate for your ${key.toLowerCase()} project`,
               icon: catData.icon,
               keywords: Array.isArray(catData.keywords) ? catData.keywords : [],
-              questions: Array.isArray(catData.questions) ? catData.questions : []
+              questions: Array.isArray(catData.questions) ? Array.isArray(catData.questions) : []
             };
           });
 

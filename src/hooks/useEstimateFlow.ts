@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,47 +73,62 @@ export const useEstimateFlow = (contractorId?: string) => {
         return acc;
       }, {} as Record<string, any>);
 
+      // First, create the lead
+      const leadData: any = {
+        project_description: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
+        project_title: `${questionSets[0]?.category || 'New'} Project`,
+        answers: answersForSupabase,
+        category: questionSets[0]?.category,
+        status: 'pending',
+        contractor_id: contractorId // Add this line to set the contractor_id when creating the lead
+      };
+
+      console.log('Creating lead with data:', leadData);
+
       const { data: lead, error: leadError } = await supabase
         .from('leads')
-        .insert({
-          category: selectedCategory,
-          answers: answersForSupabase,
-          project_title: `${selectedCategory || ''} Project`,
-          project_description: projectDescription,
-          contractor_id: contractorId,
-          status: 'pending',
-          image_url: uploadedImageUrl
-        })
+        .insert(leadData)
         .select()
         .single();
 
-      if (leadError) throw leadError;
+      if (leadError) {
+        console.error('Error creating lead:', leadError);
+        throw leadError;
+      }
 
+      if (!lead?.id) {
+        throw new Error('Failed to create lead - no ID returned');
+      }
+
+      console.log('Lead created successfully:', lead.id);
       setCurrentLeadId(lead.id);
-      setStage('contact');
-      // Start generating estimate as soon as we move to contact form
-      setIsGeneratingEstimate(true);
 
-      // Start the estimate generation process
-      const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
+      // Then, generate the estimate
+      const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
+          answers: answersForSupabase,
+          projectDescription: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
+          category: questionSets[0]?.category,
           leadId: lead.id,
-          contractorId,
-          projectDescription,
-          category: selectedCategory,
-          imageUrl: uploadedImageUrl
+          contractorId // Add this line to pass contractorId
         }
       });
 
-      if (estimateError) throw estimateError;
+      if (generateError) {
+        console.error('Error generating estimate:', generateError);
+        throw generateError;
+      }
 
+      await onComplete(answers);
     } catch (error) {
-      console.error('Error creating lead:', error);
+      console.error('Error completing questions:', error);
       toast({
         title: "Error",
-        description: "Failed to save your responses. Please try again.",
+        description: "Failed to process your answers. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsGeneratingEstimate(false);
     }
   };
 
