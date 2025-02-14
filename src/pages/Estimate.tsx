@@ -104,6 +104,8 @@ const EstimatePage = () => {
     showSubtotals: true
   };
 
+  console.log('Initializing estimate flow with config:', estimateConfig);
+
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", processedContractorId],
     queryFn: async () => {
