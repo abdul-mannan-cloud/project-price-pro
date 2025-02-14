@@ -1,4 +1,3 @@
-
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -192,7 +191,17 @@ const Dashboard = () => {
           <div className="flex gap-2">
             <Button 
               variant="secondary" 
-              onClick={() => navigate(`/estimate/${userId || ''}`)}
+              onClick={() => {
+                if (!userId) {
+                  toast({
+                    title: "Error",
+                    description: "Unable to preview estimator. Please try logging in again.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                navigate(`/estimate/${userId}`);
+              }}
             >
               Open Preview
             </Button>
