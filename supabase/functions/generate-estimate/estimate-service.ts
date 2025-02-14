@@ -7,7 +7,38 @@ export const createEstimate = (
   projectDescription?: string
 ) => {
   try {
+    console.log('Parsing AI response:', aiResponse);
+    
     const parsedResponse = JSON.parse(aiResponse);
+    
+    // Validate required fields
+    if (!parsedResponse.groups || !Array.isArray(parsedResponse.groups)) {
+      throw new Error('Invalid estimate format: missing or invalid groups array');
+    }
+    
+    if (typeof parsedResponse.totalCost !== 'number') {
+      throw new Error('Invalid estimate format: missing or invalid totalCost');
+    }
+
+    // Validate each group and its subgroups
+    parsedResponse.groups.forEach((group: any, groupIndex: number) => {
+      if (!group.name || !group.subgroups || !Array.isArray(group.subgroups)) {
+        throw new Error(`Invalid group format at index ${groupIndex}`);
+      }
+
+      group.subgroups.forEach((subgroup: any, subgroupIndex: number) => {
+        if (!subgroup.name || !subgroup.items || !Array.isArray(subgroup.items)) {
+          throw new Error(`Invalid subgroup format at group ${groupIndex}, subgroup ${subgroupIndex}`);
+        }
+
+        subgroup.items.forEach((item: any, itemIndex: number) => {
+          if (!item.title || typeof item.quantity !== 'number' || typeof item.unitAmount !== 'number') {
+            throw new Error(`Invalid item format at group ${groupIndex}, subgroup ${subgroupIndex}, item ${itemIndex}`);
+          }
+        });
+      });
+    });
+
     return {
       ...parsedResponse,
       category,
@@ -15,7 +46,8 @@ export const createEstimate = (
     };
   } catch (error) {
     console.error('Error parsing AI response:', error);
-    throw new Error('Failed to parse AI response');
+    console.error('Raw AI response:', aiResponse);
+    throw new Error('Failed to parse AI response: ' + (error instanceof Error ? error.message : 'Unknown error'));
   }
 };
 

@@ -24,7 +24,33 @@ export const generateEstimate = async (
     const messages = [
       {
         role: "system",
-        content: "You are a professional contractor estimator. Generate detailed estimates based on project descriptions and answers to questions."
+        content: `You are a professional contractor estimator. Generate detailed estimates based on project descriptions and answers to questions. 
+        ALWAYS respond with valid JSON in the following format:
+        {
+          "groups": [
+            {
+              "name": "string",
+              "description": "string",
+              "subgroups": [
+                {
+                  "name": "string",
+                  "items": [
+                    {
+                      "title": "string",
+                      "description": "string",
+                      "quantity": number,
+                      "unitAmount": number,
+                      "totalPrice": number
+                    }
+                  ],
+                  "subtotal": number
+                }
+              ]
+            }
+          ],
+          "totalCost": number,
+          "notes": "string"
+        }`
       },
       {
         role: "user",
@@ -48,6 +74,8 @@ export const generateEstimate = async (
       });
     }
 
+    console.log('Sending request to OpenAI with context:', context);
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -58,7 +86,8 @@ export const generateEstimate = async (
         model: 'gpt-4o-mini',
         messages,
         temperature: 0.7,
-        max_tokens: 2000
+        max_tokens: 2000,
+        response_format: { type: "json_object" }
       }),
       signal
     });
@@ -68,9 +97,22 @@ export const generateEstimate = async (
     }
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    const content = data.choices[0].message.content;
+    
+    console.log('Received AI response:', content);
+
+    // Validate JSON structure
+    const parsed = JSON.parse(content);
+    if (!parsed.groups || !Array.isArray(parsed.groups) || !parsed.totalCost) {
+      throw new Error('AI response missing required fields');
+    }
+
+    return content;
   } catch (error) {
     console.error('Error generating estimate with AI:', error);
+    if (error instanceof SyntaxError) {
+      throw new Error('AI response was not valid JSON');
+    }
     throw error;
   }
 };
