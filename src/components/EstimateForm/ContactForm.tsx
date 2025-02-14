@@ -43,8 +43,13 @@ export const ContactForm = ({
   const { toast } = useToast();
   const [isCurrentUserContractor, setIsCurrentUserContractor] = useState(false);
   
-  // Use contractor ID from props or URL
-  const effectiveContractorId = propContractorId || urlContractorId;
+  // Use contractor ID from props or URL, ensure it's cleaned
+  const effectiveContractorId = (() => {
+    const rawId = propContractorId || urlContractorId;
+    if (!rawId) return null;
+    const decoded = decodeURIComponent(rawId);
+    return decoded.replace(/[?]/g, '').trim();
+  })();
 
   useEffect(() => {
     const checkCurrentUser = async () => {

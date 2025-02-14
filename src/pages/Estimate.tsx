@@ -21,6 +21,12 @@ import { MultiStepSkeleton } from "@/components/EstimateForm/MultiStepSkeleton";
 
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
+// Validate UUID format
+const isValidUUID = (uuid: string) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+};
+
 const EstimatePage = () => {
   const navigate = useNavigate();
   const { contractorId: rawContractorId } = useParams();
@@ -29,16 +35,26 @@ const EstimatePage = () => {
   // Clean up and decode the contractorId parameter
   const contractorId = (() => {
     if (!rawContractorId) return DEFAULT_CONTRACTOR_ID;
+    
     // First decode the URL parameter
     const decoded = decodeURIComponent(rawContractorId);
     // Remove any question marks and clean the string
-    return decoded.replace(/[?]/g, '').trim() || DEFAULT_CONTRACTOR_ID;
+    const cleaned = decoded.replace(/[?]/g, '').trim();
+    
+    // If it's not a valid UUID, use the default
+    if (!isValidUUID(cleaned)) {
+      console.warn('Invalid contractor ID format:', cleaned);
+      return DEFAULT_CONTRACTOR_ID;
+    }
+    
+    return cleaned;
   })();
 
   console.log('ContractorID processing:', {
     raw: rawContractorId,
     decoded: decodeURIComponent(rawContractorId || ''),
-    final: contractorId
+    final: contractorId,
+    isValid: isValidUUID(contractorId)
   });
 
   const estimateConfig: EstimateConfig = {
@@ -68,7 +84,7 @@ const EstimatePage = () => {
       }
       return data;
     },
-    enabled: !!contractorId && contractorId !== ':contractorId' && contractorId !== ':contractorId?',
+    enabled: isValidUUID(contractorId),
     retry: false
   });
 
