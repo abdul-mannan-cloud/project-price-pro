@@ -19,7 +19,7 @@ interface ContactFormProps {
   leadId?: string;
   estimate?: any;
   contractor?: any;
-  contractorId: string;
+  contractorId?: string;
   onSkip?: () => Promise<void>;
 }
 
@@ -27,8 +27,7 @@ export const ContactForm = ({
   onSubmit, 
   leadId, 
   estimate, 
-  contractor, 
-  contractorId: propContractorId,
+  contractor,
   onSkip 
 }: ContactFormProps) => {
   const [formData, setFormData] = useState({
@@ -41,16 +40,27 @@ export const ContactForm = ({
   const [isProcessingEstimate, setIsProcessingEstimate] = useState(false);
   const { toast } = useToast();
   const [isCurrentUserContractor, setIsCurrentUserContractor] = useState(false);
+  const { contractorId: urlContractorId } = useParams(); // Get contractor ID from URL
 
   useEffect(() => {
     const checkCurrentUser = async () => {
-      if (!propContractorId) return;
       const { data: { user } } = await supabase.auth.getUser();
-      setIsCurrentUserContractor(user?.id === propContractorId);
+      if (user) {
+        // Check if user is a contractor
+        const { data: contractor } = await supabase
+          .from('contractors')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+        
+        if (contractor) {
+          setIsCurrentUserContractor(true);
+        }
+      }
     };
     
     checkCurrentUser();
-  }, [propContractorId]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,14 +73,18 @@ export const ContactForm = ({
         throw new Error("Unable to process your request at this time");
       }
 
-      if (!propContractorId) {
-        console.error('Missing contractorId in ContactForm');
+      // Get the contractor ID from either logged in user or URL
+      const { data: { user } } = await supabase.auth.getUser();
+      const effectiveContractorId = user?.id || urlContractorId;
+
+      if (!effectiveContractorId) {
+        console.error('No contractor ID available');
         throw new Error("Unable to identify the contractor");
       }
 
       console.log('Processing estimate with:', { 
         leadId, 
-        contractorId: propContractorId,
+        contractorId: effectiveContractorId,
         formData 
       });
 
@@ -83,7 +97,7 @@ export const ContactForm = ({
           user_phone: formData.phone,
           project_address: formData.address,
           status: 'processing',
-          contractor_id: propContractorId
+          contractor_id: effectiveContractorId
         })
         .eq('id', leadId);
 
@@ -96,7 +110,7 @@ export const ContactForm = ({
       const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId,
-          contractorId: propContractorId,
+          contractorId: effectiveContractorId,
           formData 
         }
       });
@@ -121,15 +135,23 @@ export const ContactForm = ({
   };
 
   const handleSkipForm = async () => {
-    if (!leadId || !propContractorId) return;
+    if (!leadId) return;
 
     try {
+      // Get the contractor ID from either logged in user or URL
+      const { data: { user } } = await supabase.auth.getUser();
+      const effectiveContractorId = user?.id || urlContractorId;
+
+      if (!effectiveContractorId) {
+        throw new Error("No contractor ID available");
+      }
+
       const { error: updateError } = await supabase
         .from('leads')
         .update({
           is_test_estimate: true,
           status: 'test',
-          contractor_id: propContractorId
+          contractor_id: effectiveContractorId
         })
         .eq('id', leadId);
 
