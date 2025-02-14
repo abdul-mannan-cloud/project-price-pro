@@ -19,11 +19,11 @@ serve(async (req) => {
 
   const controller = new AbortController();
   const { signal } = controller;
+  let requestData: EstimateRequest;
 
   try {
     console.log('Received request to generate estimate');
     
-    let requestData: EstimateRequest;
     try {
       requestData = await req.json();
       console.log('Received request data:', requestData);
@@ -59,44 +59,33 @@ serve(async (req) => {
       throw new Error('Failed to fetch lead information');
     }
 
-    // Use contractor ID from lead or request
+    // Get contractor ID from request or lead
     let contractorId = requestData.contractorId || lead?.contractor_id;
-
-    // Clean up contractor ID if it's malformed
-    if (contractorId) {
-      try {
-        contractorId = decodeURIComponent(contractorId).replace(/[^a-f0-9-]/gi, '').trim();
-      } catch (e) {
-        console.error('Error decoding contractor ID:', e);
-      }
-    }
-
-    // Log the contractor ID we're working with
-    console.log('Processing with contractor ID:', {
+    
+    console.log('Initial contractor ID:', {
       fromRequest: requestData.contractorId,
       fromLead: lead?.contractor_id,
-      cleaned: contractorId
+      combined: contractorId
     });
 
-    // Validate contractor ID format
+    if (!contractorId) {
+      throw new Error('No contractor ID found in lead or request');
+    }
+
+    // Simple UUID validation without modifying the ID
     const isValidUUID = (uuid: string) => {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       return uuidRegex.test(uuid);
     };
 
-    if (!contractorId || !isValidUUID(contractorId)) {
-      console.error('Invalid or missing contractor ID:', {
-        requestContractorId: requestData.contractorId,
-        leadContractorId: lead?.contractor_id,
-        leadId: requestData.leadId,
-        processedId: contractorId
-      });
-      throw new Error('Invalid or missing contractor ID. Please ensure either the lead has a valid contractor_id or provide it in the request.');
+    if (!isValidUUID(contractorId)) {
+      console.error('Invalid contractor ID format:', contractorId);
+      throw new Error('Invalid contractor ID format');
     }
 
     console.log('Using contractor ID:', contractorId);
 
-    // Get contractor settings and AI instructions
+    // Query the contractor directly using their ID (primary key)
     const { data: contractor, error: contractorError } = await supabase
       .from('contractors')
       .select(`
@@ -104,7 +93,7 @@ serve(async (req) => {
         contractor_settings(*),
         ai_instructions(*)
       `)
-      .eq('id', contractorId)
+      .eq('id', contractorId)  // Using 'id' as it's the primary key
       .maybeSingle();
 
     if (contractorError) {
@@ -120,7 +109,7 @@ serve(async (req) => {
     const { data: aiRates, error: ratesError } = await supabase
       .from('ai_rates')
       .select('*')
-      .eq('contractor_id', contractorId)
+      .eq('contractor_id', contractorId)  // Using the same contractor ID
       .eq('type', (requestData.category || lead?.category)?.toLowerCase() || '');
 
     if (ratesError) {
