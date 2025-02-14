@@ -55,7 +55,7 @@ serve(async (req) => {
         .from('leads')
         .select('contractor_id')
         .eq('id', requestData.leadId)
-        .single();
+        .maybeSingle();
 
       if (leadError) {
         console.error('Error fetching lead:', leadError);
@@ -79,7 +79,7 @@ serve(async (req) => {
         ai_instructions(*)
       `)
       .eq('id', contractorId)
-      .single();
+      .maybeSingle();
 
     if (contractorError) {
       console.error('Error fetching contractor:', contractorError);
