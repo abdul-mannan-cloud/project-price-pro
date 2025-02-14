@@ -11,6 +11,7 @@ import { LeadQuestionsView } from "./LeadQuestionsView";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQuery } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -36,8 +37,9 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   const [emailRecipient, setEmailRecipient] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const isMobile = useIsMobile();
+  const { contractorId: urlContractorId } = useParams<{ contractorId: string }>();
 
-  // Get current user data
+  // Get current user data if no URL contractor ID
   const { data: currentUser, isLoading: isLoadingUser } = useQuery({
     queryKey: ['current-user'],
     queryFn: async () => {
@@ -45,25 +47,32 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
       if (error) throw error;
       if (!user) throw new Error('No user found');
       return user;
-    }
+    },
+    enabled: !urlContractorId // Only fetch if no URL contractor ID
   });
 
-  // Fetch contractor data
+  // Determine the actual contractor ID to use
+  const effectiveContractorId = urlContractorId || currentUser?.id;
+
+  // Fetch contractor data using the effective ID
   const { data: contractor, isLoading: isLoadingContractor } = useQuery({
-    queryKey: ['contractor', currentUser?.id],
+    queryKey: ['contractor', effectiveContractorId],
     queryFn: async () => {
-      if (!currentUser?.id) throw new Error('No user ID available');
+      if (!effectiveContractorId) throw new Error('No contractor ID available');
+      
+      console.log('Fetching contractor with ID:', effectiveContractorId);
+      
       const { data, error } = await supabase
         .from('contractors')
         .select('*')
-        .eq('id', currentUser.id)
+        .eq('id', effectiveContractorId)
         .single();
       
       if (error) throw error;
       if (!data) throw new Error('No contractor found');
       return data;
     },
-    enabled: !!currentUser?.id
+    enabled: !!effectiveContractorId
   });
 
   useEffect(() => {
@@ -73,7 +82,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   }, [lead?.user_email]);
 
   const handleSaveEstimate = async () => {
-    if (!lead || !currentUser?.id) {
+    if (!lead || !effectiveContractorId) {
       toast({
         title: "Error",
         description: "Unable to save estimate. Please try again later.",
@@ -85,7 +94,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
     setIsSaving(true);
 
     try {
-      console.log('Updating estimate with contractorId:', currentUser.id);
+      console.log('Updating estimate with contractorId:', effectiveContractorId);
 
       // First update the estimate data
       const { error: updateError } = await supabase
@@ -99,7 +108,11 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
       const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId: lead.id,
-          contractorId: currentUser.id
+          contractorId: effectiveContractorId,
+          answers: lead.answers,
+          category: lead.category,
+          projectDescription: lead.project_description,
+          imageUrl: lead.image_url
         }
       });
 
@@ -175,12 +188,15 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
       return (
         <Button 
           onClick={handleSaveEstimate} 
-          disabled={isSaving || isLoadingUser || !currentUser}
+          disabled={isSaving || (!effectiveContractorId || (isLoadingUser && !urlContractorId))}
         >
           {isSaving ? "Saving..." : "Save Changes"}
         </Button>
       );
     }
+
+    const isLoading = !urlContractorId && isLoadingUser;
+    const disabled = isLoading || !effectiveContractorId;
 
     if (isMobile) {
       return (
@@ -189,7 +205,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
             variant="outline" 
             onClick={() => setIsEditing(true)} 
             className="w-full gap-2"
-            disabled={isLoadingUser || !currentUser}
+            disabled={disabled}
           >
             <Edit className="h-4 w-4" />
             Edit Estimate
@@ -198,7 +214,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
             variant="outline" 
             onClick={() => setShowEmailDialog(true)} 
             className="w-full gap-2"
-            disabled={isLoadingUser || !currentUser}
+            disabled={disabled}
           >
             <Mail className="h-4 w-4" />
             Email Estimate
@@ -213,7 +229,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
           variant="default" 
           onClick={() => setIsEditing(true)} 
           className="w-full gap-2"
-          disabled={isLoadingUser || !currentUser}
+          disabled={disabled}
         >
           <Edit className="h-4 w-4" />
           Edit Estimate
@@ -222,7 +238,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
           variant="default" 
           onClick={() => setShowEmailDialog(true)} 
           className="w-full gap-2"
-          disabled={isLoadingUser || !currentUser}
+          disabled={disabled}
         >
           <Mail className="h-4 w-4" />
           Email Estimate
@@ -231,7 +247,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
     );
   };
 
-  if (isLoadingUser || isLoadingContractor) {
+  if ((isLoadingUser && !urlContractorId) || isLoadingContractor) {
     return (
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-full h-[100vh] p-0 m-0">
