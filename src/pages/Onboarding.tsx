@@ -33,6 +33,8 @@ const CONSTRUCTION_INDUSTRIES = [
   "Carpentry",
 ] as const;
 
+const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
+
 const Onboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -98,13 +100,11 @@ const Onboarding = () => {
 
       const { data: existingContractor, error: fetchError } = await supabase
         .from("contractors")
-        .select()
+        .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (fetchError) {
-        throw fetchError;
-      }
+      if (fetchError) throw fetchError;
 
       if (existingContractor) {
         const { error: updateError } = await supabase
@@ -113,27 +113,45 @@ const Onboarding = () => {
             business_name: formData.businessName,
             contact_email: formData.contactEmail,
             contact_phone: formData.contactPhone,
+            business_address: formData.address,
+            license_number: formData.licenseNumber,
             branding_colors: {
               primary: formData.primaryColor,
               secondary: formData.secondaryColor,
             },
           })
-          .eq('user_id', user.id);
+          .eq('id', existingContractor.id);
 
         if (updateError) throw updateError;
+
+        const { error: settingsError } = await supabase
+          .from("contractor_settings")
+          .update({
+            minimum_project_cost: parseFloat(formData.minimumProjectCost),
+            markup_percentage: parseFloat(formData.markupPercentage),
+            tax_rate: parseFloat(formData.taxRate),
+          })
+          .eq('id', existingContractor.id);
+
+        if (settingsError) throw settingsError;
       } else {
-        const { error: insertError } = await supabase
+        const { data: newContractor, error: insertError } = await supabase
           .from("contractors")
           .insert({
+            id: DEFAULT_CONTRACTOR_ID,
             user_id: user.id,
             business_name: formData.businessName,
             contact_email: formData.contactEmail,
             contact_phone: formData.contactPhone,
+            business_address: formData.address,
+            license_number: formData.licenseNumber,
             branding_colors: {
               primary: formData.primaryColor,
               secondary: formData.secondaryColor,
             },
-          });
+          })
+          .select()
+          .single();
 
         if (insertError) throw insertError;
       }
