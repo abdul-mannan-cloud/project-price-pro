@@ -47,12 +47,12 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get the lead data to ensure we have a contractor_id
+    // Get the lead data
     const { data: lead, error: leadError } = await supabase
       .from('leads')
       .select('contractor_id, project_description, category')
       .eq('id', requestData.leadId)
-      .maybeSingle();
+      .single();
 
     if (leadError) {
       console.error('Error fetching lead:', leadError);
@@ -63,6 +63,11 @@ serve(async (req) => {
     const contractorId = requestData.contractorId || lead?.contractor_id;
 
     if (!contractorId) {
+      console.error('No contractor ID found in either request or lead:', {
+        requestContractorId: requestData.contractorId,
+        leadContractorId: lead?.contractor_id,
+        leadId: requestData.leadId
+      });
       throw new Error('No contractor ID found. Please ensure either the lead has a contractor_id or provide it in the request.');
     }
 
@@ -77,7 +82,7 @@ serve(async (req) => {
         ai_instructions(*)
       `)
       .eq('id', contractorId)
-      .maybeSingle();
+      .single();
 
     if (contractorError) {
       console.error('Error fetching contractor:', contractorError);
@@ -162,16 +167,20 @@ serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     const errorDetails = error instanceof Error ? error.stack : undefined;
     
-    // Try to update the lead with error if we have request data
     try {
-      const requestData = await req.json();
+      // Try to update the lead with error if we have leadId
       if (requestData?.leadId) {
-        await updateLeadWithError(
-          requestData.leadId,
-          errorMessage,
-          Deno.env.get('SUPABASE_URL')!,
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-        );
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        
+        if (supabaseUrl && supabaseKey) {
+          await updateLeadWithError(
+            requestData.leadId,
+            errorMessage,
+            supabaseUrl,
+            supabaseKey
+          );
+        }
       }
     } catch (updateError) {
       console.error('Failed to update lead with error:', updateError);
