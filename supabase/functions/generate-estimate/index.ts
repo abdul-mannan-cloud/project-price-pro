@@ -13,7 +13,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -24,11 +23,9 @@ serve(async (req) => {
   try {
     console.log('Starting estimate generation process...');
     
-    // Parse request data
     const requestData: EstimateRequest = await req.json();
     console.log('Received request data:', JSON.stringify(requestData, null, 2));
 
-    // Setup Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -38,36 +35,15 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Validate leadId
     if (!requestData.leadId) {
       throw new Error('leadId is required');
     }
 
-    // Get contractor ID directly from request first
-    let effectiveContractorId = requestData.contractorId;
-
-    // If no contractor ID in request, try to get it from the lead
-    if (!effectiveContractorId) {
-      console.log('No contractor ID in request, checking lead...');
-      const { data: lead, error: leadError } = await supabase
-        .from('leads')
-        .select('contractor_id')
-        .eq('id', requestData.leadId)
-        .maybeSingle();
-
-      if (leadError) {
-        console.error('Error fetching lead:', leadError);
-        throw new Error('Failed to fetch lead data');
-      }
-
-      effectiveContractorId = lead?.contractor_id;
+    if (!requestData.contractorId) {
+      throw new Error('contractorId is required');
     }
 
-    console.log('Using contractor ID:', effectiveContractorId);
-
-    if (!effectiveContractorId) {
-      throw new Error('No contractor ID found in lead or request');
-    }
+    console.log('Using contractor ID:', requestData.contractorId);
 
     // Get contractor data
     const { data: contractor, error: contractorError } = await supabase
@@ -77,7 +53,7 @@ serve(async (req) => {
         contractor_settings(*),
         ai_instructions(*)
       `)
-      .eq('id', effectiveContractorId)
+      .eq('id', requestData.contractorId)
       .maybeSingle();
 
     if (contractorError || !contractor) {
@@ -89,7 +65,7 @@ serve(async (req) => {
     const { data: aiRates, error: ratesError } = await supabase
       .from('ai_rates')
       .select('*')
-      .eq('contractor_id', effectiveContractorId)
+      .eq('contractor_id', requestData.contractorId)
       .eq('type', (requestData.category || '')?.toLowerCase() || '');
 
     if (ratesError) {
@@ -97,7 +73,7 @@ serve(async (req) => {
       // Continue without rates as they're optional
     }
 
-    // Get lead data
+    // Get lead data (only for project info, not for contractor ID)
     const { data: lead, error: leadError } = await supabase
       .from('leads')
       .select('project_description, category')
@@ -122,13 +98,11 @@ serve(async (req) => {
       }
     });
 
-    // Get OpenAI key
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Generate estimate
     console.log('Generating estimate with AI...');
     const aiResponse = await generateEstimate(
       context,
@@ -137,7 +111,6 @@ serve(async (req) => {
       signal
     );
 
-    // Create estimate object
     console.log('Processing AI response...');
     const estimate = createEstimate(
       aiResponse,
@@ -145,7 +118,6 @@ serve(async (req) => {
       requestData.projectDescription || lead?.project_description
     );
 
-    // Update lead with estimate
     console.log('Updating lead with estimate...');
     await updateLeadWithEstimate(
       requestData.leadId,
@@ -163,7 +135,6 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in generate-estimate function:', error);
     
-    // Try to update lead with error if possible
     try {
       const requestData: EstimateRequest = await req.json();
       if (requestData?.leadId) {
