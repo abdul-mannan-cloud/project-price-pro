@@ -1,3 +1,4 @@
+
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +25,7 @@ const Dashboard = () => {
     { name: "Settings", url: "/settings", icon: Settings }
   ];
 
-  // First check authentication
+  // First check authentication and get user ID
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -40,30 +41,31 @@ const Dashboard = () => {
       }
       
       setUserId(user.id);
-      console.log('Set user ID:', user.id); // Debug log
+      console.log('Set user ID:', user.id);
     };
     
     checkAuth();
   }, [navigate, toast]);
 
+  // Get contractor data using user ID
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", userId],
     queryFn: async () => {
       if (!userId) return null;
-      console.log('Fetching contractor data for ID:', userId); // Debug log
+      console.log('Fetching contractor data for user ID:', userId);
 
       const { data, error } = await supabase
         .from("contractors")
         .select("*, contractor_settings(*)")
-        .eq("id", userId)
+        .eq("id", userId)  // This will be updated in the migration to use user_id
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching contractor:', error); // Debug log
+        console.error('Error fetching contractor:', error);
         throw error;
       }
       if (!data) {
-        console.log('No contractor data found, redirecting to onboarding'); // Debug log
+        console.log('No contractor data found, redirecting to onboarding');
         navigate("/onboarding");
         return null;
       }
@@ -76,24 +78,25 @@ const Dashboard = () => {
     },
   });
 
+  // Get leads data using contractor ID
   const { data: leads = [], isError: isLeadsError } = useQuery({
-    queryKey: ["leads", userId],
+    queryKey: ["leads", contractor?.id],
     queryFn: async () => {
-      if (!userId) {
-        console.error('No user ID available for leads query'); // Debug log
-        throw new Error("No user ID available");
+      if (!contractor?.id) {
+        console.error('No contractor ID available for leads query');
+        throw new Error("No contractor ID available");
       }
 
       const { data, error } = await supabase
         .from("leads")
         .select("*")
-        .eq("contractor_id", userId)
+        .eq("contractor_id", contractor.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data || [];
     },
-    enabled: !!userId && !!contractor,
+    enabled: !!contractor?.id,
     retry: 1,
     meta: {
       errorMessage: "Failed to load leads",
@@ -115,17 +118,17 @@ const Dashboard = () => {
     try {
       setIsCopyingUrl(true);
       const baseUrl = window.location.origin;
-      const effectiveContractorId = userId;
-      if (!effectiveContractorId) {
+      const contractorId = contractor?.id;
+      if (!contractorId) {
         throw new Error('No contractor ID available');
       }
-      console.log('Using contractor ID for link:', effectiveContractorId); // Debug log
-      const longUrl = `${baseUrl}/estimate/${effectiveContractorId}`;
+      console.log('Using contractor ID for link:', contractorId);
+      const longUrl = `${baseUrl}/estimate/${contractorId}`;
       
       const { data, error } = await supabase.functions.invoke('shorten-url', {
         body: { 
           longUrl,
-          contractorId: effectiveContractorId // Pass contractor ID explicitly
+          contractorId // Pass contractor ID explicitly
         }
       });
 
@@ -141,9 +144,9 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error('Error shortening URL:', error);
-      if (userId) {
+      if (contractor?.id) {
         const baseUrl = window.location.origin;
-        const longUrl = `${baseUrl}/estimate/${userId}`;
+        const longUrl = `${baseUrl}/estimate/${contractor.id}`;
         await navigator.clipboard.writeText(longUrl);
         toast({
           title: "Link copied!",
@@ -180,7 +183,7 @@ const Dashboard = () => {
       Icon: Copy,
       name: "Preview Estimator",
       description: "Preview your estimator or copy the link to share",
-      href: `/estimate/${userId || ''}`,
+      href: `/estimate/${contractor.id}`,
       cta: "Preview",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
       className: "lg:col-span-3 bg-primary text-white hover:scale-[1.02] transition-transform",
@@ -192,7 +195,7 @@ const Dashboard = () => {
             <Button 
               variant="secondary" 
               onClick={() => {
-                if (!userId) {
+                if (!contractor.id) {
                   toast({
                     title: "Error",
                     description: "Unable to preview estimator. Please try logging in again.",
@@ -200,7 +203,7 @@ const Dashboard = () => {
                   });
                   return;
                 }
-                navigate(`/estimate/${userId}`);
+                navigate(`/estimate/${contractor.id}`);
               }}
             >
               Open Preview
@@ -208,7 +211,7 @@ const Dashboard = () => {
             <Button 
               variant="outline"
               onClick={copyEstimatorLink}
-              disabled={isCopyingUrl || !userId}
+              disabled={isCopyingUrl || !contractor.id}
             >
               {isCopyingUrl ? "Copying..." : "Copy Link"}
             </Button>
@@ -224,7 +227,7 @@ const Dashboard = () => {
               e.preventDefault();
               copyEstimatorLink();
             }}
-            disabled={isCopyingUrl || !userId}
+            disabled={isCopyingUrl || !contractor.id}
             className="text-white hover:text-white/80"
           >
             <Copy className="w-4 h-4 mr-2" />
