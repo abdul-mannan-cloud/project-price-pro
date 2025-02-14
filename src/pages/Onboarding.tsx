@@ -1,499 +1,195 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { CustomSelect } from "@/components/ui/custom-select";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ProgressSteps } from "@/components/ui/progress-steps";
-import { ColorPicker } from "@/components/ui/color-picker";
+import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { FileUpload } from "@/components/ui/file-upload";
 
-type OnboardingStep = 0 | 1 | 2;
-
-const OnboardingSteps = {
-  BUSINESS_INFO: 0,
-  BRANDING: 1,
-  SETTINGS: 2,
-} as const;
-
-const CONSTRUCTION_INDUSTRIES = [
-  "General Contractor",
-  "Residential Construction",
-  "Commercial Construction",
-  "Remodeling",
-  "Electrical",
-  "Plumbing",
-  "HVAC",
-  "Roofing",
-  "Landscaping",
-  "Interior Design",
-  "Painting",
-  "Flooring",
-  "Masonry",
-  "Carpentry",
-] as const;
+const DEFAULT_COLORS = {
+  primary: "#6366F1",
+  secondary: "#4F46E5"
+};
 
 const Onboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>(OnboardingSteps.BUSINESS_INFO);
-  const [loading, setLoading] = useState(false);
-  const [activeColorType, setActiveColorType] = useState<'primary' | 'secondary'>('primary');
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     businessName: "",
-    fullName: "",
-    industry: "",
-    contactEmail: "",
-    contactPhone: "",
-    address: "",
-    licenseNumber: "",
-    primaryColor: "#007AFF",
-    secondaryColor: "#F5F5F7",
-    minimumProjectCost: "1000",
-    markupPercentage: "20",
-    taxRate: "8.5",
+    email: "",
+    phone: "",
+    logoUrl: "",
   });
 
-  const [touched, setTouched] = useState({
-    businessName: false,
-    fullName: false,
-    industry: false,
-    contactEmail: false,
-    contactPhone: false,
-  });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setTouched((prev) => ({ ...prev, [name]: true }));
-  };
-
-  const handleSelectChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, industry: value }));
-    setTouched((prev) => ({ ...prev, industry: true }));
-  };
-
-  const isRequiredFieldEmpty = (fieldName: string) => {
-    return touched[fieldName as keyof typeof touched] && !formData[fieldName as keyof typeof formData];
-  };
-
-  const isBusinessInfoValid = () => {
-    const requiredFields = ['businessName', 'fullName', 'industry', 'contactEmail', 'contactPhone'];
-    return requiredFields.every(field => formData[field as keyof typeof formData]);
-  };
-
-  const handleSubmit = async () => {
-    setLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // First get the current user's ID
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error('Authentication required');
+      }
 
-      if (!user) {
-        toast({
-          title: "Error",
-          description: "No authenticated user found. Please log in again.",
-          variant: "destructive",
+      // Generate a new UUID for the contractor record
+      const contractorId = crypto.randomUUID();
+
+      // Create the contractor record with both IDs
+      const { error: insertError } = await supabase
+        .from('contractors')
+        .insert({
+          id: contractorId, // The contractor's unique ID
+          user_id: user.id, // Link to auth.users
+          business_name: formData.businessName,
+          contact_email: formData.email,
+          contact_phone: formData.phone,
+          business_logo_url: formData.logoUrl,
+          branding_colors: DEFAULT_COLORS
         });
-        return;
+
+      if (insertError) {
+        throw insertError;
       }
 
-      const { data: existingContractor, error: fetchError } = await supabase
-        .from("contractors")
-        .select()
-        .eq('id', user.id)
-        .maybeSingle();
+      // Update auth user metadata with contractor info
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { 
+          contractor_id: contractorId,
+          business_name: formData.businessName
+        }
+      });
 
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      if (existingContractor) {
-        const { error: updateError } = await supabase
-          .from("contractors")
-          .update({
-            business_name: formData.businessName,
-            contact_email: formData.contactEmail,
-            contact_phone: formData.contactPhone,
-            branding_colors: {
-              primary: formData.primaryColor,
-              secondary: formData.secondaryColor,
-            },
-          })
-          .eq('id', user.id);
-
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from("contractors")
-          .insert({
-            id: user.id,
-            business_name: formData.businessName,
-            contact_email: formData.contactEmail,
-            contact_phone: formData.contactPhone,
-            branding_colors: {
-              primary: formData.primaryColor,
-              secondary: formData.secondaryColor,
-            },
-          });
-
-        if (insertError) throw insertError;
+      if (updateError) {
+        throw updateError;
       }
 
       toast({
-        title: "Information saved!",
-        description: "Your business information has been saved successfully.",
+        title: "Welcome aboard!",
+        description: "Your account has been set up successfully.",
       });
-      
-      if (currentStep === OnboardingSteps.SETTINGS) {
-        navigate("/dashboard");
-      } else {
-        setCurrentStep((prev) => (prev + 1) as OnboardingStep);
-      }
-    } catch (error: any) {
+
+      navigate("/dashboard");
+    } catch (error) {
       console.error('Onboarding error:', error);
       toast({
         title: "Error",
-        description: error.message || "An error occurred while saving your information.",
+        description: "Failed to complete onboarding. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const updateGlobalColors = (primaryColor: string, secondaryColor: string) => {
-    const root = document.documentElement;
-    
-    root.style.setProperty('--primary', primaryColor);
-    root.style.setProperty('--primary-foreground', '#FFFFFF');
-    
-    const primaryHex = primaryColor.replace('#', '');
-    const r = parseInt(primaryHex.slice(0, 2), 16);
-    const g = parseInt(primaryHex.slice(2, 4), 16);
-    const b = parseInt(primaryHex.slice(4, 6), 16);
-    
-    const max = Math.max(r, g, b) / 255;
-    const min = Math.min(r, g, b) / 255;
-    const l = (max + min) / 2;
-    
-    let h, s;
-    if (max === min) {
-      h = s = 0;
-    } else {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r / 255:
-          h = (g - b) / d + (g < b ? 6 : 0);
-          break;
-        case g / 255:
-          h = (b - r) / d + 2;
-          break;
-        default:
-          h = (r - g) / d + 4;
-          break;
-      }
-      h *= 60;
-    }
-    
-    root.style.setProperty('--primary-100', `hsl(${h}, ${s * 100}%, 95%)`);
-    root.style.setProperty('--primary-200', `hsl(${h}, ${s * 100}%, 90%)`);
-    root.style.setProperty('--primary-300', `hsl(${h}, ${s * 100}%, 85%)`);
-    root.style.setProperty('--primary-400', `hsl(${h}, ${s * 100}%, 80%)`);
-    root.style.setProperty('--primary-500', primaryColor);
-    root.style.setProperty('--primary-600', `hsl(${h}, ${s * 100}%, 45%)`);
-    root.style.setProperty('--primary-700', `hsl(${h}, ${s * 100}%, 40%)`);
-    
-    root.style.setProperty('--secondary', secondaryColor);
-    root.style.setProperty('--secondary-foreground', '#1d1d1f');
-    
-    root.style.setProperty('--accent', primaryColor);
-    root.style.setProperty('--accent-foreground', '#FFFFFF');
-    
-    root.style.setProperty('--ring', primaryColor);
-  };
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
 
-  const handlePrimaryColorChange = (newColor: string) => {
-    setFormData(prev => ({
-      ...prev,
-      primaryColor: newColor
-    }));
-    updateGlobalColors(newColor, formData.secondaryColor);
-  };
+    try {
+      const file = files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
 
-  const handleSecondaryColorChange = (newColor: string) => {
-    setFormData(prev => ({
-      ...prev,
-      secondaryColor: newColor
-    }));
-    updateGlobalColors(formData.primaryColor, newColor);
-  };
+      const { error: uploadError, data } = await supabase.storage
+        .from('logos')
+        .upload(filePath, file);
 
-  const renderStep = () => {
-    switch (currentStep) {
-      case OnboardingSteps.BUSINESS_INFO:
-        return (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
-                Business Information
-              </h1>
-              <p className="text-[15px] text-[#86868b]">
-                This information will be visible to customers when they show interest in your services.
-              </p>
-            </div>
+      if (uploadError) throw uploadError;
 
-            <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
-              <div className="space-y-4">
-                <Input
-                  id="businessName"
-                  name="businessName"
-                  label="Business Name"
-                  value={formData.businessName}
-                  onChange={handleInputChange}
-                  required
-                  className={isRequiredFieldEmpty('businessName') ? 'border-red-500' : ''}
-                />
-                {isRequiredFieldEmpty('businessName') && (
-                  <span className="text-red-500 text-xs mt-1">Business name is required</span>
-                )}
+      const { data: { publicUrl } } = supabase.storage
+        .from('logos')
+        .getPublicUrl(filePath);
 
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  label="Full Name"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  required
-                  className={isRequiredFieldEmpty('fullName') ? 'border-red-500' : ''}
-                />
-                {isRequiredFieldEmpty('fullName') && (
-                  <span className="text-red-500 text-xs mt-1">Full name is required</span>
-                )}
+      setFormData(prev => ({
+        ...prev,
+        logoUrl: publicUrl
+      }));
 
-                <div className="relative">
-                  <CustomSelect
-                    label="Industry"
-                    value={formData.industry}
-                    onValueChange={handleSelectChange}
-                    options={CONSTRUCTION_INDUSTRIES.map(industry => ({
-                      value: industry,
-                      label: industry
-                    }))}
-                    className={isRequiredFieldEmpty('industry') ? 'border-red-500' : ''}
-                  />
-                  {isRequiredFieldEmpty('industry') && (
-                    <span className="text-red-500 text-xs mt-1">Industry is required</span>
-                  )}
-                </div>
-
-                <Input
-                  id="contactPhone"
-                  name="contactPhone"
-                  label="Contact Phone"
-                  type="tel"
-                  value={formData.contactPhone}
-                  onChange={handleInputChange}
-                  required
-                  className={isRequiredFieldEmpty('contactPhone') ? 'border-red-500' : ''}
-                />
-                {isRequiredFieldEmpty('contactPhone') && (
-                  <span className="text-red-500 text-xs mt-1">Contact phone is required</span>
-                )}
-
-                <Input
-                  id="contactEmail"
-                  name="contactEmail"
-                  label="Contact Email"
-                  type="email"
-                  value={formData.contactEmail}
-                  onChange={handleInputChange}
-                  required
-                  className={isRequiredFieldEmpty('contactEmail') ? 'border-red-500' : ''}
-                />
-                {isRequiredFieldEmpty('contactEmail') && (
-                  <span className="text-red-500 text-xs mt-1">Contact email is required</span>
-                )}
-
-                <Input
-                  id="address"
-                  name="address"
-                  label="Business Address (Optional)"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                />
-
-                <Input
-                  id="licenseNumber"
-                  name="licenseNumber"
-                  label="License Number (Optional)"
-                  value={formData.licenseNumber}
-                  onChange={handleInputChange}
-                />
-
-                <div className="flex justify-between pt-6">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
-                    disabled={currentStep === OnboardingSteps.BUSINESS_INFO || loading}
-                    className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={!isBusinessInfoValid() || loading}
-                    className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
-                  >
-                    {loading ? "Saving..." : "Next"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case OnboardingSteps.BRANDING:
-        return (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
-                Branding
-              </h1>
-              <p className="text-[15px] text-[#86868b]">
-                Customize your brand colors to match your business identity.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-6">
-              <div className="space-y-6">
-                <div className="relative">
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                    Primary Color
-                  </label>
-                  <div className="flex items-center w-full">
-                    <ColorPicker
-                      color={formData.primaryColor}
-                      onChange={handlePrimaryColorChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                    Secondary Color
-                  </label>
-                  <div className="flex items-center w-full">
-                    <ColorPicker
-                      color={formData.secondaryColor}
-                      onChange={handleSecondaryColorChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-between pt-6">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
-                    disabled={loading}
-                    className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
-                  >
-                    {loading ? "Saving..." : "Next"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case OnboardingSteps.SETTINGS:
-        return (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
-                Business Settings
-              </h1>
-              <p className="text-[15px] text-[#86868b]">
-                Configure your business settings for estimates and invoices.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
-              <div className="space-y-4">
-                <Input
-                  id="minimumProjectCost"
-                  name="minimumProjectCost"
-                  type="number"
-                  label="Minimum Project Cost ($)"
-                  value={formData.minimumProjectCost}
-                  onChange={handleInputChange}
-                />
-
-                <Input
-                  id="markupPercentage"
-                  name="markupPercentage"
-                  type="number"
-                  label="Markup Percentage (%)"
-                  value={formData.markupPercentage}
-                  onChange={handleInputChange}
-                />
-
-                <Input
-                  id="taxRate"
-                  name="taxRate"
-                  type="number"
-                  label="Tax Rate (%)"
-                  value={formData.taxRate}
-                  onChange={handleInputChange}
-                />
-
-                <div className="flex justify-between pt-6">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
-                    disabled={loading}
-                    className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Saving..." : "Complete"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
+      toast({
+        title: "Success",
+        description: "Logo uploaded successfully",
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload logo. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] py-12">
-      <div className="container max-w-2xl mx-auto">
-        <ProgressSteps
-          currentStep={currentStep}
-          steps={[
-            { label: "Business Info", value: OnboardingSteps.BUSINESS_INFO },
-            { label: "Branding", value: OnboardingSteps.BRANDING },
-            { label: "Settings", value: OnboardingSteps.SETTINGS },
-          ]}
-        />
-        {renderStep()}
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-white rounded-xl p-8 shadow-lg">
+        <h1 className="text-2xl font-semibold mb-6">Welcome to Lovable</h1>
+        <p className="text-muted-foreground mb-8">Let's set up your business profile</p>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium mb-2" htmlFor="businessName">
+              Business Name
+            </label>
+            <Input
+              id="businessName"
+              value={formData.businessName}
+              onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
+              required
+              placeholder="Your business name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2" htmlFor="email">
+              Business Email
+            </label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              required
+              placeholder="contact@yourbusiness.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2" htmlFor="phone">
+              Business Phone
+            </label>
+            <Input
+              id="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+              required
+              placeholder="(555) 555-5555"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Business Logo
+            </label>
+            <FileUpload
+              accept="image/*"
+              onChange={handleFileUpload}
+              maxSize={5 * 1024 * 1024} // 5MB
+            />
+          </div>
+
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? "Setting up..." : "Complete Setup"}
+          </Button>
+        </form>
       </div>
     </div>
   );
