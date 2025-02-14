@@ -167,7 +167,7 @@ const EstimatePage = () => {
   }, []);
 
   // Show loading state if contractor data is loading and it's not the default contractor
-  if (isContractorLoading && contractorId !== DEFAULT_CONTRACTOR_ID) {
+  if (isContractorLoading && processedContractorId !== DEFAULT_CONTRACTOR_ID) {
     return (
       <div className="min-h-screen bg-gray-100">
         <div className="w-full h-8 bg-gray-200 animate-pulse" /> {/* Progress bar skeleton */}
@@ -182,7 +182,7 @@ const EstimatePage = () => {
     <div className="min-h-screen bg-gray-100">
       <EstimateProgress stage={stage} progress={progress} />
       
-      {contractor && contractor.id === contractorId && (
+      {contractor && contractor.id === processedContractorId && (
         <div className="w-full border-b border-gray-200">
           <div className="max-w-4xl mx-auto px-4 py-2">
             <button 
@@ -255,7 +255,7 @@ const EstimatePage = () => {
                   leadId={currentLeadId || undefined}
                   estimate={estimate}
                   contractor={contractor}
-                  contractorId={contractorId}
+                  contractorId={processedContractorId}
                   onSkip={async () => {
                     if (currentLeadId) {
                       await handleContactSubmit({});
