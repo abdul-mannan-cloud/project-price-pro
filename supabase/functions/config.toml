@@ -1,8 +1,16 @@
 
 project_id = "sflysnodxcufeszuymxk"
 
+[global.build]
+command = "esbuild --bundle --format=esm --platform=node --external:__STATIC_CONTENT_MANIFEST --outfile=dist/index.js dist/index.js"
+
 [functions.generate-estimate]
 verify_jwt = false
+memory = 2048
+timeout_ms = 20000
+
+[functions.send-teammate-invitation]
+verify_jwt = true
 
 [functions.shorten-url]
 verify_jwt = false
