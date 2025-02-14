@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +14,7 @@ const Leads = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [contractorId, setContractorId] = useState<string | null>(null);
 
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -20,7 +22,7 @@ const Leads = () => {
     { name: "Settings", url: "/settings", icon: Settings }
   ];
 
-  // Check authentication status
+  // Check authentication status and get contractor ID
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -32,6 +34,9 @@ const Leads = () => {
             description: "Please log in to view leads.",
             variant: "destructive"
           });
+        } else {
+          setContractorId(user.id);
+          console.log('Set contractor ID:', user.id);
         }
       } catch (error) {
         console.error("Auth error:", error);
@@ -43,15 +48,14 @@ const Leads = () => {
   }, [navigate]);
 
   const { data: leads = [], isLoading } = useQuery({
-    queryKey: ["leads"],
+    queryKey: ["leads", contractorId],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
+      if (!contractorId) throw new Error("No contractor ID available");
 
       const { data, error } = await supabase
         .from("leads")
         .select("*")
-        .eq("contractor_id", user.id)
+        .eq("contractor_id", contractorId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -62,25 +66,30 @@ const Leads = () => {
         estimate_data: lead.estimate_data as EstimateData
       })) as Lead[];
     },
+    enabled: !!contractorId,
   });
 
   const deleteLead = useMutation({
     mutationFn: async (leadIds: string[]) => {
+      if (!contractorId) throw new Error("No contractor ID available");
+
       const { error } = await supabase
         .from("leads")
         .delete()
-        .in("id", leadIds);
+        .in("id", leadIds)
+        .eq("contractor_id", contractorId); // Add contractor_id check for security
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["leads", contractorId] });
       toast({
         title: "Leads deleted",
         description: "The selected leads have been deleted successfully.",
       });
     },
     onError: (error) => {
+      console.error('Delete error:', error);
       toast({
         title: "Error",
         description: "Failed to delete leads. Please try again.",
@@ -88,6 +97,31 @@ const Leads = () => {
       });
     },
   });
+
+  const handleLeadClick = async (lead: Lead) => {
+    if (!contractorId) {
+      toast({
+        title: "Error",
+        description: "Contractor ID not available. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Ensure the lead has a contractor_id
+    if (!lead.contractor_id) {
+      const { error: updateError } = await supabase
+        .from("leads")
+        .update({ contractor_id: contractorId })
+        .eq("id", lead.id);
+
+      if (updateError) {
+        console.error('Error updating lead with contractor_id:', updateError);
+      }
+    }
+
+    setSelectedLead(lead);
+  };
 
   const handleExport = (filteredLeads: Lead[]) => {
     // TODO: Implement export functionality
@@ -109,7 +143,7 @@ const Leads = () => {
         
         <LeadsTable
           leads={leads}
-          onLeadClick={setSelectedLead}
+          onLeadClick={handleLeadClick}
           onDeleteLeads={(leadIds) => deleteLead.mutate(leadIds)}
           onExport={handleExport}
         />
