@@ -85,9 +85,7 @@ const Onboarding = () => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
         toast({
@@ -101,7 +99,7 @@ const Onboarding = () => {
       const { data: existingContractor, error: fetchError } = await supabase
         .from("contractors")
         .select()
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (fetchError) {
@@ -120,14 +118,14 @@ const Onboarding = () => {
               secondary: formData.secondaryColor,
             },
           })
-          .eq('id', user.id);
+          .eq('user_id', user.id);
 
         if (updateError) throw updateError;
       } else {
         const { error: insertError } = await supabase
           .from("contractors")
           .insert({
-            id: user.id,
+            user_id: user.id,
             business_name: formData.businessName,
             contact_email: formData.contactEmail,
             contact_phone: formData.contactPhone,
