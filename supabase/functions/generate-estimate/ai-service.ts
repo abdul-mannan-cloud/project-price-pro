@@ -65,6 +65,7 @@ export async function generateEstimate(
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
+        'OpenAI-Organization': 'proj_D9cnEkwnhuNTOLrxhTpnxgh3'
       },
       body: JSON.stringify(apiRequest),
     });
