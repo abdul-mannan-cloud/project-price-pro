@@ -27,33 +27,39 @@ const isValidUUID = (uuid: string) => {
   return uuidRegex.test(uuid);
 };
 
+// Clean contractor ID from URL params
+const cleanContractorId = (rawId: string | undefined): string => {
+  if (!rawId) return DEFAULT_CONTRACTOR_ID;
+
+  try {
+    // First decode the URL parameter and clean it
+    const decoded = decodeURIComponent(rawId);
+    const cleaned = decoded.replace(/[:?]/g, '').trim();
+
+    // Check if it's a valid UUID after cleaning
+    if (isValidUUID(cleaned)) {
+      return cleaned;
+    }
+
+    console.warn('Invalid contractor ID format:', { raw: rawId, cleaned });
+    return DEFAULT_CONTRACTOR_ID;
+  } catch (error) {
+    console.error('Error processing contractor ID:', error);
+    return DEFAULT_CONTRACTOR_ID;
+  }
+};
+
 const EstimatePage = () => {
   const navigate = useNavigate();
   const { contractorId: rawContractorId } = useParams();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
-  // Clean up and decode the contractorId parameter
-  const contractorId = (() => {
-    if (!rawContractorId) return DEFAULT_CONTRACTOR_ID;
-    
-    // First decode the URL parameter
-    const decoded = decodeURIComponent(rawContractorId);
-    // Remove any question marks and clean the string
-    const cleaned = decoded.replace(/[?]/g, '').trim();
-    
-    // If it's not a valid UUID, use the default
-    if (!isValidUUID(cleaned)) {
-      console.warn('Invalid contractor ID format:', cleaned);
-      return DEFAULT_CONTRACTOR_ID;
-    }
-    
-    return cleaned;
-  })();
+  // Process the contractor ID
+  const contractorId = cleanContractorId(rawContractorId);
 
   console.log('ContractorID processing:', {
     raw: rawContractorId,
-    decoded: decodeURIComponent(rawContractorId || ''),
-    final: contractorId,
+    processed: contractorId,
     isValid: isValidUUID(contractorId)
   });
 
