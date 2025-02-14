@@ -68,6 +68,10 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
   const handleQuestionComplete = async (answers: AnswersState) => {
     try {
+      if (!config.contractorId) {
+        throw new Error('Contractor ID is required');
+      }
+
       const answersForDb = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
         acc[category] = Object.entries(categoryAnswers || {}).reduce((catAcc, [questionId, answer]) => {
           catAcc[questionId] = {
@@ -91,10 +95,11 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         answers: answersForDb as Json,
         category: currentCategory,
         status: 'pending',
-        contractor_id: config.contractorId // Ensure we set the contractor_id here
+        contractor_id: config.contractorId, // Ensure we set the contractor_id here
+        project_images: uploadedPhotos
       };
 
-      console.log('Creating lead with data:', { ...leadData, contractorId: config.contractorId });
+      console.log('Creating lead with data:', leadData);
 
       const { data: lead, error: leadError } = await supabase
         .from('leads')
@@ -102,11 +107,8 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         .select()
         .single();
 
-      if (leadError) {
-        console.error('Error creating lead:', leadError);
-        throw leadError;
-      }
-
+      if (leadError) throw leadError;
+      
       if (!lead?.id) {
         throw new Error('Failed to create lead - no ID returned');
       }
@@ -129,10 +131,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         }
       });
 
-      if (generateError) {
-        console.error('Error generating estimate:', generateError);
-        throw generateError;
-      }
+      if (generateError) throw generateError;
 
     } catch (error) {
       console.error('Error completing questions:', error);
@@ -147,8 +146,8 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
   const handleContactSubmit = async (contactData: any) => {
     try {
-      if (!currentLeadId) {
-        throw new Error('Missing lead ID');
+      if (!currentLeadId || !config.contractorId) {
+        throw new Error('Missing required data');
       }
 
       setIsGeneratingEstimate(true);
@@ -168,6 +167,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
       if (updateError) throw updateError;
 
+      // Generate estimate with contractor ID
       const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: {
           leadId: currentLeadId,
@@ -247,6 +247,35 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     }
   };
 
+  const handleSkip = async () => {
+    if (!currentLeadId || !config.contractorId) return;
+
+    setIsGeneratingEstimate(true);
+    try {
+      const { data: estimateData, error } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          answers: {},
+          projectDescription: "New project inquiry",
+          leadId: currentLeadId,
+          contractorId: config.contractorId,
+          category: "General"
+        }
+      });
+
+      if (error) throw error;
+      setEstimate(estimateData);
+    } catch (error) {
+      console.error('Error generating estimate:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate estimate. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingEstimate(false);
+    }
+  };
+
   return {
     stage,
     setStage,
@@ -268,6 +297,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     handleDescriptionSubmit,
     handleCategorySelect,
     handleQuestionComplete,
-    handleContactSubmit
+    handleContactSubmit,
+    handleSkip
   };
 };
