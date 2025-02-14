@@ -15,7 +15,7 @@ export interface EstimateRequest {
   category?: string;
   leadId: string;
   imageUrl?: string;
-  contractorId: string;  // Made contractorId required
+  contractorId?: string;  // Made contractorId optional
   projectImages?: string[];
 }
 
