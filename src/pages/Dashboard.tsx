@@ -1,3 +1,4 @@
+
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +10,6 @@ import { Button } from "@/components/ui/button";
 import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -42,6 +41,7 @@ const Dashboard = () => {
       }
       
       setUserId(user.id);
+      console.log('Set user ID:', user.id); // Debug log
     };
     
     checkAuth();
@@ -51,6 +51,7 @@ const Dashboard = () => {
     queryKey: ["contractor", userId],
     queryFn: async () => {
       if (!userId) return null;
+      console.log('Fetching contractor data for ID:', userId); // Debug log
 
       const { data, error } = await supabase
         .from("contractors")
@@ -58,8 +59,12 @@ const Dashboard = () => {
         .eq("id", userId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching contractor:', error); // Debug log
+        throw error;
+      }
       if (!data) {
+        console.log('No contractor data found, redirecting to onboarding'); // Debug log
         navigate("/onboarding");
         return null;
       }
@@ -75,7 +80,10 @@ const Dashboard = () => {
   const { data: leads = [], isError: isLeadsError } = useQuery({
     queryKey: ["leads", userId],
     queryFn: async () => {
-      if (!userId) throw new Error("No user ID available");
+      if (!userId) {
+        console.error('No user ID available for leads query'); // Debug log
+        throw new Error("No user ID available");
+      }
 
       const { data, error } = await supabase
         .from("leads")
@@ -104,28 +112,22 @@ const Dashboard = () => {
     }
   }, [isLeadsError, toast]);
 
-  if (isContractorLoading) {
-    return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!contractor) return null;
-
-  const totalLeads = leads.length;
-  const totalEstimatedValue = leads.reduce((sum, lead) => sum + (lead.estimated_cost || 0), 0);
-
   const copyEstimatorLink = async () => {
     try {
       setIsCopyingUrl(true);
       const baseUrl = window.location.origin;
-      const contractorId = contractor?.id || DEFAULT_CONTRACTOR_ID;
-      const longUrl = `${baseUrl}/estimate/${contractorId}`;
+      const effectiveContractorId = userId;
+      if (!effectiveContractorId) {
+        throw new Error('No contractor ID available');
+      }
+      console.log('Using contractor ID for link:', effectiveContractorId); // Debug log
+      const longUrl = `${baseUrl}/estimate/${effectiveContractorId}`;
       
       const { data, error } = await supabase.functions.invoke('shorten-url', {
-        body: { longUrl }
+        body: { 
+          longUrl,
+          contractorId: effectiveContractorId // Pass contractor ID explicitly
+        }
       });
 
       if (error) throw error;
@@ -140,27 +142,46 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error('Error shortening URL:', error);
-      const baseUrl = window.location.origin;
-      const contractorId = contractor?.id || DEFAULT_CONTRACTOR_ID;
-      const longUrl = `${baseUrl}/estimate/${contractorId}`;
-      
-      await navigator.clipboard.writeText(longUrl);
-      toast({
-        title: "Link copied!",
-        description: "The estimator link has been copied to your clipboard.",
-        duration: 2000,
-      });
+      if (userId) {
+        const baseUrl = window.location.origin;
+        const longUrl = `${baseUrl}/estimate/${userId}`;
+        await navigator.clipboard.writeText(longUrl);
+        toast({
+          title: "Link copied!",
+          description: "The estimator link has been copied to your clipboard.",
+          duration: 2000,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to generate link. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsCopyingUrl(false);
     }
   };
+
+  if (isContractorLoading) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!contractor) return null;
+
+  const totalLeads = leads.length;
+  const totalEstimatedValue = leads.reduce((sum, lead) => sum + (lead.estimated_cost || 0), 0);
 
   const features = [
     {
       Icon: Copy,
       name: "Preview Estimator",
       description: "Preview your estimator or copy the link to share",
-      href: `/estimate/${contractor?.id || DEFAULT_CONTRACTOR_ID}`,
+      href: `/estimate/${userId || ''}`,
       cta: "Preview",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
       className: "lg:col-span-3 bg-primary text-white hover:scale-[1.02] transition-transform",
@@ -171,14 +192,14 @@ const Dashboard = () => {
           <div className="flex gap-2">
             <Button 
               variant="secondary" 
-              onClick={() => navigate(`/estimate/${contractor?.id || DEFAULT_CONTRACTOR_ID}`)}
+              onClick={() => navigate(`/estimate/${userId || ''}`)}
             >
               Open Preview
             </Button>
             <Button 
               variant="outline"
               onClick={copyEstimatorLink}
-              disabled={isCopyingUrl}
+              disabled={isCopyingUrl || !userId}
             >
               {isCopyingUrl ? "Copying..." : "Copy Link"}
             </Button>
@@ -194,7 +215,7 @@ const Dashboard = () => {
               e.preventDefault();
               copyEstimatorLink();
             }}
-            disabled={isCopyingUrl}
+            disabled={isCopyingUrl || !userId}
             className="text-white hover:text-white/80"
           >
             <Copy className="w-4 h-4 mr-2" />
