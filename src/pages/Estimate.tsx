@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -79,14 +78,16 @@ const EstimatePage = () => {
     },
     enabled: !!contractorId,
     retry: false,
-    onError: (error) => {
-      console.error('Error loading contractor:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load contractor information",
-        variant: "destructive",
-      });
-      navigate('/dashboard');
+    meta: {
+      onError: (error: Error) => {
+        console.error('Error loading contractor:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load contractor information",
+          variant: "destructive",
+        });
+        navigate('/dashboard');
+      }
     }
   });
 
