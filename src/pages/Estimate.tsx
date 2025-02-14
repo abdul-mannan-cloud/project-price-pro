@@ -26,13 +26,20 @@ const EstimatePage = () => {
   const { contractorId: rawContractorId } = useParams();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
-  // Clean up the contractorId by removing any '?' character
-  const contractorId = rawContractorId?.replace('?', '') || DEFAULT_CONTRACTOR_ID;
+  // Clean up and decode the contractorId parameter
+  const contractorId = (() => {
+    if (!rawContractorId) return DEFAULT_CONTRACTOR_ID;
+    // First decode the URL parameter
+    const decoded = decodeURIComponent(rawContractorId);
+    // Remove any question marks and clean the string
+    return decoded.replace(/[?]/g, '').trim() || DEFAULT_CONTRACTOR_ID;
+  })();
 
-  // Early return if no valid contractorId
-  if (!contractorId) {
-    return <div>No contractor ID provided</div>;
-  }
+  console.log('ContractorID processing:', {
+    raw: rawContractorId,
+    decoded: decodeURIComponent(rawContractorId || ''),
+    final: contractorId
+  });
 
   const estimateConfig: EstimateConfig = {
     contractorId,
@@ -44,16 +51,25 @@ const EstimatePage = () => {
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
+      console.log('Fetching contractor with ID:', contractorId);
       const { data, error } = await supabase
         .from("contractors")
         .select("*, contractor_settings(*)")
         .eq("id", contractorId)
         .maybeSingle();
-      if (error) throw error;
-      if (!data) throw new Error("Contractor not found");
+      
+      if (error) {
+        console.error('Error fetching contractor:', error);
+        throw error;
+      }
+      if (!data) {
+        console.error('No contractor found with ID:', contractorId);
+        throw new Error("Contractor not found");
+      }
       return data;
     },
-    enabled: !!contractorId,
+    enabled: !!contractorId && contractorId !== ':contractorId' && contractorId !== ':contractorId?',
+    retry: false
   });
 
   const {
