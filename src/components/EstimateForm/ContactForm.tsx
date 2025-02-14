@@ -113,21 +113,11 @@ export const ContactForm = ({
         throw updateError;
       }
 
-      // Generate estimate with explicit contractor ID
-      const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          leadId,
-          contractorId: effectiveContractorId
-        }
-      });
-
-      if (estimateError) {
-        console.error('Error generating estimate:', estimateError);
-        throw estimateError;
-      }
-
-      console.log('Estimate generated successfully:', estimateData);
+      // Call onSubmit to process form and initiate estimate generation
       onSubmit(formData);
+      
+      // We don't set isSubmitting to false here as the parent will handle that
+      // through the estimate generation process
     } catch (error) {
       console.error('Error processing form:', error);
       setIsSubmitting(false);
@@ -141,32 +131,19 @@ export const ContactForm = ({
   };
 
   const handleSkipForm = async () => {
-    if (!leadId) return;
+    if (!onSkip) return;
+
+    setIsSubmitting(true);
+    setIsProcessingEstimate(true);
 
     try {
-      // Get the contractor ID from URL first, then fallback to logged in user
-      const effectiveContractorId = urlContractorId || (await supabase.auth.getUser()).data.user?.id;
-
-      if (!effectiveContractorId) {
-        throw new Error("No contractor ID available");
-      }
-
-      const { error: updateError } = await supabase
-        .from('leads')
-        .update({
-          is_test_estimate: true,
-          status: 'test',
-          contractor_id: effectiveContractorId
-        })
-        .eq('id', leadId);
-
-      if (updateError) throw updateError;
-
-      if (onSkip) {
-        await onSkip();
-      }
+      await onSkip();
+      // Don't set isSubmitting to false here as it will be handled by the parent
+      // through the estimate generation process
     } catch (error) {
       console.error('Error skipping form:', error);
+      setIsSubmitting(false);
+      setIsProcessingEstimate(false);
       toast({
         title: "Error",
         description: "Unable to skip form. Please try again.",
