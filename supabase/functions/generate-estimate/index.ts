@@ -71,13 +71,20 @@ serve(async (req) => {
       }
     }
 
-    if (!contractorId) {
-      console.error('No contractor ID found in either request or lead:', {
+    // Validate contractor ID format
+    const isValidUUID = (uuid: string) => {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      return uuidRegex.test(uuid);
+    };
+
+    if (!contractorId || !isValidUUID(contractorId)) {
+      console.error('Invalid or missing contractor ID:', {
         requestContractorId: requestData.contractorId,
         leadContractorId: lead?.contractor_id,
-        leadId: requestData.leadId
+        leadId: requestData.leadId,
+        processedId: contractorId
       });
-      throw new Error('No contractor ID found. Please ensure either the lead has a contractor_id or provide it in the request.');
+      throw new Error('Invalid or missing contractor ID. Please ensure either the lead has a valid contractor_id or provide it in the request.');
     }
 
     console.log('Using contractor ID:', contractorId);
