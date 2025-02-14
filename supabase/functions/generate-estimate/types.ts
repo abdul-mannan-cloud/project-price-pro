@@ -15,6 +15,7 @@ export interface EstimateRequest {
   category?: string;
   leadId: string;
   imageUrl?: string;
+  contractorId?: string; // Added this field
 }
 
 export interface EstimateResponse {
