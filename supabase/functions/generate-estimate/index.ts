@@ -9,35 +9,31 @@ import type { EstimateRequest } from "./types.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   const controller = new AbortController();
   const { signal } = controller;
-  let requestData: EstimateRequest;
 
   try {
-    console.log('Received request to generate estimate');
+    console.log('Starting estimate generation process...');
     
-    try {
-      requestData = await req.json();
-      console.log('Received request data:', requestData);
-    } catch (parseError) {
-      console.error('Error parsing request:', parseError);
-      throw new Error('Invalid request format');
-    }
+    // Parse request data
+    const requestData: EstimateRequest = await req.json();
+    console.log('Received request data:', JSON.stringify(requestData, null, 2));
 
-    // First, let's validate the essential parameters
+    // Validate request
     if (!requestData.leadId) {
       throw new Error('leadId is required');
     }
 
-    // Initialize Supabase client early to handle database operations
+    // Setup Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -47,7 +43,7 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get the lead data
+    // Get lead data
     const { data: lead, error: leadError } = await supabase
       .from('leads')
       .select('contractor_id, project_description, category')
@@ -56,36 +52,18 @@ serve(async (req) => {
 
     if (leadError) {
       console.error('Error fetching lead:', leadError);
-      throw new Error('Failed to fetch lead information');
+      throw new Error('Failed to fetch lead data');
     }
 
-    // Get contractor ID from request or lead
-    let contractorId = requestData.contractorId || lead?.contractor_id;
-    
-    console.log('Initial contractor ID:', {
-      fromRequest: requestData.contractorId,
-      fromLead: lead?.contractor_id,
-      combined: contractorId
-    });
+    // Get contractor ID (either from request or lead)
+    const contractorId = requestData.contractorId || lead?.contractor_id;
+    console.log('Using contractor ID:', contractorId);
 
     if (!contractorId) {
       throw new Error('No contractor ID found in lead or request');
     }
 
-    // Simple UUID validation without modifying the ID
-    const isValidUUID = (uuid: string) => {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      return uuidRegex.test(uuid);
-    };
-
-    if (!isValidUUID(contractorId)) {
-      console.error('Invalid contractor ID format:', contractorId);
-      throw new Error('Invalid contractor ID format');
-    }
-
-    console.log('Using contractor ID:', contractorId);
-
-    // Query the contractor directly using their ID (primary key)
+    // Get contractor data
     const { data: contractor, error: contractorError } = await supabase
       .from('contractors')
       .select(`
@@ -93,36 +71,32 @@ serve(async (req) => {
         contractor_settings(*),
         ai_instructions(*)
       `)
-      .eq('id', contractorId)  // Using 'id' as it's the primary key
+      .eq('id', contractorId)
       .maybeSingle();
 
-    if (contractorError) {
+    if (contractorError || !contractor) {
       console.error('Error fetching contractor:', contractorError);
-      throw new Error(`Failed to fetch contractor: ${contractorError.message}`);
+      throw new Error('Failed to fetch contractor data');
     }
 
-    if (!contractor) {
-      throw new Error(`Contractor not found with ID: ${contractorId}`);
-    }
-
-    // Get AI rates for the category
+    // Get AI rates
     const { data: aiRates, error: ratesError } = await supabase
       .from('ai_rates')
       .select('*')
-      .eq('contractor_id', contractorId)  // Using the same contractor ID
+      .eq('contractor_id', contractorId)
       .eq('type', (requestData.category || lead?.category)?.toLowerCase() || '');
 
     if (ratesError) {
       console.error('Error fetching AI rates:', ratesError);
-      throw new Error(`Failed to fetch AI rates: ${ratesError.message}`);
+      // Continue without rates as they're optional
     }
 
-    // Format the context for OpenAI
+    // Prepare context for AI
     const context = JSON.stringify({
       answers: formatAnswersForContext(requestData.answers || {}),
       projectDescription: requestData.projectDescription || lead?.project_description,
       category: requestData.category || lead?.category,
-      aiRates,
+      aiRates: aiRates || [],
       contractor: {
         settings: contractor.contractor_settings,
         businessAddress: contractor.business_address,
@@ -130,15 +104,14 @@ serve(async (req) => {
       }
     });
 
-    // Get OpenAI API key
+    // Get OpenAI key
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY is not set');
+      throw new Error('OpenAI API key not configured');
     }
 
+    // Generate estimate
     console.log('Generating estimate with AI...');
-
-    // Generate estimate using OpenAI
     const aiResponse = await generateEstimate(
       context,
       requestData.imageUrl,
@@ -146,14 +119,16 @@ serve(async (req) => {
       signal
     );
 
-    console.log('AI response received, creating estimate...');
+    // Create estimate object
+    console.log('Processing AI response...');
+    const estimate = createEstimate(
+      aiResponse,
+      requestData.category || lead?.category,
+      requestData.projectDescription || lead?.project_description
+    );
 
-    // Create and process the estimate
-    const estimate = createEstimate(aiResponse, requestData.category || lead?.category, requestData.projectDescription || lead?.project_description);
-
+    // Update lead with estimate
     console.log('Updating lead with estimate...');
-
-    // Update the lead with the estimate
     await updateLeadWithEstimate(
       requestData.leadId,
       estimate,
@@ -161,26 +136,18 @@ serve(async (req) => {
       supabaseKey
     );
 
-    console.log('Estimate generation complete');
-
+    console.log('Estimate generation completed successfully');
     return new Response(
       JSON.stringify(estimate),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Error in generate-estimate function:', error);
     
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-    const errorDetails = error instanceof Error ? error.stack : undefined;
-    
+    // Try to update lead with error if possible
     try {
-      // Try to update the lead with error if we have leadId
+      const requestData: EstimateRequest = await req.json();
       if (requestData?.leadId) {
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -188,7 +155,7 @@ serve(async (req) => {
         if (supabaseUrl && supabaseKey) {
           await updateLeadWithError(
             requestData.leadId,
-            errorMessage,
+            error instanceof Error ? error.message : 'Unknown error',
             supabaseUrl,
             supabaseKey
           );
@@ -199,16 +166,13 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        details: errorDetails
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'An unexpected error occurred',
+        details: error instanceof Error ? error.stack : undefined
       }),
       { 
         status: 500,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   } finally {
