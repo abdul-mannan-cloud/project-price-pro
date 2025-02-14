@@ -28,11 +28,6 @@ serve(async (req) => {
     const requestData: EstimateRequest = await req.json();
     console.log('Received request data:', JSON.stringify(requestData, null, 2));
 
-    // Validate request
-    if (!requestData.leadId) {
-      throw new Error('leadId is required');
-    }
-
     // Setup Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -43,23 +38,34 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get lead data
-    const { data: lead, error: leadError } = await supabase
-      .from('leads')
-      .select('contractor_id, project_description, category')
-      .eq('id', requestData.leadId)
-      .maybeSingle();
-
-    if (leadError) {
-      console.error('Error fetching lead:', leadError);
-      throw new Error('Failed to fetch lead data');
+    // Validate leadId
+    if (!requestData.leadId) {
+      throw new Error('leadId is required');
     }
 
-    // Get contractor ID (either from request or lead)
-    const contractorId = requestData.contractorId || lead?.contractor_id;
-    console.log('Using contractor ID:', contractorId);
+    // Get contractor ID directly from request first
+    let effectiveContractorId = requestData.contractorId;
 
-    if (!contractorId) {
+    // If no contractor ID in request, try to get it from the lead
+    if (!effectiveContractorId) {
+      console.log('No contractor ID in request, checking lead...');
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .select('contractor_id')
+        .eq('id', requestData.leadId)
+        .maybeSingle();
+
+      if (leadError) {
+        console.error('Error fetching lead:', leadError);
+        throw new Error('Failed to fetch lead data');
+      }
+
+      effectiveContractorId = lead?.contractor_id;
+    }
+
+    console.log('Using contractor ID:', effectiveContractorId);
+
+    if (!effectiveContractorId) {
       throw new Error('No contractor ID found in lead or request');
     }
 
@@ -71,7 +77,7 @@ serve(async (req) => {
         contractor_settings(*),
         ai_instructions(*)
       `)
-      .eq('id', contractorId)
+      .eq('id', effectiveContractorId)
       .maybeSingle();
 
     if (contractorError || !contractor) {
@@ -83,12 +89,24 @@ serve(async (req) => {
     const { data: aiRates, error: ratesError } = await supabase
       .from('ai_rates')
       .select('*')
-      .eq('contractor_id', contractorId)
-      .eq('type', (requestData.category || lead?.category)?.toLowerCase() || '');
+      .eq('contractor_id', effectiveContractorId)
+      .eq('type', (requestData.category || '')?.toLowerCase() || '');
 
     if (ratesError) {
       console.error('Error fetching AI rates:', ratesError);
       // Continue without rates as they're optional
+    }
+
+    // Get lead data
+    const { data: lead, error: leadError } = await supabase
+      .from('leads')
+      .select('project_description, category')
+      .eq('id', requestData.leadId)
+      .maybeSingle();
+
+    if (leadError) {
+      console.error('Error fetching lead:', leadError);
+      throw new Error('Failed to fetch lead data');
     }
 
     // Prepare context for AI

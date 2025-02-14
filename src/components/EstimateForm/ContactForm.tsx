@@ -41,7 +41,8 @@ export const ContactForm = ({
   const { toast } = useToast();
   const [isCurrentUserContractor, setIsCurrentUserContractor] = useState(false);
   const params = useParams();
-  const urlContractorId = params['*'] || params.contractorId; // Get contractor ID from URL
+  // Get contractor ID from URL, handling both route patterns
+  const urlContractorId = params.contractorId || params['*'];
 
   useEffect(() => {
     const checkCurrentUser = async () => {
@@ -116,8 +117,7 @@ export const ContactForm = ({
       const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId,
-          contractorId: effectiveContractorId,
-          formData 
+          contractorId: effectiveContractorId
         }
       });
 
