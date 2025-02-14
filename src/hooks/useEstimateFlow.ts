@@ -88,7 +88,7 @@ export const useEstimateFlow = (contractorId?: string) => {
         answers: answersForSupabase,
         category: selectedCategory,
         status: 'pending',
-        contractor_id: contractorId,
+        contractor_id: contractorId, // Make sure contractor_id is set
         image_url: uploadedImageUrl
       };
 
@@ -114,14 +114,14 @@ export const useEstimateFlow = (contractorId?: string) => {
       setStage('contact');
       setIsGeneratingEstimate(true);
 
-      // Generate estimate
+      // Generate estimate with contractor ID
       const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           answers: answersForSupabase,
           projectDescription,
           category: selectedCategory,
           leadId: lead.id,
-          contractorId
+          contractorId: contractorId // Make sure to pass contractorId
         }
       });
 
@@ -150,14 +150,15 @@ export const useEstimateFlow = (contractorId?: string) => {
       setIsGeneratingEstimate(true);
       setStage('estimate');
 
-      // Update lead with contact information
+      // Update lead with contact information and ensure contractor_id is set
       const { error: updateError } = await supabase
         .from('leads')
         .update({
           user_name: contactData.fullName,
           user_email: contactData.email,
           user_phone: contactData.phone,
-          project_address: contactData.address
+          project_address: contactData.address,
+          contractor_id: contractorId // Make sure contractor_id is set
         })
         .eq('id', currentLeadId);
 
@@ -166,7 +167,7 @@ export const useEstimateFlow = (contractorId?: string) => {
       const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId: currentLeadId,
-          contractorId,
+          contractorId: contractorId, // Make sure to pass contractorId
           projectDescription,
           category: selectedCategory,
           imageUrl: uploadedImageUrl
