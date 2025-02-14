@@ -32,8 +32,8 @@ const EstimatePage = () => {
   const params = useParams();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
-  // Process the contractor ID
-  const contractorId = (() => {
+  // Process and validate the contractor ID before any use
+  const processedContractorId = (() => {
     try {
       let rawId = params.contractorId;
       
@@ -70,20 +70,20 @@ const EstimatePage = () => {
   })();
 
   const estimateConfig: EstimateConfig = {
-    contractorId,
+    contractorId: processedContractorId,
     isPreview: false,
     allowSignature: true,
     showSubtotals: true
   };
 
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
-    queryKey: ["contractor", contractorId],
+    queryKey: ["contractor", processedContractorId],
     queryFn: async () => {
-      console.log('Fetching contractor with ID:', contractorId);
+      console.log('Fetching contractor with ID:', processedContractorId);
       const { data, error } = await supabase
         .from("contractors")
         .select("*, contractor_settings(*)")
-        .eq("id", contractorId)
+        .eq("id", processedContractorId)
         .maybeSingle();
       
       if (error) {
@@ -91,12 +91,13 @@ const EstimatePage = () => {
         throw error;
       }
       if (!data) {
-        console.error('No contractor found with ID:', contractorId);
+        console.error('No contractor found with ID:', processedContractorId);
         throw new Error("Contractor not found");
       }
       return data;
     },
-    enabled: isValidUUID(contractorId),
+    // Only run the query if we have a valid UUID
+    enabled: processedContractorId === DEFAULT_CONTRACTOR_ID || isValidUUID(processedContractorId),
     retry: false
   });
 
