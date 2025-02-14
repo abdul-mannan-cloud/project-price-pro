@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -21,14 +22,19 @@ import { useToast } from "@/hooks/use-toast";
 
 const EstimatePage = () => {
   const navigate = useNavigate();
-  const params = useParams();
+  const { contractorId: routeContractorId } = useParams();
   const { toast } = useToast();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
-  // Get the current user's contractor ID
+  // Get the current user's contractor ID if not provided in route
   const { data: currentContractorId } = useQuery({
     queryKey: ['currentContractor'],
     queryFn: async () => {
+      // If we have a contractor ID in the route, use that
+      if (routeContractorId && routeContractorId !== ':contractorId?') {
+        return routeContractorId;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
@@ -76,7 +82,7 @@ const EstimatePage = () => {
       }
       return data;
     },
-    enabled: !!contractorId,
+    enabled: !!contractorId && contractorId !== ':contractorId?',
     retry: false,
     throwOnError: true
   });
@@ -176,7 +182,7 @@ const EstimatePage = () => {
     );
   }
 
-  if (!contractorId) {
+  if (!contractorId || contractorId === ':contractorId?') {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
