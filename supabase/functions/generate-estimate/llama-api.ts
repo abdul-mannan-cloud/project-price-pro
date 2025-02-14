@@ -1,18 +1,17 @@
-
 // Import necessary types
 import { CategoryAnswers } from "./types.ts";
 
 // Initialize LlamaAI SDK
 class LlamaAI {
   private apiKey: string;
-  private baseUrl = 'https://api.llama-api.com';
+  private baseUrl = 'https://api.llama-api.com/v1'; // Updated API endpoint
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
   }
 
   async run(requestData: any): Promise<any> {
-    const response = await fetch(`${this.baseUrl}/run`, {
+    const response = await fetch(`${this.baseUrl}/chat/completions`, { // Updated endpoint path
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
@@ -55,6 +54,7 @@ export async function generateLlamaResponse(
   console.log('Location context:', locationContext);
 
   const apiRequest = {
+    model: "llama-2-70b-chat", // Specify the model explicitly
     messages: [
       {
         role: "system",
@@ -71,60 +71,9 @@ export async function generateLlamaResponse(
         content: context
       }
     ],
-    functions: [
-      {
-        name: "generate_construction_estimate",
-        description: "Generate a detailed construction cost estimate with groups, subgroups and line items",
-        parameters: {
-          type: "object",
-          properties: {
-            groups: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  description: { type: "string" },
-                  subgroups: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        name: { type: "string" },
-                        items: {
-                          type: "array",
-                          items: {
-                            type: "object",
-                            properties: {
-                              title: { type: "string" },
-                              description: { type: "string" },
-                              quantity: { type: "number" },
-                              unit: { type: "string" },
-                              unitAmount: { type: "number" },
-                              totalPrice: { type: "number" }
-                            },
-                            required: ["title", "quantity", "unit", "unitAmount", "totalPrice"]
-                          }
-                        },
-                        subtotal: { type: "number" }
-                      },
-                      required: ["name", "items", "subtotal"]
-                    }
-                  }
-                },
-                required: ["name", "subgroups"]
-              }
-            },
-            totalCost: { type: "number" },
-            ai_generated_title: { type: "string" },
-            ai_generated_message: { type: "string" }
-          },
-          required: ["groups", "totalCost"]
-        }
-      }
-    ],
-    stream: false,
-    function_call: "generate_construction_estimate"
+    temperature: 0.7,
+    max_tokens: 2000,
+    stream: false
   };
 
   if (imageUrl) {
@@ -140,11 +89,11 @@ export async function generateLlamaResponse(
     const response = await llamaAPI.run(apiRequest);
     console.log('LlamaAI response:', response);
 
-    if (response.function_call?.arguments) {
-      return response.function_call.arguments;
+    if (!response.choices || !response.choices[0]?.message?.content) {
+      throw new Error('Invalid response format from LLaMA API');
     }
 
-    throw new Error('No function call arguments in response');
+    return response.choices[0].message.content;
   } catch (error) {
     console.error('Error calling LlamaAI:', error);
     throw error;
