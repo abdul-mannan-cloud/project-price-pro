@@ -81,7 +81,7 @@ export const ContactForm = ({
           user_phone: formData.phone,
           project_address: formData.address,
           status: 'processing',
-          contractor_id: effectiveContractorId
+          contractor_id: effectiveContractorId  // Ensure we set the contractor_id
         })
         .eq('id', leadId);
 
@@ -93,7 +93,7 @@ export const ContactForm = ({
       const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId,
-          contractorId: effectiveContractorId
+          contractorId: effectiveContractorId  // Explicitly pass the contractor ID
         }
       });
 
@@ -125,7 +125,7 @@ export const ContactForm = ({
         .update({
           is_test_estimate: true,
           status: 'test',
-          contractor_id: effectiveContractorId
+          contractor_id: effectiveContractorId  // Ensure we set the contractor_id
         })
         .eq('id', leadId);
 
