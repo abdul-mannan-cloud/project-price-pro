@@ -59,17 +59,24 @@ serve(async (req) => {
       throw new Error('Failed to fetch lead information');
     }
 
-    // Use contractor ID from request or from lead
+    // Use contractor ID from lead or request
     let contractorId = requestData.contractorId || lead?.contractor_id;
 
     // Clean up contractor ID if it's malformed
     if (contractorId) {
       try {
-        contractorId = decodeURIComponent(contractorId).replace(/[:?]/g, '').trim();
+        contractorId = decodeURIComponent(contractorId).replace(/[^a-f0-9-]/gi, '').trim();
       } catch (e) {
         console.error('Error decoding contractor ID:', e);
       }
     }
+
+    // Log the contractor ID we're working with
+    console.log('Processing with contractor ID:', {
+      fromRequest: requestData.contractorId,
+      fromLead: lead?.contractor_id,
+      cleaned: contractorId
+    });
 
     // Validate contractor ID format
     const isValidUUID = (uuid: string) => {
