@@ -26,13 +26,18 @@ const EstimatePage = () => {
   const { toast } = useToast();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
+  // Clean up contractor ID from route
+  const cleanRouteContractorId = routeContractorId ? 
+    decodeURIComponent(routeContractorId).replace(/[?:]/g, '') : 
+    null;
+
   // Get the current user's contractor ID if not provided in route
   const { data: currentContractorId } = useQuery({
     queryKey: ['currentContractor'],
     queryFn: async () => {
-      // If we have a contractor ID in the route, use that
-      if (routeContractorId && routeContractorId !== ':contractorId?') {
-        return routeContractorId;
+      // If we have a valid contractor ID in the route, use that
+      if (cleanRouteContractorId && cleanRouteContractorId !== 'contractorId') {
+        return cleanRouteContractorId;
       }
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -82,7 +87,7 @@ const EstimatePage = () => {
       }
       return data;
     },
-    enabled: !!contractorId && contractorId !== ':contractorId?',
+    enabled: !!contractorId && cleanRouteContractorId !== 'contractorId',
     retry: false,
     throwOnError: true
   });
@@ -182,7 +187,7 @@ const EstimatePage = () => {
     );
   }
 
-  if (!contractorId || contractorId === ':contractorId?') {
+  if (!contractorId || cleanRouteContractorId === 'contractorId') {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
