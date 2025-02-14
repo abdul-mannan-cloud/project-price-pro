@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -53,7 +52,7 @@ const EstimatePage = () => {
     showSubtotals: true
   };
 
-  const { data: contractor, isLoading: isContractorLoading } = useQuery({
+  const { data: contractor, isLoading: isContractorLoading, error: contractorError } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
       if (!contractorId) {
@@ -79,18 +78,21 @@ const EstimatePage = () => {
     },
     enabled: !!contractorId,
     retry: false,
-    onSettled: (data, error) => {
-      if (error) {
-        console.error('Error loading contractor:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load contractor information",
-          variant: "destructive",
-        });
-        navigate('/dashboard');
-      }
-    }
+    throwOnError: true
   });
+
+  // Handle contractor error
+  useEffect(() => {
+    if (contractorError) {
+      console.error('Error loading contractor:', contractorError);
+      toast({
+        title: "Error",
+        description: "Failed to load contractor information",
+        variant: "destructive",
+      });
+      navigate('/dashboard');
+    }
+  }, [contractorError, toast, navigate]);
 
   const {
     stage,
