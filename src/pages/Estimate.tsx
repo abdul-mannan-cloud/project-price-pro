@@ -27,41 +27,42 @@ const isValidUUID = (uuid: string) => {
   return uuidRegex.test(uuid);
 };
 
-// Clean contractor ID from URL params
-const cleanContractorId = (rawId: string | undefined): string => {
-  if (!rawId) return DEFAULT_CONTRACTOR_ID;
-
-  try {
-    // First decode the URL parameter and clean it
-    const decoded = decodeURIComponent(rawId);
-    const cleaned = decoded.replace(/[:?]/g, '').trim();
-
-    // Check if it's a valid UUID after cleaning
-    if (isValidUUID(cleaned)) {
-      return cleaned;
-    }
-
-    console.warn('Invalid contractor ID format:', { raw: rawId, cleaned });
-    return DEFAULT_CONTRACTOR_ID;
-  } catch (error) {
-    console.error('Error processing contractor ID:', error);
-    return DEFAULT_CONTRACTOR_ID;
-  }
-};
-
 const EstimatePage = () => {
   const navigate = useNavigate();
-  const { contractorId: rawContractorId } = useParams();
+  const params = useParams();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
   // Process the contractor ID
-  const contractorId = cleanContractorId(rawContractorId);
+  const contractorId = (() => {
+    try {
+      let rawId = params.contractorId;
+      if (!rawId) return DEFAULT_CONTRACTOR_ID;
 
-  console.log('ContractorID processing:', {
-    raw: rawContractorId,
-    processed: contractorId,
-    isValid: isValidUUID(contractorId)
-  });
+      // Handle URL-encoded values
+      rawId = decodeURIComponent(rawId);
+      
+      // Remove any URL-unsafe characters
+      const cleaned = rawId.replace(/[^a-f0-9-]/gi, '');
+      
+      console.log('Processing contractor ID:', {
+        original: params.contractorId,
+        decoded: rawId,
+        cleaned: cleaned
+      });
+
+      // Validate UUID format
+      if (isValidUUID(cleaned)) {
+        return cleaned;
+      }
+
+      console.warn('Invalid contractor ID, using default:', cleaned);
+      return DEFAULT_CONTRACTOR_ID;
+
+    } catch (error) {
+      console.error('Error processing contractor ID:', error);
+      return DEFAULT_CONTRACTOR_ID;
+    }
+  })();
 
   const estimateConfig: EstimateConfig = {
     contractorId,
