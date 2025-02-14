@@ -21,6 +21,7 @@ interface ContractorNotificationRequest {
   contractor: any;
   questions: any[];
   answers: any[];
+  isTestEstimate?: boolean;
 }
 
 function formatQuestionsAndAnswers(questions: any[], answers: any[]): string {
@@ -63,39 +64,51 @@ serve(async (req) => {
       contractor,
       questions,
       answers,
+      isTestEstimate = false,
     }: ContractorNotificationRequest = await req.json();
 
     console.log("Processing contractor notification for:", {
       customerInfo,
       contractor,
+      isTestEstimate,
     });
 
     if (!contractor?.contact_email) {
       throw new Error("Contractor email not provided");
     }
 
+    const subject = isTestEstimate 
+      ? `[TEST] New Estimate Preview Generated`
+      : `New Estimate Request from ${customerInfo.fullName}`;
+
+    const customerDetails = isTestEstimate
+      ? `<p style="color: #666;"><strong>Note:</strong> This is a test estimate preview.</p>`
+      : `
+        <ul style="list-style-type: none; padding: 0;">
+          <li><strong>Name:</strong> ${customerInfo.fullName}</li>
+          <li><strong>Email:</strong> ${customerInfo.email}</li>
+          <li><strong>Phone:</strong> ${customerInfo.phone}</li>
+          <li><strong>Address:</strong> ${customerInfo.address}</li>
+        </ul>
+      `;
+
     const emailResponse = await resend.emails.send({
       from: "Estimates <onboarding@resend.dev>",
       to: [contractor.contact_email],
-      subject: `New Estimate Request from ${customerInfo.fullName}`,
+      subject: subject,
       html: `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
-          <title>New Estimate Request</title>
+          <title>${subject}</title>
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #333;">New Estimate Request</h2>
+          <h2 style="color: #333;">${subject}</h2>
           
           <div style="margin: 20px 0; padding: 20px; background: #f9f9f9; border-radius: 8px;">
-            <h3 style="color: #444;">Customer Information:</h3>
-            <ul style="list-style-type: none; padding: 0;">
-              <li><strong>Name:</strong> ${customerInfo.fullName}</li>
-              <li><strong>Email:</strong> ${customerInfo.email}</li>
-              <li><strong>Phone:</strong> ${customerInfo.phone}</li>
-              <li><strong>Address:</strong> ${customerInfo.address}</li>
-            </ul>
+            <h3 style="color: #444;">Details:</h3>
+            ${customerDetails}
           </div>
 
           ${formatQuestionsAndAnswers(questions, answers)}
@@ -106,7 +119,9 @@ serve(async (req) => {
           </div>
 
           <p style="color: #666; font-size: 14px;">
-            This is an automated notification. Please log in to your dashboard to view the full estimate details and take action.
+            ${isTestEstimate 
+              ? 'This is a test estimate preview. No customer information is attached.' 
+              : 'This is an automated notification. Please log in to your dashboard to view the full estimate details and take action.'}
           </p>
         </body>
         </html>
