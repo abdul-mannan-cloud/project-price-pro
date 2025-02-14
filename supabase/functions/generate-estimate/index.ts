@@ -23,7 +23,9 @@ serve(async (req) => {
   try {
     console.log('Starting estimate generation process...');
     
-    const requestData: EstimateRequest = await req.json();
+    // Clone the request before reading it
+    const clonedReq = req.clone();
+    const requestData: EstimateRequest = await clonedReq.json();
     console.log('Received request data:', JSON.stringify(requestData, null, 2));
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -151,9 +153,17 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in generate-estimate function:', error);
     
+    let requestData: EstimateRequest | null = null;
     try {
-      const requestData: EstimateRequest = await req.json();
-      if (requestData?.leadId) {
+      // Try to read the request body again if needed
+      const clonedReq = req.clone();
+      requestData = await clonedReq.json();
+    } catch (jsonError) {
+      console.error('Could not parse request data in error handler:', jsonError);
+    }
+
+    if (requestData?.leadId) {
+      try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
         
@@ -165,9 +175,9 @@ serve(async (req) => {
             supabaseKey
           );
         }
+      } catch (updateError) {
+        console.error('Failed to update lead with error:', updateError);
       }
-    } catch (updateError) {
-      console.error('Failed to update lead with error:', updateError);
     }
 
     return new Response(
