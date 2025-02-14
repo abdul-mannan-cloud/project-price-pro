@@ -40,7 +40,8 @@ export const ContactForm = ({
   const [isProcessingEstimate, setIsProcessingEstimate] = useState(false);
   const { toast } = useToast();
   const [isCurrentUserContractor, setIsCurrentUserContractor] = useState(false);
-  const { contractorId: urlContractorId } = useParams(); // Get contractor ID from URL
+  const params = useParams();
+  const urlContractorId = params['*'] || params.contractorId; // Get contractor ID from URL
 
   useEffect(() => {
     const checkCurrentUser = async () => {
@@ -51,7 +52,7 @@ export const ContactForm = ({
           .from('contractors')
           .select('id')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         
         if (contractor) {
           setIsCurrentUserContractor(true);
@@ -73,9 +74,14 @@ export const ContactForm = ({
         throw new Error("Unable to process your request at this time");
       }
 
-      // Get the contractor ID from either logged in user or URL
-      const { data: { user } } = await supabase.auth.getUser();
-      const effectiveContractorId = user?.id || urlContractorId;
+      // Get the contractor ID from URL first, then fallback to logged in user
+      const effectiveContractorId = urlContractorId || (await supabase.auth.getUser()).data.user?.id;
+
+      console.log('Using contractor ID:', {
+        urlContractorId,
+        effectiveContractorId,
+        params
+      });
 
       if (!effectiveContractorId) {
         console.error('No contractor ID available');
@@ -138,9 +144,8 @@ export const ContactForm = ({
     if (!leadId) return;
 
     try {
-      // Get the contractor ID from either logged in user or URL
-      const { data: { user } } = await supabase.auth.getUser();
-      const effectiveContractorId = user?.id || urlContractorId;
+      // Get the contractor ID from URL first, then fallback to logged in user
+      const effectiveContractorId = urlContractorId || (await supabase.auth.getUser()).data.user?.id;
 
       if (!effectiveContractorId) {
         throw new Error("No contractor ID available");
