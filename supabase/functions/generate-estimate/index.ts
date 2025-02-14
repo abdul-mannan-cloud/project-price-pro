@@ -61,26 +61,43 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get lead details to get contractor_id
-    const { data: lead, error: leadError } = await supabase
-      .from('leads')
-      .select('contractor_id')
-      .eq('id', leadId)
-      .maybeSingle();
-
-    if (leadError) {
-      console.error('Error fetching lead:', leadError);
-      throw new Error(`Failed to fetch lead: ${leadError.message}`);
-    }
-
-    // If lead doesn't have a contractor_id, use the one from the request
-    const effectiveContractorId = lead?.contractor_id || contractorId;
+    // Try to get the contractor ID either from the request or from the lead
+    let effectiveContractorId = contractorId;
 
     if (!effectiveContractorId) {
+      console.log('No contractor ID in request, checking lead...');
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .select('contractor_id')
+        .eq('id', leadId)
+        .single();
+
+      if (leadError) {
+        console.error('Error fetching lead:', leadError);
+        throw new Error(`Failed to fetch lead: ${leadError.message}`);
+      }
+
+      effectiveContractorId = lead?.contractor_id;
+    }
+
+    if (!effectiveContractorId) {
+      console.error('No contractor ID found in either request or lead');
       throw new Error('No contractor ID found. Please ensure either the lead has a contractor_id or provide it in the request.');
     }
 
     console.log('Using contractor_id:', effectiveContractorId);
+
+    // Update the lead's contractor_id if it's not set
+    const { error: updateError } = await supabase
+      .from('leads')
+      .update({ contractor_id: effectiveContractorId })
+      .eq('id', leadId)
+      .is('contractor_id', null);
+
+    if (updateError) {
+      console.error('Error updating lead with contractor_id:', updateError);
+      // Don't throw here, just log the error
+    }
 
     // Get contractor settings and AI instructions
     const { data: contractor, error: contractorError } = await supabase
