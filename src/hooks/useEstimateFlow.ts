@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +23,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
+  const [answers, setAnswers] = useState<AnswersState>({});
   const { toast } = useToast();
 
   const handlePhotoUpload = (urls: string[]) => {
@@ -150,13 +150,29 @@ export const useEstimateFlow = (config: EstimateConfig) => {
   };
 
   const handleQuestionComplete = async (answers: AnswersState) => {
+    if (!config.contractorId) {
+      console.error('Missing contractor ID in config:', config);
+      toast({
+        title: "Error",
+        description: "Contractor ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const currentCategory = matchedQuestionSets[0]?.category;
+    const firstAnswer = answers[currentCategory]?.Q1?.answers[0];
+    
+    setAnswers(answers);
+    setStage('contact');
+  };
+
+  const handleContactSubmit = async (contactData: any) => {
     try {
       if (!config.contractorId) {
-        console.error('Missing contractor ID in config:', config);
+        console.error('Missing contractor ID:', config);
         throw new Error('Contractor ID is required');
       }
-
-      console.log('Starting question completion with contractor ID:', config.contractorId);
 
       const answersForDb = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
         acc[category] = Object.entries(categoryAnswers || {}).reduce((catAcc, [questionId, answer]) => {
@@ -181,7 +197,11 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         category: currentCategory,
         status: 'pending',
         contractor_id: config.contractorId,
-        project_images: uploadedPhotos
+        project_images: uploadedPhotos,
+        user_name: contactData.fullName,
+        user_email: contactData.email,
+        user_phone: contactData.phone,
+        project_address: contactData.address
       };
 
       console.log('Creating lead with data:', leadData);
@@ -200,72 +220,9 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
       console.log('Lead created successfully:', lead.id);
       setCurrentLeadId(lead.id);
-      setStage('contact');
       setIsGeneratingEstimate(true);
 
-      // Start the estimate generation in the background
       startEstimateGeneration(lead.id);
-
-    } catch (error) {
-      console.error('Error completing questions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process your answers. Please try again.",
-        variant: "destructive",
-      });
-      setIsGeneratingEstimate(false);
-    }
-  };
-
-  const handleContactSubmit = async (contactData: any) => {
-    try {
-      if (!currentLeadId || !config.contractorId) {
-        console.error('Missing required data:', { currentLeadId, contractorId: config.contractorId });
-        throw new Error('Missing required data');
-      }
-
-      setIsGeneratingEstimate(true);
-
-      console.log('Updating lead with contact data and contractor ID:', {
-        leadId: currentLeadId,
-        contractorId: config.contractorId,
-        ...contactData
-      });
-
-      const { error: updateError } = await supabase
-        .from('leads')
-        .update({
-          user_name: contactData.fullName,
-          user_email: contactData.email,
-          user_phone: contactData.phone,
-          project_address: contactData.address,
-          contractor_id: config.contractorId
-        })
-        .eq('id', currentLeadId);
-
-      if (updateError) {
-        console.error('Error updating lead:', updateError);
-        throw updateError;
-      }
-
-      // Continue polling for estimate completion
-      const pollInterval = setInterval(async () => {
-        try {
-          const isComplete = await checkEstimateStatus(currentLeadId);
-          if (isComplete) {
-            clearInterval(pollInterval);
-          }
-        } catch (error) {
-          clearInterval(pollInterval);
-          setIsGeneratingEstimate(false);
-          console.error('Error polling estimate:', error);
-          toast({
-            title: "Error",
-            description: "Failed to generate estimate. Please try again.",
-            variant: "destructive",
-          });
-        }
-      }, 3000);
 
     } catch (error) {
       console.error('Error processing contact form:', error);
@@ -279,39 +236,40 @@ export const useEstimateFlow = (config: EstimateConfig) => {
   };
 
   const handleSkip = async () => {
-    if (!currentLeadId) return;
-    
+    if (!config.contractorId) {
+      console.error('Missing contractor ID:', config);
+      return;
+    }
+
     try {
       setIsGeneratingEstimate(true);
-      
-      const { error: updateError } = await supabase
+
+      const leadData: LeadInsert = {
+        project_description: projectDescription || 'Test project',
+        project_title: `Test Project`,
+        answers: answers as Json,
+        category: selectedCategory,
+        status: 'pending',
+        contractor_id: config.contractorId,
+        project_images: uploadedPhotos,
+        is_test_estimate: true
+      };
+
+      const { data: lead, error: leadError } = await supabase
         .from('leads')
-        .update({
-          is_test_estimate: true,
-          status: 'test'
-        })
-        .eq('id', currentLeadId);
+        .insert(leadData)
+        .select()
+        .single();
 
-      if (updateError) throw updateError;
+      if (leadError) throw leadError;
+      
+      if (!lead?.id) {
+        throw new Error('Failed to create lead - no ID returned');
+      }
 
-      // Continue polling for estimate completion
-      const pollInterval = setInterval(async () => {
-        try {
-          const isComplete = await checkEstimateStatus(currentLeadId);
-          if (isComplete) {
-            clearInterval(pollInterval);
-          }
-        } catch (error) {
-          clearInterval(pollInterval);
-          setIsGeneratingEstimate(false);
-          console.error('Error polling estimate:', error);
-          toast({
-            title: "Error",
-            description: "Failed to generate estimate. Please try again.",
-            variant: "destructive",
-          });
-        }
-      }, 3000);
+      setCurrentLeadId(lead.id);
+      
+      startEstimateGeneration(lead.id);
 
     } catch (error) {
       console.error('Error skipping contact form:', error);
