@@ -25,7 +25,8 @@ export const QuestionManager = ({
     currentStage,
     totalStages,
     handleAnswer,
-    handleMultipleChoiceNext
+    handleMultipleChoiceNext,
+    getQuestionProgress
   } = useQuestionManager(questionSets, onComplete, onProgressChange);
 
   console.log('QuestionManager state:', {
@@ -36,8 +37,17 @@ export const QuestionManager = ({
     hasFollowUpQuestion,
     currentStage,
     totalStages,
-    currentSetAnswers
+    currentSetAnswers,
+    progress: getQuestionProgress()
   });
+
+  // Update progress whenever current question changes
+  useEffect(() => {
+    if (currentQuestion) {
+      const progress = getQuestionProgress();
+      onProgressChange(progress);
+    }
+  }, [currentQuestion, getQuestionProgress, onProgressChange]);
 
   if (isLoadingQuestions) {
     return <LoadingScreen message="Loading questions..." />;
