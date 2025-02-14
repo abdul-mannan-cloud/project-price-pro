@@ -20,11 +20,22 @@ serve(async (req) => {
 
   const controller = new AbortController();
   const { signal } = controller;
+  let requestData: EstimateRequest | null = null;
 
   try {
     console.log('Received request to generate estimate');
     
-    const requestData: EstimateRequest = await req.json();
+    try {
+      requestData = await req.json();
+    } catch (parseError) {
+      console.error('Error parsing request:', parseError);
+      throw new Error('Invalid request format');
+    }
+
+    if (!requestData) {
+      throw new Error('No request data provided');
+    }
+
     const { answers, projectDescription, leadId, category, imageUrl } = requestData;
 
     if (!leadId) {
@@ -40,8 +51,13 @@ serve(async (req) => {
     });
 
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase configuration');
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get lead details to get contractor_id
@@ -53,7 +69,11 @@ serve(async (req) => {
 
     if (leadError) {
       console.error('Error fetching lead:', leadError);
-      throw leadError;
+      throw new Error(`Failed to fetch lead: ${leadError.message}`);
+    }
+
+    if (!lead) {
+      throw new Error('Lead not found');
     }
 
     console.log('Found lead with contractor_id:', lead.contractor_id);
@@ -71,7 +91,7 @@ serve(async (req) => {
 
     if (contractorError) {
       console.error('Error fetching contractor:', contractorError);
-      throw contractorError;
+      throw new Error(`Failed to fetch contractor: ${contractorError.message}`);
     }
 
     // Get AI rates for the category
@@ -83,7 +103,7 @@ serve(async (req) => {
 
     if (ratesError) {
       console.error('Error fetching AI rates:', ratesError);
-      throw ratesError;
+      throw new Error(`Failed to fetch AI rates: ${ratesError.message}`);
     }
 
     // Format the context for OpenAI
@@ -145,39 +165,25 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in generate-estimate function:', error);
     
-    if (error instanceof Error) {
-      const { leadId } = (await req.json().catch(() => ({}))) as Partial<EstimateRequest>;
-      
-      if (leadId) {
-        try {
-          await updateLeadWithError(
-            leadId,
-            error.message,
-            Deno.env.get('SUPABASE_URL')!,
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-          );
-        } catch (updateError) {
-          console.error('Failed to update lead with error:', updateError);
-        }
+    // Only try to update the lead with error if we have the leadId
+    if (requestData?.leadId) {
+      try {
+        await updateLeadWithError(
+          requestData.leadId,
+          error instanceof Error ? error.message : 'An unexpected error occurred',
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+        );
+      } catch (updateError) {
+        console.error('Failed to update lead with error:', updateError);
       }
-
-      return new Response(
-        JSON.stringify({ 
-          error: error.message,
-          details: error.stack
-        }),
-        { 
-          status: 500,
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          }
-        }
-      );
     }
 
     return new Response(
-      JSON.stringify({ error: 'An unexpected error occurred' }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'An unexpected error occurred',
+        details: error instanceof Error ? error.stack : undefined
+      }),
       { 
         status: 500,
         headers: { 
