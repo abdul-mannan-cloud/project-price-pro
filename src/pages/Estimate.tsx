@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -20,28 +19,27 @@ import { EstimateSkeleton } from "@/components/EstimateForm/EstimateSkeleton";
 import { MultiStepSkeleton } from "@/components/EstimateForm/MultiStepSkeleton";
 import { useToast } from "@/hooks/use-toast";
 
+const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
+
 const EstimatePage = () => {
   const navigate = useNavigate();
   const { contractorId: routeContractorId } = useParams();
   const { toast } = useToast();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
-  // Clean up contractor ID from route
   const cleanRouteContractorId = routeContractorId ? 
     decodeURIComponent(routeContractorId).replace(/[?:]/g, '') : 
-    null;
+    DEFAULT_CONTRACTOR_ID;
 
-  // Get the current user's contractor ID if not provided in route
   const { data: currentContractorId } = useQuery({
     queryKey: ['currentContractor'],
     queryFn: async () => {
-      // If we have a valid contractor ID in the route, use that
-      if (cleanRouteContractorId && cleanRouteContractorId !== 'contractorId') {
+      if (cleanRouteContractorId) {
         return cleanRouteContractorId;
       }
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      if (!user) return DEFAULT_CONTRACTOR_ID;
 
       const { data: contractor } = await supabase
         .from('contractors')
@@ -49,12 +47,11 @@ const EstimatePage = () => {
         .eq('user_id', user.id)
         .single();
 
-      return contractor?.id || null;
+      return contractor?.id || DEFAULT_CONTRACTOR_ID;
     }
   });
 
-  // Process the contractor ID
-  const contractorId = currentContractorId || null;
+  const contractorId = currentContractorId || DEFAULT_CONTRACTOR_ID;
 
   const estimateConfig: EstimateConfig = {
     contractorId,
@@ -66,10 +63,6 @@ const EstimatePage = () => {
   const { data: contractor, isLoading: isContractorLoading, error: contractorError } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
-      if (!contractorId) {
-        throw new Error('No contractor ID available');
-      }
-
       console.log('Fetching contractor with ID:', contractorId);
       const { data, error } = await supabase
         .from("contractors")
@@ -87,12 +80,11 @@ const EstimatePage = () => {
       }
       return data;
     },
-    enabled: !!contractorId && cleanRouteContractorId !== 'contractorId',
+    enabled: !!contractorId,
     retry: false,
     throwOnError: true
   });
 
-  // Handle contractor error
   useEffect(() => {
     if (contractorError) {
       console.error('Error loading contractor:', contractorError);
@@ -101,7 +93,7 @@ const EstimatePage = () => {
         description: "Failed to load contractor information",
         variant: "destructive",
       });
-      navigate('/dashboard');
+      navigate('/');
     }
   }, [contractorError, toast, navigate]);
 
@@ -175,7 +167,6 @@ const EstimatePage = () => {
     setIsSpeechSupported(isSupported);
   }, []);
 
-  // Show loading state if contractor data is loading
   if (isContractorLoading) {
     return (
       <div className="min-h-screen bg-gray-100">
@@ -211,11 +202,11 @@ const EstimatePage = () => {
       <div className="w-full border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-2">
           <button 
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/")}
             className="text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
           >
             <ArrowLeft size={20} />
-            Back to Dashboard
+            Back to Home
           </button>
         </div>
       </div>
