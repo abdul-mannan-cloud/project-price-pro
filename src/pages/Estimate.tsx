@@ -17,6 +17,7 @@ import { CategorySelectionStep } from "@/components/EstimateForm/CategorySelecti
 import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
 import { Category, EstimateConfig } from "@/types/estimate";
 import { EstimateSkeleton } from "@/components/EstimateForm/EstimateSkeleton";
+import { MultiStepSkeleton } from "@/components/EstimateForm/MultiStepSkeleton";
 
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
@@ -124,7 +125,7 @@ const EstimatePage = () => {
       <div className="min-h-screen bg-gray-100">
         <div className="w-full h-8 bg-gray-200 animate-pulse" /> {/* Progress bar skeleton */}
         <div className="max-w-4xl mx-auto px-4 py-12">
-          <EstimateSkeleton />
+          {stage === 'estimate' ? <EstimateSkeleton /> : <MultiStepSkeleton />}
         </div>
       </div>
     );
