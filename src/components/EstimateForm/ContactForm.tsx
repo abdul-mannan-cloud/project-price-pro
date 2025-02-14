@@ -89,12 +89,6 @@ export const ContactForm = ({
         throw new Error("Unable to identify the contractor");
       }
 
-      console.log('Processing estimate with:', { 
-        leadId, 
-        contractorId: effectiveContractorId,
-        formData 
-      });
-
       // First update the lead with contact info and contractor_id
       const { error: updateError } = await supabase
         .from('leads')
@@ -113,11 +107,21 @@ export const ContactForm = ({
         throw updateError;
       }
 
-      // Call onSubmit to process form and initiate estimate generation
+      // Generate estimate directly
+      const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          leadId,
+          contractorId: effectiveContractorId
+        }
+      });
+
+      if (estimateError) {
+        throw estimateError;
+      }
+
+      // Call onSubmit to transition to estimate display
       onSubmit(formData);
-      
-      // We don't set isSubmitting to false here as the parent will handle that
-      // through the estimate generation process
+
     } catch (error) {
       console.error('Error processing form:', error);
       setIsSubmitting(false);
@@ -131,15 +135,47 @@ export const ContactForm = ({
   };
 
   const handleSkipForm = async () => {
-    if (!onSkip) return;
+    if (!leadId || !onSkip) return;
 
     setIsSubmitting(true);
     setIsProcessingEstimate(true);
 
     try {
+      // Get the contractor ID from URL first, then fallback to logged in user
+      const effectiveContractorId = urlContractorId || (await supabase.auth.getUser()).data.user?.id;
+
+      if (!effectiveContractorId) {
+        throw new Error("No contractor ID available");
+      }
+
+      // Update lead as test estimate
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update({
+          is_test_estimate: true,
+          status: 'processing',
+          contractor_id: effectiveContractorId
+        })
+        .eq('id', leadId);
+
+      if (updateError) throw updateError;
+
+      // Generate estimate directly
+      const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          leadId,
+          contractorId: effectiveContractorId,
+          isTestEstimate: true
+        }
+      });
+
+      if (estimateError) {
+        throw estimateError;
+      }
+
+      // Call onSkip to transition to estimate display
       await onSkip();
-      // Don't set isSubmitting to false here as it will be handled by the parent
-      // through the estimate generation process
+
     } catch (error) {
       console.error('Error skipping form:', error);
       setIsSubmitting(false);
