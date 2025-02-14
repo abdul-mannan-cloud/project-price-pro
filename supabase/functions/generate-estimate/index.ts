@@ -46,19 +46,34 @@ serve(async (req) => {
       .eq('id', requestData.leadId)
       .maybeSingle();
 
-    if (leadError || !lead) {
+    if (leadError) {
       console.error('Error fetching lead:', leadError);
       throw new Error('Could not fetch lead data');
     }
 
+    if (!lead) {
+      console.error('No lead found with id:', requestData.leadId);
+      throw new Error('Lead not found');
+    }
+
+    console.log('Found lead:', JSON.stringify(lead, null, 2));
+
     // Use provided contractorId or fall back to the one stored on the lead
     const contractorId = requestData.contractorId || lead.contractor_id;
     
-    if (!contractorId) {
-      throw new Error('contractorId is required');
-    }
+    console.log('Resolved contractor ID:', {
+      fromRequest: requestData.contractorId,
+      fromLead: lead.contractor_id,
+      final: contractorId
+    });
 
-    console.log('Using contractor ID:', contractorId);
+    if (!contractorId) {
+      console.error('No contractor ID found in request or lead:', {
+        requestData,
+        lead
+      });
+      throw new Error('No contractor ID available from request or lead data');
+    }
 
     // Get contractor data
     const { data: contractor, error: contractorError } = await supabase
@@ -71,9 +86,14 @@ serve(async (req) => {
       .eq('id', contractorId)
       .maybeSingle();
 
-    if (contractorError || !contractor) {
+    if (contractorError) {
       console.error('Error fetching contractor:', contractorError);
       throw new Error('Failed to fetch contractor data');
+    }
+
+    if (!contractor) {
+      console.error('No contractor found with id:', contractorId);
+      throw new Error('Contractor not found');
     }
 
     // Get AI rates
