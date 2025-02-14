@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -15,17 +14,30 @@ import { PhotoUploadStep } from "@/components/EstimateForm/PhotoUploadStep";
 import { ProjectDescriptionStep } from "@/components/EstimateForm/ProjectDescriptionStep";
 import { CategorySelectionStep } from "@/components/EstimateForm/CategorySelectionStep";
 import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
-import { Category } from "@/types/estimate";
+import { Category, EstimateConfig } from "@/types/estimate";
 
 const EstimatePage = () => {
   const navigate = useNavigate();
   const { contractorId } = useParams();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
+  // Early return if no contractorId
+  if (!contractorId) {
+    return <div>No contractor ID provided</div>;
+  }
+
+  const estimateConfig: EstimateConfig = {
+    contractorId,
+    isPreview: false,
+    allowSignature: true,
+    showSubtotals: true
+  };
+
   const {
     stage,
     setStage,
     uploadedImageUrl,
+    uploadedPhotos,
     projectDescription,
     currentLeadId,
     selectedCategory,
@@ -43,7 +55,7 @@ const EstimatePage = () => {
     handleCategorySelect,
     handleQuestionComplete,
     handleContactSubmit
-  } = useEstimateFlow(contractorId);
+  } = useEstimateFlow(estimateConfig);
 
   const { data: contractor, isError: isContractorError } = useQuery({
     queryKey: ["contractor", contractorId],
@@ -166,6 +178,7 @@ const EstimatePage = () => {
                 projectSummary={projectDescription}
                 estimate={estimate}
                 isLoading={isGeneratingEstimate}
+                projectImages={uploadedPhotos}
               />
             </div>
           )}

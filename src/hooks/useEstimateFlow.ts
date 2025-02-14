@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Category, CategoryQuestions, AnswersState } from "@/types/estimate";
+import { Category, CategoryQuestions, AnswersState, EstimateConfig } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { Database } from "@/integrations/supabase/types";
 
@@ -10,9 +10,10 @@ type LeadInsert = Database['public']['Tables']['leads']['Insert'];
 
 export type EstimateStage = 'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category';
 
-export const useEstimateFlow = (contractorId?: string) => {
+export const useEstimateFlow = (config: EstimateConfig) => {
   const [stage, setStage] = useState<EstimateStage>('photo');
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const [projectDescription, setProjectDescription] = useState("");
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -25,8 +26,11 @@ export const useEstimateFlow = (contractorId?: string) => {
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
   const { toast } = useToast();
 
-  const handlePhotoUpload = (url: string) => {
-    setUploadedImageUrl(url);
+  const handlePhotoUpload = (urls: string[]) => {
+    setUploadedPhotos(urls);
+    if (urls.length > 0) {
+      setUploadedImageUrl(urls[0]);
+    }
     setStage('description');
   };
 
@@ -64,10 +68,6 @@ export const useEstimateFlow = (contractorId?: string) => {
 
   const handleQuestionComplete = async (answers: AnswersState) => {
     try {
-      if (!contractorId) {
-        throw new Error('No contractor ID provided');
-      }
-
       const answersForSupabase = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
         acc[category] = Object.entries(categoryAnswers).reduce((catAcc, [questionId, answer]) => {
           catAcc[questionId] = {
@@ -88,11 +88,12 @@ export const useEstimateFlow = (contractorId?: string) => {
         answers: answersForSupabase,
         category: selectedCategory,
         status: 'pending',
-        contractor_id: contractorId, // Make sure contractor_id is set
-        image_url: uploadedImageUrl
+        contractor_id: config.contractorId,
+        image_url: uploadedImageUrl,
+        project_images: uploadedPhotos
       };
 
-      console.log('Creating lead with data:', leadData);
+      console.log('Creating lead with data:', { ...leadData, contractorId: config.contractorId });
 
       const { data: lead, error: leadError } = await supabase
         .from('leads')
@@ -109,7 +110,7 @@ export const useEstimateFlow = (contractorId?: string) => {
         throw new Error('Failed to create lead - no ID returned');
       }
 
-      console.log('Lead created successfully:', lead.id);
+      console.log('Lead created successfully:', { leadId: lead.id, contractorId: config.contractorId });
       setCurrentLeadId(lead.id);
       setStage('contact');
       setIsGeneratingEstimate(true);
@@ -121,7 +122,9 @@ export const useEstimateFlow = (contractorId?: string) => {
           projectDescription,
           category: selectedCategory,
           leadId: lead.id,
-          contractorId: contractorId // Make sure to pass contractorId
+          contractorId: config.contractorId,
+          imageUrl: uploadedImageUrl,
+          projectImages: uploadedPhotos
         }
       });
 
@@ -143,14 +146,14 @@ export const useEstimateFlow = (contractorId?: string) => {
 
   const handleContactSubmit = async (contactData: any) => {
     try {
-      if (!currentLeadId || !contractorId) {
-        throw new Error('Missing required IDs');
+      if (!currentLeadId) {
+        throw new Error('Missing lead ID');
       }
 
       setIsGeneratingEstimate(true);
       setStage('estimate');
 
-      // Update lead with contact information and ensure contractor_id is set
+      // Update lead with contact information
       const { error: updateError } = await supabase
         .from('leads')
         .update({
@@ -158,7 +161,7 @@ export const useEstimateFlow = (contractorId?: string) => {
           user_email: contactData.email,
           user_phone: contactData.phone,
           project_address: contactData.address,
-          contractor_id: contractorId // Make sure contractor_id is set
+          contractor_id: config.contractorId
         })
         .eq('id', currentLeadId);
 
@@ -167,10 +170,11 @@ export const useEstimateFlow = (contractorId?: string) => {
       const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId: currentLeadId,
-          contractorId: contractorId, // Make sure to pass contractorId
+          contractorId: config.contractorId,
           projectDescription,
           category: selectedCategory,
-          imageUrl: uploadedImageUrl
+          imageUrl: uploadedImageUrl,
+          projectImages: uploadedPhotos
         }
       });
 
@@ -246,6 +250,7 @@ export const useEstimateFlow = (contractorId?: string) => {
     stage,
     setStage,
     uploadedImageUrl,
+    uploadedPhotos,
     projectDescription,
     currentLeadId,
     selectedCategory,
