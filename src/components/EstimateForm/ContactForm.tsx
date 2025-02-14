@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -17,9 +16,9 @@ interface ContactFormProps {
     address: string;
   }) => void;
   leadId?: string;
-  contractorId?: string;
   estimate?: any;
   contractor?: any;
+  contractorId: string;
   onSkip?: () => Promise<void>;
 }
 
@@ -45,10 +44,26 @@ export const ContactForm = ({
   
   // Use contractor ID from props or URL, ensure it's cleaned
   const effectiveContractorId = (() => {
-    const rawId = propContractorId || urlContractorId;
-    if (!rawId) return null;
-    const decoded = decodeURIComponent(rawId);
-    return decoded.replace(/[?]/g, '').trim();
+    try {
+      const rawId = propContractorId || urlContractorId;
+      if (!rawId) return null;
+      
+      // First decode the URL parameter
+      const decoded = decodeURIComponent(rawId);
+      // Remove special characters and clean
+      const cleaned = decoded.replace(/[:?]/g, '').trim();
+      
+      console.log('Processing contractor ID:', {
+        raw: rawId,
+        decoded,
+        cleaned
+      });
+      
+      return cleaned;
+    } catch (error) {
+      console.error('Error processing contractor ID:', error);
+      return null;
+    }
   })();
 
   useEffect(() => {
@@ -99,20 +114,6 @@ export const ContactForm = ({
         console.error('Supabase update error:', updateError);
         throw updateError;
       }
-
-      // Verify the update was successful
-      const { data: updatedLead, error: verifyError } = await supabase
-        .from('leads')
-        .select('contractor_id')
-        .eq('id', leadId)
-        .single();
-
-      if (verifyError) {
-        console.error('Error verifying lead update:', verifyError);
-        throw verifyError;
-      }
-
-      console.log('Lead updated successfully:', updatedLead);
 
       // Generate estimate with explicit contractor ID
       const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
