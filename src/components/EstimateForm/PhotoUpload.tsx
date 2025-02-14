@@ -56,7 +56,6 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
         uploadedUrls.push(publicUrl);
       }
 
-      // Only update photos once all uploads are complete
       onPhotosSelected([...uploadedPhotos, ...uploadedUrls]);
       toast.success("Photos uploaded successfully");
     } catch (error) {
