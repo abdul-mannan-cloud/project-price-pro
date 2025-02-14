@@ -61,16 +61,17 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Try to get the contractor ID either from the request or from the lead
+    // First, try to use the contractorId from the request
     let effectiveContractorId = contractorId;
 
+    // If no contractorId in request, get it from the lead
     if (!effectiveContractorId) {
-      console.log('No contractor ID in request, checking lead...');
+      console.log('No contractor ID in request, fetching from lead:', leadId);
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .select('contractor_id')
         .eq('id', leadId)
-        .single();
+        .maybeSingle();
 
       if (leadError) {
         console.error('Error fetching lead:', leadError);
@@ -78,25 +79,12 @@ serve(async (req) => {
       }
 
       effectiveContractorId = lead?.contractor_id;
+      console.log('Found contractor ID in lead:', effectiveContractorId);
     }
 
+    // Verify we have a valid contractor ID
     if (!effectiveContractorId) {
-      console.error('No contractor ID found in either request or lead');
       throw new Error('No contractor ID found. Please ensure either the lead has a contractor_id or provide it in the request.');
-    }
-
-    console.log('Using contractor_id:', effectiveContractorId);
-
-    // Update the lead's contractor_id if it's not set
-    const { error: updateError } = await supabase
-      .from('leads')
-      .update({ contractor_id: effectiveContractorId })
-      .eq('id', leadId)
-      .is('contractor_id', null);
-
-    if (updateError) {
-      console.error('Error updating lead with contractor_id:', updateError);
-      // Don't throw here, just log the error
     }
 
     // Get contractor settings and AI instructions
