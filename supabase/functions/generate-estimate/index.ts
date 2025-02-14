@@ -1,166 +1,120 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import "https://deno.land/x/xhr@0.1.0/mod.ts"
-import { generateLlamaResponse, formatAnswersForContext } from "./llama-api.ts"
-import { createEstimate, updateLeadWithEstimate, updateLeadWithError } from "./estimate-service.ts"
-import { EstimateRequest, EstimateResponse } from "./types.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
-const TIMEOUT = 30000; // Increased timeout to 30 seconds
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => {
-    controller.abort();
-    console.log('Request timeout reached');
-  }, TIMEOUT);
-
   try {
-    if (req.method !== 'POST') {
-      throw new Error('Method not allowed');
-    }
+    const { answers, projectDescription, leadId, category } = await req.json();
 
-    // Try both formats of the API key name
-    let llamaApiKey = Deno.env.get('LLAMA_API_KEY');
-    if (!llamaApiKey) {
-      llamaApiKey = Deno.env.get('llama v2');
-    }
-    
-    if (!llamaApiKey) {
-      console.error('Missing LLaMA API key in environment variables');
-      throw new Error('Missing LLaMA API key. Please ensure LLAMA_API_KEY is set in your environment variables.');
-    }
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log('API key found:', llamaApiKey ? 'Yes' : 'No');
+    // Get lead details to get contractor_id
+    const { data: lead, error: leadError } = await supabase
+      .from('leads')
+      .select('contractor_id')
+      .eq('id', leadId)
+      .single();
 
-    const requestData: EstimateRequest = await req.json();
-    console.log('Request data:', requestData);
+    if (leadError) throw leadError;
 
-    const { answers, projectDescription, category, leadId, imageUrl } = requestData;
+    // Get contractor settings and AI instructions
+    const { data: contractor, error: contractorError } = await supabase
+      .from('contractors')
+      .select(`
+        *,
+        contractor_settings(*),
+        ai_instructions(*)
+      `)
+      .eq('id', lead.contractor_id)
+      .single();
 
-    if (!leadId) {
-      throw new Error('Missing leadId');
-    }
+    if (contractorError) throw contractorError;
 
-    const formattedAnswers = formatAnswersForContext(answers);
-    
-    const context = `Project: ${category || 'General Construction'}
-    ${projectDescription || 'Project estimate'}
-    ${formattedAnswers.map(cat => 
-      `${cat.category}: ${cat.questions.map(q => `${q.question} - ${q.answer}`).join('; ')}`
-    ).join('\n')}`;
+    // Get AI rates for the category
+    const { data: aiRates, error: ratesError } = await supabase
+      .from('ai_rates')
+      .select('*')
+      .eq('contractor_id', lead.contractor_id)
+      .eq('type', category.toLowerCase());
 
-    console.log('Prepared context:', context);
+    if (ratesError) throw ratesError;
 
-    try {
-      // Create a basic default estimate in case of failure
-      const defaultEstimate = {
-        groups: [
-          {
-            name: "Labor and Materials",
-            subgroups: [
-              {
-                name: category || "General Work",
-                items: [
-                  {
-                    title: "General Labor",
-                    description: projectDescription || "Construction work",
-                    quantity: 1,
-                    unit: "job",
-                    unitAmount: 1000,
-                    totalPrice: 1000
-                  }
-                ],
-                subtotal: 1000
+    // Construct the prompt
+    const systemPrompt = `You are an advanced contractor estimate generator. Generate a detailed project estimate in JSON format using the following rules:
+    - Use contractor's minimum project cost: ${contractor.contractor_settings.minimum_project_cost}
+    - Apply markup percentage: ${contractor.contractor_settings.markup_percentage}%
+    - Apply tax rate: ${contractor.contractor_settings.tax_rate}%
+    ${contractor.ai_instructions?.map(instruction => `- ${instruction.instructions}`).join('\n')}`;
+
+    // Make request to LLaMA API
+    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
+    const response = await fetch('https://api.llama-api.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${llamaApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-2-70b-chat',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { 
+            role: 'user',
+            content: JSON.stringify({
+              answers,
+              projectDescription,
+              category,
+              aiRates,
+              contractor: {
+                settings: contractor.contractor_settings,
+                businessAddress: contractor.business_address
               }
-            ]
+            })
           }
         ],
-        totalCost: 1000
-      };
-
-      let aiResponse;
-      try {
-        aiResponse = await generateLlamaResponse(
-          context,
-          imageUrl,
-          llamaApiKey,
-          controller.signal
-        );
-      } catch (llmError) {
-        console.error('LLM API error:', llmError);
-        console.log('Falling back to default estimate');
-        aiResponse = JSON.stringify(defaultEstimate);
-      }
-
-      console.log('AI Response:', aiResponse);
-
-      const estimate = createEstimate(aiResponse, category, projectDescription);
-
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Missing Supabase credentials');
-      }
-
-      await updateLeadWithEstimate(leadId, estimate, supabaseUrl, supabaseKey);
-
-      const response: EstimateResponse = {
-        message: "Estimate generated successfully",
-        leadId
-      };
-
-      return new Response(JSON.stringify(response), { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        } 
-      });
-
-    } catch (error) {
-      console.error('Error in estimate generation:', error);
-      
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (supabaseUrl && supabaseKey) {
-        await updateLeadWithError(
-          leadId,
-          error.message || 'Failed to generate estimate',
-          supabaseUrl,
-          supabaseKey
-        );
-      }
-      
-      throw error;
-    }
-  } catch (error) {
-    console.error('Error in edge function:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'Failed to generate estimate',
-        details: error.message,
-        stack: error.stack
+        ...contractor.contractor_settings.ai_model_settings
       }),
+    });
+
+    const result = await response.json();
+
+    // Update the lead with the estimate
+    const { error: updateError } = await supabase
+      .from('leads')
+      .update({
+        estimate_data: JSON.parse(result.choices[0].message.content),
+        status: 'completed'
+      })
+      .eq('id', leadId);
+
+    if (updateError) throw updateError;
+
+    return new Response(
+      JSON.stringify(result.choices[0].message.content),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
       { 
         status: 500,
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
-  } finally {
-    clearTimeout(timeoutId);
   }
 });
