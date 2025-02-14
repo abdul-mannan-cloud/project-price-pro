@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Category, CategoryQuestions, AnswersState, EstimateConfig } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
-import { Database } from "@/integrations/supabase/types";
+import { Database, Json } from "@/integrations/supabase/types";
 
 type LeadInsert = Database['public']['Tables']['leads']['Insert'];
 
@@ -81,11 +82,14 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       }, {} as Record<string, any>);
 
       // Create the lead with contractor_id
+      const currentCategory = matchedQuestionSets[0]?.category;
+      const firstAnswer = answers[currentCategory]?.Q1?.answers[0];
+
       const leadData: LeadInsert = {
-        project_description: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
-        project_title: `${questionSets[0]?.category || 'New'} Project`,
+        project_description: firstAnswer || 'New project',
+        project_title: `${currentCategory || 'New'} Project`,
         answers: answersForDb as Json,
-        category: questionSets[0]?.category,
+        category: currentCategory,
         status: 'pending',
         contractor_id: config.contractorId // Ensure we set the contractor_id here
       };
@@ -117,7 +121,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         body: { 
           answers: answersForDb,
           projectDescription,
-          category: questionSets[0]?.category,
+          category: currentCategory,
           leadId: lead.id,
           contractorId: config.contractorId, // Make sure we pass the contractor ID here
           imageUrl: uploadedImageUrl,
