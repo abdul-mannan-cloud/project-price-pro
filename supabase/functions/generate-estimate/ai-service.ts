@@ -97,17 +97,26 @@ export const generateEstimate = async (
     }
 
     const data = await response.json();
-    const content = data.choices[0].message.content;
     
-    console.log('Received AI response:', content);
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response format from OpenAI');
+    }
 
-    // Validate JSON structure
-    const parsed = JSON.parse(content);
-    if (!parsed.groups || !Array.isArray(parsed.groups) || !parsed.totalCost) {
+    const content = data.choices[0].message.content;
+    console.log('Raw AI response content:', content);
+
+    // Ensure we have valid JSON
+    const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+    
+    // Validate structure
+    if (!parsed.groups || !Array.isArray(parsed.groups) || typeof parsed.totalCost !== 'number') {
+      console.error('Invalid response structure:', parsed);
       throw new Error('AI response missing required fields');
     }
 
-    return content;
+    // Return stringified JSON to ensure consistent format
+    return JSON.stringify(parsed);
+
   } catch (error) {
     console.error('Error generating estimate with AI:', error);
     if (error instanceof SyntaxError) {
