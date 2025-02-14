@@ -5,7 +5,7 @@ import { PhotoUpload } from "./PhotoUpload";
 import { SkipForward } from "lucide-react";
 
 interface PhotoUploadStepProps {
-  onPhotoUploaded: (url: string) => void;
+  onPhotoUploaded: (urls: string[]) => void;  // Changed type to accept string[]
   onSkip: () => void;
   contractor?: {
     business_name?: string;
@@ -22,7 +22,7 @@ export const PhotoUploadStep = ({ onPhotoUploaded, onSkip, contractor }: PhotoUp
 
   const handleNext = () => {
     if (uploadedPhotos.length > 0) {
-      onPhotoUploaded(uploadedPhotos[0]);
+      onPhotoUploaded(uploadedPhotos);  // Pass the entire array
     }
   };
 
