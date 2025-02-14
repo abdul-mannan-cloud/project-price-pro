@@ -280,6 +280,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
       setCurrentLeadId(lead.id);
       
+      // Start estimate generation just like in contact form submission
       startEstimateGeneration(lead.id);
 
     } catch (error) {
