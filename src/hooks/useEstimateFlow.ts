@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -117,7 +116,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
       // Generate estimate with contractor ID
       const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
+        body: {
           answers: answersForSupabase,
           projectDescription,
           category: selectedCategory,
@@ -168,7 +167,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       if (updateError) throw updateError;
 
       const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
+        body: {
           leadId: currentLeadId,
           contractorId: config.contractorId,
           projectDescription,
