@@ -36,10 +36,14 @@ serve(async (req) => {
       throw new Error('No request data provided');
     }
 
-    const { answers, projectDescription, leadId, category, imageUrl, contractorId } = requestData;
+    const { answers, projectDescription, leadId, category, imageUrl, contractorId, projectImages } = requestData;
 
     if (!leadId) {
       throw new Error('leadId is required');
+    }
+
+    if (!contractorId) {  // Added explicit check for contractorId
+      throw new Error('contractorId is required');
     }
 
     console.log('Request data:', {
@@ -48,7 +52,8 @@ serve(async (req) => {
       leadId,
       category,
       hasImageUrl: !!imageUrl,
-      contractorId
+      contractorId,
+      hasProjectImages: !!projectImages?.length
     });
 
     // Initialize Supabase client
@@ -61,33 +66,6 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // First, try to use the contractorId from the request
-    let effectiveContractorId = contractorId;
-
-    // If no contractorId in request, get it from the lead
-    if (!effectiveContractorId) {
-      console.log('No contractor ID in request, fetching from lead:', leadId);
-      const { data: lead, error: leadError } = await supabase
-        .from('leads')
-        .select('contractor_id')
-        .eq('id', leadId)
-        .maybeSingle();
-
-      if (leadError) {
-        console.error('Error fetching lead:', leadError);
-        throw new Error(`Failed to fetch lead: ${leadError.message}`);
-      }
-
-      effectiveContractorId = lead?.contractor_id;
-    }
-
-    // Verify we have a valid contractor ID
-    if (!effectiveContractorId) {
-      throw new Error('No contractor ID found. Please ensure either the lead has a contractor_id or provide it in the request.');
-    }
-
-    console.log('Using contractor ID:', effectiveContractorId);
-
     // Get contractor settings and AI instructions
     const { data: contractor, error: contractorError } = await supabase
       .from('contractors')
@@ -96,7 +74,7 @@ serve(async (req) => {
         contractor_settings(*),
         ai_instructions(*)
       `)
-      .eq('id', effectiveContractorId)
+      .eq('id', contractorId)
       .single();
 
     if (contractorError) {
@@ -105,14 +83,25 @@ serve(async (req) => {
     }
 
     if (!contractor) {
-      throw new Error(`Contractor not found with ID: ${effectiveContractorId}`);
+      throw new Error(`Contractor not found with ID: ${contractorId}`);
+    }
+
+    // Update lead with contractor_id if not already set
+    const { error: updateLeadError } = await supabase
+      .from('leads')
+      .update({ contractor_id: contractorId })
+      .eq('id', leadId)
+      .is('contractor_id', null);
+
+    if (updateLeadError) {
+      console.error('Error updating lead with contractor_id:', updateLeadError);
     }
 
     // Get AI rates for the category
     const { data: aiRates, error: ratesError } = await supabase
       .from('ai_rates')
       .select('*')
-      .eq('contractor_id', effectiveContractorId)
+      .eq('contractor_id', contractorId)
       .eq('type', category?.toLowerCase() || '');
 
     if (ratesError) {
@@ -122,7 +111,7 @@ serve(async (req) => {
 
     // Format the context for OpenAI
     const context = JSON.stringify({
-      answers: formatAnswersForContext(answers),
+      answers: formatAnswersForContext(answers || {}),
       projectDescription,
       category,
       aiRates,

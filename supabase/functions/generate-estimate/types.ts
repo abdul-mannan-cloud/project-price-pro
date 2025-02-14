@@ -10,12 +10,13 @@ export interface CategoryAnswers {
 }
 
 export interface EstimateRequest {
-  answers: Record<string, any>;
+  answers?: Record<string, any>;
   projectDescription?: string;
   category?: string;
   leadId: string;
   imageUrl?: string;
-  contractorId?: string; // Added this field
+  contractorId: string;  // Made contractorId required
+  projectImages?: string[];
 }
 
 export interface EstimateResponse {
