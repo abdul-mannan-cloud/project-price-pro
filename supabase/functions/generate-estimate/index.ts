@@ -47,28 +47,26 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // If contractorId is not provided in the request, try to get it from the lead
-    let contractorId = requestData.contractorId;
-    if (!contractorId) {
-      console.log('No contractorId in request, fetching from lead...');
-      const { data: lead, error: leadError } = await supabase
-        .from('leads')
-        .select('contractor_id')
-        .eq('id', requestData.leadId)
-        .maybeSingle();
+    // Get the lead data to ensure we have a contractor_id
+    const { data: lead, error: leadError } = await supabase
+      .from('leads')
+      .select('contractor_id, project_description, category')
+      .eq('id', requestData.leadId)
+      .maybeSingle();
 
-      if (leadError) {
-        console.error('Error fetching lead:', leadError);
-        throw new Error('Failed to fetch lead information');
-      }
-
-      if (!lead?.contractor_id) {
-        throw new Error('No contractor ID found. Please ensure either the lead has a contractor_id or provide it in the request.');
-      }
-
-      contractorId = lead.contractor_id;
-      console.log('Found contractorId from lead:', contractorId);
+    if (leadError) {
+      console.error('Error fetching lead:', leadError);
+      throw new Error('Failed to fetch lead information');
     }
+
+    // Use contractor ID from request or from lead
+    const contractorId = requestData.contractorId || lead?.contractor_id;
+
+    if (!contractorId) {
+      throw new Error('No contractor ID found. Please ensure either the lead has a contractor_id or provide it in the request.');
+    }
+
+    console.log('Using contractor ID:', contractorId);
 
     // Get contractor settings and AI instructions
     const { data: contractor, error: contractorError } = await supabase
@@ -95,7 +93,7 @@ serve(async (req) => {
       .from('ai_rates')
       .select('*')
       .eq('contractor_id', contractorId)
-      .eq('type', requestData.category?.toLowerCase() || '');
+      .eq('type', (requestData.category || lead?.category)?.toLowerCase() || '');
 
     if (ratesError) {
       console.error('Error fetching AI rates:', ratesError);
@@ -105,8 +103,8 @@ serve(async (req) => {
     // Format the context for OpenAI
     const context = JSON.stringify({
       answers: formatAnswersForContext(requestData.answers || {}),
-      projectDescription: requestData.projectDescription,
-      category: requestData.category,
+      projectDescription: requestData.projectDescription || lead?.project_description,
+      category: requestData.category || lead?.category,
       aiRates,
       contractor: {
         settings: contractor.contractor_settings,
@@ -134,7 +132,7 @@ serve(async (req) => {
     console.log('AI response received, creating estimate...');
 
     // Create and process the estimate
-    const estimate = createEstimate(aiResponse, requestData.category, requestData.projectDescription);
+    const estimate = createEstimate(aiResponse, requestData.category || lead?.category, requestData.projectDescription || lead?.project_description);
 
     console.log('Updating lead with estimate...');
 
