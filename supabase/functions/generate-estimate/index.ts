@@ -15,7 +15,7 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   const controller = new AbortController();
@@ -79,13 +79,14 @@ serve(async (req) => {
       }
 
       effectiveContractorId = lead?.contractor_id;
-      console.log('Found contractor ID in lead:', effectiveContractorId);
     }
 
     // Verify we have a valid contractor ID
     if (!effectiveContractorId) {
       throw new Error('No contractor ID found. Please ensure either the lead has a contractor_id or provide it in the request.');
     }
+
+    console.log('Using contractor ID:', effectiveContractorId);
 
     // Get contractor settings and AI instructions
     const { data: contractor, error: contractorError } = await supabase
