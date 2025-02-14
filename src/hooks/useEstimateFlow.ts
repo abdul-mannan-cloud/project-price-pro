@@ -66,6 +66,89 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     setStage('questions');
   };
 
+  const checkEstimateStatus = async (leadId: string) => {
+    const { data: lead } = await supabase
+      .from('leads')
+      .select('estimate_data, status, error_message')
+      .eq('id', leadId)
+      .maybeSingle();
+
+    if (!lead) return false;
+
+    if (lead.status === 'error') {
+      throw new Error(lead.error_message || 'Failed to generate estimate');
+    }
+
+    if (lead.status === 'complete' && lead.estimate_data) {
+      setEstimate(lead.estimate_data);
+      setIsGeneratingEstimate(false);
+      setStage('estimate');
+      return true;
+    }
+
+    return false;
+  };
+
+  const startEstimateGeneration = async (leadId: string) => {
+    try {
+      console.log('Starting background estimate generation for lead:', leadId);
+      
+      const { error } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          leadId,
+          contractorId: config.contractorId,
+          projectDescription,
+          category: selectedCategory,
+          imageUrl: uploadedImageUrl,
+          projectImages: uploadedPhotos
+        }
+      });
+
+      if (error) throw error;
+
+      // Start polling for estimate completion
+      const pollInterval = setInterval(async () => {
+        try {
+          const isComplete = await checkEstimateStatus(leadId);
+          if (isComplete) {
+            clearInterval(pollInterval);
+          }
+        } catch (error) {
+          clearInterval(pollInterval);
+          setIsGeneratingEstimate(false);
+          console.error('Error polling estimate:', error);
+          toast({
+            title: "Error",
+            description: "Failed to generate estimate. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }, 3000);
+
+      // Set a timeout to stop polling after 2 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (isGeneratingEstimate) {
+          setIsGeneratingEstimate(false);
+          toast({
+            title: "Error",
+            description: "Estimate generation timed out. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }, 120000);
+
+    } catch (error) {
+      console.error('Error initiating estimate generation:', error);
+      setIsGeneratingEstimate(false);
+      toast({
+        title: "Error",
+        description: "Failed to start estimate generation. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleQuestionComplete = async (answers: AnswersState) => {
     try {
       if (!config.contractorId) {
@@ -120,29 +203,8 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       setStage('contact');
       setIsGeneratingEstimate(true);
 
-      console.log('Generating initial estimate with data:', {
-        leadId: lead.id,
-        contractorId: config.contractorId,
-        answers: answersForDb,
-        category: currentCategory
-      });
-
-      const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          answers: answersForDb,
-          projectDescription,
-          category: currentCategory,
-          leadId: lead.id,
-          contractorId: config.contractorId,
-          imageUrl: uploadedImageUrl,
-          projectImages: uploadedPhotos
-        }
-      });
-
-      if (generateError) {
-        console.error('Error generating estimate:', generateError);
-        throw generateError;
-      }
+      // Start the estimate generation in the background
+      startEstimateGeneration(lead.id);
 
     } catch (error) {
       console.error('Error completing questions:', error);
@@ -163,7 +225,6 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       }
 
       setIsGeneratingEstimate(true);
-      setStage('estimate');
 
       console.log('Updating lead with contact data and contractor ID:', {
         leadId: currentLeadId,
@@ -187,54 +248,10 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         throw updateError;
       }
 
-      console.log('Generating final estimate with data:', {
-        leadId: currentLeadId,
-        contractorId: config.contractorId,
-        projectDescription,
-        category: selectedCategory
-      });
-
-      const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
-        body: {
-          leadId: currentLeadId,
-          contractorId: config.contractorId,
-          projectDescription,
-          category: selectedCategory,
-          imageUrl: uploadedImageUrl,
-          projectImages: uploadedPhotos
-        }
-      });
-
-      if (estimateError) {
-        console.error('Error invoking generate-estimate:', estimateError);
-        throw estimateError;
-      }
-
-      const checkEstimate = async () => {
-        const { data: lead } = await supabase
-          .from('leads')
-          .select('estimate_data, status, error_message')
-          .eq('id', currentLeadId)
-          .maybeSingle();
-
-        if (!lead) return false;
-
-        if (lead.status === 'error') {
-          throw new Error(lead.error_message || 'Failed to generate estimate');
-        }
-
-        if (lead.status === 'complete' && lead.estimate_data) {
-          setEstimate(lead.estimate_data);
-          setIsGeneratingEstimate(false);
-          return true;
-        }
-
-        return false;
-      };
-
+      // Continue polling for estimate completion
       const pollInterval = setInterval(async () => {
         try {
-          const isComplete = await checkEstimate();
+          const isComplete = await checkEstimateStatus(currentLeadId);
           if (isComplete) {
             clearInterval(pollInterval);
           }
@@ -250,26 +267,60 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         }
       }, 3000);
 
-      setTimeout(() => {
-        clearInterval(pollInterval);
-        if (isGeneratingEstimate) {
+    } catch (error) {
+      console.error('Error processing contact form:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process your information. Please try again.",
+        variant: "destructive",
+      });
+      setIsGeneratingEstimate(false);
+    }
+  };
+
+  const handleSkip = async () => {
+    if (!currentLeadId) return;
+    
+    try {
+      setIsGeneratingEstimate(true);
+      
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update({
+          is_test_estimate: true,
+          status: 'test'
+        })
+        .eq('id', currentLeadId);
+
+      if (updateError) throw updateError;
+
+      // Continue polling for estimate completion
+      const pollInterval = setInterval(async () => {
+        try {
+          const isComplete = await checkEstimateStatus(currentLeadId);
+          if (isComplete) {
+            clearInterval(pollInterval);
+          }
+        } catch (error) {
+          clearInterval(pollInterval);
           setIsGeneratingEstimate(false);
+          console.error('Error polling estimate:', error);
           toast({
             title: "Error",
-            description: "Estimate generation timed out. Please try again.",
+            description: "Failed to generate estimate. Please try again.",
             variant: "destructive",
           });
         }
-      }, 120000);
+      }, 3000);
 
     } catch (error) {
-      console.error('Error generating estimate:', error);
-      setIsGeneratingEstimate(false);
+      console.error('Error skipping contact form:', error);
       toast({
         title: "Error",
-        description: "Failed to generate estimate. Please try again.",
+        description: "Failed to process your request. Please try again.",
         variant: "destructive",
       });
+      setIsGeneratingEstimate(false);
     }
   };
 
@@ -294,6 +345,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     handleDescriptionSubmit,
     handleCategorySelect,
     handleQuestionComplete,
-    handleContactSubmit
+    handleContactSubmit,
+    handleSkip
   };
 };
