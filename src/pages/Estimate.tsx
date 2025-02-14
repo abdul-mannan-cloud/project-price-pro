@@ -34,7 +34,26 @@ const EstimatePage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
 
-  // Get the authenticated user's contractor ID
+  // Get the contractor ID from the URL first
+  const urlContractorId = (() => {
+    try {
+      let rawId = params.contractorId;
+      if (!rawId || rawId === ":contractorId?" || rawId === "undefined") {
+        return DEFAULT_CONTRACTOR_ID;
+      }
+      
+      // Handle URL-encoded values
+      rawId = decodeURIComponent(rawId);
+      const cleaned = rawId.replace(/[^a-f0-9-]/gi, '');
+      
+      return isValidUUID(cleaned) ? cleaned : DEFAULT_CONTRACTOR_ID;
+    } catch (error) {
+      console.error('Error processing URL contractor ID:', error);
+      return DEFAULT_CONTRACTOR_ID;
+    }
+  })();
+
+  // Get the authenticated user's contractor ID for comparison only
   const { data: authenticatedContractor } = useQuery({
     queryKey: ['authenticated-contractor'],
     queryFn: async () => {
@@ -54,66 +73,24 @@ const EstimatePage = () => {
     },
   });
 
-  // Process and validate the contractor ID based on the authentication state
-  const processedContractorId = (() => {
-    // If user is authenticated and has a contractor profile, use their ID
-    if (isAuthenticated && authenticatedContractor?.id) {
-      console.log('Using authenticated contractor ID:', authenticatedContractor.id);
-      return authenticatedContractor.id;
-    }
-
-    try {
-      let rawId = params.contractorId;
-      
-      // If no URL parameter and not authenticated, use default
-      if (!rawId || rawId === ":contractorId?" || rawId === "undefined") {
-        console.log('Using default contractor ID');
-        return DEFAULT_CONTRACTOR_ID;
-      }
-
-      // Handle URL-encoded values
-      rawId = decodeURIComponent(rawId);
-      
-      // Remove any URL-unsafe characters
-      const cleaned = rawId.replace(/[^a-f0-9-]/gi, '');
-      
-      console.log('Processing public contractor ID:', {
-        original: params.contractorId,
-        decoded: rawId,
-        cleaned: cleaned
-      });
-
-      // Validate UUID format
-      if (isValidUUID(cleaned)) {
-        return cleaned;
-      }
-
-      console.warn('Invalid contractor ID format, using default:', cleaned);
-      return DEFAULT_CONTRACTOR_ID;
-
-    } catch (error) {
-      console.error('Error processing contractor ID:', error);
-      return DEFAULT_CONTRACTOR_ID;
-    }
-  })();
-
+  // Always use the URL contractor ID for the estimate config
   const estimateConfig: EstimateConfig = {
-    contractorId: processedContractorId,
+    contractorId: urlContractorId,
     isPreview: false,
     allowSignature: true,
     showSubtotals: true
   };
 
-  console.log('Initializing estimate flow with config:', estimateConfig);
+  console.log('Using contractor ID from URL:', urlContractorId);
 
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
-    queryKey: ["contractor", processedContractorId],
+    queryKey: ["contractor", urlContractorId],
     queryFn: async () => {
-      console.log('Fetching contractor with ID:', processedContractorId);
+      console.log('Fetching contractor settings for ID:', urlContractorId);
       const { data, error } = await supabase
         .from("contractors")
         .select("*, contractor_settings(*)")
-        .eq("id", processedContractorId)
+        .eq("id", urlContractorId)
         .maybeSingle();
       
       if (error) {
@@ -121,13 +98,12 @@ const EstimatePage = () => {
         throw error;
       }
       if (!data) {
-        console.error('No contractor found with ID:', processedContractorId);
+        console.error('No contractor found with ID:', urlContractorId);
         throw new Error("Contractor not found");
       }
       return data;
     },
-    // Only run the query if we have a valid UUID
-    enabled: processedContractorId === DEFAULT_CONTRACTOR_ID || isValidUUID(processedContractorId),
+    enabled: isValidUUID(urlContractorId),
     retry: false
   });
 
@@ -196,8 +172,8 @@ const EstimatePage = () => {
     setIsSpeechSupported(isSupported);
   }, []);
 
-  // Show loading state if contractor data is loading and it's not the default contractor
-  if (isContractorLoading && processedContractorId !== DEFAULT_CONTRACTOR_ID) {
+  // Show loading state if contractor data is loading
+  if (isContractorLoading) {
     return (
       <div className="min-h-screen bg-gray-100">
         <div className="w-full h-8 bg-gray-200 animate-pulse" />
@@ -212,7 +188,7 @@ const EstimatePage = () => {
     <div className="min-h-screen bg-gray-100">
       <EstimateProgress stage={stage} progress={progress} />
       
-      {isAuthenticated && contractor && contractor.id === processedContractorId && (
+      {isAuthenticated && contractor && authenticatedContractor?.id === urlContractorId && (
         <div className="w-full border-b border-gray-200">
           <div className="max-w-4xl mx-auto px-4 py-2">
             <button 
@@ -285,7 +261,7 @@ const EstimatePage = () => {
                   leadId={currentLeadId || undefined}
                   estimate={estimate}
                   contractor={contractor}
-                  contractorId={processedContractorId}
+                  contractorId={urlContractorId}
                   onSkip={async () => {
                     if (currentLeadId) {
                       await handleContactSubmit({});
