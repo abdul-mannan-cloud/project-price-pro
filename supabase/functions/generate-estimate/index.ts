@@ -13,50 +13,31 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   const controller = new AbortController();
   const { signal } = controller;
-  let requestData: EstimateRequest | null = null;
 
   try {
     console.log('Received request to generate estimate');
     
+    let requestData: EstimateRequest;
     try {
       requestData = await req.json();
+      console.log('Received request data:', requestData);
     } catch (parseError) {
       console.error('Error parsing request:', parseError);
       throw new Error('Invalid request format');
     }
 
-    if (!requestData) {
-      throw new Error('No request data provided');
-    }
-
-    const { answers, projectDescription, leadId, category, imageUrl, contractorId, projectImages } = requestData;
-
-    if (!leadId) {
+    // First, let's validate the essential parameters
+    if (!requestData.leadId) {
       throw new Error('leadId is required');
     }
 
-    if (!contractorId) {  // Added explicit check for contractorId
-      throw new Error('contractorId is required');
-    }
-
-    console.log('Request data:', {
-      hasAnswers: !!answers,
-      hasProjectDescription: !!projectDescription,
-      leadId,
-      category,
-      hasImageUrl: !!imageUrl,
-      contractorId,
-      hasProjectImages: !!projectImages?.length
-    });
-
-    // Initialize Supabase client
+    // Initialize Supabase client early to handle database operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -65,6 +46,29 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // If contractorId is not provided in the request, try to get it from the lead
+    let contractorId = requestData.contractorId;
+    if (!contractorId) {
+      console.log('No contractorId in request, fetching from lead...');
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .select('contractor_id')
+        .eq('id', requestData.leadId)
+        .single();
+
+      if (leadError) {
+        console.error('Error fetching lead:', leadError);
+        throw new Error('Failed to fetch lead information');
+      }
+
+      if (!lead?.contractor_id) {
+        throw new Error('No contractor ID found. Please ensure either the lead has a contractor_id or provide it in the request.');
+      }
+
+      contractorId = lead.contractor_id;
+      console.log('Found contractorId from lead:', contractorId);
+    }
 
     // Get contractor settings and AI instructions
     const { data: contractor, error: contractorError } = await supabase
@@ -86,23 +90,12 @@ serve(async (req) => {
       throw new Error(`Contractor not found with ID: ${contractorId}`);
     }
 
-    // Update lead with contractor_id if not already set
-    const { error: updateLeadError } = await supabase
-      .from('leads')
-      .update({ contractor_id: contractorId })
-      .eq('id', leadId)
-      .is('contractor_id', null);
-
-    if (updateLeadError) {
-      console.error('Error updating lead with contractor_id:', updateLeadError);
-    }
-
     // Get AI rates for the category
     const { data: aiRates, error: ratesError } = await supabase
       .from('ai_rates')
       .select('*')
       .eq('contractor_id', contractorId)
-      .eq('type', category?.toLowerCase() || '');
+      .eq('type', requestData.category?.toLowerCase() || '');
 
     if (ratesError) {
       console.error('Error fetching AI rates:', ratesError);
@@ -111,9 +104,9 @@ serve(async (req) => {
 
     // Format the context for OpenAI
     const context = JSON.stringify({
-      answers: formatAnswersForContext(answers || {}),
-      projectDescription,
-      category,
+      answers: formatAnswersForContext(requestData.answers || {}),
+      projectDescription: requestData.projectDescription,
+      category: requestData.category,
       aiRates,
       contractor: {
         settings: contractor.contractor_settings,
@@ -133,7 +126,7 @@ serve(async (req) => {
     // Generate estimate using OpenAI
     const aiResponse = await generateEstimate(
       context,
-      imageUrl,
+      requestData.imageUrl,
       openAIApiKey,
       signal
     );
@@ -141,13 +134,13 @@ serve(async (req) => {
     console.log('AI response received, creating estimate...');
 
     // Create and process the estimate
-    const estimate = createEstimate(aiResponse, category, projectDescription);
+    const estimate = createEstimate(aiResponse, requestData.category, requestData.projectDescription);
 
     console.log('Updating lead with estimate...');
 
     // Update the lead with the estimate
     await updateLeadWithEstimate(
-      leadId,
+      requestData.leadId,
       estimate,
       supabaseUrl,
       supabaseKey
@@ -168,24 +161,28 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in generate-estimate function:', error);
     
-    // Only try to update the lead with error if we have the leadId
-    if (requestData?.leadId) {
-      try {
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    const errorDetails = error instanceof Error ? error.stack : undefined;
+    
+    // Try to update the lead with error if we have request data
+    try {
+      const requestData = await req.json();
+      if (requestData?.leadId) {
         await updateLeadWithError(
           requestData.leadId,
-          error instanceof Error ? error.message : 'An unexpected error occurred',
+          errorMessage,
           Deno.env.get('SUPABASE_URL')!,
           Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
         );
-      } catch (updateError) {
-        console.error('Failed to update lead with error:', updateError);
       }
+    } catch (updateError) {
+      console.error('Failed to update lead with error:', updateError);
     }
 
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'An unexpected error occurred',
-        details: error instanceof Error ? error.stack : undefined
+        error: errorMessage,
+        details: errorDetails
       }),
       { 
         status: 500,
