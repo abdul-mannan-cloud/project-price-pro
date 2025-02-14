@@ -4,7 +4,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { generateEstimate, formatAnswersForContext } from "./ai-service.ts";
 import { createEstimate, updateLeadWithEstimate, updateLeadWithError } from "./estimate-service.ts";
-import type { EstimateRequest } from "./types.ts";
+import { EstimateRequest, DEFAULT_CONTRACTOR_ID } from "./types.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,22 +58,15 @@ serve(async (req) => {
 
     console.log('Found lead:', JSON.stringify(lead, null, 2));
 
-    // Use provided contractorId or fall back to the one stored on the lead
-    const contractorId = requestData.contractorId || lead.contractor_id;
+    // Use provided contractorId, fall back to lead's contractor_id, or use default
+    const contractorId = requestData.contractorId || lead.contractor_id || DEFAULT_CONTRACTOR_ID;
     
     console.log('Resolved contractor ID:', {
       fromRequest: requestData.contractorId,
       fromLead: lead.contractor_id,
+      fromDefault: DEFAULT_CONTRACTOR_ID,
       final: contractorId
     });
-
-    if (!contractorId) {
-      console.error('No contractor ID found in request or lead:', {
-        requestData,
-        lead
-      });
-      throw new Error('No contractor ID available from request or lead data');
-    }
 
     // Get contractor data
     const { data: contractor, error: contractorError } = await supabase
