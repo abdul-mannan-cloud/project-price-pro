@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,8 +69,11 @@ export const useEstimateFlow = (config: EstimateConfig) => {
   const handleQuestionComplete = async (answers: AnswersState) => {
     try {
       if (!config.contractorId) {
+        console.error('Missing contractor ID in config:', config);
         throw new Error('Contractor ID is required');
       }
+
+      console.log('Starting question completion with contractor ID:', config.contractorId);
 
       const answersForDb = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
         acc[category] = Object.entries(categoryAnswers || {}).reduce((catAcc, [questionId, answer]) => {
@@ -84,9 +88,6 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         return acc;
       }, {} as Record<string, any>);
 
-      console.log('Creating lead with contractor ID:', config.contractorId);
-
-      // Create the lead with contractor_id
       const currentCategory = matchedQuestionSets[0]?.category;
       const firstAnswer = answers[currentCategory]?.Q1?.answers[0];
 
@@ -119,7 +120,13 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       setStage('contact');
       setIsGeneratingEstimate(true);
 
-      // Generate estimate with explicit contractor ID
+      console.log('Generating initial estimate with data:', {
+        leadId: lead.id,
+        contractorId: config.contractorId,
+        answers: answersForDb,
+        category: currentCategory
+      });
+
       const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           answers: answersForDb,
@@ -132,7 +139,10 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         }
       });
 
-      if (generateError) throw generateError;
+      if (generateError) {
+        console.error('Error generating estimate:', generateError);
+        throw generateError;
+      }
 
     } catch (error) {
       console.error('Error completing questions:', error);
@@ -148,13 +158,19 @@ export const useEstimateFlow = (config: EstimateConfig) => {
   const handleContactSubmit = async (contactData: any) => {
     try {
       if (!currentLeadId || !config.contractorId) {
+        console.error('Missing required data:', { currentLeadId, contractorId: config.contractorId });
         throw new Error('Missing required data');
       }
 
       setIsGeneratingEstimate(true);
       setStage('estimate');
 
-      // Update lead with contact information and contractor_id
+      console.log('Updating lead with contact data and contractor ID:', {
+        leadId: currentLeadId,
+        contractorId: config.contractorId,
+        ...contactData
+      });
+
       const { error: updateError } = await supabase
         .from('leads')
         .update({
@@ -162,24 +178,26 @@ export const useEstimateFlow = (config: EstimateConfig) => {
           user_email: contactData.email,
           user_phone: contactData.phone,
           project_address: contactData.address,
-          contractor_id: config.contractorId  // Ensure contractor_id is set
+          contractor_id: config.contractorId
         })
         .eq('id', currentLeadId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Error updating lead:', updateError);
+        throw updateError;
+      }
 
-      console.log('Generating estimate with data:', {
+      console.log('Generating final estimate with data:', {
         leadId: currentLeadId,
         contractorId: config.contractorId,
         projectDescription,
         category: selectedCategory
       });
 
-      // Generate estimate with explicit contractor ID
       const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: {
           leadId: currentLeadId,
-          contractorId: config.contractorId,  // Always include the contractor ID
+          contractorId: config.contractorId,
           projectDescription,
           category: selectedCategory,
           imageUrl: uploadedImageUrl,
@@ -188,6 +206,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       });
 
       if (estimateError) {
+        console.error('Error invoking generate-estimate:', estimateError);
         throw estimateError;
       }
 
