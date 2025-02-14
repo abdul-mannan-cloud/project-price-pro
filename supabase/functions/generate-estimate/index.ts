@@ -39,11 +39,26 @@ serve(async (req) => {
       throw new Error('leadId is required');
     }
 
-    if (!requestData.contractorId) {
+    // Get lead data first to find contractor_id if not provided
+    const { data: lead, error: leadError } = await supabase
+      .from('leads')
+      .select('contractor_id, project_description, category')
+      .eq('id', requestData.leadId)
+      .maybeSingle();
+
+    if (leadError || !lead) {
+      console.error('Error fetching lead:', leadError);
+      throw new Error('Could not fetch lead data');
+    }
+
+    // Use provided contractorId or fall back to the one stored on the lead
+    const contractorId = requestData.contractorId || lead.contractor_id;
+    
+    if (!contractorId) {
       throw new Error('contractorId is required');
     }
 
-    console.log('Using contractor ID:', requestData.contractorId);
+    console.log('Using contractor ID:', contractorId);
 
     // Get contractor data
     const { data: contractor, error: contractorError } = await supabase
@@ -53,7 +68,7 @@ serve(async (req) => {
         contractor_settings(*),
         ai_instructions(*)
       `)
-      .eq('id', requestData.contractorId)
+      .eq('id', contractorId)
       .maybeSingle();
 
     if (contractorError || !contractor) {
@@ -65,31 +80,19 @@ serve(async (req) => {
     const { data: aiRates, error: ratesError } = await supabase
       .from('ai_rates')
       .select('*')
-      .eq('contractor_id', requestData.contractorId)
-      .eq('type', (requestData.category || '')?.toLowerCase() || '');
+      .eq('contractor_id', contractorId)
+      .eq('type', (requestData.category || lead.category || '')?.toLowerCase() || '');
 
     if (ratesError) {
       console.error('Error fetching AI rates:', ratesError);
       // Continue without rates as they're optional
     }
 
-    // Get lead data (only for project info, not for contractor ID)
-    const { data: lead, error: leadError } = await supabase
-      .from('leads')
-      .select('project_description, category')
-      .eq('id', requestData.leadId)
-      .maybeSingle();
-
-    if (leadError) {
-      console.error('Error fetching lead:', leadError);
-      throw new Error('Failed to fetch lead data');
-    }
-
     // Prepare context for AI
     const context = JSON.stringify({
       answers: formatAnswersForContext(requestData.answers || {}),
-      projectDescription: requestData.projectDescription || lead?.project_description,
-      category: requestData.category || lead?.category,
+      projectDescription: requestData.projectDescription || lead.project_description,
+      category: requestData.category || lead.category,
       aiRates: aiRates || [],
       contractor: {
         settings: contractor.contractor_settings,
@@ -114,8 +117,8 @@ serve(async (req) => {
     console.log('Processing AI response...');
     const estimate = createEstimate(
       aiResponse,
-      requestData.category || lead?.category,
-      requestData.projectDescription || lead?.project_description
+      requestData.category || lead.category,
+      requestData.projectDescription || lead.project_description
     );
 
     console.log('Updating lead with estimate...');
