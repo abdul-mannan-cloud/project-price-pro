@@ -13,7 +13,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -48,7 +47,7 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get the lead data to ensure we have a contractor_id
+    // Get the lead data
     const { data: lead, error: leadError } = await supabase
       .from('leads')
       .select('contractor_id, project_description, category')
@@ -78,15 +77,6 @@ serve(async (req) => {
         leadContractorId: lead?.contractor_id,
         leadId: requestData.leadId
       });
-
-      // Update the lead with the error
-      await updateLeadWithError(
-        requestData.leadId,
-        'No contractor ID found. Please ensure either the lead has a contractor_id or provide it in the request.',
-        supabaseUrl,
-        supabaseKey
-      );
-
       throw new Error('No contractor ID found. Please ensure either the lead has a contractor_id or provide it in the request.');
     }
 
