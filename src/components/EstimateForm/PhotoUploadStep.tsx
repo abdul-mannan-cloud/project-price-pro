@@ -14,7 +14,17 @@ interface PhotoUploadStepProps {
 }
 
 export const PhotoUploadStep = ({ onPhotoUploaded, onSkip, contractor }: PhotoUploadStepProps) => {
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
+
+  const handlePhotosSelected = (urls: string[]) => {
+    setUploadedPhotos(urls);
+  };
+
+  const handleNext = () => {
+    if (uploadedPhotos.length > 0) {
+      onPhotoUploaded(uploadedPhotos[0]);
+    }
+  };
 
   return (
     <div className="card p-8 animate-fadeIn">
@@ -37,12 +47,9 @@ export const PhotoUploadStep = ({ onPhotoUploaded, onSkip, contractor }: PhotoUp
       </div>
       <div className="mt-8">
         <PhotoUpload 
-          onPhotosSelected={(urls) => {
-            setUploadedImageUrl(urls[0]);
-            onPhotoUploaded(urls[0]);
-          }}
-          onNext={() => uploadedImageUrl && onPhotoUploaded(uploadedImageUrl)}
-          uploadedPhotos={uploadedImageUrl ? [uploadedImageUrl] : []}
+          onPhotosSelected={handlePhotosSelected}
+          onNext={handleNext}
+          uploadedPhotos={uploadedPhotos}
         />
         <Button 
           variant="ghost" 
