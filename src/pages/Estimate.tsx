@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -22,10 +23,13 @@ const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
 const EstimatePage = () => {
   const navigate = useNavigate();
-  const { contractorId } = useParams();
+  const { contractorId: rawContractorId } = useParams();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
-  // Early return if no contractorId
+  // Clean up the contractorId by removing any '?' character
+  const contractorId = rawContractorId?.replace('?', '') || DEFAULT_CONTRACTOR_ID;
+
+  // Early return if no valid contractorId
   if (!contractorId) {
     return <div>No contractor ID provided</div>;
   }
@@ -40,7 +44,6 @@ const EstimatePage = () => {
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
-      if (!contractorId) throw new Error("No contractor ID provided");
       const { data, error } = await supabase
         .from("contractors")
         .select("*, contractor_settings(*)")
