@@ -23,8 +23,15 @@ interface ContactFormProps {
   onSkip?: () => Promise<void>;
 }
 
-export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: ContactFormProps) => {
-  const { contractorId } = useParams();
+export const ContactForm = ({ 
+  onSubmit, 
+  leadId, 
+  estimate, 
+  contractor, 
+  contractorId: propContractorId,
+  onSkip 
+}: ContactFormProps) => {
+  const { contractorId: urlContractorId } = useParams();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -35,15 +42,18 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
   const [isProcessingEstimate, setIsProcessingEstimate] = useState(false);
   const { toast } = useToast();
   const [isCurrentUserContractor, setIsCurrentUserContractor] = useState(false);
+  
+  // Use contractor ID from props or URL
+  const effectiveContractorId = propContractorId || urlContractorId;
 
   useEffect(() => {
     const checkCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      setIsCurrentUserContractor(user?.id === contractorId);
+      setIsCurrentUserContractor(user?.id === effectiveContractorId);
     };
     
     checkCurrentUser();
-  }, [contractorId]);
+  }, [effectiveContractorId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,12 +66,12 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
         throw new Error("Unable to process your request at this time");
       }
 
-      if (!contractorId) {
-        console.error('Missing contractorId in URL');
+      if (!effectiveContractorId) {
+        console.error('Missing contractorId in ContactForm');
         throw new Error("Unable to identify the contractor");
       }
 
-      console.log('Processing estimate with:', { leadId, contractorId });
+      console.log('Processing estimate with:', { leadId, contractorId: effectiveContractorId });
 
       const { error: updateError } = await supabase
         .from('leads')
@@ -71,7 +81,7 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
           user_phone: formData.phone,
           project_address: formData.address,
           status: 'processing',
-          contractor_id: contractorId
+          contractor_id: effectiveContractorId
         })
         .eq('id', leadId);
 
@@ -83,7 +93,7 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
       const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId,
-          contractorId
+          contractorId: effectiveContractorId
         }
       });
 
@@ -107,7 +117,7 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
   };
 
   const handleSkipForm = async () => {
-    if (!leadId) return;
+    if (!leadId || !effectiveContractorId) return;
 
     try {
       const { error: updateError } = await supabase
@@ -115,6 +125,7 @@ export const ContactForm = ({ onSubmit, leadId, estimate, contractor, onSkip }: 
         .update({
           is_test_estimate: true,
           status: 'test',
+          contractor_id: effectiveContractorId
         })
         .eq('id', leadId);
 
