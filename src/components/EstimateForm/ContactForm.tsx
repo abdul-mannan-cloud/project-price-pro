@@ -37,7 +37,6 @@ export const ContactForm = ({
     address: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isProcessingEstimate, setIsProcessingEstimate] = useState(false);
   const { toast } = useToast();
   const [isCurrentUserContractor, setIsCurrentUserContractor] = useState(false);
   const params = useParams();
@@ -67,7 +66,6 @@ export const ContactForm = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setIsProcessingEstimate(true);
 
     try {
       if (!leadId) {
@@ -107,25 +105,12 @@ export const ContactForm = ({
         throw updateError;
       }
 
-      // Generate estimate directly
-      const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          leadId,
-          contractorId: effectiveContractorId
-        }
-      });
-
-      if (estimateError) {
-        throw estimateError;
-      }
-
-      // Call onSubmit to transition to estimate display
+      // Let parent component handle estimate generation
       onSubmit(formData);
 
     } catch (error) {
       console.error('Error processing form:', error);
       setIsSubmitting(false);
-      setIsProcessingEstimate(false);
       toast({
         title: "Error",
         description: "Unable to process your request. Please try again.",
@@ -138,7 +123,6 @@ export const ContactForm = ({
     if (!leadId || !onSkip) return;
 
     setIsSubmitting(true);
-    setIsProcessingEstimate(true);
 
     try {
       // Get the contractor ID from URL first, then fallback to logged in user
@@ -160,26 +144,12 @@ export const ContactForm = ({
 
       if (updateError) throw updateError;
 
-      // Generate estimate directly
-      const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          leadId,
-          contractorId: effectiveContractorId,
-          isTestEstimate: true
-        }
-      });
-
-      if (estimateError) {
-        throw estimateError;
-      }
-
-      // Call onSkip to transition to estimate display
+      // Let parent component handle estimate generation
       await onSkip();
 
     } catch (error) {
       console.error('Error skipping form:', error);
       setIsSubmitting(false);
-      setIsProcessingEstimate(false);
       toast({
         title: "Error",
         description: "Unable to skip form. Please try again.",
