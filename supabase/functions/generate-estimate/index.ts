@@ -9,9 +9,11 @@ import type { EstimateRequest } from "./types.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -20,8 +22,22 @@ serve(async (req) => {
   const { signal } = controller;
 
   try {
+    console.log('Received request to generate estimate');
+    
     const requestData: EstimateRequest = await req.json();
     const { answers, projectDescription, leadId, category, imageUrl } = requestData;
+
+    if (!leadId) {
+      throw new Error('leadId is required');
+    }
+
+    console.log('Request data:', {
+      hasAnswers: !!answers,
+      hasProjectDescription: !!projectDescription,
+      leadId,
+      category,
+      hasImageUrl: !!imageUrl
+    });
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -35,7 +51,12 @@ serve(async (req) => {
       .eq('id', leadId)
       .single();
 
-    if (leadError) throw leadError;
+    if (leadError) {
+      console.error('Error fetching lead:', leadError);
+      throw leadError;
+    }
+
+    console.log('Found lead with contractor_id:', lead.contractor_id);
 
     // Get contractor settings and AI instructions
     const { data: contractor, error: contractorError } = await supabase
@@ -48,7 +69,10 @@ serve(async (req) => {
       .eq('id', lead.contractor_id)
       .single();
 
-    if (contractorError) throw contractorError;
+    if (contractorError) {
+      console.error('Error fetching contractor:', contractorError);
+      throw contractorError;
+    }
 
     // Get AI rates for the category
     const { data: aiRates, error: ratesError } = await supabase
@@ -57,7 +81,10 @@ serve(async (req) => {
       .eq('contractor_id', lead.contractor_id)
       .eq('type', category?.toLowerCase() || '');
 
-    if (ratesError) throw ratesError;
+    if (ratesError) {
+      console.error('Error fetching AI rates:', ratesError);
+      throw ratesError;
+    }
 
     // Format the context for OpenAI
     const context = JSON.stringify({
@@ -78,6 +105,8 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY is not set');
     }
 
+    console.log('Generating estimate with AI...');
+
     // Generate estimate using OpenAI
     const aiResponse = await generateEstimate(
       context,
@@ -86,8 +115,12 @@ serve(async (req) => {
       signal
     );
 
+    console.log('AI response received, creating estimate...');
+
     // Create and process the estimate
     const estimate = createEstimate(aiResponse, category, projectDescription);
+
+    console.log('Updating lead with estimate...');
 
     // Update the lead with the estimate
     await updateLeadWithEstimate(
@@ -97,31 +130,60 @@ serve(async (req) => {
       supabaseKey
     );
 
+    console.log('Estimate generation complete');
+
     return new Response(
       JSON.stringify(estimate),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     );
 
   } catch (error) {
-    console.error('Error:', error);
-    if (leadId) {
-      try {
-        await updateLeadWithError(
-          leadId,
-          error.message,
-          Deno.env.get('SUPABASE_URL')!,
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-        );
-      } catch (updateError) {
-        console.error('Failed to update lead with error:', updateError);
+    console.error('Error in generate-estimate function:', error);
+    
+    if (error instanceof Error) {
+      const { leadId } = (await req.json().catch(() => ({}))) as Partial<EstimateRequest>;
+      
+      if (leadId) {
+        try {
+          await updateLeadWithError(
+            leadId,
+            error.message,
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+          );
+        } catch (updateError) {
+          console.error('Failed to update lead with error:', updateError);
+        }
       }
+
+      return new Response(
+        JSON.stringify({ 
+          error: error.message,
+          details: error.stack
+        }),
+        { 
+          status: 500,
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          }
+        }
+      );
     }
 
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'An unexpected error occurred' }),
       { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        }
       }
     );
   } finally {
