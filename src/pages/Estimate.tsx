@@ -28,13 +28,13 @@ const EstimatePage = () => {
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
   const cleanRouteContractorId = routeContractorId ? 
-    decodeURIComponent(routeContractorId).replace(/[?:]/g, '') : 
-    DEFAULT_CONTRACTOR_ID;
+    decodeURIComponent(routeContractorId).replace(/[?:]/g, '').trim() : 
+    null;
 
   const { data: currentContractorId } = useQuery({
-    queryKey: ['currentContractor'],
+    queryKey: ['currentContractor', cleanRouteContractorId],
     queryFn: async () => {
-      if (cleanRouteContractorId) {
+      if (cleanRouteContractorId && cleanRouteContractorId !== 'contractorId') {
         return cleanRouteContractorId;
       }
 
@@ -45,7 +45,7 @@ const EstimatePage = () => {
         .from('contractors')
         .select('id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       return contractor?.id || DEFAULT_CONTRACTOR_ID;
     }

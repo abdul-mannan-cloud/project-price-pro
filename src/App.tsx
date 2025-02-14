@@ -130,7 +130,8 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/estimate/:contractorId?" element={<Estimate />} />
+          <Route path="/estimate/:contractorId" element={<Estimate />} />
+          <Route path="/estimate" element={<Estimate />} />
           <Route path="/e/:id" element={<PublicEstimate />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/team-onboarding" element={<TeamOnboarding />} />
