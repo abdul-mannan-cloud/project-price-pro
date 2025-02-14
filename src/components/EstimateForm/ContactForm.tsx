@@ -114,7 +114,7 @@ export const ContactForm = ({
         body: { 
           leadId,
           contractorId: effectiveContractorId,
-          formData // Pass form data in case it's needed
+          formData 
         }
       });
 
