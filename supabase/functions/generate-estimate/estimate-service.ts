@@ -7,9 +7,13 @@ export const createEstimate = (
   projectDescription?: string
 ) => {
   try {
-    console.log('Parsing AI response:', aiResponse);
+    console.log('Parsing AI response in createEstimate:', aiResponse);
     
-    const parsedResponse = JSON.parse(aiResponse);
+    // Ensure we're working with a string
+    const responseString = typeof aiResponse === 'object' ? JSON.stringify(aiResponse) : aiResponse;
+    
+    // Parse the response
+    const parsedResponse = JSON.parse(responseString);
     
     // Validate required fields
     if (!parsedResponse.groups || !Array.isArray(parsedResponse.groups)) {
@@ -47,6 +51,7 @@ export const createEstimate = (
   } catch (error) {
     console.error('Error parsing AI response:', error);
     console.error('Raw AI response:', aiResponse);
+    console.error('AI response type:', typeof aiResponse);
     throw new Error('Failed to parse AI response: ' + (error instanceof Error ? error.message : 'Unknown error'));
   }
 };
