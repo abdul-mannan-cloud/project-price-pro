@@ -69,6 +69,7 @@ const EstimatePage = () => {
         .eq('user_id', user.id)
         .single();
 
+      console.log('Authenticated contractor:', contractor);
       return contractor;
     },
   });
@@ -188,7 +189,8 @@ const EstimatePage = () => {
     <div className="min-h-screen bg-gray-100">
       <EstimateProgress stage={stage} progress={progress} />
       
-      {isAuthenticated && contractor && authenticatedContractor?.id === urlContractorId && (
+      {/* Updated condition to show dashboard button when user is authenticated and on their estimate page */}
+      {isAuthenticated && authenticatedContractor?.id === urlContractorId && (
         <div className="w-full border-b border-gray-200">
           <div className="max-w-4xl mx-auto px-4 py-2">
             <button 
