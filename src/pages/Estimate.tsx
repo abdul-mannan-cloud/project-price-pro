@@ -18,51 +18,33 @@ import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
 import { Category, EstimateConfig } from "@/types/estimate";
 import { EstimateSkeleton } from "@/components/EstimateForm/EstimateSkeleton";
 import { MultiStepSkeleton } from "@/components/EstimateForm/MultiStepSkeleton";
-
-const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
-
-// Validate UUID format
-const isValidUUID = (uuid: string) => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
-};
+import { useToast } from "@/hooks/use-toast";
 
 const EstimatePage = () => {
   const navigate = useNavigate();
   const params = useParams();
+  const { toast } = useToast();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
 
-  // Process the contractor ID
-  const contractorId = (() => {
-    try {
-      let rawId = params.contractorId;
-      if (!rawId) return DEFAULT_CONTRACTOR_ID;
+  // Get the current user's contractor ID
+  const { data: currentContractorId } = useQuery({
+    queryKey: ['currentContractor'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
 
-      // Handle URL-encoded values
-      rawId = decodeURIComponent(rawId);
-      
-      // Remove any URL-unsafe characters
-      const cleaned = rawId.replace(/[^a-f0-9-]/gi, '');
-      
-      console.log('Processing contractor ID:', {
-        original: params.contractorId,
-        decoded: rawId,
-        cleaned: cleaned
-      });
+      const { data: contractor } = await supabase
+        .from('contractors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
 
-      // Validate UUID format
-      if (isValidUUID(cleaned)) {
-        return cleaned;
-      }
-
-      console.warn('Invalid contractor ID, using default:', cleaned);
-      return DEFAULT_CONTRACTOR_ID;
-
-    } catch (error) {
-      console.error('Error processing contractor ID:', error);
-      return DEFAULT_CONTRACTOR_ID;
+      return contractor?.id || null;
     }
-  })();
+  });
+
+  // Process the contractor ID
+  const contractorId = currentContractorId || null;
 
   const estimateConfig: EstimateConfig = {
     contractorId,
@@ -74,6 +56,10 @@ const EstimatePage = () => {
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", contractorId],
     queryFn: async () => {
+      if (!contractorId) {
+        throw new Error('No contractor ID available');
+      }
+
       console.log('Fetching contractor with ID:', contractorId);
       const { data, error } = await supabase
         .from("contractors")
@@ -91,8 +77,17 @@ const EstimatePage = () => {
       }
       return data;
     },
-    enabled: isValidUUID(contractorId),
-    retry: false
+    enabled: !!contractorId,
+    retry: false,
+    onError: (error) => {
+      console.error('Error loading contractor:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load contractor information",
+        variant: "destructive",
+      });
+      navigate('/dashboard');
+    }
   });
 
   const {
@@ -147,6 +142,11 @@ const EstimatePage = () => {
         setCategories(transformedCategories);
       } catch (error) {
         console.error('Error loading categories:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load categories",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -160,13 +160,30 @@ const EstimatePage = () => {
     setIsSpeechSupported(isSupported);
   }, []);
 
-  // Show loading state if contractor data is loading and it's not the default contractor
-  if (isContractorLoading && contractorId !== DEFAULT_CONTRACTOR_ID) {
+  // Show loading state if contractor data is loading
+  if (isContractorLoading) {
     return (
       <div className="min-h-screen bg-gray-100">
-        <div className="w-full h-8 bg-gray-200 animate-pulse" /> {/* Progress bar skeleton */}
+        <div className="w-full h-8 bg-gray-200 animate-pulse" />
         <div className="max-w-4xl mx-auto px-4 py-12">
           {stage === 'estimate' ? <EstimateSkeleton /> : <MultiStepSkeleton />}
+        </div>
+      </div>
+    );
+  }
+
+  if (!contractorId) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">No Contractor Found</h1>
+          <p className="text-gray-600 mb-6">Please log in to create estimates.</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90"
+          >
+            Log In
+          </button>
         </div>
       </div>
     );
@@ -176,19 +193,17 @@ const EstimatePage = () => {
     <div className="min-h-screen bg-gray-100">
       <EstimateProgress stage={stage} progress={progress} />
       
-      {contractor && contractor.id === contractorId && (
-        <div className="w-full border-b border-gray-200">
-          <div className="max-w-4xl mx-auto px-4 py-2">
-            <button 
-              onClick={() => navigate("/dashboard")}
-              className="text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
-            >
-              <ArrowLeft size={20} />
-              Back to Dashboard
-            </button>
-          </div>
+      <div className="w-full border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-4 py-2">
+          <button 
+            onClick={() => navigate("/dashboard")}
+            className="text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
+          >
+            <ArrowLeft size={20} />
+            Back to Dashboard
+          </button>
         </div>
-      )}
+      </div>
 
       <div className="max-w-4xl mx-auto px-4 py-12">
         {stage === 'photo' && (
