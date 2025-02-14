@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -14,6 +15,7 @@ import { PhotoUploadStep } from "@/components/EstimateForm/PhotoUploadStep";
 import { ProjectDescriptionStep } from "@/components/EstimateForm/ProjectDescriptionStep";
 import { CategorySelectionStep } from "@/components/EstimateForm/CategorySelectionStep";
 import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
+import { Category } from "@/types/estimate";
 
 const EstimatePage = () => {
   const navigate = useNavigate();
@@ -70,7 +72,7 @@ const EstimatePage = () => {
 
         if (optionsError) throw optionsError;
 
-        const transformedCategories = Object.keys(optionsData)
+        const transformedCategories: Category[] = Object.keys(optionsData)
           .filter(key => key !== 'Key Options')
           .map(key => {
             const catData = optionsData[key] as Record<string, any>;
@@ -80,7 +82,7 @@ const EstimatePage = () => {
               description: catData.description || `Get an estimate for your ${key.toLowerCase()} project`,
               icon: catData.icon,
               keywords: Array.isArray(catData.keywords) ? catData.keywords : [],
-              questions: Array.isArray(catData.questions) ? Array.isArray(catData.questions) : []
+              questions: Array.isArray(catData.questions) ? catData.questions : []
             };
           });
 
@@ -152,7 +154,6 @@ const EstimatePage = () => {
         )}
 
         <div className="relative">
-          {/* Show estimate table behind contact form */}
           {(stage === 'contact' || stage === 'estimate') && (
             <div className={cn(
               "transition-all duration-300",
@@ -169,7 +170,6 @@ const EstimatePage = () => {
             </div>
           )}
 
-          {/* Contact form overlay */}
           {stage === 'contact' && (
             <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-20 flex items-center justify-center">
               <div className="animate-fadeIn relative z-30 w-full max-w-lg">
@@ -178,6 +178,7 @@ const EstimatePage = () => {
                   leadId={currentLeadId || undefined}
                   estimate={estimate}
                   contractor={contractor}
+                  contractorId={contractorId}
                   onSkip={async () => {
                     if (currentLeadId) {
                       await handleContactSubmit({});
@@ -188,7 +189,6 @@ const EstimatePage = () => {
             </div>
           )}
 
-          {/* Loading animation overlay */}
           {isGeneratingEstimate && (
             <div className="fixed inset-0 bg-background/50 backdrop-blur-[2px] z-10 flex items-center justify-center">
               <div className="text-center">

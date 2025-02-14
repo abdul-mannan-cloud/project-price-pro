@@ -1,8 +1,12 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Category, CategoryQuestions, AnswersState } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
+import { Database } from "@/integrations/supabase/types";
+
+type LeadInsert = Database['public']['Tables']['leads']['Insert'];
 
 export type EstimateStage = 'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category';
 
@@ -60,6 +64,10 @@ export const useEstimateFlow = (contractorId?: string) => {
 
   const handleQuestionComplete = async (answers: AnswersState) => {
     try {
+      if (!contractorId) {
+        throw new Error('No contractor ID provided');
+      }
+
       const answersForSupabase = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
         acc[category] = Object.entries(categoryAnswers).reduce((catAcc, [questionId, answer]) => {
           catAcc[questionId] = {
@@ -73,14 +81,15 @@ export const useEstimateFlow = (contractorId?: string) => {
         return acc;
       }, {} as Record<string, any>);
 
-      // First, create the lead
-      const leadData: any = {
-        project_description: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
-        project_title: `${questionSets[0]?.category || 'New'} Project`,
+      // Create the lead with contractor_id
+      const leadData: LeadInsert = {
+        project_description: projectDescription || 'New project',
+        project_title: `${selectedCategory || 'New'} Project`,
         answers: answersForSupabase,
-        category: questionSets[0]?.category,
+        category: selectedCategory,
         status: 'pending',
-        contractor_id: contractorId // Add this line to set the contractor_id when creating the lead
+        contractor_id: contractorId,
+        image_url: uploadedImageUrl
       };
 
       console.log('Creating lead with data:', leadData);
@@ -102,15 +111,17 @@ export const useEstimateFlow = (contractorId?: string) => {
 
       console.log('Lead created successfully:', lead.id);
       setCurrentLeadId(lead.id);
+      setStage('contact');
+      setIsGeneratingEstimate(true);
 
-      // Then, generate the estimate
+      // Generate estimate
       const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           answers: answersForSupabase,
-          projectDescription: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
-          category: questionSets[0]?.category,
+          projectDescription,
+          category: selectedCategory,
           leadId: lead.id,
-          contractorId // Add this line to pass contractorId
+          contractorId
         }
       });
 
@@ -119,23 +130,21 @@ export const useEstimateFlow = (contractorId?: string) => {
         throw generateError;
       }
 
-      await onComplete(answers);
     } catch (error) {
       console.error('Error completing questions:', error);
+      setIsGeneratingEstimate(false);
       toast({
         title: "Error",
         description: "Failed to process your answers. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsGeneratingEstimate(false);
     }
   };
 
   const handleContactSubmit = async (contactData: any) => {
     try {
-      if (!currentLeadId) {
-        throw new Error('No lead ID found');
+      if (!currentLeadId || !contractorId) {
+        throw new Error('Missing required IDs');
       }
 
       setIsGeneratingEstimate(true);
