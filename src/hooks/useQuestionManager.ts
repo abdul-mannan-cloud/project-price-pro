@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { Question, CategoryQuestions, AnswersState, QuestionAnswer } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database, Json } from "@/integrations/supabase/types";
+import { calculateQuestionProgress } from "@/utils/questionNavigation";
 
 type LeadInsert = Database['public']['Tables']['leads']['Insert'];
 
@@ -22,43 +22,12 @@ export const useQuestionManager = (
   const [pendingBranchTransition, setPendingBranchTransition] = useState(false);
 
   const calculateProgress = () => {
-    if (questionSets.length === 0) return 0;
-
-    let answeredCount = 0;
-    let totalQuestions = 0;
-
-    Object.entries(answers).forEach(([category, categoryAnswers]) => {
-      Object.entries(categoryAnswers || {}).forEach(([questionId, answer]) => {
-        answeredCount++;
-        
-        const currentSet = questionSets.find(set => set.category === category);
-        const question = currentSet?.questions.find(q => q.id === questionId);
-        
-        if (question) {
-          const selectedOptions = question.options.filter(opt => 
-            answer.answers.includes(opt.value)
-          );
-          
-          selectedOptions.forEach(opt => {
-            if (opt.next && opt.next !== 'END' && opt.next !== 'NEXT_BRANCH') {
-              totalQuestions++;
-            }
-          });
-        }
-      });
-    });
-
-    questionSets.forEach(set => {
-      if (Array.isArray(set.questions)) {
-        totalQuestions += set.questions.length;
-      }
-    });
-
-    const progress = totalQuestions > 0 
-      ? (answeredCount / totalQuestions) * 100 
-      : 0;
-
-    return Math.min(progress, 100);
+    if (!currentQuestionId || !questionSequence) return 0;
+    return calculateQuestionProgress(
+      questionSequence,
+      currentQuestionId,
+      answers[questionSets[currentSetIndex]?.category] || {}
+    );
   };
 
   const loadCurrentQuestionSet = () => {
@@ -297,7 +266,7 @@ export const useQuestionManager = (
     const progress = calculateProgress();
     console.log('Updating progress:', progress);
     onProgressChange(progress);
-  }, [answers, questionSets]);
+  }, [answers, questionSets, currentQuestionId, questionSequence]);
 
   return {
     currentQuestion: questionSequence.find(q => q.id === currentQuestionId),
@@ -312,6 +281,7 @@ export const useQuestionManager = (
     currentStage: currentSetIndex + 1,
     totalStages: questionSets.length,
     handleAnswer,
-    handleMultipleChoiceNext
+    handleMultipleChoiceNext,
+    calculateProgress
   };
 };

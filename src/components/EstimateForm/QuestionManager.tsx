@@ -1,4 +1,5 @@
 
+import { useEffect } from "react";
 import { QuestionCard } from "./QuestionCard";
 import { LoadingScreen } from "./LoadingScreen";
 import { CategoryQuestions, AnswersState } from "@/types/estimate";
@@ -26,7 +27,7 @@ export const QuestionManager = ({
     totalStages,
     handleAnswer,
     handleMultipleChoiceNext,
-    getQuestionProgress
+    calculateProgress
   } = useQuestionManager(questionSets, onComplete, onProgressChange);
 
   console.log('QuestionManager state:', {
@@ -38,16 +39,16 @@ export const QuestionManager = ({
     currentStage,
     totalStages,
     currentSetAnswers,
-    progress: getQuestionProgress()
+    progress: calculateProgress()
   });
 
   // Update progress whenever current question changes
   useEffect(() => {
     if (currentQuestion) {
-      const progress = getQuestionProgress();
+      const progress = calculateProgress();
       onProgressChange(progress);
     }
-  }, [currentQuestion, getQuestionProgress, onProgressChange]);
+  }, [currentQuestion, calculateProgress, onProgressChange]);
 
   if (isLoadingQuestions) {
     return <LoadingScreen message="Loading questions..." />;
