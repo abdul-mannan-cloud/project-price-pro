@@ -112,7 +112,8 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
           answers: lead.answers,
           category: lead.category,
           projectDescription: lead.project_description,
-          imageUrl: lead.image_url
+          imageUrl: lead.image_url || undefined,
+          projectImages: lead.project_images || []
         }
       });
 
@@ -153,7 +154,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
           email: emailRecipient,
           estimateData: lead?.estimate_data,
           estimateUrl,
-          contractorId: currentUser.id
+          contractorId: effectiveContractorId
         },
       });
 

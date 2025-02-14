@@ -58,22 +58,24 @@ export interface EstimateData {
 
 export interface Lead {
   id: string;
+  user_name?: string;
+  user_email?: string;
+  user_phone?: string;
+  project_description?: string;
   project_title: string;
-  project_address: string | null;
-  estimated_cost: number | null;
-  status: string | null;
-  created_at: string | null;
-  user_name: string | null;
-  user_email: string | null;
-  user_phone: string | null;
-  estimate_data: EstimateData;
-  answers: {
-    answers: Record<string, any>;
-  };
-  category: string | null;
-  contractor_id: string | null;
-  project_description: string | null;
-  updated_at: string | null;
+  category?: string;
+  status: string;
+  estimated_cost?: number;
+  project_address?: string;
+  estimate_data?: any;
+  answers?: any;
+  contractor_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  image_url?: string;
+  project_images?: string[];
+  error_message?: string;
+  error_timestamp?: string;
 }
 
 interface LeadsTableProps {
