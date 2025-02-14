@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
@@ -35,21 +36,30 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   const [emailRecipient, setEmailRecipient] = useState('');
   const isMobile = useIsMobile();
 
+  // Get contractor ID from current user
+  const { data: currentUser } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    }
+  });
+
   // Fetch contractor data
   const { data: contractor } = useQuery({
-    queryKey: ['contractor', lead?.contractor_id],
+    queryKey: ['contractor', currentUser?.id],
     queryFn: async () => {
-      if (!lead?.contractor_id) return null;
+      if (!currentUser?.id) return null;
       const { data, error } = await supabase
         .from('contractors')
         .select('*')
-        .eq('id', lead.contractor_id)
+        .eq('id', currentUser.id)
         .single();
       
       if (error) throw error;
       return data;
     },
-    enabled: !!lead?.contractor_id
+    enabled: !!currentUser?.id
   });
 
   useEffect(() => {
@@ -59,7 +69,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   }, [lead?.user_email]);
 
   const handleSaveEstimate = async () => {
-    if (!lead) return;
+    if (!lead || !currentUser?.id) return;
 
     try {
       const { error } = await supabase
@@ -69,12 +79,23 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
 
       if (error) throw error;
 
+      // Generate a new estimate
+      const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
+        body: { 
+          leadId: lead.id,
+          contractorId: currentUser.id // Explicitly pass contractor ID
+        }
+      });
+
+      if (estimateError) throw estimateError;
+
       toast({
         title: "Estimate updated",
         description: "The estimate has been successfully updated.",
       });
       setIsEditing(false);
     } catch (error) {
+      console.error('Error updating estimate:', error);
       toast({
         title: "Error",
         description: "Failed to update estimate. Please try again.",
@@ -84,7 +105,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   };
 
   const handleSendEmail = async () => {
-    if (!emailRecipient) {
+    if (!emailRecipient || !currentUser?.id) {
       toast({
         title: "Error",
         description: "Please provide an email address.",
@@ -101,6 +122,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
           email: emailRecipient,
           estimateData: lead?.estimate_data,
           estimateUrl,
+          contractorId: currentUser.id // Explicitly pass contractor ID
         },
       });
 
@@ -206,11 +228,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
                         projectSummary={lead?.project_description}
                         isEditable={isEditing}
                         onEstimateChange={setEditedEstimate}
-                        contractor={{
-                          business_name: contractor?.business_name,
-                          business_logo_url: contractor?.business_logo_url || undefined,
-                          branding_colors: contractor?.branding_colors as { primary: string; secondary: string } || undefined
-                        }}
+                        contractor={contractor}
                       />
                     </div>
                   </>
