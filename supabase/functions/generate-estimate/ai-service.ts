@@ -6,9 +6,7 @@ async function getLocationContext(signal: AbortSignal): Promise<string> {
   try {
     const response = await fetch('https://ipapi.co/json/', { signal });
     const data = await response.json();
-    return `Location context: ${data.city}, ${data.region}, ${data.country}. 
-    Use local labor and material rates for this area. 
-    Average labor rate in this area is approximately $${Math.round(data.latitude * 0.7 + 50)}/hour.`;
+    return `Location: ${data.city}, ${data.region}, ${data.country}. Average labor rate in this area is approximately $${Math.round(data.latitude * 0.7 + 50)}/hour.`;
   } catch (error) {
     console.error('Error fetching location data:', error);
     return 'Using default national average rates for labor and materials.';
@@ -21,20 +19,54 @@ export async function generateEstimate(
   openAIApiKey: string,
   signal: AbortSignal
 ): Promise<string> {
-  // Get location-based pricing context
   const locationContext = await getLocationContext(signal);
   console.log('[AI Service] Location context:', locationContext);
+
+  const systemPrompt = `You are an advanced contractor estimate generator. Generate a detailed project estimate in JSON format using the following rules:
+
+1. Use contractor AI instructions and rates if provided in the context.
+2. For pricing:
+   - Use contractor address pricing if available
+   - Otherwise use ${locationContext}
+   - AI instructions & rates always override location-based pricing
+3. Line items must:
+   - Include unit abbreviation in title (e.g., "(LF)")
+   - Valid units: CF, CY, DY, EA, GAL, HR, IN, LBS, LF, LS, MO, SF, SHT, SQ, SY, TONS, WK, WY, YD
+   - Description must specify "Material + Labor", "Material", or "Labor"
+   - Description must indicate pricing source (e.g., "Pricing: Contractor AI Instruction")
+4. Final estimate must:
+   - Meet minimum project cost from contractor settings
+   - Apply markup percentage to unit prices
+   - Apply tax rate to subtotal
+   - Organize items into logical groups and subgroups
+   - Include all required totals
+
+Response must be valid JSON matching this structure:
+{
+  "projectTitle": "4 words or less",
+  "summary": "Brief project summary",
+  "groups": [{
+    "groupName": "From Q&A category",
+    "subgroups": [{
+      "subgroupName": "Logical grouping",
+      "lineItems": [{
+        "title": "Item with unit (UNIT)",
+        "description": "Details - Type (Pricing: Source)",
+        "qty": number,
+        "unitAmount": number,
+        "lineTotal": number
+      }]
+    }]
+  }],
+  "subtotal": number,
+  "tax": number,
+  "total": number
+}`;
 
   const messages = [
     {
       role: "system",
-      content: `You are a construction cost estimator. Generate a detailed estimate following these rules:
-      1. Use the provided AI instructions and rates as the primary source for pricing
-      2. If no specific rates are provided, use ${locationContext}
-      3. Structure the response as a JSON with groups, subgroups, and line items
-      4. Each line item must include title, description, quantity, unit amount, and total price
-      5. Group similar items together under appropriate categories
-      6. Be specific with descriptions and include labor and material breakdowns where applicable`
+      content: systemPrompt
     },
     {
       role: "user",
