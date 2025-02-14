@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
-import { generateLlamaResponse, formatAnswersForContext } from "./llama-api.ts";
+import { generateEstimate, formatAnswersForContext } from "./ai-service.ts";
 import { createEstimate, updateLeadWithEstimate, updateLeadWithError } from "./estimate-service.ts";
 import type { EstimateRequest } from "./types.ts";
 
@@ -59,7 +59,7 @@ serve(async (req) => {
 
     if (ratesError) throw ratesError;
 
-    // Format the context for LLaMA
+    // Format the context for OpenAI
     const context = JSON.stringify({
       answers: formatAnswersForContext(answers),
       projectDescription,
@@ -72,16 +72,17 @@ serve(async (req) => {
       }
     });
 
-    // Generate estimate using LLaMA
-    const llamaApiKey = Deno.env.get('LLAMA_API_KEY');
-    if (!llamaApiKey) {
-      throw new Error('LLAMA_API_KEY is not set');
+    // Get OpenAI API key
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) {
+      throw new Error('OPENAI_API_KEY is not set');
     }
 
-    const aiResponse = await generateLlamaResponse(
+    // Generate estimate using OpenAI
+    const aiResponse = await generateEstimate(
       context,
       imageUrl,
-      llamaApiKey,
+      openAIApiKey,
       signal
     );
 
