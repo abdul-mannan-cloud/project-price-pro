@@ -16,6 +16,7 @@ export type Database = {
           description: string | null
           id: string
           instructions: string
+          system_prompt: string | null
           title: string
           updated_at: string | null
         }
@@ -25,6 +26,7 @@ export type Database = {
           description?: string | null
           id?: string
           instructions: string
+          system_prompt?: string | null
           title: string
           updated_at?: string | null
         }
@@ -34,6 +36,7 @@ export type Database = {
           description?: string | null
           id?: string
           instructions?: string
+          system_prompt?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -123,7 +126,9 @@ export type Database = {
       }
       contractor_settings: {
         Row: {
+          ai_estimate_template: string | null
           ai_instructions: string | null
+          ai_model_settings: Json | null
           ai_preferences: Json | null
           ai_prompt_template: string | null
           ai_rates: Json | null
@@ -144,7 +149,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_estimate_template?: string | null
           ai_instructions?: string | null
+          ai_model_settings?: Json | null
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
           ai_rates?: Json | null
@@ -165,7 +172,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_estimate_template?: string | null
           ai_instructions?: string | null
+          ai_model_settings?: Json | null
           ai_preferences?: Json | null
           ai_prompt_template?: string | null
           ai_rates?: Json | null
