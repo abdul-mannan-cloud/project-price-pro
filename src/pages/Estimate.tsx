@@ -31,15 +31,43 @@ const EstimatePage = () => {
   const navigate = useNavigate();
   const params = useParams();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
 
-  // Process and validate the contractor ID before any use
+  // Get the authenticated user's contractor ID
+  const { data: authenticatedContractor } = useQuery({
+    queryKey: ['authenticated-contractor'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      setAuthUserId(user.id);
+      setIsAuthenticated(true);
+
+      const { data: contractor } = await supabase
+        .from('contractors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      return contractor;
+    },
+  });
+
+  // Process and validate the contractor ID based on the authentication state
   const processedContractorId = (() => {
+    // If user is authenticated and has a contractor profile, use their ID
+    if (isAuthenticated && authenticatedContractor?.id) {
+      console.log('Using authenticated contractor ID:', authenticatedContractor.id);
+      return authenticatedContractor.id;
+    }
+
     try {
       let rawId = params.contractorId;
       
-      // If the parameter is invalid or missing, use default
+      // If no URL parameter and not authenticated, use default
       if (!rawId || rawId === ":contractorId?" || rawId === "undefined") {
-        console.log('Using default contractor ID due to invalid/missing parameter');
+        console.log('Using default contractor ID');
         return DEFAULT_CONTRACTOR_ID;
       }
 
@@ -49,7 +77,7 @@ const EstimatePage = () => {
       // Remove any URL-unsafe characters
       const cleaned = rawId.replace(/[^a-f0-9-]/gi, '');
       
-      console.log('Processing contractor ID:', {
+      console.log('Processing public contractor ID:', {
         original: params.contractorId,
         decoded: rawId,
         cleaned: cleaned
@@ -170,7 +198,7 @@ const EstimatePage = () => {
   if (isContractorLoading && processedContractorId !== DEFAULT_CONTRACTOR_ID) {
     return (
       <div className="min-h-screen bg-gray-100">
-        <div className="w-full h-8 bg-gray-200 animate-pulse" /> {/* Progress bar skeleton */}
+        <div className="w-full h-8 bg-gray-200 animate-pulse" />
         <div className="max-w-4xl mx-auto px-4 py-12">
           {stage === 'estimate' ? <EstimateSkeleton /> : <MultiStepSkeleton />}
         </div>
@@ -182,7 +210,7 @@ const EstimatePage = () => {
     <div className="min-h-screen bg-gray-100">
       <EstimateProgress stage={stage} progress={progress} />
       
-      {contractor && contractor.id === processedContractorId && (
+      {isAuthenticated && contractor && contractor.id === processedContractorId && (
         <div className="w-full border-b border-gray-200">
           <div className="max-w-4xl mx-auto px-4 py-2">
             <button 
