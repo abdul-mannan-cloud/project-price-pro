@@ -52,7 +52,7 @@ serve(async (req) => {
       .from('leads')
       .select('contractor_id, project_description, category')
       .eq('id', requestData.leadId)
-      .single();
+      .maybeSingle();
 
     if (leadError) {
       console.error('Error fetching lead:', leadError);
@@ -60,7 +60,16 @@ serve(async (req) => {
     }
 
     // Use contractor ID from request or from lead
-    const contractorId = requestData.contractorId || lead?.contractor_id;
+    let contractorId = requestData.contractorId || lead?.contractor_id;
+
+    // Clean up contractor ID if it's malformed
+    if (contractorId) {
+      try {
+        contractorId = decodeURIComponent(contractorId).replace(/[:?]/g, '').trim();
+      } catch (e) {
+        console.error('Error decoding contractor ID:', e);
+      }
+    }
 
     if (!contractorId) {
       console.error('No contractor ID found in either request or lead:', {
@@ -82,7 +91,7 @@ serve(async (req) => {
         ai_instructions(*)
       `)
       .eq('id', contractorId)
-      .single();
+      .maybeSingle();
 
     if (contractorError) {
       console.error('Error fetching contractor:', contractorError);
