@@ -16,6 +16,7 @@ interface EmailRequest {
   estimateData: any;
   estimateUrl: string;
   clientName: string;
+  isTestEstimate?: boolean;
 }
 
 function formatCurrency(amount: number): string {
@@ -31,25 +32,30 @@ serve(async (req) => {
   }
 
   try {
-    const { estimateId, contractorEmail, estimateData, estimateUrl, clientName }: EmailRequest = await req.json();
+    const { estimateId, contractorEmail, estimateData, estimateUrl, clientName, isTestEstimate = false }: EmailRequest = await req.json();
 
     console.log('Sending estimate email to contractor:', {
       estimateId,
       contractorEmail,
       clientName,
-      estimateUrl
+      estimateUrl,
+      isTestEstimate
     });
+
+    const subject = isTestEstimate 
+      ? `[TEST] Estimate Preview Ready`
+      : `Estimate Signature Required - Client ${clientName} has signed`;
 
     const emailResponse = await resend.emails.send({
       from: "Estimate Signature Required <onboarding@resend.dev>",
       to: [contractorEmail],
-      subject: `Estimate Signature Required - Client ${clientName} has signed`,
+      subject: subject,
       html: `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
-          <title>Estimate Signature Required</title>
+          <title>${subject}</title>
           <style>
             body { font-family: Arial, sans-serif; line-height: 1.6; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -72,20 +78,30 @@ serve(async (req) => {
         </head>
         <body>
           <div class="container">
-            <h1>Estimate Signature Required</h1>
-            <p>Hello,</p>
-            <p>${clientName} has signed the estimate and your signature is now required to complete the process.</p>
+            <h1>${isTestEstimate ? 'Test Estimate Preview' : 'Estimate Signature Required'}</h1>
+            ${isTestEstimate 
+              ? '<p>A test estimate preview has been generated.</p>'
+              : `<p>${clientName} has signed the estimate and your signature is now required to complete the process.</p>`
+            }
             
             <div class="estimate-details">
               <h2>Estimate Summary</h2>
               <p>Total Amount: ${formatCurrency(estimateData.totalCost)}</p>
-              <p>Client: ${clientName}</p>
+              ${!isTestEstimate ? `<p>Client: ${clientName}</p>` : ''}
             </div>
 
-            <p>Please review and sign the estimate by clicking the button below:</p>
-            <a href="${estimateUrl}" class="button">Review and Sign Estimate</a>
+            <p>${isTestEstimate 
+              ? 'Please review the test estimate by clicking the button below:'
+              : 'Please review and sign the estimate by clicking the button below:'
+            }</p>
+            <a href="${estimateUrl}" class="button">
+              ${isTestEstimate ? 'Review Test Estimate' : 'Review and Sign Estimate'}
+            </a>
             
             <p>Best regards,<br>Your Estimation System</p>
+            ${isTestEstimate 
+              ? '<p style="color: #666;"><em>Note: This is a test estimate. No customer information is attached.</em></p>'
+              : ''}
           </div>
         </body>
         </html>
