@@ -34,22 +34,25 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   const [editedEstimate, setEditedEstimate] = useState(lead?.estimate_data);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const isMobile = useIsMobile();
 
-  // Get contractor ID from current user
-  const { data: currentUser } = useQuery({
+  // Get current user data
+  const { data: currentUser, isLoading: isLoadingUser } = useQuery({
     queryKey: ['current-user'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (!user) throw new Error('No user found');
       return user;
     }
   });
 
   // Fetch contractor data
-  const { data: contractor } = useQuery({
+  const { data: contractor, isLoading: isLoadingContractor } = useQuery({
     queryKey: ['contractor', currentUser?.id],
     queryFn: async () => {
-      if (!currentUser?.id) return null;
+      if (!currentUser?.id) throw new Error('No user ID available');
       const { data, error } = await supabase
         .from('contractors')
         .select('*')
@@ -57,6 +60,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
         .single();
       
       if (error) throw error;
+      if (!data) throw new Error('No contractor found');
       return data;
     },
     enabled: !!currentUser?.id
@@ -69,28 +73,40 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   }, [lead?.user_email]);
 
   const handleSaveEstimate = async () => {
-    if (!lead || !currentUser?.id) return;
+    if (!lead || !currentUser?.id) {
+      toast({
+        title: "Error",
+        description: "Unable to save estimate. Please try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
 
     try {
-      const { error } = await supabase
+      console.log('Updating estimate with contractorId:', currentUser.id);
+
+      // First update the estimate data
+      const { error: updateError } = await supabase
         .from('leads')
         .update({ estimate_data: editedEstimate })
         .eq('id', lead.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      // Generate a new estimate
+      // Then generate a new estimate
       const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId: lead.id,
-          contractorId: currentUser.id // Explicitly pass contractor ID
+          contractorId: currentUser.id
         }
       });
 
       if (estimateError) throw estimateError;
 
       toast({
-        title: "Estimate updated",
+        title: "Success",
         description: "The estimate has been successfully updated.",
       });
       setIsEditing(false);
@@ -101,6 +117,8 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
         description: "Failed to update estimate. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -122,7 +140,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
           email: emailRecipient,
           estimateData: lead?.estimate_data,
           estimateUrl,
-          contractorId: currentUser.id // Explicitly pass contractor ID
+          contractorId: currentUser.id
         },
       });
 
@@ -154,17 +172,34 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
 
   const renderActionButtons = () => {
     if (isEditing) {
-      return <Button onClick={handleSaveEstimate}>Save Changes</Button>;
+      return (
+        <Button 
+          onClick={handleSaveEstimate} 
+          disabled={isSaving || isLoadingUser || !currentUser}
+        >
+          {isSaving ? "Saving..." : "Save Changes"}
+        </Button>
+      );
     }
 
     if (isMobile) {
       return (
         <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" onClick={() => setIsEditing(true)} className="w-full gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setIsEditing(true)} 
+            className="w-full gap-2"
+            disabled={isLoadingUser || !currentUser}
+          >
             <Edit className="h-4 w-4" />
             Edit Estimate
           </Button>
-          <Button variant="outline" onClick={() => setShowEmailDialog(true)} className="w-full gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowEmailDialog(true)} 
+            className="w-full gap-2"
+            disabled={isLoadingUser || !currentUser}
+          >
             <Mail className="h-4 w-4" />
             Email Estimate
           </Button>
@@ -174,17 +209,41 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
 
     return (
       <div className="w-full grid grid-cols-2 gap-4">
-        <Button variant="default" onClick={() => setIsEditing(true)} className="w-full gap-2">
+        <Button 
+          variant="default" 
+          onClick={() => setIsEditing(true)} 
+          className="w-full gap-2"
+          disabled={isLoadingUser || !currentUser}
+        >
           <Edit className="h-4 w-4" />
           Edit Estimate
         </Button>
-        <Button variant="default" onClick={() => setShowEmailDialog(true)} className="w-full gap-2">
+        <Button 
+          variant="default" 
+          onClick={() => setShowEmailDialog(true)} 
+          className="w-full gap-2"
+          disabled={isLoadingUser || !currentUser}
+        >
           <Mail className="h-4 w-4" />
           Email Estimate
         </Button>
       </div>
     );
   };
+
+  if (isLoadingUser || isLoadingContractor) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-full h-[100vh] p-0 m-0">
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <p>Loading...</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <>
@@ -278,7 +337,12 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button onClick={handleSendEmail}>Send Email</Button>
+            <Button 
+              onClick={handleSendEmail}
+              disabled={isLoadingUser || !currentUser}
+            >
+              Send Email
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
