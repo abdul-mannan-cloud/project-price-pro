@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -78,8 +79,8 @@ const EstimatePage = () => {
     },
     enabled: !!contractorId,
     retry: false,
-    meta: {
-      onError: (error: Error) => {
+    onSettled: (data, error) => {
+      if (error) {
         console.error('Error loading contractor:', error);
         toast({
           title: "Error",
