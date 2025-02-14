@@ -31,8 +31,9 @@ export const ContactFormButtons = ({
           variant="outline"
           className="w-full mt-2"
           onClick={onSkip}
+          disabled={isSubmitting}
         >
-          Skip Form (Preview Mode)
+          {isSubmitting ? "Processing..." : "Skip Form (Preview Mode)"}
         </Button>
       )}
     </>
