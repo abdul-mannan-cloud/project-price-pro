@@ -71,8 +71,13 @@ export const ContactForm = ({
         throw new Error("Unable to identify the contractor");
       }
 
-      console.log('Processing estimate with:', { leadId, contractorId: effectiveContractorId });
+      console.log('Processing estimate with:', { 
+        leadId, 
+        contractorId: effectiveContractorId,
+        formData 
+      });
 
+      // First update the lead with contact info and contractor_id
       const { error: updateError } = await supabase
         .from('leads')
         .update({
@@ -81,7 +86,7 @@ export const ContactForm = ({
           user_phone: formData.phone,
           project_address: formData.address,
           status: 'processing',
-          contractor_id: effectiveContractorId  // Ensure we set the contractor_id
+          contractor_id: effectiveContractorId
         })
         .eq('id', leadId);
 
@@ -90,10 +95,26 @@ export const ContactForm = ({
         throw updateError;
       }
 
+      // Verify the update was successful
+      const { data: updatedLead, error: verifyError } = await supabase
+        .from('leads')
+        .select('contractor_id')
+        .eq('id', leadId)
+        .single();
+
+      if (verifyError) {
+        console.error('Error verifying lead update:', verifyError);
+        throw verifyError;
+      }
+
+      console.log('Lead updated successfully:', updatedLead);
+
+      // Generate estimate with explicit contractor ID
       const { data: estimateData, error: estimateError } = await supabase.functions.invoke('generate-estimate', {
         body: { 
           leadId,
-          contractorId: effectiveContractorId  // Explicitly pass the contractor ID
+          contractorId: effectiveContractorId,
+          formData // Pass form data in case it's needed
         }
       });
 
@@ -125,11 +146,22 @@ export const ContactForm = ({
         .update({
           is_test_estimate: true,
           status: 'test',
-          contractor_id: effectiveContractorId  // Ensure we set the contractor_id
+          contractor_id: effectiveContractorId
         })
         .eq('id', leadId);
 
       if (updateError) throw updateError;
+
+      // Verify the update
+      const { data: verifiedLead, error: verifyError } = await supabase
+        .from('leads')
+        .select('contractor_id')
+        .eq('id', leadId)
+        .single();
+
+      if (verifyError) throw verifyError;
+
+      console.log('Lead marked as test with contractor:', verifiedLead);
 
       if (onSkip) {
         await onSkip();
