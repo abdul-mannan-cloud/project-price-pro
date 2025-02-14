@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -29,7 +28,7 @@ const isValidUUID = (uuid: string) => {
 
 const EstimatePage = () => {
   const navigate = useNavigate();
-  const params = useParams();
+  const { contractorId } = useParams();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
@@ -37,21 +36,20 @@ const EstimatePage = () => {
   // Get the contractor ID from the URL first
   const urlContractorId = (() => {
     try {
-      let rawId = params.contractorId;
-      if (!rawId || rawId === ":contractorId?" || rawId === "undefined") {
+      if (!contractorId || contractorId === ":contractorId?" || contractorId === "undefined") {
         return DEFAULT_CONTRACTOR_ID;
       }
       
-      // Handle URL-encoded values
-      rawId = decodeURIComponent(rawId);
-      const cleaned = rawId.replace(/[^a-f0-9-]/gi, '');
+      // Clean the ID without decoding/encoding
+      return isValidUUID(contractorId) ? contractorId : DEFAULT_CONTRACTOR_ID;
       
-      return isValidUUID(cleaned) ? cleaned : DEFAULT_CONTRACTOR_ID;
     } catch (error) {
       console.error('Error processing URL contractor ID:', error);
       return DEFAULT_CONTRACTOR_ID;
     }
   })();
+
+  console.log('Using contractor ID:', urlContractorId);
 
   // Get the authenticated user's contractor ID for comparison only
   const { data: authenticatedContractor } = useQuery({
@@ -66,7 +64,7 @@ const EstimatePage = () => {
       const { data: contractor } = await supabase
         .from('contractors')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .single();
 
       console.log('Authenticated contractor:', contractor);
@@ -81,8 +79,6 @@ const EstimatePage = () => {
     allowSignature: true,
     showSubtotals: true
   };
-
-  console.log('Using contractor ID from URL:', urlContractorId);
 
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", urlContractorId],
@@ -189,7 +185,6 @@ const EstimatePage = () => {
     <div className="min-h-screen bg-gray-100">
       <EstimateProgress stage={stage} progress={progress} />
       
-      {/* Updated condition to show dashboard button when user is authenticated and on their estimate page */}
       {isAuthenticated && authenticatedContractor?.id === urlContractorId && (
         <div className="w-full border-b border-gray-200">
           <div className="max-w-4xl mx-auto px-4 py-2">
