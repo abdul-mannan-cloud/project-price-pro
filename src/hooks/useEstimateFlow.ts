@@ -64,6 +64,21 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
+    
+    const selectedCategoryData = categories.find(cat => cat.id === categoryId);
+  
+    if (selectedCategoryData) {
+      // Create a question set for the selected category
+      const questionSet = {
+        category: categoryId,
+        questions: selectedCategoryData.questions || [],
+        confidence: 1,
+        keywords: selectedCategoryData.keywords || []
+      };
+      
+      setMatchedQuestionSets([questionSet]);
+    }
+
     setStage('questions');
   };
 

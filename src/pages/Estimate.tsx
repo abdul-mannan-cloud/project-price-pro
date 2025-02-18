@@ -153,6 +153,7 @@ const EstimatePage = () => {
             };
           });
 
+        console.log('Print Categories:', transformedCategories);
         setCategories(transformedCategories);
       } catch (error) {
         console.error('Error loading categories:', error);
