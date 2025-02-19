@@ -202,6 +202,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
   const handleContactSubmit = async (contactData: any) => {
     try {
+      console.log('in handle contact submit')
       if (!config.contractorId) {
         console.error('Missing contractor ID:', config);
         throw new Error('Contractor ID is required');

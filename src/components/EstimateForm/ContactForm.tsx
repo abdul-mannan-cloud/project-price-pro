@@ -43,6 +43,8 @@ export const ContactForm = ({
   // Get contractor ID from URL, handling both route patterns
   const urlContractorId = params.contractorId || params['*'];
 
+  console.log('current leadId:', leadId);
+
   useEffect(() => {
     const checkCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
