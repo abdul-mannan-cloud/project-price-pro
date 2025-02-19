@@ -170,6 +170,10 @@ const EstimatePage = () => {
     setIsSpeechSupported(isSupported);
   }, []);
 
+  useEffect(() => {
+    console.log('Current lead ID in estimate:', currentLeadId);
+  }, [currentLeadId]);
+
   // Show loading state if contractor data is loading
   if (isContractorLoading) {
     return (
@@ -251,7 +255,7 @@ const EstimatePage = () => {
             </div>
           )}
 
-          {stage === 'contact' && (
+          { stage === 'contact' && (
             <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-20 flex items-center justify-center">
               <div className="animate-fadeIn relative z-30 w-full max-w-lg">
                 <ContactForm 
