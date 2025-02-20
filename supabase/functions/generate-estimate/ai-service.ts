@@ -68,7 +68,9 @@ export const generateEstimate = async (
           },
           {
             type: "image_url",
-            image_url: imageUrl
+            image_url: {
+                url: imageUrl
+            }
           }
         ]
       });

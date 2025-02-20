@@ -175,12 +175,49 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       });
       return;
     }
-
+  
     const currentCategory = matchedQuestionSets[0]?.category;
     const firstAnswer = answers[currentCategory]?.Q1?.answers[0];
     
     setAnswers(answers);
-    setStage('contact');
+    
+    // Create lead first
+    try {
+      const formattedAnswers = formatAnswersForJson(answers);
+      
+      const leadData: LeadInsert = {
+        project_description: firstAnswer || projectDescription || 'New project',
+        project_title: `${currentCategory || 'New'} Project`,
+        answers: formattedAnswers,
+        category: currentCategory,
+        status: 'pending',
+        contractor_id: config.contractorId,
+        project_images: uploadedPhotos
+      };
+  
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .insert(leadData)
+        .select()
+        .single();
+  
+      if (leadError) throw leadError;
+      
+      if (!lead?.id) {
+        throw new Error('Failed to create lead - no ID returned');
+      }
+  
+      setCurrentLeadId(lead.id);
+      // Only transition to contact stage after lead is created and ID is set
+      setStage('contact');
+    } catch (error) {
+      console.error('Error creating lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create lead. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatAnswersForJson = (answers: AnswersState): Json => {
@@ -246,6 +283,38 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       setCurrentLeadId(lead.id);
       setIsGeneratingEstimate(true);
 
+      const handleContactSubmit = async (contactData: any) => {
+        try {
+          // ... existing lead creation code ...
+
+          console.log('Lead created successfully:', lead.id);
+          setCurrentLeadId(lead.id);
+          setIsGeneratingEstimate(true);
+
+          // Send notification to contractor about new lead
+          const { error: emailError } = await supabase.functions.invoke('send-contractor-notification', {
+            body: {
+              customerInfo: contactData,
+              contractor: {
+                contact_email: config.contractorEmail,
+              },
+              questions: matchedQuestionSets,
+              answers: answers,
+              isTestEstimate: false
+            }
+          });
+
+          if (emailError) {
+            console.error('Error sending contractor notification:', emailError);
+          }
+
+          startEstimateGeneration(lead.id);
+
+        } catch (error) {
+          // ... existing error handling ...
+        }
+      };
+
       startEstimateGeneration(lead.id);
 
     } catch (error) {
@@ -295,6 +364,24 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       }
 
       setCurrentLeadId(lead.id);
+
+      const { error: emailError } = await supabase.functions.invoke('send-contractor-notification', {
+        body: {
+          estimate: {
+            totalCost: 0
+          },
+          contractor: {
+            contact_email: config.contractorEmail,
+          },
+          questions: matchedQuestionSets,
+          answers: answers,
+          isTestEstimate: true
+        }
+      });
+
+      if (emailError) {
+        console.error('Error sending test estimate notification:', emailError);
+      }
       
       // Start estimate generation just like in contact form submission
       startEstimateGeneration(lead.id);
