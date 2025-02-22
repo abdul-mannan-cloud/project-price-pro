@@ -133,19 +133,19 @@ export const useQuestionManager = (
       console.log('Lead created successfully:', lead.id);
 
       // Then, generate the estimate
-      const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          answers: answersForDb,
-          projectDescription: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
-          category: questionSets[0]?.category,
-          leadId: lead.id
-        }
-      });
-
-      if (generateError) {
-        console.error('Error generating estimate:', generateError);
-        throw generateError;
-      }
+      // const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
+      //   body: {
+      //     answers: answersForDb,
+      //     projectDescription: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
+      //     category: questionSets[0]?.category,
+      //     leadId: lead.id
+      //   }
+      // });
+      //
+      // if (generateError) {
+      //   console.error('Error generating estimate:', generateError);
+      //   throw generateError;
+      // }
 
       await onComplete(answers);
     } catch (error) {

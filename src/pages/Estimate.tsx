@@ -234,6 +234,8 @@ const EstimatePage = () => {
             questionSets={matchedQuestionSets}
             onComplete={handleQuestionComplete}
             onProgressChange={progress => setStage('questions')}
+            contractor={contractor || undefined}
+
           />
         )}
 

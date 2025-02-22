@@ -54,6 +54,7 @@ export const EstimateActions = ({
   const handleCopyEstimate = () => {
     // This functionality should be moved to a utility function
     // and passed through props for better separation of concerns
+
     toast({
       title: "Copied to clipboard",
       description: "The estimate has been copied to your clipboard",
