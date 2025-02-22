@@ -55,7 +55,7 @@ const Dashboard = () => {
       const { data, error } = await supabase
         .from("contractors")
         .select("*, contractor_settings(*)")
-        .eq("id", userId)
+        .eq("user_id", userId)
         .maybeSingle();
 
       if (error) {

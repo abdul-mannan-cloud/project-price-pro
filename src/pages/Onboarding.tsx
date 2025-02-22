@@ -98,69 +98,86 @@ const Onboarding = () => {
         return;
       }
 
+      // First, try to get existing contractor
       const { data: existingContractor, error: fetchError } = await supabase
-        .from("contractors")
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
+          .from("contractors")
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
       if (fetchError) throw fetchError;
 
       if (existingContractor) {
+        // Update existing contractor
         const { error: updateError } = await supabase
-          .from("contractors")
-          .update({
-            business_name: formData.businessName,
-            contact_email: formData.contactEmail,
-            contact_phone: formData.contactPhone,
-            business_address: formData.address,
-            license_number: formData.licenseNumber,
-            branding_colors: {
-              primary: formData.primaryColor,
-              secondary: formData.secondaryColor,
-            },
-          })
-          .eq('id', existingContractor.id);
+            .from("contractors")
+            .update({
+              business_name: formData.businessName,
+              contact_email: formData.contactEmail,
+              contact_phone: formData.contactPhone,
+              business_address: formData.address,
+              license_number: formData.licenseNumber,
+              branding_colors: {
+                primary: formData.primaryColor,
+                secondary: formData.secondaryColor,
+              },
+            })
+            .eq('id', existingContractor.id);
 
         if (updateError) throw updateError;
 
+        // Update settings with same ID
         const { error: settingsError } = await supabase
-          .from("contractor_settings")
-          .update({
-            minimum_project_cost: parseFloat(formData.minimumProjectCost),
-            markup_percentage: parseFloat(formData.markupPercentage),
-            tax_rate: parseFloat(formData.taxRate),
-          })
-          .eq('id', existingContractor.id);
+            .from("contractor_settings")
+            .update({
+              minimum_project_cost: parseFloat(formData.minimumProjectCost),
+              markup_percentage: parseFloat(formData.markupPercentage),
+              tax_rate: parseFloat(formData.taxRate),
+            })
+            .eq('id', existingContractor.id);
 
         if (settingsError) throw settingsError;
       } else {
-        const { data: newContractor, error: insertError } = await supabase
-          .from("contractors")
-          .insert({
-            id: DEFAULT_CONTRACTOR_ID,
-            user_id: user.id,
-            business_name: formData.businessName,
-            contact_email: formData.contactEmail,
-            contact_phone: formData.contactPhone,
-            business_address: formData.address,
-            license_number: formData.licenseNumber,
-            branding_colors: {
-              primary: formData.primaryColor,
-              secondary: formData.secondaryColor,
-            },
-          })
-          .select()
-          .single();
+        // Generate a new UUID
+        const newId = crypto.randomUUID();
+
+        // Create new contractor with specified ID
+        const { error: insertError } = await supabase
+            .from("contractors")
+            .insert({
+              id: newId,
+              user_id: user.id,
+              business_name: formData.businessName,
+              contact_email: formData.contactEmail,
+              contact_phone: formData.contactPhone,
+              business_address: formData.address,
+              license_number: formData.licenseNumber,
+              branding_colors: {
+                primary: formData.primaryColor,
+                secondary: formData.secondaryColor,
+              },
+            });
 
         if (insertError) throw insertError;
+
+        // Create settings with same ID
+        const { error: settingsError } = await supabase
+            .from("contractor_settings")
+            .insert({
+              id: newId,
+              minimum_project_cost: parseFloat(formData.minimumProjectCost),
+              markup_percentage: parseFloat(formData.markupPercentage),
+              tax_rate: parseFloat(formData.taxRate),
+            });
+
+        if (settingsError) throw settingsError;
       }
 
       toast({
         title: "Information saved!",
         description: "Your business information has been saved successfully.",
       });
-      
+
       if (currentStep === OnboardingSteps.SETTINGS) {
         navigate("/dashboard");
       } else {
@@ -178,21 +195,22 @@ const Onboarding = () => {
     }
   };
 
+
   const updateGlobalColors = (primaryColor: string, secondaryColor: string) => {
     const root = document.documentElement;
-    
+
     root.style.setProperty('--primary', primaryColor);
     root.style.setProperty('--primary-foreground', '#FFFFFF');
-    
+
     const primaryHex = primaryColor.replace('#', '');
     const r = parseInt(primaryHex.slice(0, 2), 16);
     const g = parseInt(primaryHex.slice(2, 4), 16);
     const b = parseInt(primaryHex.slice(4, 6), 16);
-    
+
     const max = Math.max(r, g, b) / 255;
     const min = Math.min(r, g, b) / 255;
     const l = (max + min) / 2;
-    
+
     let h, s;
     if (max === min) {
       h = s = 0;
@@ -212,7 +230,7 @@ const Onboarding = () => {
       }
       h *= 60;
     }
-    
+
     root.style.setProperty('--primary-100', `hsl(${h}, ${s * 100}%, 95%)`);
     root.style.setProperty('--primary-200', `hsl(${h}, ${s * 100}%, 90%)`);
     root.style.setProperty('--primary-300', `hsl(${h}, ${s * 100}%, 85%)`);
@@ -220,13 +238,13 @@ const Onboarding = () => {
     root.style.setProperty('--primary-500', primaryColor);
     root.style.setProperty('--primary-600', `hsl(${h}, ${s * 100}%, 45%)`);
     root.style.setProperty('--primary-700', `hsl(${h}, ${s * 100}%, 40%)`);
-    
+
     root.style.setProperty('--secondary', secondaryColor);
     root.style.setProperty('--secondary-foreground', '#1d1d1f');
-    
+
     root.style.setProperty('--accent', primaryColor);
     root.style.setProperty('--accent-foreground', '#FFFFFF');
-    
+
     root.style.setProperty('--ring', primaryColor);
   };
 
