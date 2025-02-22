@@ -61,7 +61,7 @@ export const EstimateTable = ({
                       key={`${subgroup.name}-${itemIndex}`} 
                       className={cn(
                         styles.tableRow,
-                        isLoading && "animate-pulse bg-gray-50"
+                        // isLoading && "animate-pulse bg-gray-50"
                       )}
                     >
                       <td className={cn(styles.tableCell, "w-[45%]")}>

@@ -268,7 +268,7 @@ export const EstimateDisplay = ({
         <div className="fixed top-0 left-0 right-0 bg-primary text-white p-4 text-center z-50 animate-in fade-in-0">
           <div className="flex items-center justify-center gap-2">
             <div className="w-4 h-4">
-              <EstimateAnimation />
+              {/*<EstimateAnimation />*/}
             </div>
             <span>Generating your estimate...</span>
           </div>
@@ -277,18 +277,23 @@ export const EstimateDisplay = ({
       
       <Card className={cn(styles.card, isBlurred && "blur-md pointer-events-none")}>
         <div id="estimate-content">
-          <EstimateHeader contractor={contractor} styles={styles} />
-          
-          <div className={styles.headerContent}>
-            <EstimateActions
-              isContractor={isContractor}
-              companyName={contractor?.business_name || "Example Company"}
-              onRefreshEstimate={handleRefreshEstimate}
-              onShowSettings={() => setShowSettings(true)}
-              onShowAIPreferences={() => setShowAIPreferences(true)}
-              styles={styles}
-            />
+          <div className="flex flex-row justify-between">
+            <EstimateHeader contractor={contractor} styles={styles} />
+
+            <div className={styles.headerContent}>
+              <EstimateActions
+                  isContractor={isContractor}
+                  companyName={contractor?.company_name || 'Estimate'}
+                  onRefreshEstimate={handleRefreshEstimate}
+                  onShowSettings={() => setShowSettings(true)}
+                  onShowAIPreferences={() => setShowAIPreferences(true)}
+                  styles={styles}
+                  groups={groups || []}
+                  totalCost={totalCost || 0}
+              />
+            </div>
           </div>
+
 
           {estimate?.ai_generated_title && (
             <h2 className={cn(styles.title, "mb-4 text-center")}>

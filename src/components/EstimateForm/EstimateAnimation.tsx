@@ -15,9 +15,9 @@ export const EstimateAnimation: React.FC<EstimateAnimationProps> = ({ className 
         <FileText size={100} className="text-primary animate-pulse" />
         
         {/* Sparkle Animation */}
-        <div className="absolute -top-2 -right-2 animate-[bounce_2s_infinite]">
-          <Sparkle size={24} className="text-primary animate-pulse" />
-        </div>
+        {/*<div className="absolute -top-2 -right-2 animate-[bounce_2s_infinite]">*/}
+        {/*  <Sparkle size={24} className="text-primary animate-pulse" />*/}
+        {/*</div>*/}
       </div>
     </div>
   );

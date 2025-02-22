@@ -110,13 +110,14 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       console.log('Starting background estimate generation for lead:', leadId);
       
       const { error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
+        body: {
           leadId,
           contractorId: config.contractorId,
           projectDescription,
           category: selectedCategory,
           imageUrl: uploadedImageUrl,
-          projectImages: uploadedPhotos
+          projectImages: uploadedPhotos,
+          answers: answers
         }
       });
 
@@ -283,39 +284,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       setCurrentLeadId(lead.id);
       setIsGeneratingEstimate(true);
 
-      const handleContactSubmit = async (contactData: any) => {
-        try {
-          // ... existing lead creation code ...
-
-          console.log('Lead created successfully:', lead.id);
-          setCurrentLeadId(lead.id);
-          setIsGeneratingEstimate(true);
-
-          // Send notification to contractor about new lead
-          const { error: emailError } = await supabase.functions.invoke('send-contractor-notification', {
-            body: {
-              customerInfo: contactData,
-              contractor: {
-                contact_email: config.contractorEmail,
-              },
-              questions: matchedQuestionSets,
-              answers: answers,
-              isTestEstimate: false
-            }
-          });
-
-          if (emailError) {
-            console.error('Error sending contractor notification:', emailError);
-          }
-
-          startEstimateGeneration(lead.id);
-
-        } catch (error) {
-          // ... existing error handling ...
-        }
-      };
-
-      startEstimateGeneration(lead.id);
+      await startEstimateGeneration(lead.id);
 
     } catch (error) {
       console.error('Error processing contact form:', error);

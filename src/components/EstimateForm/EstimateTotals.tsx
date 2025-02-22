@@ -75,7 +75,7 @@ export const EstimateTotals = ({
           </p>
         ) : (
           <div className="h-6 w-24 bg-gray-200 animate-pulse rounded relative overflow-hidden">
-            <EstimateAnimation />
+            {/*<EstimateAnimation />*/}
           </div>
         )}
       </div>
@@ -87,7 +87,7 @@ export const EstimateTotals = ({
           </p>
         ) : (
           <div className="h-6 w-24 bg-gray-200 animate-pulse rounded relative overflow-hidden">
-            <EstimateAnimation />
+            {/*<EstimateAnimation />*/}
           </div>
         )}
       </div>
@@ -99,7 +99,7 @@ export const EstimateTotals = ({
           </p>
         ) : (
           <div className="h-8 w-32 bg-gray-200 animate-pulse rounded relative overflow-hidden">
-            <EstimateAnimation />
+            {/*<EstimateAnimation />*/}
           </div>
         )}
       </div>
