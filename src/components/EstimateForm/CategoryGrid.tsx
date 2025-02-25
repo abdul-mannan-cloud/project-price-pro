@@ -10,7 +10,7 @@ import { findBestMatchingCategory } from "@/utils/categoryMatcher";
 interface CategoryGridProps {
   categories: Category[];
   selectedCategory: string | null;
-  onSelectCategory: (categoryId: string) => void;
+  onSelectCategory: (categoryIds: string[]) => void;
   description?: string;
   completedCategories?: string[];
   contractorSettings?: {
@@ -40,20 +40,20 @@ export const CategoryGrid = ({
   const [matchedCategory, setMatchedCategory] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    const findMatch = async () => {
-      if (description) {
-        const match = await findBestMatchingCategory(description);
-        if (match) {
-          console.log('Found matching category:', match);
-          setMatchedCategory(match.categoryId);
-          onSelectCategory(match.categoryId);
-        }
-      }
-    };
-
-    findMatch();
-  }, [description, onSelectCategory]);
+  // useEffect(() => {
+  //   const findMatch = async () => {
+  //     if (description) {
+  //       const match = await findBestMatchingCategory(description);
+  //       if (match) {
+  //         console.log('Found matching category:', match);
+  //         setMatchedCategory(match.categoryId);
+  //         onSelectCategory(match.categoryId);
+  //       }
+  //     }
+  //   };
+  //
+  //   findMatch();
+  // }, [description, onSelectCategory]);
 
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategories(prev => {
@@ -77,7 +77,7 @@ export const CategoryGrid = ({
       });
 
     if (sortedSelectedCategories.length > 0) {
-      onSelectCategory(sortedSelectedCategories[0]); // Start with the first category
+      onSelectCategory(sortedSelectedCategories); // Start with the first category
     }
   };
 

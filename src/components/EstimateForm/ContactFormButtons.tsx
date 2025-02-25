@@ -14,6 +14,7 @@ export const ContactFormButtons = ({
   isCurrentUserContractor,
   onSkip 
 }: ContactFormButtonsProps) => {
+
   return (
     <>
       <Button 
@@ -25,7 +26,7 @@ export const ContactFormButtons = ({
         {isSubmitting ? "Processing..." : "View Your Custom Estimate"}
       </Button>
 
-      {isCurrentUserContractor && onSkip && (
+      {isCurrentUserContractor && (
         <Button
           type="button"
           variant="outline"

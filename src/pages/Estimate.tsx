@@ -276,7 +276,7 @@ const EstimatePage = () => {
                   contractorId={urlContractorId}
                   onSkip={async () => {
                     if (currentLeadId) {
-                      await handleContactSubmit({});
+                      await handleContactSubmit({},true);
                     }
                   }}
                 />
