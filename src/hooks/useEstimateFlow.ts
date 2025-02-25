@@ -89,6 +89,8 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       .eq('id', leadId)
       .maybeSingle();
 
+    console.log('i am here', lead);
+
     if (!lead) return false;
 
     if (lead.status === 'error') {
@@ -166,7 +168,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     }
   };
 
-  const handleQuestionComplete = async (answers: AnswersState) => {
+  const handleQuestionComplete = async (answers: AnswersState,leadId:string) => {
     if (!config.contractorId) {
       console.error('Missing contractor ID in config:', config);
       toast({
@@ -181,44 +183,47 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     const firstAnswer = answers[currentCategory]?.Q1?.answers[0];
     
     setAnswers(answers);
-    
-    // Create lead first
-    try {
-      const formattedAnswers = formatAnswersForJson(answers);
-      
-      const leadData: LeadInsert = {
-        project_description: firstAnswer || projectDescription || 'New project',
-        project_title: `${currentCategory || 'New'} Project`,
-        answers: formattedAnswers,
-        category: currentCategory,
-        status: 'pending',
-        contractor_id: config.contractorId,
-        project_images: uploadedPhotos
-      };
-  
-      const { data: lead, error: leadError } = await supabase
-        .from('leads')
-        .insert(leadData)
-        .select()
-        .single();
-  
-      if (leadError) throw leadError;
-      
-      if (!lead?.id) {
-        throw new Error('Failed to create lead - no ID returned');
-      }
-  
-      setCurrentLeadId(lead.id);
-      // Only transition to contact stage after lead is created and ID is set
+    setCurrentLeadId(leadId);
+    console.log('Estimate flow lead id:', currentLeadId);
       setStage('contact');
-    } catch (error) {
-      console.error('Error creating lead:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create lead. Please try again.",
-        variant: "destructive",
-      });
-    }
+
+    // Create lead first
+    // try {
+    //   const formattedAnswers = formatAnswersForJson(answers);
+    //
+    //   const leadData: LeadInsert = {
+    //     project_description: firstAnswer || projectDescription || 'New project',
+    //     project_title: `${currentCategory || 'New'} Project`,
+    //     answers: formattedAnswers,
+    //     category: currentCategory,
+    //     status: 'pending',
+    //     contractor_id: config.contractorId,
+    //     project_images: uploadedPhotos
+    //   };
+    //
+    //   const { data: lead, error: leadError } = await supabase
+    //     .from('leads')
+    //     .insert(leadData)
+    //     .select()
+    //     .single();
+    //
+    //   if (leadError) throw leadError;
+    //
+    //   if (!lead?.id) {
+    //     throw new Error('Failed to create lead - no ID returned');
+    //   }
+    //
+    //   setCurrentLeadId(lead.id);
+    //   // Only transition to contact stage after lead is created and ID is set
+    //   setStage('contact');
+    // } catch (error) {
+    //   console.error('Error creating lead:', error);
+    //   toast({
+    //     title: "Error",
+    //     description: "Failed to create lead. Please try again.",
+    //     variant: "destructive",
+    //   });
+    // }
   };
 
   const formatAnswersForJson = (answers: AnswersState): Json => {
@@ -240,60 +245,39 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
   const handleContactSubmit = async (contactData: any) => {
     try {
-      console.log('in handle contact submit')
-      if (!config.contractorId) {
-        console.error('Missing contractor ID:', config);
-        throw new Error('Contractor ID is required');
+      if (!currentLeadId) {
+        throw new Error('No lead ID available');
       }
 
-      const currentCategory = matchedQuestionSets[0]?.category;
-      const firstAnswer = answers[currentCategory]?.Q1?.answers[0];
+      console.log('Saving contact information:', contactData);
+      console.log('Current lead Id Supabase:', currentLeadId);
 
-      // Convert answers to Json type
-      const formattedAnswers = formatAnswersForJson(answers);
+      // Update the lead with contact information
+      const { error: updateError } = await supabase
+          .from('leads')
+          .update({
+            user_name: contactData.fullName,
+            user_email: contactData.email,
+            user_phone: contactData.phone,
+            project_address: contactData.address
+          })
+          .eq('id', currentLeadId);
 
-      const leadData: LeadInsert = {
-        project_description: firstAnswer || projectDescription || 'New project',
-        project_title: `${currentCategory || 'New'} Project`,
-        answers: formattedAnswers,
-        category: currentCategory,
-        status: 'pending',
-        contractor_id: config.contractorId,
-        project_images: uploadedPhotos,
-        user_name: contactData.fullName,
-        user_email: contactData.email,
-        user_phone: contactData.phone,
-        project_address: contactData.address
-      };
+      if (updateError) throw updateError;
 
-      console.log('Creating lead with data:', leadData);
+      console.log('Contact information saved successfully');
 
-      const { data: lead, error: leadError } = await supabase
-        .from('leads')
-        .insert(leadData)
-        .select()
-        .single();
+      const isComplete = await checkEstimateStatus(currentLeadId);
 
-      if (leadError) throw leadError;
-      
-      if (!lead?.id) {
-        throw new Error('Failed to create lead - no ID returned');
-      }
-
-      console.log('Lead created successfully:', lead.id);
-      setCurrentLeadId(lead.id);
-      setIsGeneratingEstimate(true);
-
-      await startEstimateGeneration(lead.id);
+      setIsGeneratingEstimate(false)
 
     } catch (error) {
-      console.error('Error processing contact form:', error);
+      console.error('Error saving contact information:', error);
       toast({
         title: "Error",
-        description: "Failed to process your information. Please try again.",
+        description: "Failed to save your contact information. Please try again.",
         variant: "destructive",
       });
-      setIsGeneratingEstimate(false);
     }
   };
 

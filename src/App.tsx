@@ -71,14 +71,17 @@ function GlobalBrandingLoader() {
       const { data: contractor, error } = await supabase
         .from("contractors")
         .select("branding_colors")
-        .eq("id", session.user.id)
+        .eq("user_id", session.user.id)
         .maybeSingle();
+
+      console.log('branding_colors:', contractor);
 
       if (error || !contractor) {
         console.error(error ? `Error fetching contractor: ${error.message}` : 
                             `No contractor found for user: ${session.user.id}`);
         return null;
       }
+
 
       const colors = contractor.branding_colors as { primary: string; secondary: string } | null;
       if (colors) {

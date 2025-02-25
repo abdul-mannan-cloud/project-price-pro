@@ -290,6 +290,8 @@ export const EstimateDisplay = ({
                   styles={styles}
                   groups={groups || []}
                   totalCost={totalCost || 0}
+                  contractor={contractor}
+                  projectSummary={projectSummary}
               />
             </div>
           </div>

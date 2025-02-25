@@ -64,7 +64,7 @@ const EstimatePage = () => {
       const { data: contractor } = await supabase
         .from('contractors')
         .select('id')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
 
       console.log('Authenticated contractor:', contractor);
@@ -186,6 +186,11 @@ const EstimatePage = () => {
     );
   }
 
+  console.log("is authenticated", isAuthenticated);
+    console.log("authenticated contractor", authenticatedContractor);
+    console.log("url contractor id", urlContractorId);
+
+
   return (
     <div className="min-h-screen bg-gray-100">
       <EstimateProgress stage={stage} progress={progress} />
@@ -235,7 +240,10 @@ const EstimatePage = () => {
             onComplete={handleQuestionComplete}
             onProgressChange={progress => setStage('questions')}
             contractor={contractor || undefined}
-
+            contractorId={urlContractorId} // Pass contractorId
+            projectDescription={projectDescription} // Pass projectDescription
+            uploadedPhotos={uploadedPhotos} // Pass uploadedPhotos
+            uploadedImageUrl={uploadedImageUrl}
           />
         )}
 

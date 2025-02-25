@@ -97,8 +97,6 @@ export const ContactForm = ({
           user_email: formData.email,
           user_phone: formData.phone,
           project_address: formData.address,
-          status: 'processing',
-          contractor_id: effectiveContractorId
         })
         .eq('id', leadId);
 
@@ -120,6 +118,7 @@ export const ContactForm = ({
       });
     }
   };
+
 
   const handleSkipForm = async () => {
     if (!leadId || !onSkip) return;
