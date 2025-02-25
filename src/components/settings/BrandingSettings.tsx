@@ -99,7 +99,7 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
       const { error } = await supabase
         .from('contractors')
         .update({ branding_colors: brandingColors })
-        .eq('id', user.id);
+        .eq('user_id', user.id);
 
       if (error) throw error;
 

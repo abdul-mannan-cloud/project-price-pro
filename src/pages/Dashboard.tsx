@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const [isCopyingUrl, setIsCopyingUrl] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [contractorId, setContractorId] = useState<string | null>(null);
 
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -38,7 +39,17 @@ const Dashboard = () => {
         navigate("/login");
         return;
       }
-      
+
+      try{
+
+      const contractorId = await supabase.from("contractors").select("id").eq("user_id", user.id).single();
+      setContractorId(contractorId?.data.id);
+
+        } catch (error) {
+            console.error('Error fetching contractor:', error); // Debug log
+            throw error;
+      }
+
       setUserId(user.id);
       console.log('Set user ID:', user.id); // Debug log
     };
@@ -141,9 +152,9 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error('Error shortening URL:', error);
-      if (userId) {
+      if (contractorId) {
         const baseUrl = window.location.origin;
-        const longUrl = `${baseUrl}/estimate/${userId}`;
+        const longUrl = `${baseUrl}/estimate/${contractorId}`;
         await navigator.clipboard.writeText(longUrl);
         toast({
           title: "Link copied!",
@@ -180,7 +191,7 @@ const Dashboard = () => {
       Icon: Copy,
       name: "Preview Estimator",
       description: "Preview your estimator or copy the link to share",
-      href: `/estimate/${userId || ''}`,
+      href: `/estimate/${contractorId || ''}`,
       cta: "Preview",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
       className: "lg:col-span-3 bg-primary text-white hover:scale-[1.02] transition-transform",
@@ -200,7 +211,7 @@ const Dashboard = () => {
                   });
                   return;
                 }
-                navigate(`/estimate/${userId}`);
+                navigate(`/estimate/${contractorId}`);
               }}
             >
               Open Preview

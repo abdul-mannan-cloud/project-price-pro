@@ -8,9 +8,13 @@ import { calculateQuestionProgress } from "@/utils/questionNavigation";
 type LeadInsert = Database['public']['Tables']['leads']['Insert'];
 
 export const useQuestionManager = (
-  questionSets: CategoryQuestions[],
-  onComplete: (answers: AnswersState) => void,
-  onProgressChange: (progress: number) => void
+    questionSets: CategoryQuestions[],
+    onComplete: (answers: AnswersState,leadId:string) => void,
+    onProgressChange: (progress: number) => void,
+    contractorId: string, // Add contractorId as a parameter
+    projectDescription: string, // Add projectDescription as a parameter
+    uploadedPhotos: string[], // Add uploadedPhotos as a parameter
+    uploadedImageUrl: string | null // Add uploadedImageUrl as a parameter
 ) => {
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
@@ -89,7 +93,7 @@ export const useQuestionManager = (
 
     console.log('Starting estimate generation with answers:', answers);
     setIsGeneratingEstimate(true);
-    
+
     try {
       const answersForDb = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
         acc[category] = Object.entries(categoryAnswers || {}).reduce((catAcc, [questionId, answer]) => {
@@ -106,20 +110,22 @@ export const useQuestionManager = (
 
       // First, create the lead
       const leadData: LeadInsert = {
-        project_description: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
+        project_description: projectDescription || 'New project',
         project_title: `${questionSets[0]?.category || 'New'} Project`,
         answers: answersForDb as Json,
         category: questionSets[0]?.category,
-        status: 'pending'
+        status: 'pending',
+        contractor_id: contractorId, // Add contractorId
+        project_images: uploadedPhotos, // Add uploadedPhotos
       };
 
       console.log('Creating lead with data:', leadData);
 
       const { data: lead, error: leadError } = await supabase
-        .from('leads')
-        .insert(leadData)
-        .select()
-        .single();
+          .from('leads')
+          .insert(leadData)
+          .select()
+          .single();
 
       if (leadError) {
         console.error('Error creating lead:', leadError);
@@ -133,21 +139,24 @@ export const useQuestionManager = (
       console.log('Lead created successfully:', lead.id);
 
       // Then, generate the estimate
-      // const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
-      //   body: {
-      //     answers: answersForDb,
-      //     projectDescription: answers[questionSets[0]?.category]?.Q1?.answers[0] || 'New project',
-      //     category: questionSets[0]?.category,
-      //     leadId: lead.id
-      //   }
-      // });
-      //
-      // if (generateError) {
-      //   console.error('Error generating estimate:', generateError);
-      //   throw generateError;
-      // }
+      const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
+        body: {
+          leadId: lead.id,
+          contractorId: contractorId,
+          projectDescription: projectDescription,
+          category: questionSets[0]?.category,
+          imageUrl: uploadedImageUrl,
+          projectImages: uploadedPhotos,
+          answers: answersForDb
+        }
+      });
 
-      await onComplete(answers);
+      if (generateError) {
+        console.error('Error generating estimate:', generateError);
+        throw generateError;
+      }
+
+      await onComplete(answers,lead.id);
     } catch (error) {
       console.error('Error completing questions:', error);
       toast({

@@ -25,6 +25,7 @@ export const EstimateTable = ({
   styles,
   hideSubtotals 
 }: EstimateTableProps) => {
+  console.log('EstimateTable props:', { groups, isLoading, styles, hideSubtotals });
   if (!groups || groups.length === 0) {
     return (
       <div className="p-4 text-center text-gray-500">
