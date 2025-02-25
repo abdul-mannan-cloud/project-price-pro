@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Category, CategoryQuestions, AnswersState, EstimateConfig } from "@/types/estimate";
@@ -26,6 +26,10 @@ export const useEstimateFlow = (config: EstimateConfig) => {
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
   const [answers, setAnswers] = useState<AnswersState>({});
   const { toast } = useToast();
+
+  useEffect(() => {
+    console.log("Matched Questions sets : ",matchedQuestionSets)
+  }, [matchedQuestionSets]);
 
   const handlePhotoUpload = (urls: string[]) => {
     setUploadedPhotos(urls);
@@ -62,22 +66,32 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     setStage('questions');
   };
 
-  const handleCategorySelect = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-    
-    const selectedCategoryData = categories.find(cat => cat.id === categoryId);
-  
-    if (selectedCategoryData) {
-      // Create a question set for the selected category
-      const questionSet = {
-        category: categoryId,
-        questions: selectedCategoryData.questions || [],
-        confidence: 1,
-        keywords: selectedCategoryData.keywords || []
-      };
-      
-      setMatchedQuestionSets([questionSet]);
+  const handleCategorySelect = (categoryIds: string[]) => {
+    setSelectedCategory(categoryIds[0]);
+
+    let questionSets = []
+
+    for(let i=0; i < categoryIds.length; i++){
+      const selectedCategoryData = categories.find(cat => cat.id === categoryIds[i]);
+
+      if (selectedCategoryData) {
+        // Create a question set for the selected category
+        const questionSet = {
+          category: categoryIds[i],
+          questions: selectedCategoryData.questions || [],
+          confidence: 1,
+          keywords: selectedCategoryData.keywords || []
+        };
+
+        questionSets.push(questionSet);
+
+      }
+
+      setMatchedQuestionSets(questionSets);
+
     }
+    
+
 
     setStage('questions');
   };
@@ -89,7 +103,6 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       .eq('id', leadId)
       .maybeSingle();
 
-    console.log('i am here', lead);
 
     if (!lead) return false;
 
@@ -243,28 +256,26 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     return formattedAnswers as Json;
   };
 
-  const handleContactSubmit = async (contactData: any) => {
+  const handleContactSubmit = async (contactData: any, skip:boolean=false) => {
     try {
       if (!currentLeadId) {
         throw new Error('No lead ID available');
       }
 
-      console.log('Saving contact information:', contactData);
-      console.log('Current lead Id Supabase:', currentLeadId);
+      if(skip) {
+        // Update the lead with contact information
+        const {error: updateError} = await supabase
+            .from('leads')
+            .update({
+              user_name: contactData.fullName,
+              user_email: contactData.email,
+              user_phone: contactData.phone,
+              project_address: contactData.address
+            })
+            .eq('id', currentLeadId);
 
-      // Update the lead with contact information
-      const { error: updateError } = await supabase
-          .from('leads')
-          .update({
-            user_name: contactData.fullName,
-            user_email: contactData.email,
-            user_phone: contactData.phone,
-            project_address: contactData.address
-          })
-          .eq('id', currentLeadId);
-
-      if (updateError) throw updateError;
-
+        if (updateError) throw updateError;
+      }
       console.log('Contact information saved successfully');
 
       const isComplete = await checkEstimateStatus(currentLeadId);

@@ -53,7 +53,7 @@ export const ContactForm = ({
         const { data: contractor } = await supabase
           .from('contractors')
           .select('id')
-          .eq('id', user.id)
+          .eq('user_id', user.id)
           .maybeSingle();
         
         if (contractor) {
@@ -138,7 +138,6 @@ export const ContactForm = ({
         .from('leads')
         .update({
           is_test_estimate: true,
-          status: 'processing',
           contractor_id: effectiveContractorId
         })
         .eq('id', leadId);
@@ -147,6 +146,7 @@ export const ContactForm = ({
 
       // Let parent component handle estimate generation
       await onSkip();
+      setIsSubmitting(false);
 
     } catch (error) {
       console.error('Error skipping form:', error);
