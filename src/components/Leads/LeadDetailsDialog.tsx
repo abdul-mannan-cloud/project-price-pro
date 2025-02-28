@@ -265,8 +265,8 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-full h-[100vh] p-0 m-0">
-          <div className="flex flex-col h-full relative">
+        <DialogContent className="max-w-full h-[100vh]  p-0 m-0">
+          <div className="flex flex-col h-full relative overflow-y-scroll pb-20">
             {isMobile ? (
               <div className="sticky top-0 z-50 bg-white border-b">
                 <button
@@ -300,7 +300,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
                     <div className="mt-4">
                       <EstimateDisplay 
                         groups={lead?.estimate_data?.groups || []}
-                        totalCost={lead?.estimated_cost || 0}
+                        totalCost={lead?.estimate_data.totalCost || 0}
                         projectSummary={lead?.project_description}
                         isEditable={isEditing}
                         onEstimateChange={setEditedEstimate}

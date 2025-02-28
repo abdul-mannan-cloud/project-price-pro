@@ -41,6 +41,8 @@ serve(async (req) => {
       throw new Error('leadId is required');
     }
 
+    const address  = requestData.address;
+
     // Get lead data first to find contractor_id if not provided
     const { data: lead, error: leadError } = await supabase
       .from('leads')
@@ -81,6 +83,7 @@ serve(async (req) => {
       .eq('id', contractorId)
       .maybeSingle();
 
+
     if (contractorError) {
       console.error('Error fetching contractor:', contractorError);
       throw new Error('Failed to fetch contractor data');
@@ -108,11 +111,12 @@ serve(async (req) => {
       answers: formatAnswersForContext(requestData.answers || {}),
       projectDescription: requestData.projectDescription || lead.project_description,
       category: requestData.category || lead.category,
+      address: requestData.address,
       aiRates: aiRates || [],
       contractor: {
         settings: contractor.contractor_settings,
-        businessAddress: contractor.business_address,
-        aiInstructions: contractor.ai_instructions
+        businessAddress: contractor.business_address==""?requestData.address:contractor.business_address,
+        aiInstructions: contractor.contractor_settings.aiInstructions??''
       }
     });
 

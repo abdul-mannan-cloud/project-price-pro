@@ -438,7 +438,7 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  ${lead.estimated_cost?.toLocaleString() || "0"}
+                  ${lead.estimate_data?.totalCost || "0"}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

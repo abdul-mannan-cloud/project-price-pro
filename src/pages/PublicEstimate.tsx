@@ -80,6 +80,7 @@ const PublicEstimate = () => {
     },
   });
 
+
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", lead?.contractor_id || DEFAULT_CONTRACTOR_ID],
     queryFn: async () => {
@@ -134,7 +135,7 @@ const PublicEstimate = () => {
     return <LoadingScreen message="Loading estimate..." />;
   }
 
-  if (!contractor) {
+  if (isContractorLoading && !contractor) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -153,15 +154,17 @@ const PublicEstimate = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8">
         <EstimateDisplay
-          groups={estimateData?.groups || []}
-          totalCost={lead?.estimated_cost || 0}
-          projectSummary={lead?.project_description}
-          contractor={{
-            business_name: contractor?.business_name,
-            business_logo_url: contractor?.business_logo_url || undefined,
-            branding_colors: contractor?.branding_colors as { primary: string; secondary: string } || undefined
-          }}
-        />
+            leadId={id}
+            groups={estimateData?.groups || []}
+            totalCost={lead?.estimate_data.totalCost || 0}
+            projectSummary={lead?.project_description}
+            contractor={{
+              business_name: contractor?.business_name,
+              business_logo_url: contractor?.business_logo_url || undefined,
+              branding_colors: contractor?.branding_colors as { primary: string; secondary: string; } || undefined
+            }} handleRefreshEstimate={function (id: string): void {
+          throw new Error("Function not implemented.");
+        }}        />
       </div>
     </div>
   );

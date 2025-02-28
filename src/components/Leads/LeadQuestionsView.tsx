@@ -19,8 +19,10 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
     window.location.href = `tel:${phone}`;
   };
 
+  console.log("LEad DAta",lead)
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 ">
       {/* Customer Information */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
@@ -93,7 +95,7 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
           Each category contains specific questions and their corresponding answers.
         </p>
         <div className="space-y-6">
-          {lead?.answers?.answers && Object.entries(lead.answers.answers).map(([category, answers]) => (
+          {lead?.answers && Object.entries(lead.answers).map(([category, answers]) => (
             <div key={category} className="space-y-4">
               <h4 className="font-medium text-primary text-lg">{category}</h4>
               <div className="space-y-6">

@@ -29,13 +29,7 @@ export const LeadViewToggle = ({ view, onViewChange }: LeadViewToggleProps) => {
           <MessageSquare className="h-4 w-4" />
           Questions
         </ToggleGroupItem>
-        <div 
-          className="absolute bottom-0 left-0 h-1 bg-primary transition-all duration-300 rounded-full"
-          style={{
-            width: "50%",
-            transform: `translateX(${view === "estimate" ? "0%" : "100%"})`
-          }}
-        />
+
       </ToggleGroup>
     </div>
   );

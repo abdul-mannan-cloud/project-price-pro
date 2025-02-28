@@ -9,4 +9,5 @@ export interface EstimateRequest {
   projectDescription?: string;
   imageUrl?: string;
   projectImages?: string[];
+  address?: string;
 }

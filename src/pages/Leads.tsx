@@ -35,7 +35,12 @@ const Leads = () => {
             variant: "destructive"
           });
         } else {
-          setContractorId(user.id);
+          const contractor = await supabase
+            .from("contractors")
+            .select("id")
+            .eq("user_id", user.id)
+            .single();
+          setContractorId(contractor.data.id);
           console.log('Set contractor ID:', user.id);
         }
       } catch (error) {

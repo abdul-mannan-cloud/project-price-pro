@@ -1,4 +1,4 @@
-import { useState } from "react";
+import {useEffect, useRef, useState} from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ProgressSteps } from "@/components/ui/progress-steps";
 import { ColorPicker } from "@/components/ui/color-picker";
+import {Loader2} from "lucide-react";
 
 type OnboardingStep = 0 | 1 | 2;
 
@@ -56,7 +57,92 @@ const Onboarding = () => {
     taxRate: "8.5",
   });
 
-  const [touched, setTouched] = useState({
+    const [businessAddress, setBusinessAddress] = useState("");
+    const [addressSuggestions, setAddressSuggestions] = useState([]);
+    const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const suggestionRef = useRef(null);
+    const addressInputRef = useRef(null);
+
+
+    useEffect(() => {
+        if (formData?.address) {
+            setBusinessAddress(formData.address);
+        }
+    }, [formData.address]);
+
+    // Handle clicks outside the suggestions dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (suggestionRef.current && !suggestionRef.current.contains(event.target) &&
+                addressInputRef.current && !addressInputRef.current.contains(event.target)) {
+                setShowSuggestions(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    // Fetch address suggestions
+    const getAddressSuggestions = async (input) => {
+        if (!input || input.length < 3) {
+            setAddressSuggestions([]);
+            return;
+        }
+
+        setIsLoadingAddress(true);
+        try {
+            const GOOGLE_API_KEY = "AIzaSyBuZj-RWOoAc24CaC2h4SY9LvD-WzQPtJs";
+            const response = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(input)}&key=${GOOGLE_API_KEY}`
+            );
+            const data = await response.json();
+
+            if (data.status === "OK" && data.results) {
+                const suggestions = data.results.map(result => result.formatted_address);
+                setAddressSuggestions(suggestions);
+                setShowSuggestions(true);
+            } else {
+                setAddressSuggestions([]);
+            }
+        } catch (error) {
+            console.error("Error fetching address suggestions:", error);
+            setAddressSuggestions([]);
+        } finally {
+            setIsLoadingAddress(false);
+        }
+    };
+
+    // Debounce function
+    const debounce = (func, delay) => {
+        let timeoutId;
+        return function(...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func(...args), delay);
+        };
+    };
+
+    // Create debounced version of getAddressSuggestions
+    const debouncedGetSuggestions = useRef(
+        debounce(getAddressSuggestions, 500)
+    ).current;
+
+    // Handle address input change
+    const handleAddressChange = (value) => {
+        setBusinessAddress(value);
+        debouncedGetSuggestions(value);
+    };
+
+    // Handle suggestion selection
+    const handleSelectSuggestion = (suggestion) => {
+        setBusinessAddress(suggestion);
+        setShowSuggestions(false);
+    };
+
+    const [touched, setTouched] = useState({
     businessName: false,
     fullName: false,
     industry: false,
@@ -163,7 +249,7 @@ const Onboarding = () => {
         // Create settings with same ID
         const { error: settingsError } = await supabase
             .from("contractor_settings")
-            .insert({
+            .upsert({
               id: newId,
               minimum_project_cost: parseFloat(formData.minimumProjectCost),
               markup_percentage: parseFloat(formData.markupPercentage),
@@ -196,7 +282,54 @@ const Onboarding = () => {
   };
 
 
-  const updateGlobalColors = (primaryColor: string, secondaryColor: string) => {
+    useEffect(() => {
+        const checkBusinessInfo = async () => {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    toast({
+                        title: "Error",
+                        description: "No authenticated user found. Please log in again.",
+                        variant: "destructive",
+                    });
+                    navigate("/login");
+                    return;
+                }
+
+                // Check if the contractor exists
+                const { data: existingContractor, error } = await supabase
+                    .from("contractors")
+                    .select("id")
+                    .eq("user_id", user.id)
+                    .maybeSingle();
+
+                if (error) throw error;
+
+                // If the business info exists, redirect to dashboard
+                if (existingContractor) {
+                    // navigate("/dashboard");
+                    return;
+                }
+
+                setLoading(false); // No business info found, allow onboarding to continue
+            } catch (error: any) {
+                console.error("Error checking business info:", error);
+                toast({
+                    title: "Error",
+                    description: "Something went wrong while checking business information.",
+                    variant: "destructive",
+                });
+                setLoading(false);
+            }
+        };
+
+        checkBusinessInfo();
+    }, [navigate, toast]);
+
+
+
+
+    const updateGlobalColors = (primaryColor: string, secondaryColor: string) => {
     const root = document.documentElement;
 
     root.style.setProperty('--primary', primaryColor);
@@ -350,14 +483,44 @@ const Onboarding = () => {
                   <span className="text-red-500 text-xs mt-1">Contact email is required</span>
                 )}
 
-                <Input
-                  id="address"
-                  name="address"
-                  label="Business Address (Optional)"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                />
+                  <div className="form-group relative">
+                      <Input
+                          ref={addressInputRef}
+                          placeholder='Business Address (Optional)'
+                          value={businessAddress}
+                          onChange={(e) => handleAddressChange(e.target.value)}
+                          onFocus={() => businessAddress && setShowSuggestions(true)}
+                          className="h-12 px-4 pt-3 mt-2"
+                      />
+                      <label className="absolute top-1 left-2 mt-2 text-xs bg-transparent px-1 text-muted-foreground">
+                          Business Address (Optional)
+                      </label>
 
+                      {isLoadingAddress && (
+                          <div className="absolute right-3 top-3">
+                              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                          </div>
+                      )}
+
+                      {showSuggestions && addressSuggestions.length > 0 && (
+                          <div
+                              ref={suggestionRef}
+                              className="absolute z-10 -mt-5 w-full bg-background border border-input rounded-md shadow-lg"
+                          >
+                              <ul className="py-1 max-h-60 overflow-auto">
+                                  {addressSuggestions.map((suggestion, index) => (
+                                      <li
+                                          key={index}
+                                          className="px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                                          onClick={() => handleSelectSuggestion(suggestion)}
+                                      >
+                                          {suggestion}
+                                      </li>
+                                  ))}
+                              </ul>
+                          </div>
+                      )}
+                  </div>
                 <Input
                   id="licenseNumber"
                   name="licenseNumber"
