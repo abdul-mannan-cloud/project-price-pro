@@ -116,7 +116,7 @@ serve(async (req) => {
       contractor: {
         settings: contractor.contractor_settings,
         businessAddress: contractor.business_address==""?requestData.address:contractor.business_address,
-        aiInstructions: contractor.contractor_settings.aiInstructions??''
+        aiInstructions: contractor.contractor_settings?.aiInstructions ?? ''
       }
     });
 

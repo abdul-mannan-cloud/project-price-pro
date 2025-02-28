@@ -259,6 +259,7 @@ const EstimatePage = () => {
                 estimate={estimate}
                 isLoading={isGeneratingEstimate}
                 projectImages={uploadedPhotos}
+                leadId={currentLeadId}
               />
             </div>
           )}

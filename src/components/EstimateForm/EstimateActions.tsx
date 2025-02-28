@@ -15,6 +15,7 @@ interface EstimateActionsProps {
     projectSummary?: string;
     groups: any[];
     totalCost: number;
+    leadId: string;
 }
 
 export const EstimateActions = ({
@@ -28,8 +29,11 @@ export const EstimateActions = ({
     projectSummary,
     groups,
     totalCost,
+    leadId
 }: EstimateActionsProps) => {
   const { toast } = useToast();
+
+  console.log('lead id',leadId)
 
   const handleExportPDF = () => {
     const element = document.getElementById('estimate-content');
@@ -60,63 +64,91 @@ export const EstimateActions = ({
   };
 
 
-
   const handleCopyEstimate = () => {
-    try {
-      // Format the estimate details
-      const estimateText = `${contractor?.business_name || 'Project'} Estimate\n\n`;
-
-      // Add project summary if available
-      const summaryText = projectSummary
-          ? `Project Description: ${projectSummary}\n\n`
-          : '';
-
-      console.log('Contractor', contractor);
-      console.log('Project Summary', projectSummary);
-      console.log('Groups', groups);
-
-      // Format each group with subgroups and items
-      const groupsText = groups.map(group => {
-        const subgroupsText = group.subgroups.map(subgroup => {
-          const itemsText = subgroup.items.map(item =>
-              `    • ${item.title}: $${item.totalPrice.toFixed(2)} (${item.description})`
-          ).join('\n');
-
-          return `  ${subgroup.name}:\n${itemsText}\n`;
-        }).join('\n');
-
-        return `${group.name}:\n${group.description}\n\n${subgroupsText}`;
-      }).join('\n');
-
-      // Calculate total estimate
-      const totalEstimate = groups.reduce(
-          (sum, group) => sum + group.subgroups.reduce((subSum, sg) => subSum + sg.subtotal, 0),
-          0
-      );
-
-      // Add total cost
-      const totalText = `\nTotal Estimate: $${totalEstimate.toFixed(2)}`;
-
-      // Combine all sections
-      const fullEstimate = `${estimateText}${summaryText}${groupsText}${totalText}`;
-
-      // Copy to clipboard
-      navigator.clipboard.writeText(fullEstimate);
-
-      // Show success toast
-      toast({
-        title: "Success",
-        description: "Estimate copied to clipboard",
-      });
-    } catch (error) {
-      console.error('Error copying estimate:', error);
+    if (!leadId) {
       toast({
         title: "Error",
-        description: "Failed to copy estimate to clipboard",
+        description: "Lead ID is missing.",
         variant: "destructive",
       });
+      return;
     }
+
+    const estimateLink = `${window.location.origin}/e/${leadId}`;
+
+    navigator.clipboard.writeText(estimateLink)
+        .then(() => {
+          toast({
+            title: "Success",
+            description: "Estimate link copied to clipboard",
+          });
+        })
+        .catch((error) => {
+          console.error("Error copying estimate link:", error);
+          toast({
+            title: "Error",
+            description: "Failed to copy estimate link.",
+            variant: "destructive",
+          });
+        });
   };
+
+  // const handleCopyEstimate = () => {
+  //   try {
+  //     // Format the estimate details
+  //     const estimateText = `${contractor?.business_name || 'Project'} Estimate\n\n`;
+  //
+  //     // Add project summary if available
+  //     const summaryText = projectSummary
+  //         ? `Project Description: ${projectSummary}\n\n`
+  //         : '';
+  //
+  //     console.log('Contractor', contractor);
+  //     console.log('Project Summary', projectSummary);
+  //     console.log('Groups', groups);
+  //
+  //     // Format each group with subgroups and items
+  //     const groupsText = groups.map(group => {
+  //       const subgroupsText = group.subgroups.map(subgroup => {
+  //         const itemsText = subgroup.items.map(item =>
+  //             `    • ${item.title}: $${item.totalPrice.toFixed(2)} (${item.description})`
+  //         ).join('\n');
+  //
+  //         return `  ${subgroup.name}:\n${itemsText}\n`;
+  //       }).join('\n');
+  //
+  //       return `${group.name}:\n${group.description}\n\n${subgroupsText}`;
+  //     }).join('\n');
+  //
+  //     // Calculate total estimate
+  //     const totalEstimate = groups.reduce(
+  //         (sum, group) => sum + group.subgroups.reduce((subSum, sg) => subSum + sg.subtotal, 0),
+  //         0
+  //     );
+  //
+  //     // Add total cost
+  //     const totalText = `\nTotal Estimate: $${totalEstimate.toFixed(2)}`;
+  //
+  //     // Combine all sections
+  //     const fullEstimate = `${estimateText}${summaryText}${groupsText}${totalText}`;
+  //
+  //     // Copy to clipboard
+  //     navigator.clipboard.writeText(fullEstimate);
+  //
+  //     // Show success toast
+  //     toast({
+  //       title: "Success",
+  //       description: "Estimate copied to clipboard",
+  //     });
+  //   } catch (error) {
+  //     console.error('Error copying estimate:', error);
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to copy estimate to clipboard",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
 
   return (
     <div className={styles.buttonsContainer} id="estimate-actions">
