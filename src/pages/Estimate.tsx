@@ -39,10 +39,10 @@ const EstimatePage = () => {
       if (!contractorId || contractorId === ":contractorId?" || contractorId === "undefined") {
         return DEFAULT_CONTRACTOR_ID;
       }
-      
+
       // Clean the ID without decoding/encoding
       return isValidUUID(contractorId) ? contractorId : DEFAULT_CONTRACTOR_ID;
-      
+
     } catch (error) {
       console.error('Error processing URL contractor ID:', error);
       return DEFAULT_CONTRACTOR_ID;
@@ -89,7 +89,7 @@ const EstimatePage = () => {
         .select("*, contractor_settings(*)")
         .eq("id", urlContractorId)
         .maybeSingle();
-      
+
       if (error) {
         console.error('Error fetching contractor:', error);
         throw error;
@@ -125,7 +125,9 @@ const EstimatePage = () => {
     handleDescriptionSubmit,
     handleCategorySelect,
     handleQuestionComplete,
-    handleContactSubmit
+    handleContactSubmit,
+      handleRefreshEstimate,
+      changeProgress
   } = useEstimateFlow(estimateConfig);
 
   useEffect(() => {
@@ -186,19 +188,15 @@ const EstimatePage = () => {
     );
   }
 
-  console.log("is authenticated", isAuthenticated);
-    console.log("authenticated contractor", authenticatedContractor);
-    console.log("url contractor id", urlContractorId);
-
 
   return (
     <div className="min-h-screen bg-gray-100">
       <EstimateProgress stage={stage} progress={progress} />
-      
+
       {isAuthenticated && authenticatedContractor?.id === urlContractorId && (
         <div className="w-full border-b border-gray-200">
           <div className="max-w-4xl mx-auto px-4 py-2">
-            <button 
+            <button
               onClick={() => navigate("/dashboard")}
               className="text-muted-foreground hover:text-foreground flex items-center gap-2 p-2"
             >
@@ -238,7 +236,7 @@ const EstimatePage = () => {
           <QuestionManager
             questionSets={matchedQuestionSets}
             onComplete={handleQuestionComplete}
-            onProgressChange={progress => setStage('questions')}
+            onProgressChange={progress => changeProgress(progress)}
             contractor={contractor || undefined}
             contractorId={urlContractorId} // Pass contractorId
             projectDescription={projectDescription} // Pass projectDescription
@@ -253,8 +251,8 @@ const EstimatePage = () => {
               "transition-all duration-300",
               stage === 'contact' ? "blur-sm" : ""
             )}>
-              <EstimateDisplay 
-                groups={estimate?.groups || []} 
+              <EstimateDisplay
+                groups={estimate?.groups || []}
                 totalCost={estimate?.totalCost || 0}
                 contractor={contractor || undefined}
                 projectSummary={projectDescription}

@@ -40,31 +40,42 @@ export const AIPreferencesSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
+      const contractor = await supabase
+          .from("contractors")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+
       const { data, error } = await supabase
         .from("contractor_settings")
         .select("*")
-        .eq("id", user.id)
-        .single();
+        .eq("id", contractor.data.id)
 
-      if (error) throw error;
-      
-      // Convert Supabase data to our ContractorSettings type
-      const supabaseData = data as SupabaseContractorSettings;
+
+      const contractors = data[0]
+
+      if (error) {
+        console.log('supabase Ai preferences error:', error )
+        throw error
+      };
+
+      const supabaseData = contractors as SupabaseContractorSettings;
       const preferences = supabaseData.ai_preferences as any;
-      
+
       // Ensure we have all required fields with proper types
       const aiPreferences: AIPreferences = {
         rate: typeof preferences?.rate === 'string' ? preferences.rate : defaultPreferences.rate,
         type: typeof preferences?.type === 'string' ? preferences.type : defaultPreferences.type,
         instructions: typeof preferences?.instructions === 'string' ? preferences.instructions : defaultPreferences.instructions
       };
-      
+
       return {
         ai_preferences: aiPreferences,
         ai_instructions: supabaseData.ai_instructions || ""
       } as ContractorSettings;
     },
   });
+
 
   const updateSettings = useMutation({
     mutationFn: async (formData: ContractorSettings) => {
@@ -78,13 +89,19 @@ export const AIPreferencesSettings = () => {
         instructions: formData.ai_preferences.instructions
       };
 
+      const contractor = await supabase
+            .from("contractors")
+            .select("id")
+            .eq("user_id", user.id)
+            .single();
+
       const { error } = await supabase
         .from("contractor_settings")
         .update({
           ai_preferences: aiPreferencesJson as Json,
-          ai_instructions: formData.ai_instructions
+          ai_instructions: formData.ai_preferences.instructions
         })
-        .eq("id", user.id);
+        .eq("id", contractor.data.id);
 
       if (error) throw error;
     },

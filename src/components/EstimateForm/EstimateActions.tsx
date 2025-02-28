@@ -130,6 +130,7 @@ export const EstimateActions = ({
             title="Refresh estimate"
           >
             <RefreshCw className="h-4 w-4" />
+            Refresh Results
           </Button>
           <Button
             variant="ghost"
@@ -139,6 +140,7 @@ export const EstimateActions = ({
             title="AI Preferences"
           >
             <Settings className="h-4 w-4" />
+            AI Preferences
           </Button>
           <Button
             variant="ghost"
@@ -148,6 +150,7 @@ export const EstimateActions = ({
             title="Template Settings"
           >
             <Settings className="h-4 w-4" />
+            Estimate Settings
           </Button>
         </>
       )}

@@ -1,16 +1,15 @@
-
 import { Question, Option } from "@/types/estimate";
 
 export const findNextQuestionId = (
-  questions: Question[],
-  currentQuestion: Question,
-  selectedValue: string
+    questions: Question[],
+    currentQuestion: Question,
+    selectedValue: string
 ): string | null => {
   // First check if the selected option has a next question specified
   const selectedOption = currentQuestion.options.find(
-    (opt) => opt.value === selectedValue
+      (opt) => opt.value === selectedValue
   );
-  
+
   if (selectedOption?.next) {
     return selectedOption.next;
   }
@@ -31,30 +30,32 @@ export const findNextQuestionId = (
 };
 
 export const calculateQuestionProgress = (
-  questions: Question[],
-  currentQuestionId: string,
-  answers: Record<string, any>
+    questions: Question[],
+    currentQuestionId: string,
+    answers: Record<string, any>,
+    totalQuestionSets: number,
+    currentSetIndex: number = 0
 ): number => {
   let totalPathLength = 0;
   let currentProgress = 0;
   const visitedQuestions = new Set<string>();
-  
+
   // Calculate the total path length considering branching
   const calculatePath = (questionId: string): void => {
     if (!questionId || visitedQuestions.has(questionId)) return;
-    
+
     visitedQuestions.add(questionId);
     totalPathLength++;
-    
+
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
-    
+
     // If there's a specific next question defined
     if (question.next) {
       calculatePath(question.next);
       return;
     }
-    
+
     // If this question has been answered, check the branch taken
     const answer = answers[questionId]?.answers?.[0];
     if (answer) {
@@ -64,26 +65,26 @@ export const calculateQuestionProgress = (
         return;
       }
     }
-    
+
     // If no specific path, continue to next sequential question
     const nextIndex = questions.findIndex(q => q.id === questionId) + 1;
     if (nextIndex < questions.length) {
       calculatePath(questions[nextIndex].id);
     }
   };
-  
+
   // Calculate progress along the current path
   const calculateCurrentProgress = (questionId: string): void => {
     if (!questionId || visitedQuestions.has(questionId)) return;
-    
+
     visitedQuestions.add(questionId);
     currentProgress++;
-    
+
     if (questionId === currentQuestionId) return;
-    
+
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
-    
+
     const answer = answers[questionId]?.answers?.[0];
     if (answer) {
       const selectedOption = question.options.find(opt => opt.value === answer);
@@ -92,24 +93,35 @@ export const calculateQuestionProgress = (
         return;
       }
     }
-    
+
     if (question.next) {
       calculateCurrentProgress(question.next);
       return;
     }
-    
+
     const nextIndex = questions.findIndex(q => q.id === questionId) + 1;
     if (nextIndex < questions.length) {
       calculateCurrentProgress(questions[nextIndex].id);
     }
   };
-  
+
   // Calculate the full path length
   calculatePath(questions[0].id);
-  
+
   // Reset visited questions and calculate current progress
   visitedQuestions.clear();
   calculateCurrentProgress(questions[0].id);
-  
-  return (currentProgress / totalPathLength) * 100;
+
+  // Calculate the progress within the current question set
+  const currentSetProgress = (currentProgress / totalPathLength);
+
+  // Calculate the weight of each question set in the overall progress
+  const questionSetWeight = 1 / totalQuestionSets;
+
+  // Calculate overall progress including completed question sets and progress in current set
+  const completedSetsProgress = currentSetIndex * questionSetWeight;
+  const currentSetContribution = currentSetProgress * questionSetWeight;
+
+  // Return the total progress as a percentage
+  return (completedSetsProgress + currentSetContribution) * 100;
 };

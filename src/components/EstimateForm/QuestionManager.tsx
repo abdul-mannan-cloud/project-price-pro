@@ -35,23 +35,10 @@ export const QuestionManager = ({
         handleAnswer,
         handleMultipleChoiceNext,
         calculateProgress,
-
     } = useQuestionManager(questionSets, onComplete, onProgressChange,contractorId,
         projectDescription,
         uploadedPhotos,
         uploadedImageUrl);
-
-    console.log('QuestionManager state:', {
-        currentQuestion,
-        currentSet,
-        isLoadingQuestions,
-        isGeneratingEstimate,
-        hasFollowUpQuestion,
-        currentStage,
-        totalStages,
-        currentSetAnswers,
-        progress: calculateProgress()
-    });
 
     // Update progress whenever current question changes
     useEffect(() => {

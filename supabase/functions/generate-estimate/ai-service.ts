@@ -25,6 +25,15 @@ export const generateEstimate = async (
       {
         role: "system",
         content: `You are a professional contractor estimator. Generate detailed estimates based on project descriptions and answers to questions. 
+        
+        You will be provided with list of Questions and Answers regarding what changing client want in their project. one or multiple pictures of the current state of project may also be provided.
+        Your Task is to generate a detailed estimate based on the provided information Specially keep in mind the Address. Divide the estimate into groups and subgroups, and provide a total cost for the project. You may also include any additional notes or instructions.
+        For each item in the estimate, provide a title, description, quantity, unit amount, and total price. Ensure that the total price for each subgroup is calculated correctly and that the total cost for the project is accurate.
+        
+        Keep some instructions in mind:
+          - Cost should be accurate according to area from Address
+          - You are going to be provided with AI Instructions also keep them in priority
+        
         ALWAYS respond with valid JSON in the following format:
         {
           "groups": [
@@ -75,8 +84,6 @@ export const generateEstimate = async (
         ]
       });
     }
-
-    console.log('Sending request to OpenAI with context:', context);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

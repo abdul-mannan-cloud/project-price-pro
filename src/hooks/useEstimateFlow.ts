@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Category, CategoryQuestions, AnswersState, EstimateConfig } from "@/types/estimate";
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { Database, Json } from "@/integrations/supabase/types";
+import questionManager from "@/components/EstimateForm/QuestionManager.tsx";
 
 type LeadInsert = Database['public']['Tables']['leads']['Insert'];
 
@@ -27,10 +28,6 @@ export const useEstimateFlow = (config: EstimateConfig) => {
   const [answers, setAnswers] = useState<AnswersState>({});
   const { toast } = useToast();
 
-  useEffect(() => {
-    console.log("Matched Questions sets : ",matchedQuestionSets)
-  }, [matchedQuestionSets]);
-
   const handlePhotoUpload = (urls: string[]) => {
     setUploadedPhotos(urls);
     if (urls.length > 0) {
@@ -38,6 +35,12 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     }
     setStage('description');
   };
+
+
+  const changeProgress = (newProgress: number) => {
+    setProgress(newProgress);
+  }
+
 
   const handleDescriptionSubmit = async (description: string) => {
     setProjectDescription(description);
@@ -64,6 +67,87 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
     setMatchedQuestionSets(consolidatedSets);
     setStage('questions');
+  };
+
+  const handleRefreshEstimate = async (leadId:string) => {
+    try {
+      setIsLoading(true);
+      console.log('Refreshing estimate with ID:', leadId);
+
+      if (!leadId) {
+        throw new Error('Missing lead ID');
+      }
+
+
+      const address = await supabase.from('contractors').select('business_address').eq('id',config.contractorId).single();
+      let address_string=""
+      if (!address.data || !address.data.business_address) {
+        try {
+          const response = await fetch('https://ipapi.co/json/?key=AzZ4jUj0F5eFNjhgWgLpikGJxYdf5IzcsfBQSiOMw69RtR8JzX');
+
+          if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+          }
+
+          const ipAddressData = await response.json();
+
+          address_string=`${ipAddressData.city}, ${ipAddressData.region}, ${ipAddressData.country_name}`
+
+        } catch (error) {
+          console.error('Error fetching IP address data:', error);
+          throw error;
+        }
+      } else {
+        address_string=address.data.business_address
+      }
+
+      const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
+        body: {
+          leadId: leadId,
+          contractorId: config.contractorId,
+          projectDescription: projectDescription,
+          category: matchedQuestionSets[0].category,
+          imageUrl: uploadedImageUrl,
+          projectImages: uploadedPhotos,
+          answers: answers,
+          address:address_string
+        }
+      });
+
+      if(generateError) throw generateError;
+
+      toast({
+        title: "Estimate refresh started",
+        description: "Your estimate will be updated shortly.",
+      });
+
+
+      let attempts = 0;
+      const pollInterval = setInterval(async () => {
+        try {
+          const isComplete = await checkEstimateStatus(leadId);
+          attempts++;
+
+          if (isComplete || attempts >= 10) {
+            clearInterval(pollInterval);
+            setIsLoading(false);
+          }
+        } catch (pollError) {
+          console.error('Error polling estimate:', pollError);
+          clearInterval(pollInterval);
+          setIsLoading(false);
+        }
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error refreshing estimate:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh the estimate. Please try again.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
   };
 
   const handleCategorySelect = (categoryIds: string[]) => {
@@ -383,6 +467,8 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     handleCategorySelect,
     handleQuestionComplete,
     handleContactSubmit,
-    handleSkip
+    handleSkip,
+    handleRefreshEstimate,
+    changeProgress
   };
 };

@@ -80,6 +80,8 @@ interface EstimateDisplayProps {
   projectImages?: string[];
   estimate?: any;
   isLoading?: boolean;
+    handleRefreshEstimate: (id:string) => void;
+    leadId: string;
 }
 
 export const EstimateDisplay = ({ 
@@ -93,7 +95,9 @@ export const EstimateDisplay = ({
   onSignatureComplete,
   projectImages = [],
   estimate,
-  isLoading: initialLoading = false
+  isLoading: initialLoading = false,
+    handleRefreshEstimate,
+    leadId
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
@@ -107,14 +111,14 @@ export const EstimateDisplay = ({
   const { toast } = useToast();
 
   const { data: leadData } = useQuery({
-    queryKey: ['estimate-status', id],
+    queryKey: ['estimate-status', leadId],
     queryFn: async () => {
-      if (!id) return null;
+      if (!leadId) return null;
       
       const { data, error } = await supabase
         .from('leads')
         .select('estimate_data, status')
-        .eq('id', id)
+        .eq('id', leadId)
         .maybeSingle();
 
       if (error) {
@@ -125,7 +129,7 @@ export const EstimateDisplay = ({
       return data;
     },
     refetchInterval: !isEstimateReady ? 3000 : false,
-    enabled: !!id
+    enabled: !!leadId
   });
 
   const { data: settings } = useQuery({
@@ -162,83 +166,14 @@ export const EstimateDisplay = ({
   useEffect(() => {
     const checkContractorAccess = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user && contractorId === user.id) {
+      const { data: contractor } = await supabase.from('contractors').select('id').eq('user_id', user.id).maybeSingle();
+      if (user && contractor.id === contractorId) {
         setIsContractor(true);
       }
     };
     checkContractorAccess();
   }, [contractorId]);
 
-  const handleRefreshEstimate = async () => {
-    try {
-      setIsLoading(true);
-      console.log('Refreshing estimate with ID:', id);
-      
-      if (!id) {
-        throw new Error('Missing lead ID');
-      }
-
-      const { data, error } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          leadId: id,
-          contractorId,
-          refreshOnly: true
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Estimate refresh started",
-        description: "Your estimate will be updated shortly.",
-      });
-
-      const checkEstimate = async () => {
-        const { data: lead, error: pollError } = await supabase
-          .from('leads')
-          .select('estimate_data, status')
-          .eq('id', id)
-          .maybeSingle();
-
-        if (pollError) throw pollError;
-        
-        if (lead?.status === 'complete' && lead?.estimate_data) {
-          if (onEstimateChange) {
-            onEstimateChange(lead.estimate_data);
-          }
-          setIsLoading(false);
-          return true;
-        }
-        return false;
-      };
-
-      let attempts = 0;
-      const pollInterval = setInterval(async () => {
-        try {
-          const isComplete = await checkEstimate();
-          attempts++;
-          
-          if (isComplete || attempts >= 10) {
-            clearInterval(pollInterval);
-            setIsLoading(false);
-          }
-        } catch (pollError) {
-          console.error('Error polling estimate:', pollError);
-          clearInterval(pollInterval);
-          setIsLoading(false);
-        }
-      }, 3000);
-
-    } catch (error) {
-      console.error('Error refreshing estimate:', error);
-      toast({
-        title: "Error",
-        description: "Failed to refresh the estimate. Please try again.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-    }
-  };
 
   const handleSignature = (initials: string) => {
     setSignature(initials);
@@ -274,7 +209,7 @@ export const EstimateDisplay = ({
           </div>
         </div>
       )}
-      
+
       <Card className={cn(styles.card, isBlurred && "blur-md pointer-events-none")}>
         <div id="estimate-content">
           <div className="flex flex-row justify-between">
@@ -284,7 +219,9 @@ export const EstimateDisplay = ({
               <EstimateActions
                   isContractor={isContractor}
                   companyName={contractor?.company_name || 'Estimate'}
-                  onRefreshEstimate={handleRefreshEstimate}
+                  onRefreshEstimate={async ()=>{
+                    handleRefreshEstimate(leadId);
+                  }}
                   onShowSettings={() => setShowSettings(true)}
                   onShowAIPreferences={() => setShowAIPreferences(true)}
                   styles={styles}

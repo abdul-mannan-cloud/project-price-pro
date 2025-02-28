@@ -14,7 +14,7 @@ export const useQuestionManager = (
     contractorId: string, // Add contractorId as a parameter
     projectDescription: string, // Add projectDescription as a parameter
     uploadedPhotos: string[], // Add uploadedPhotos as a parameter
-    uploadedImageUrl: string | null // Add uploadedImageUrl as a parameter
+    uploadedImageUrl: string | null ,// Add uploadedImageUrl as a parameter
 ) => {
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
@@ -26,11 +26,14 @@ export const useQuestionManager = (
   const [pendingBranchTransition, setPendingBranchTransition] = useState(false);
 
   const calculateProgress = () => {
+    console.log("Use Question Manager Test", currentQuestionId, questionSequence);
     if (!currentQuestionId || !questionSequence) return 0;
     return calculateQuestionProgress(
-      questionSequence,
-      currentQuestionId,
-      answers[questionSets[currentSetIndex]?.category] || {}
+        questionSequence,
+        currentQuestionId,
+        answers[questionSets[currentSetIndex]?.category] || {},
+        questionSets.length,
+        currentSetIndex
     );
   };
 
@@ -136,7 +139,28 @@ export const useQuestionManager = (
         throw new Error('Failed to create lead - no ID returned');
       }
 
-      console.log('Lead created successfully:', lead.id);
+      const address = await supabase.from('contractors').select('business_address').eq('id',contractorId).single();
+      let address_string=""
+      if (!address.data || !address.data.business_address) {
+        try {
+          const response = await fetch('https://ipapi.co/json/?key=AzZ4jUj0F5eFNjhgWgLpikGJxYdf5IzcsfBQSiOMw69RtR8JzX');
+
+          if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+          }
+
+          const ipAddressData = await response.json();
+
+          address_string=`${ipAddressData.city}, ${ipAddressData.region}, ${ipAddressData.country_name}`
+
+        } catch (error) {
+          console.error('Error fetching IP address data:', error);
+          throw error;
+        }
+      } else {
+        address_string=address.data.business_address
+      }
+
 
       // Then, generate the estimate
       const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
@@ -147,7 +171,8 @@ export const useQuestionManager = (
           category: questionSets[0]?.category,
           imageUrl: uploadedImageUrl,
           projectImages: uploadedPhotos,
-          answers: answersForDb
+          answers: answersForDb,
+          address:address_string
         }
       });
 
