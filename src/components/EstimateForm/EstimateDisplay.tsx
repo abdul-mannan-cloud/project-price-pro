@@ -197,6 +197,7 @@ export const EstimateDisplay = ({
     return <EstimateSkeleton />;
   }
 
+
   return (
     <>
       {!isEstimateReady && (
@@ -229,6 +230,7 @@ export const EstimateDisplay = ({
                   totalCost={totalCost || 0}
                   contractor={contractor}
                   projectSummary={projectSummary}
+                  leadId={leadId}
               />
             </div>
           </div>
