@@ -150,6 +150,54 @@ const Onboarding = () => {
     contactPhone: false,
   });
 
+    useEffect(() => {
+        const checkBusinessInfo = async () => {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    toast({
+                        title: "Error",
+                        description: "No authenticated user found. Please log in again.",
+                        variant: "destructive",
+                    });
+                    navigate("/login");
+                    return;
+                }
+
+                // Check if the contractor exists
+                const { data: existingContractor, error } = await supabase
+                    .from("contractors")
+                    .select("id")
+                    .eq("user_id", user.id)
+                    .maybeSingle();
+
+                if (error) throw error;
+
+                // If the business info exists, redirect to dashboard
+                if (existingContractor) {
+                    toast({
+                        title: "Business info exists",
+                        description: "Your business information has already been set up.",
+                    })
+                    navigate("/dashboard");
+                    return;
+                }
+
+                setLoading(false); // No business info found, allow onboarding to continue
+            } catch (error: any) {
+                console.error("Error checking business info:", error);
+                toast({
+                    title: "Error",
+                    description: "Something went wrong while checking business information.",
+                    variant: "destructive",
+                });
+                setLoading(false);
+            }
+        };
+
+        checkBusinessInfo();
+    }, [navigate, toast]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
