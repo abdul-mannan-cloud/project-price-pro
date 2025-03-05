@@ -1,5 +1,5 @@
 
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {BrowserRouter, Routes, Route, Navigate, useParams} from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,8 @@ import NotFound from "@/pages/NotFound";
 import Onboarding from "@/pages/Onboarding";
 import TeamOnboarding from "@/pages/TeamOnboarding";
 import "./App.css";
+import {IconTrafficCone} from "@tabler/icons-react";
+import {ContractorProvider} from "@/hooks/useContractor.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +58,7 @@ const setColorVariables = (colors: { primary: string; secondary: string }) => {
 };
 
 function GlobalBrandingLoader() {
+
   const { data: session } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
@@ -75,7 +78,7 @@ function GlobalBrandingLoader() {
         .maybeSingle();
 
       if (error || !contractor) {
-        console.error(error ? `Error fetching contractor: ${error.message}` : 
+        console.error(error ? `Error fetching contractor: ${error.message}` :
                             `No contractor found for user: ${session.user.id}`);
         return null;
       }
@@ -94,13 +97,16 @@ function GlobalBrandingLoader() {
 
 function App() {
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
+  const {contractorId} = useParams()
+
+  console.log('contractor parameter id:', contractorId)
 
   useEffect(() => {
     const initialize = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         console.log("Initial session:", session ? "Found" : "Not found");
-        
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
           console.log("Auth state change:", event, session ? "Session exists" : "No session");
           if (event === 'SIGNED_OUT') queryClient.clear();
@@ -121,6 +127,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ContractorProvider>
       <GlobalBrandingLoader />
       <BrowserRouter>
         <Routes>
@@ -139,6 +146,7 @@ function App() {
         </Routes>
         <Toaster />
       </BrowserRouter>
+      </ContractorProvider>
     </QueryClientProvider>
   );
 }

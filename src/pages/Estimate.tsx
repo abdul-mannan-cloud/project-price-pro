@@ -17,6 +17,7 @@ import { EstimateAnimation } from "@/components/EstimateForm/EstimateAnimation";
 import { Category, EstimateConfig } from "@/types/estimate";
 import { EstimateSkeleton } from "@/components/EstimateForm/EstimateSkeleton";
 import { MultiStepSkeleton } from "@/components/EstimateForm/MultiStepSkeleton";
+import {useContractor} from "@/hooks/useContractor.tsx";
 
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
@@ -26,12 +27,80 @@ const isValidUUID = (uuid: string) => {
   return uuidRegex.test(uuid);
 };
 
+const setColorVariables = (colors: { primary: string; secondary: string }) => {
+  const { primary, secondary } = colors;
+  const primaryHex = primary.replace('#', '');
+  const [r, g, b] = [
+    parseInt(primaryHex.slice(0, 2), 16),
+    parseInt(primaryHex.slice(2, 4), 16),
+    parseInt(primaryHex.slice(4, 6), 16)
+  ];
+
+  const colorVars = {
+    '--primary': primary,
+    '--primary-foreground': '#FFFFFF',
+    '--secondary': secondary,
+    '--secondary-foreground': '#1d1d1f',
+    '--primary-100': `rgba(${r}, ${g}, ${b}, 0.1)`,
+    '--primary-200': `rgba(${r}, ${g}, ${b}, 0.2)`,
+    '--primary-300': `rgba(${r}, ${g}, ${b}, 0.4)`,
+    '--primary-400': `rgba(${r}, ${g}, ${b}, 0.6)`,
+    '--primary-500': `rgba(${r}, ${g}, ${b}, 0.8)`,
+    '--primary-600': primary,
+    '--primary-700': `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`,
+  };
+
+  Object.entries(colorVars).forEach(([key, value]) => {
+    document.documentElement.style.setProperty(key, value);
+  });
+};
+
+function GlobalBrandingLoader({contractorId}) {
+
+  console.log('Branding loader contractor ID:', contractorId);
+
+
+
+  useQuery({
+    queryKey: ["globalBranding", contractorId],
+    queryFn: async () => {
+      const { data: contractor, error } = await supabase
+          .from("contractors")
+          .select("branding_colors")
+          .eq("id", contractorId)
+          .maybeSingle();
+
+      if (error || !contractor) {
+        console.error(error ? `Error fetching contractor: ${error.message}` :
+            `No contractor found for user: ${session.user.id}`);
+        return null;
+      }
+
+
+      const colors = contractor.branding_colors as { primary: string; secondary: string } | null;
+      if (colors) {
+        setColorVariables(colors);
+      }
+      return colors;
+    },
+  });
+
+  return null;
+}
+
 const EstimatePage = () => {
   const navigate = useNavigate();
   const { contractorId } = useParams();
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
+  const {
+    updateContractorId,
+  } = useContractor();
+
+  useEffect(() => {
+    updateContractorId(contractorId);
+  }, []);
 
   // Get the contractor ID from the URL first
   const urlContractorId = (() => {
@@ -190,6 +259,8 @@ const EstimatePage = () => {
 
 
   return (
+      <>
+      <GlobalBrandingLoader contractorId={contractorId}/>
     <div className="min-h-screen bg-gray-100">
       <EstimateProgress stage={stage} progress={progress} />
 
@@ -296,6 +367,7 @@ const EstimatePage = () => {
         </div>
       </div>
     </div>
+        </>
   );
 };
 

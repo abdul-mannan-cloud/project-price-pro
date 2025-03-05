@@ -283,15 +283,6 @@ export const EstimateDisplay = ({
             styles={styles}
           />
 
-          {templateSettings?.estimate_signature_enabled && (
-            <EstimateSignature
-              signature={signature}
-              isEstimateReady={isEstimateReady}
-              onSignatureClick={() => setShowSignatureDialog(true)}
-              styles={styles}
-            />
-          )}
-
           {templateSettings?.estimate_footer_text && (
             <div className={cn("mt-8 pt-6 border-t", styles.text)}>
               <p className="whitespace-pre-wrap text-sm">
@@ -299,6 +290,16 @@ export const EstimateDisplay = ({
               </p>
             </div>
           )}
+
+          {templateSettings?.estimate_signature_enabled && (
+              <EstimateSignature
+                  signature={signature}
+                  isEstimateReady={isEstimateReady}
+                  onSignatureClick={() => setShowSignatureDialog(true)}
+                  styles={styles}
+              />
+          )}
+
         </div>
       </Card>
 
