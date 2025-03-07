@@ -54,23 +54,23 @@ export const ProjectDescriptionStep = ({ onSubmit, isSpeechSupported = false }: 
     <div className="card p-8 animate-fadeIn">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold">Describe Your Project</h2>
-        {/*{isSpeechSupported && (*/}
-        {/*  <button*/}
-        {/*    onClick={toggleRecording}*/}
-        {/*    className={cn(*/}
-        {/*      "p-2 rounded-full transition-all duration-200",*/}
-        {/*      isRecording */}
-        {/*        ? "bg-red-100 text-red-600 hover:bg-red-200" */}
-        {/*        : "bg-gray-100 hover:bg-gray-200"*/}
-        {/*    )}*/}
-        {/*  >*/}
-        {/*    {isRecording ? (*/}
-        {/*      <MicOff className="h-5 w-5" />*/}
-        {/*    ) : (*/}
-        {/*      <Mic className="h-5 w-5" />*/}
-        {/*    )}*/}
-        {/*  </button>*/}
-        {/*)}*/}
+        {isSpeechSupported && (
+          <button
+            onClick={toggleRecording}
+            className={cn(
+              "p-2 rounded-full transition-all duration-200",
+              isRecording
+                ? "bg-red-100 text-red-600 hover:bg-red-200"
+                : "bg-gray-100 hover:bg-gray-200"
+            )}
+          >
+            {isRecording ? (
+              <MicOff className="h-5 w-5" />
+            ) : (
+              <Mic className="h-5 w-5" />
+            )}
+          </button>
+        )}
       </div>
       <div className="space-y-2 relative">
         <Textarea

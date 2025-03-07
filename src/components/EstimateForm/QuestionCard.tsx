@@ -100,10 +100,10 @@ export const QuestionCard = ({
           "font-semibold",
           isMobile ? "text-base px-4" : "text-xl"
         )}>{question?.question}</h2>
-        <VoiceInput 
-          question={question} 
-          onSelect={(value) => handleOptionClick(value)} 
-        />
+        {/*<VoiceInput */}
+        {/*  question={question} */}
+        {/*  onSelect={(value) => handleOptionClick(value)} */}
+        {/*/>*/}
       </div>
 
       <div className={cn(
