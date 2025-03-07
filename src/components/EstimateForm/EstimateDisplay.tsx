@@ -97,11 +97,12 @@ export const EstimateDisplay = ({
   estimate,
   isLoading: initialLoading = false,
     handleRefreshEstimate,
-    leadId
+    leadId,
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
-  const { id, contractorId } = useParams();
+  const { id, contractorParam } = useParams();
+  const [contractorId, setContractorId] = useState<string>(contractorParam);
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
@@ -109,6 +110,21 @@ export const EstimateDisplay = ({
   const [isEstimateReady, setIsEstimateReady] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if(!contractorId){
+      getContractorId()
+    }
+  }, [contractorId]);
+
+  const getContractorId = async () => {
+    const lead = await supabase
+        .from('leads')
+        .select('contractor_id')
+        .eq('id', leadId)
+        .single();
+    setContractorId(lead.data.contractor_id);
+  }
 
   const { data: leadData } = useQuery({
     queryKey: ['estimate-status', leadId],
@@ -141,6 +157,8 @@ export const EstimateDisplay = ({
         .eq("id", contractorId)
         .single();
 
+      console.log('contractor settings',data)
+
       if (error) throw error;
       return data as ContractorSettings;
     },
@@ -167,7 +185,7 @@ export const EstimateDisplay = ({
     const checkContractorAccess = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       const { data: contractor } = await supabase.from('contractors').select('id').eq('user_id', user.id).maybeSingle();
-      if (user && contractor.id === contractorId) {
+      if (user && contractor.id === contractorParam) {
         setIsContractor(true);
       }
     };
@@ -219,7 +237,7 @@ export const EstimateDisplay = ({
             <div className={styles.headerContent}>
               <EstimateActions
                   isContractor={isContractor}
-                  companyName={contractor?.company_name || 'Estimate'}
+                  companyName={contractor?.business_name || 'Estimate'}
                   onRefreshEstimate={async ()=>{
                     handleRefreshEstimate(leadId);
                   }}
