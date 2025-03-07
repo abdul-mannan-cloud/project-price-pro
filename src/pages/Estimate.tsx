@@ -57,9 +57,6 @@ const setColorVariables = (colors: { primary: string; secondary: string }) => {
 
 function GlobalBrandingLoader({contractorId}) {
 
-  console.log('Branding loader contractor ID:', contractorId);
-
-
 
   useQuery({
     queryKey: ["globalBranding", contractorId],
@@ -72,7 +69,7 @@ function GlobalBrandingLoader({contractorId}) {
 
       if (error || !contractor) {
         console.error(error ? `Error fetching contractor: ${error.message}` :
-            `No contractor found for user: ${session.user.id}`);
+            `No contractor found for user: `);
         return null;
       }
 
@@ -260,7 +257,7 @@ const EstimatePage = () => {
 
   return (
       <>
-      <GlobalBrandingLoader contractorId={contractorId}/>
+        <GlobalBrandingLoader contractorId={urlContractorId}/>
     <div className="min-h-screen bg-gray-100">
       <EstimateProgress stage={stage} progress={progress} />
 
