@@ -82,6 +82,7 @@ interface EstimateDisplayProps {
   isLoading?: boolean;
     handleRefreshEstimate: (id:string) => void;
     leadId: string;
+    contractorParam?: string;
 }
 
 export const EstimateDisplay = ({ 
@@ -98,10 +99,10 @@ export const EstimateDisplay = ({
   isLoading: initialLoading = false,
     handleRefreshEstimate,
     leadId,
+    contractorParam
 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
-  const { id, contractorParam } = useParams();
   const [contractorId, setContractorId] = useState<string>(contractorParam);
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
