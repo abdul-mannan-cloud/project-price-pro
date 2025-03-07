@@ -328,6 +328,7 @@ const EstimatePage = () => {
                 isLoading={isGeneratingEstimate}
                 projectImages={uploadedPhotos}
                 leadId={currentLeadId}
+                contractorParam={contractorId}
               />
             </div>
           )}
