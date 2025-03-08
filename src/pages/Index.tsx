@@ -5,9 +5,6 @@ import Floating, { FloatingElement } from "@/components/ui/parallax-floating";
 import { TextRotate } from "@/components/ui/text-rotate";
 import { Header1 } from "@/components/ui/header";
 import { Footerdemo } from "@/components/ui/footer-section";
-import {useEffect, useState} from "react";
-import {supabase} from "@/integrations/supabase/client.ts";
-import {toast} from "sonner";
 
 const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
 
@@ -43,44 +40,15 @@ const constructionImages = [
 ];
 
 const rotatingTexts = [
-  "Lead Generation",
-  "AI Estimates",
-  "Customer Retention",
-  "Project Planning",
-  "Cost Analysis",
+  "Remodel my kitchen",
+  "Paint my home",
+  "Repair my drywall",
+  "Trim my hedges",
+   "Replace my door",
 ];
 
 const Index = () => {
   const navigate = useNavigate();
-  const [contractorId, setContractorId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          // navigate("/login");
-          // toast({
-          //   title: "Authentication required",
-          //   description: "Please log in to view leads.",
-          //   variant: "destructive"
-          // });
-        } else {
-          const contractor = await supabase
-            .from("contractors")
-            .select("id")
-            .eq("user_id", user.id)
-            .single();
-          setContractorId(contractor.data.id);
-        }
-      } catch (error) {
-        console.error("Auth error:", error);
-        navigate("/login");
-      }
-    };
-
-    checkAuth();
-  }, []);
 
   return (
     <div className="index-page min-h-screen bg-[#F1F1F1] relative overflow-hidden font-['Open Sans']">
@@ -94,7 +62,7 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              Transform your construction business with...
+              Estimate just about anything...
             </motion.h1>
             <div className="flex justify-center">
               <TextRotate
@@ -110,7 +78,7 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              Revolutionize your project estimations with powerful AI technology. Generate precise leads, streamline your workflow, and close projects with unprecedented accuracy and efficiency.
+              Snap up a reliably fast project quote and stay right on budget.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -119,7 +87,7 @@ const Index = () => {
               className="pt-4"
             >
               <Button
-                onClick={() => navigate(`/estimate/${contractorId??DEFAULT_CONTRACTOR_ID}`)}
+                onClick={() => navigate(`/estimate/${DEFAULT_CONTRACTOR_ID}`)}
                 size="lg"
                 variant="default"
                 className="text-lg px-8 py-6"
@@ -158,7 +126,15 @@ const Index = () => {
         ))}
       </Floating>
 
-
+      <div className="fixed top-4 right-4 z-20">
+        <Button
+          onClick={() => navigate("/login")}
+          variant="outline"
+          className="text-gray-800 hover:text-gray-600"
+        >
+          Sign In
+        </Button>
+      </div>
 
       <Footerdemo />
     </div>
