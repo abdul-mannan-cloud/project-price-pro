@@ -43,10 +43,16 @@ export const ServiceCategoriesSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
+      const contractor_id = await supabase
+        .from("contractors")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
       const { data, error } = await supabase
         .from("contractor_settings")
         .select("*")
-        .eq("id", user.id)
+        .eq("id", contractor_id.data.id)
         .single();
 
       if (error) throw error;
@@ -60,10 +66,16 @@ export const ServiceCategoriesSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
+      const contractor_id = await supabase
+          .from("contractors")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
       const { error } = await supabase
         .from("contractor_settings")
         .update({ excluded_categories: excludedCategories })
-        .eq("id", user.id);
+        .eq("id", contractor_id.data.id);
 
       if (error) throw error;
     },

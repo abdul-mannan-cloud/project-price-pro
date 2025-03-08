@@ -158,8 +158,6 @@ export const EstimateDisplay = ({
         .eq("id", contractorId)
         .single();
 
-      console.log('contractor settings',data)
-
       if (error) throw error;
       return data as ContractorSettings;
     },
@@ -261,10 +259,18 @@ export const EstimateDisplay = ({
             </h2>
           )}
 
-          {(estimate?.ai_generated_message || projectSummary) && (
+          {/*{(estimate?.ai_generated_message || projectSummary) && (*/}
+          {/*    <div className={cn(styles.message, "mb-6")}>*/}
+          {/*      <p className={styles.text}>*/}
+          {/*        {estimate?.ai_generated_message || projectSummary}*/}
+          {/*      </p>*/}
+          {/*    </div>*/}
+          {/*)}*/}
+
+          {(settings?.estimate_client_message || projectSummary) && (
             <div className={cn(styles.message, "mb-6")}>
               <p className={styles.text}>
-                {estimate?.ai_generated_message || projectSummary}
+                {settings?.estimate_client_message || projectSummary}
               </p>
             </div>
           )}

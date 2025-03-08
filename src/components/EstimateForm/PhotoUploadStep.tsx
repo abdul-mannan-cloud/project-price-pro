@@ -46,20 +46,20 @@ export const PhotoUploadStep = ({ onPhotoUploaded, onSkip, contractor }: PhotoUp
         </p>
       </div>
       <div className="mt-8">
-        <PhotoUpload 
-          onPhotosSelected={handlePhotosSelected}
-          onNext={handleNext}
-          uploadedPhotos={uploadedPhotos}
+        <PhotoUpload
+            onPhotosSelected={handlePhotosSelected}
+            onNext={handleNext}
+            uploadedPhotos={uploadedPhotos}
         />
-        <Button 
-          variant="ghost" 
-          className="w-full mt-4" 
-          size="lg" 
-          onClick={onSkip}
+        {uploadedPhotos.length<1 && <Button
+            variant="ghost"
+            className="w-full mt-4"
+            size="lg"
+            onClick={onSkip}
         >
-          <SkipForward className="mr-2" />
+          <SkipForward className="mr-2"/>
           Skip Photo
-        </Button>
+        </Button>}
       </div>
     </div>
   );
