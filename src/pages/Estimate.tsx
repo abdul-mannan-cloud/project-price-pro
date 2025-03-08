@@ -207,7 +207,15 @@ const EstimatePage = () => {
 
         if (optionsError) throw optionsError;
 
-        const transformedCategories: Category[] = Object.keys(optionsData)
+        const excludedCategoriesData = await supabase
+            .from('contractor_settings')
+            .select('excluded_categories')
+            .eq('id', urlContractorId)
+            .single()
+
+        const excludedCategories = excludedCategoriesData.data?.excluded_categories || [];
+
+        let transformedCategories: Category[] = Object.keys(optionsData)
           .filter(key => key !== 'Key Options')
           .map(key => {
             const catData = optionsData[key] as Record<string, any>;
@@ -221,7 +229,13 @@ const EstimatePage = () => {
             };
           });
 
-        console.log('Print Categories:', transformedCategories);
+        // Filter out excluded categories
+        if (excludedCategories.length > 0) {
+          transformedCategories = transformedCategories.filter(cat => !excludedCategories.includes(cat.id));
+        }
+
+        console.log('excludedCategories', excludedCategories);
+
         setCategories(transformedCategories);
       } catch (error) {
         console.error('Error loading categories:', error);

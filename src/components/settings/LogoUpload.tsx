@@ -38,7 +38,7 @@ export const LogoUpload = ({ currentLogo }: { currentLogo?: string | null }) => 
       const { error: updateError } = await supabase
         .from('contractors')
         .update({ business_logo_url: publicUrl })
-        .eq('id', user.id);
+        .eq('user_id', user.id);
 
       if (updateError) throw updateError;
 

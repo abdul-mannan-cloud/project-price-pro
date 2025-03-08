@@ -82,6 +82,135 @@ const Settings = () => {
     },
   });
 
+  const { data: aiInstructions, isLoading: aiInstructionsLoading } = useQuery({
+    queryKey: ["aiInstructions"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      // First get the contractor ID
+      const { data: contractorData, error: contractorError } = await supabase
+          .from("contractors")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
+      if (contractorError) throw contractorError;
+
+      // Then get the AI instructions using the contractor_id
+      const { data, error } = await supabase
+          .from("ai_instructions")
+          .select("*")
+          .eq("contractor_id", contractorData.id);
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: aiRates, isLoading: aiRatesLoading } = useQuery({
+    queryKey: ["aiRates"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      // First get the contractor ID
+      const { data: contractorData, error: contractorError } = await supabase
+          .from("contractors")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
+      if (contractorError) throw contractorError;
+
+      // Then get the AI rates using the contractor_id
+      const { data, error } = await supabase
+          .from("ai_rates")
+          .select("*")
+          .eq("contractor_id", contractorData.id);
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+// 2. Add a function to save rates
+  const saveRates = async (rates) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      // Get the contractor to access the contractor_id
+      const { data: contractorData, error: contractorError } = await supabase
+          .from("contractors")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
+      if (contractorError) throw contractorError;
+      const contractor_id = contractorData.id;
+
+      // For each rate in the array, upsert to the ai_rates table
+      const promises = rates.map(async (rate) => {
+        if (rate.id) {
+          // Update existing rate
+          const { error } = await supabase
+              .from("ai_rates")
+              .update({
+                title: rate.title,
+                rate: rate.rate,
+                unit: rate.unit,
+                type: rate.type,
+                description: rate.description,
+                instructions: rate.instructions,
+                updated_at: new Date().toISOString()
+              })
+              .eq("id", rate.id);
+
+          if (error) {
+            console.error("Update rate error:", error);
+            throw error;
+          }
+        } else {
+          // Insert new rate
+          const { error } = await supabase
+              .from("ai_rates")
+              .insert({
+                contractor_id: contractor_id,
+                title: rate.title,
+                rate: rate.rate,
+                unit: rate.unit,
+                type: rate.type,
+                description: rate.description || "",
+                instructions: rate.instructions || "",
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+
+          if (error) {
+            console.error("Insert rate error:", error);
+            throw error;
+          }
+        }
+      });
+
+      // Wait for all database operations to complete
+      await Promise.all(promises);
+
+      toast({
+        title: t("AI rates saved"),
+        description: t("Your AI rates have been updated successfully."),
+      });
+    } catch (error) {
+      console.error("Error saving AI rates:", error);
+      toast({
+        title: t("Error"),
+        description: t("Failed to save AI rates. Please try again."),
+        variant: "destructive",
+      });
+    }
+  };
+
   // Set initial business address when contractor data loads
   useEffect(() => {
     if (contractor?.business_address) {
@@ -157,6 +286,70 @@ const Settings = () => {
   const handleSelectSuggestion = (suggestion) => {
     setBusinessAddress(suggestion);
     setShowSuggestions(false);
+  };
+
+  const saveInstructions = async (instructions) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      // Get the contractor to access the contractor_id
+      const { data: contractorData, error: contractorError } = await supabase
+          .from("contractors")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
+      if (contractorError) throw contractorError;
+      const contractor_id = contractorData.id;
+
+      // For each instruction in the array, upsert to the ai_instructions table
+      const promises = instructions.map(async (instruction) => {
+        if (instruction.id) {
+          // Update existing instruction
+          const { error } = await supabase
+              .from("ai_instructions")
+              .update({
+                title: instruction.title,
+                description: instruction.description,
+                instructions: instruction.instructions,
+                updated_at: new Date().toISOString()
+              })
+              .eq("id", instruction.id);
+
+          if (error) throw error;
+        } else {
+          // Insert new instruction
+          const { error } = await supabase
+              .from("ai_instructions")
+              .insert({
+                contractor_id: contractor_id,
+                title: instruction.title,
+                description: instruction.description,
+                instructions: instruction.instructions,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+
+          if (error) throw error;
+        }
+      });
+
+      // Wait for all database operations to complete
+      await Promise.all(promises);
+
+      toast({
+        title: t("AI instructions saved"),
+        description: t("Your AI instructions have been updated successfully."),
+      });
+    } catch (error) {
+      console.error("Error saving AI instructions:", error);
+      toast({
+        title: t("Error"),
+        description: t("Failed to save AI instructions. Please try again."),
+        variant: "destructive",
+      });
+    }
   };
 
   const updateSettings = useMutation({
@@ -283,6 +476,7 @@ const Settings = () => {
         </div>
     );
   }
+
 
   const getSectionTitle = () => {
     switch (activeSection) {
@@ -459,17 +653,19 @@ const Settings = () => {
       case "ai":
         return (
             <div className="space-y-6">
-              <AIInstructionsForm
-                  instructions={[]}
-                  onSave={(instructions) => {
-                    updateSettings.mutate({
-                      aiInstructions: instructions
-                    });
-                  }}
-              />
+              {aiInstructionsLoading ? (
+                  <div className="flex items-center justify-center p-6">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+              ) : (
+                  <AIInstructionsForm
+                      instructions={aiInstructions}
+                      onSave={saveInstructions}
+                  />
+              )}
               <AIRateForm
-                  rates={[]}
-                  onSave={() => {}}
+                  rates={aiRates}
+                  onSave={saveRates}
               />
             </div>
         );
