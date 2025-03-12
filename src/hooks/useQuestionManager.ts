@@ -1,20 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Question, CategoryQuestions, AnswersState, QuestionAnswer } from "@/types/estimate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database, Json } from "@/integrations/supabase/types";
 import { calculateQuestionProgress } from "@/utils/questionNavigation";
+import { useSmoothProgress } from "@/hooks/useSmoothProgress";
 
 type LeadInsert = Database['public']['Tables']['leads']['Insert'];
 
 export const useQuestionManager = (
     questionSets: CategoryQuestions[],
-    onComplete: (answers: AnswersState,leadId:string) => void,
+    onComplete: (answers: AnswersState, leadId: string) => void,
     onProgressChange: (progress: number) => void,
-    contractorId: string, // Add contractorId as a parameter
-    projectDescription: string, // Add projectDescription as a parameter
-    uploadedPhotos: string[], // Add uploadedPhotos as a parameter
-    uploadedImageUrl: string | null ,// Add uploadedImageUrl as a parameter
+    contractorId: string,
+    projectDescription: string,
+    uploadedPhotos: string[],
+    uploadedImageUrl: string | null,
 ) => {
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
@@ -24,18 +25,77 @@ export const useQuestionManager = (
   const [queuedNextQuestions, setQueuedNextQuestions] = useState<string[]>([]);
   const [isGeneratingEstimate, setIsGeneratingEstimate] = useState(false);
   const [pendingBranchTransition, setPendingBranchTransition] = useState(false);
+  const [questionWeight, setQuestionWeight] = useState<Record<string, number>>({});
 
-  const calculateProgress = () => {
-    console.log("Use Question Manager Test", currentQuestionId, questionSequence);
-    if (!currentQuestionId || !questionSequence) return 0;
-    return calculateQuestionProgress(
-        questionSequence,
-        currentQuestionId,
-        answers[questionSets[currentSetIndex]?.category] || {},
-        questionSets.length,
-        currentSetIndex
-    );
-  };
+  // Use the smooth progress hook for better progress animation
+  const { progress: smoothProgress } = useSmoothProgress(
+      questionSequence,
+      currentQuestionId,
+      answers[questionSets[currentSetIndex]?.category] || {},
+      questionSets.length,
+      currentSetIndex
+  );
+
+  // Calculate expected total questions for current branch
+  const analyzeQuestionWeights = useCallback(() => {
+    if (!questionSequence.length) return;
+
+    // Analyze the question graph to determine relative weights
+    const weights: Record<string, number> = {};
+    const branches = new Map<string, string[]>();
+
+    // First pass: identify branches
+    questionSequence.forEach(question => {
+      if (question.type === 'multiple_choice') {
+        // Multiple choice can lead to multiple branches
+        const branchOptions = question.options
+            .filter(opt => opt.next && opt.next !== 'END' && opt.next !== 'NEXT_BRANCH')
+            .map(opt => opt.next);
+
+        if (branchOptions.length) {
+          branches.set(question.id, branchOptions);
+        }
+      } else {
+        // Single choice leads to one branch
+        const branchOptions = question.options
+            .filter(opt => opt.next && opt.next !== 'END' && opt.next !== 'NEXT_BRANCH')
+            .map(opt => opt.next);
+
+        if (branchOptions.length) {
+          branches.set(question.id, branchOptions);
+        }
+      }
+    });
+
+    // Assign weights based on branch structure
+    const calculateBranchDepth = (questionId: string, visited = new Set<string>()): number => {
+      if (visited.has(questionId)) return 0;
+      visited.add(questionId);
+
+      const branchTargets = branches.get(questionId) || [];
+      if (!branchTargets.length) return 1;
+
+      // Calculate max depth of all branches from this question
+      const branchDepths = branchTargets.map(target =>
+          calculateBranchDepth(target, new Set(visited))
+      );
+
+      return 1 + Math.max(...branchDepths, 0);
+    };
+
+    // Assign weights to all questions
+    questionSequence.forEach(question => {
+      weights[question.id] = calculateBranchDepth(question.id);
+    });
+
+    setQuestionWeight(weights);
+  }, [questionSequence]);
+
+  // Enhanced progress calculation that considers question weights
+  const calculateProgress = useCallback(() => {
+    // If we're using the smooth progress hook, return that value
+    return smoothProgress;
+  }, [smoothProgress]);
 
   const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {
@@ -80,6 +140,98 @@ export const useQuestionManager = (
       setCurrentSetIndex(prev => prev + 1);
     } else {
       handleComplete();
+    }
+  };
+
+  const handleSingleChoiceNavigation = (currentQuestion: Question, selectedValue: string) => {
+    const selectedOption = currentQuestion.options.find(
+        opt => opt.value.toLowerCase() === selectedValue.toLowerCase()
+    );
+
+    if (selectedOption?.next === 'NEXT_BRANCH') {
+      setPendingBranchTransition(true);
+    } else if (selectedOption?.next === 'END' || !selectedOption?.next) {
+      moveToNextQuestionSet();
+    } else if (selectedOption?.next) {
+      setCurrentQuestionId(selectedOption.next);
+    } else {
+      const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
+      if (currentIndex < questionSequence.length - 1) {
+        setCurrentQuestionId(questionSequence[currentIndex + 1].id);
+      } else {
+        moveToNextQuestionSet();
+      }
+    }
+  };
+
+  const handleAnswer = async (questionId: string, selectedValues: string[]) => {
+    const currentQuestion = questionSequence.find(q => q.id === questionId);
+    if (!currentQuestion) return;
+
+    const currentSet = questionSets[currentSetIndex];
+
+    const questionAnswer: QuestionAnswer = {
+      question: currentQuestion.question,
+      type: currentQuestion.type,
+      answers: selectedValues,
+      options: currentQuestion.options
+          .filter(opt => selectedValues.includes(opt.value))
+          .map(opt => ({
+            label: opt.label,
+            value: opt.value,
+            next: opt.next
+          }))
+    };
+
+    setAnswers(prev => ({
+      ...prev,
+      [currentSet.category]: {
+        ...prev[currentSet.category],
+        [questionId]: questionAnswer
+      }
+    }));
+
+    if (currentQuestion.type !== 'multiple_choice') {
+      handleSingleChoiceNavigation(currentQuestion, selectedValues[0]);
+    }
+  };
+
+  const handleMultipleChoiceNext = async () => {
+    const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
+    if (!currentQuestion) return;
+
+    const currentSet = questionSets[currentSetIndex];
+    const currentSetAnswers = answers[currentSet.category] || {};
+    const selectedValues = currentSetAnswers[currentQuestion.id]?.answers || [];
+
+    if (selectedValues.length === 0) return;
+
+    const nextQuestions = selectedValues.reduce((acc: string[], value: string) => {
+      const option = currentQuestion.options.find(opt => opt.value === value);
+      if (option?.next && option.next !== 'END' && option.next !== 'NEXT_BRANCH') {
+        acc.push(option.next);
+      }
+      return acc;
+    }, []);
+
+    const uniqueNextQuestions = Array.from(new Set(nextQuestions));
+
+    if (uniqueNextQuestions.length > 0) {
+      setCurrentQuestionId(uniqueNextQuestions[0]);
+      if (uniqueNextQuestions.length > 1) {
+        setQueuedNextQuestions(uniqueNextQuestions.slice(1));
+      }
+    } else {
+      const shouldMoveToNextBranch = selectedValues.some(value => {
+        const option = currentQuestion.options.find(opt => opt.value === value);
+        return option?.next === 'NEXT_BRANCH';
+      });
+
+      if (shouldMoveToNextBranch) {
+        setPendingBranchTransition(true);
+      } else {
+        moveToNextQuestionSet();
+      }
     }
   };
 
@@ -194,98 +346,6 @@ export const useQuestionManager = (
     }
   };
 
-  const handleAnswer = async (questionId: string, selectedValues: string[]) => {
-    const currentQuestion = questionSequence.find(q => q.id === questionId);
-    if (!currentQuestion) return;
-
-    const currentSet = questionSets[currentSetIndex];
-    
-    const questionAnswer: QuestionAnswer = {
-      question: currentQuestion.question,
-      type: currentQuestion.type,
-      answers: selectedValues,
-      options: currentQuestion.options
-        .filter(opt => selectedValues.includes(opt.value))
-        .map(opt => ({
-          label: opt.label,
-          value: opt.value,
-          next: opt.next
-        }))
-    };
-    
-    setAnswers(prev => ({
-      ...prev,
-      [currentSet.category]: {
-        ...prev[currentSet.category],
-        [questionId]: questionAnswer
-      }
-    }));
-
-    if (currentQuestion.type !== 'multiple_choice') {
-      handleSingleChoiceNavigation(currentQuestion, selectedValues[0]);
-    }
-  };
-
-  const handleSingleChoiceNavigation = (currentQuestion: Question, selectedValue: string) => {
-    const selectedOption = currentQuestion.options.find(
-      opt => opt.value.toLowerCase() === selectedValue.toLowerCase()
-    );
-
-    if (selectedOption?.next === 'NEXT_BRANCH') {
-      setPendingBranchTransition(true);
-    } else if (selectedOption?.next === 'END' || !selectedOption?.next) {
-      moveToNextQuestionSet();
-    } else if (selectedOption?.next) {
-      setCurrentQuestionId(selectedOption.next);
-    } else {
-      const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
-      if (currentIndex < questionSequence.length - 1) {
-        setCurrentQuestionId(questionSequence[currentIndex + 1].id);
-      } else {
-        moveToNextQuestionSet();
-      }
-    }
-  };
-
-  const handleMultipleChoiceNext = async () => {
-    const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
-    if (!currentQuestion) return;
-
-    const currentSet = questionSets[currentSetIndex];
-    const currentSetAnswers = answers[currentSet.category] || {};
-    const selectedValues = currentSetAnswers[currentQuestion.id]?.answers || [];
-    
-    if (selectedValues.length === 0) return;
-
-    const nextQuestions = selectedValues.reduce((acc: string[], value: string) => {
-      const option = currentQuestion.options.find(opt => opt.value === value);
-      if (option?.next && option.next !== 'END' && option.next !== 'NEXT_BRANCH') {
-        acc.push(option.next);
-      }
-      return acc;
-    }, []);
-
-    const uniqueNextQuestions = Array.from(new Set(nextQuestions));
-
-    if (uniqueNextQuestions.length > 0) {
-      setCurrentQuestionId(uniqueNextQuestions[0]);
-      if (uniqueNextQuestions.length > 1) {
-        setQueuedNextQuestions(uniqueNextQuestions.slice(1));
-      }
-    } else {
-      const shouldMoveToNextBranch = selectedValues.some(value => {
-        const option = currentQuestion.options.find(opt => opt.value === value);
-        return option?.next === 'NEXT_BRANCH';
-      });
-
-      if (shouldMoveToNextBranch) {
-        setPendingBranchTransition(true);
-      } else {
-        moveToNextQuestionSet();
-      }
-    }
-  };
-
   useEffect(() => {
     loadCurrentQuestionSet();
   }, [currentSetIndex, questionSets]);
@@ -296,11 +356,20 @@ export const useQuestionManager = (
     }
   }, [pendingBranchTransition, isLoadingQuestions]);
 
+  // Analyze question weights when the question sequence changes
+  useEffect(() => {
+    if (!isLoadingQuestions && questionSequence.length > 0) {
+      analyzeQuestionWeights();
+    }
+  }, [questionSequence, isLoadingQuestions, analyzeQuestionWeights]);
+
+  // Update the progress whenever it changes
   useEffect(() => {
     const progress = calculateProgress();
-    console.log('Updating progress:', progress);
-    onProgressChange(progress);
-  }, [answers, questionSets, currentQuestionId, questionSequence]);
+    if (!isNaN(progress)) {
+      onProgressChange(progress);
+    }
+  }, [calculateProgress, onProgressChange]);
 
   return {
     currentQuestion: questionSequence.find(q => q.id === currentQuestionId),
@@ -308,10 +377,10 @@ export const useQuestionManager = (
     currentSetAnswers: answers[questionSets[currentSetIndex]?.category] || {},
     isLoadingQuestions,
     isGeneratingEstimate,
-    hasFollowUpQuestion: currentSetIndex < questionSets.length - 1 || 
-      queuedNextQuestions.length > 0 ||
-      (currentQuestionId && questionSequence.find(q => q.id === currentQuestionId)?.type === 'multiple_choice' && 
-       questionSequence.find(q => q.id === currentQuestionId)?.options.some(opt => opt.next)),
+    hasFollowUpQuestion: currentSetIndex < questionSets.length - 1 ||
+        queuedNextQuestions.length > 0 ||
+        (currentQuestionId && questionSequence.find(q => q.id === currentQuestionId)?.type === 'multiple_choice' &&
+            questionSequence.find(q => q.id === currentQuestionId)?.options.some(opt => opt.next)),
     currentStage: currentSetIndex + 1,
     totalStages: questionSets.length,
     handleAnswer,

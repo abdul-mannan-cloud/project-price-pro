@@ -126,16 +126,6 @@ const Index = () => {
         ))}
       </Floating>
 
-      <div className="fixed top-4 right-4 z-20">
-        <Button
-          onClick={() => navigate("/login")}
-          variant="outline"
-          className="text-gray-800 hover:text-gray-600"
-        >
-          Sign In
-        </Button>
-      </div>
-
       <Footerdemo />
     </div>
   );
