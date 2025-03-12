@@ -343,6 +343,9 @@ const EstimatePage = () => {
                 projectImages={uploadedPhotos}
                 leadId={currentLeadId}
                 contractorParam={contractorId}
+                handleRefreshEstimate={async (leadId) => {
+                  await handleRefreshEstimate(leadId)
+                }}
               />
             </div>
           )}

@@ -101,6 +101,12 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         address_string=address.data.business_address
       }
 
+
+      toast({
+        title: "Estimate refresh started",
+        description: "Your estimate will be updated shortly.",
+      });
+
       const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
         body: {
           leadId: leadId,
@@ -115,11 +121,6 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       });
 
       if(generateError) throw generateError;
-
-      toast({
-        title: "Estimate refresh started",
-        description: "Your estimate will be updated shortly.",
-      });
 
 
       let attempts = 0;

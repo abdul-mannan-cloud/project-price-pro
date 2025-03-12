@@ -103,6 +103,35 @@ const Leads = () => {
     },
   });
 
+  const updateLead = useMutation({
+    mutationFn: async (lead: Lead) => {
+      if (!contractorId) throw new Error("No contractor ID available");
+
+      const { error } = await supabase
+        .from("leads")
+        .update(lead)
+        .eq("id", lead.id)
+        .eq("contractor_id", contractorId); // Add contractor_id check for security
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads", contractorId] });
+      toast({
+        title: "Lead updated",
+        description: "The lead has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error('Update error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update lead. Please try again.",
+        variant: "destructive",
+      });
+    },
+  })
+
   const handleLeadClick = async (lead: Lead) => {
     if (!contractorId) {
       toast({
@@ -148,6 +177,7 @@ const Leads = () => {
         
         <LeadsTable
           leads={leads}
+          updateLead={(lead)=> updateLead.mutate(lead)}
           onLeadClick={handleLeadClick}
           onDeleteLeads={(leadIds) => deleteLead.mutate(leadIds)}
           onExport={handleExport}

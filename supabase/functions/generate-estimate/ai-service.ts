@@ -33,6 +33,7 @@ export const generateEstimate = async (
         Keep some instructions in mind:
           - Cost should be accurate according to area from Address
           - You are going to be provided with AI Instructions also keep them in priority
+          - Keep AI Rates in mind while calculating cost and Calculate according to them
         
         ALWAYS respond with valid JSON in the following format:
         {

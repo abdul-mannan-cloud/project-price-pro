@@ -37,8 +37,7 @@ const templates = [
   }
 ];
 
-export const EstimateTemplateSettings = () => {
-  const { contractorId } = useParams();
+export const EstimateTemplateSettings = ({contractorId}) => {
   const queryClient = useQueryClient();
   const [clientMessage, setClientMessage] = useState("");
   const [footerText, setFooterText] = useState("");
@@ -59,6 +58,8 @@ export const EstimateTemplateSettings = () => {
     },
     enabled: !!contractorId
   });
+
+  console.log('Estimate settings test',settings)
 
   useEffect(() => {
     if (settings) {

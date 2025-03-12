@@ -337,7 +337,7 @@ export const EstimateDisplay = ({
                       isOpen={showSettings}
                       onClose={() => setShowSettings(false)}
                   >
-                    <EstimateTemplateSettings />
+                    <EstimateTemplateSettings contractorId={contractorId} />
                   </SettingsDialog>
               )}
               {showAIPreferences && (
@@ -347,7 +347,7 @@ export const EstimateDisplay = ({
                       isOpen={showAIPreferences}
                       onClose={() => setShowAIPreferences(false)}
                   >
-                    <AIPreferencesSettings />
+                    <AIPreferencesSettings key={`ai-preferences-${showAIPreferences}`} />
                   </SettingsDialog>
               )}
             </>
