@@ -64,13 +64,7 @@ serve(async (req) => {
 
     // Use provided contractorId, fall back to lead's contractor_id, or use default
     const contractorId = requestData.contractorId || lead.contractor_id || DEFAULT_CONTRACTOR_ID;
-    
-    console.log('Resolved contractor ID:', {
-      fromRequest: requestData.contractorId,
-      fromLead: lead.contractor_id,
-      fromDefault: DEFAULT_CONTRACTOR_ID,
-      final: contractorId
-    });
+
 
     // Get contractor data
     const { data: contractor, error: contractorError } = await supabase
@@ -116,7 +110,7 @@ serve(async (req) => {
       contractor: {
         settings: contractor.contractor_settings,
         businessAddress: contractor.business_address==""?requestData.address:contractor.business_address,
-        aiInstructions: contractor.contractor_settings?.aiInstructions ?? ''
+        aiInstructions: contractor.ai_instructions || []
       }
     });
 

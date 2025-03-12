@@ -98,7 +98,7 @@ const Dashboard = () => {
       const { data, error } = await supabase
         .from("leads")
         .select("*")
-        .eq("contractor_id", userId)
+        .eq("contractor_id", contractorId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -184,7 +184,7 @@ const Dashboard = () => {
   if (!contractor) return null;
 
   const totalLeads = leads.length;
-  const totalEstimatedValue = leads.reduce((sum, lead) => sum + (lead.estimated_cost || 0), 0);
+  const totalEstimatedValue = leads.reduce((sum, lead) => sum + (lead.estimate_data.totalCost || 0), 0);
 
   const features = [
     {

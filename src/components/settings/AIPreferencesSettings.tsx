@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Json } from "@/integrations/supabase/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Info, Plus, DollarSign } from "lucide-react";
@@ -91,7 +90,7 @@ const TYPE_OPTIONS = [
 export const AIPreferencesSettings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useState("instructions");
 
   // State for AI instructions
   const [aiInstructions, setAiInstructions] = useState<AIInstruction[]>([]);
@@ -371,6 +370,34 @@ export const AIPreferencesSettings = () => {
     },
   });
 
+  useEffect(() => {
+    return () => {
+      queryClient.invalidateQueries({ queryKey: ["ai-preferences"] });
+      queryClient.invalidateQueries({ queryKey: ["ai-instructions"] });
+      queryClient.invalidateQueries({ queryKey: ["ai-rates"] });
+    };
+  }, [queryClient]);
+
+  useEffect(() => {
+    setIsAddingInstruction(false);
+    setIsAddingRate(false);
+
+    setNewInstruction({
+      title: "",
+      description: "",
+      instructions: ""
+    });
+
+    setNewRate({
+      title: "",
+      description: "",
+      rate: 0,
+      unit: "",
+      type: "material_labor",
+      instructions: ""
+    });
+  }, []);
+
   // Handle form submission for general settings
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -454,101 +481,10 @@ export const AIPreferencesSettings = () => {
   return (
       <div className="space-y-6">
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-3 mb-6">
-            <TabsTrigger value="general">General Settings</TabsTrigger>
+          <TabsList className="grid grid-cols-2 mb-6">
             <TabsTrigger value="instructions">AI Instructions</TabsTrigger>
             <TabsTrigger value="rates">AI Rates</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="general" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>General AI Settings</CardTitle>
-                <CardDescription>
-                  Configure how AI generates estimates and calculates costs
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="rate">Default Rate Type</Label>
-                    <Select
-                        name="rate"
-                        defaultValue={settings?.ai_preferences.rate || defaultPreferences.rate}
-                    >
-                      <SelectTrigger id="rate">
-                        <SelectValue placeholder="Select rate type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {UNIT_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground">
-                      The default unit used for pricing calculations
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Default Calculation Type</Label>
-                    <Select
-                        name="type"
-                        defaultValue={settings?.ai_preferences.type || defaultPreferences.type}
-                    >
-                      <SelectTrigger id="type">
-                        <SelectValue placeholder="Select calculation type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TYPE_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground">
-                      How costs are calculated by default
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="instructions">Default AI Instructions</Label>
-                    <Textarea
-                        id="instructions"
-                        name="instructions"
-                        defaultValue={settings?.ai_preferences.instructions || defaultPreferences.instructions}
-                        placeholder="Enter specific instructions for AI estimate generation..."
-                        className="min-h-[100px]"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      These instructions will be used by default when generating estimates
-                    </p>
-                  </div>
-
-                  {/*<div className="space-y-2">*/}
-                  {/*  <Label htmlFor="ai_instructions">Additional Instructions</Label>*/}
-                  {/*  <Textarea*/}
-                  {/*      id="ai_instructions"*/}
-                  {/*      name="ai_instructions"*/}
-                  {/*      defaultValue={settings?.ai_instructions || ""}*/}
-                  {/*      placeholder="Enter any additional AI instructions..."*/}
-                  {/*      className="min-h-[100px]"*/}
-                  {/*  />*/}
-                  {/*  <p className="text-sm text-muted-foreground">*/}
-                  {/*    Additional context or requirements for the AI to consider*/}
-                  {/*  </p>*/}
-                  {/*</div>*/}
-
-                  <Button type="submit" disabled={updateSettings.isPending} className="w-full">
-                    {updateSettings.isPending ? "Saving..." : "Save Changes"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="instructions" className="mt-4">
             <div className="space-y-6">

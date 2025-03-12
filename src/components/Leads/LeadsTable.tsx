@@ -83,16 +83,18 @@ interface LeadsTableProps {
   onLeadClick: (lead: Lead) => void;
   onDeleteLeads: (leadIds: string[]) => void;
   onExport: (filteredLeads: Lead[]) => void;
+  updateLead: any;
 }
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
   completed: "bg-green-100 text-green-800",
+  complete: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
   "in-progress": "bg-blue-100 text-blue-800"
 } as const;
 
-export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: LeadsTableProps) => {
+export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExport }: LeadsTableProps) => {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -163,18 +165,8 @@ export const LeadsTable = ({ leads, onLeadClick, onDeleteLeads, onExport }: Lead
 
   const handleStatusChange = async (leadId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('leads')
-        .update({ status: newStatus })
-        .eq('id', leadId);
+      updateLead({ id: leadId, status: newStatus });
 
-      if (error) throw error;
-
-      // Update local state to reflect the change
-      const updatedLeads = leads.map(lead => 
-        lead.id === leadId ? { ...lead, status: newStatus } : lead
-      );
-      
       toast({
         title: "Status updated",
         description: `Lead status has been changed to ${newStatus}`,

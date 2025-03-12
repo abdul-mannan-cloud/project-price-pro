@@ -646,7 +646,7 @@ const Settings = () => {
               </form>
 
               <div className="pt-6 border-t">
-                <EstimateTemplateSettings />
+                <EstimateTemplateSettings contractorId={contractor.id}/>
               </div>
             </div>
         );
