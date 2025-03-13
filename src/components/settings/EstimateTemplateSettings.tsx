@@ -1,4 +1,3 @@
-import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
@@ -8,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import {Input} from "@/components/ui/input.tsx";
 
 const templates = [
   {
@@ -59,7 +59,6 @@ export const EstimateTemplateSettings = ({contractorId}) => {
     enabled: !!contractorId
   });
 
-  console.log('Estimate settings test',settings)
 
   useEffect(() => {
     if (settings) {
@@ -87,6 +86,7 @@ export const EstimateTemplateSettings = ({contractorId}) => {
       setHasFooterTextChanges(false);
     },
     onError: (error) => {
+      console.log('Error updating settings', error)
       toast({
         title: "Error",
         description: "Failed to update settings. Please try again.",
@@ -119,6 +119,58 @@ export const EstimateTemplateSettings = ({contractorId}) => {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium">Estimate Configuration</h3>
+        <p className="text-sm text-muted-foreground mb-6">
+          Configure your pricing settings, including minimum project costs, markup percentages, and tax rates.
+        </p>
+      </div>
+
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const data = Object.fromEntries(formData.entries());
+        updateSettings.mutate(data);
+      }} className="space-y-4">
+        <div>
+          <label className="text-sm font-medium">Minimum Project Cost ($)</label>
+          <Input
+              name="minimum_project_cost"
+              type="number"
+              defaultValue={settings.minimum_project_cost}
+          />
+          <p className="text-sm text-muted-foreground mt-1">
+            The minimum cost you're willing to take on for any project
+          </p>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium">Markup Percentage (%)</label>
+          <Input
+              name="markup_percentage"
+              type="number"
+              defaultValue={settings?.markup_percentage}
+          />
+          <p className="text-sm text-muted-foreground mt-1">
+            This markup is automatically applied to all AI-generated estimates
+          </p>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium">Tax Rate (%)</label>
+          <Input
+              name="tax_rate"
+              type="number"
+              defaultValue={settings?.tax_rate}
+          />
+          <p className="text-sm text-muted-foreground mt-1">
+            Local tax rate automatically applied to all estimates
+          </p>
+        </div>
+        <Button type="submit" disabled={updateSettings.isPending}>
+          {updateSettings.isPending ? "Saving..." : "Save Changes"}
+        </Button>
+      </form>
       <div>
         <h3 className="text-lg font-medium mb-4">Template Style</h3>
         <RadioGroup

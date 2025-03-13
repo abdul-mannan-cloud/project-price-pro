@@ -90,10 +90,10 @@ export const EstimateProgress = ({ stage, progress }: EstimateProgressProps) => 
   console.log(`Raw progress: ${progress}, Visual: ${visualProgress.toFixed(2)}, Stage: ${stage}`);
 
   return (
-      <div className="w-full bg-gray-100 border-b border-gray-200">
+      <div className="w-full bg-secondary border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-2">
           {/* Progress bar */}
-          <div className="w-full h-4 bg-gray-200 relative rounded-full overflow-hidden">
+          <div className="w-full h-4 bg-secondary relative rounded-full overflow-hidden">
             <div
                 className="absolute h-full bg-primary transition-all duration-300 ease-out"
                 style={{ width: `${Math.max(0, Math.min(100, visualProgress))}%` }}
