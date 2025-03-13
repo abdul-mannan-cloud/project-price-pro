@@ -170,7 +170,7 @@ const Leads = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
+    <div className="min-h-screen bg-secondary">
       <NavBar items={navItems} />
       <div className="container mx-auto py-8">
         <h1 className="text-2xl font-semibold mb-6">Leads</h1>

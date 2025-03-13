@@ -91,6 +91,7 @@ const EstimatePage = () => {
     const [isSpeechSupported, setIsSpeechSupported] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [authUserId, setAuthUserId] = useState<string | null>(null);
+    const [isRefreshingEstimate, setIsRefreshingEstimate] = useState(false);
     const {
         updateContractorId,
     } = useContractor();
@@ -196,6 +197,18 @@ const EstimatePage = () => {
         changeProgress
     } = useEstimateFlow(estimateConfig);
 
+    // Wrapped handleRefreshEstimate to manage loading state
+    const handleRefreshEstimateWithLoading = async (leadId) => {
+        if (!leadId) return;
+
+        setIsRefreshingEstimate(true);
+        try {
+            await handleRefreshEstimate(leadId);
+        } finally {
+            setIsRefreshingEstimate(false);
+        }
+    };
+
     useEffect(() => {
         const loadCategories = async () => {
             try {
@@ -272,7 +285,7 @@ const EstimatePage = () => {
     return (
         <>
             <GlobalBrandingLoader contractorId={urlContractorId}/>
-            <div className="min-h-screen bg-gray-100">
+            <div className="min-h-screen bg-secondary">
                 <EstimateProgress stage={stage} progress={progress}/>
 
                 {isAuthenticated && authenticatedContractor?.id === urlContractorId && (
@@ -331,7 +344,8 @@ const EstimatePage = () => {
                         {(stage === 'contact' || stage === 'estimate') && (
                             <div className={cn(
                                 "transition-all duration-300",
-                                stage === 'contact' ? "blur-sm" : ""
+                                stage === 'contact' ? "blur-sm" : "",
+                                isRefreshingEstimate ? "pointer-events-none opacity-70" : ""
                             )}>
                                 <EstimateDisplay
                                     groups={estimate?.groups || []}
@@ -343,9 +357,7 @@ const EstimatePage = () => {
                                     projectImages={uploadedPhotos}
                                     leadId={currentLeadId}
                                     contractorParam={contractorId}
-                                    handleRefreshEstimate={async (leadId) => {
-                                        await handleRefreshEstimate(leadId)
-                                    }}
+                                    handleRefreshEstimate={handleRefreshEstimateWithLoading}
                                 />
                             </div>
                         )}
@@ -377,6 +389,18 @@ const EstimatePage = () => {
                                     <EstimateAnimation className="w-24 h-24 mx-auto mb-4"/>
                                     <p className="text-lg font-medium text-primary">
                                         Generating your estimate...
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {isRefreshingEstimate && (
+                            <div
+                                className="fixed inset-0 bg-background/30 backdrop-blur-[1px] z-20 flex items-center justify-center">
+                                <div className="text-center bg-white p-6 rounded-lg shadow-lg">
+                                    <EstimateAnimation className="w-16 h-16 mx-auto mb-4"/>
+                                    <p className="text-lg font-medium text-primary">
+                                        Refreshing your estimate...
                                     </p>
                                 </div>
                             </div>
