@@ -7,6 +7,7 @@ interface EstimateTotalsProps {
   isEstimateReady: boolean;
   templateStyle: string;
   styles: Record<string, string>;
+  taxRate:number;
 }
 
 const formatCurrency = (amount: number): string => {
@@ -22,9 +23,11 @@ export const EstimateTotals = ({
                                  totalCost,
                                  isEstimateReady,
                                  templateStyle,
-                                 styles
+                                 styles,
+                                taxRate,
                                }: EstimateTotalsProps) => {
   const isMobile = useMediaQuery("(max-width: 640px)");
+
 
   if (templateStyle === 'excel') {
     return (
@@ -42,9 +45,9 @@ export const EstimateTotals = ({
               </td>
             </tr>
             <tr className={styles.totalsRow}>
-              <td className={cn(styles.totalsLabel, isMobile ? "text-xs" : "text-sm")}>Tax (8.5%)</td>
+              <td className={cn(styles.totalsLabel, isMobile ? "text-xs" : "text-sm")}>Tax ({taxRate}%)</td>
               <td className={cn(styles.totalsValue, "text-right", isMobile ? "text-sm" : "text-base")}>
-                {isEstimateReady ? formatCurrency(totalCost * 0.085) : (
+                {isEstimateReady ? formatCurrency(totalCost * (taxRate/100)) : (
                     <div className="inline-block h-4 w-16 sm:w-24 relative overflow-hidden">
                       <EstimateAnimation />
                     </div>
@@ -82,10 +85,10 @@ export const EstimateTotals = ({
           )}
         </div>
         <div className="flex justify-between items-center">
-          <p className={cn(styles.text, isMobile ? "text-xs" : "text-sm")}>Tax (8.5%)</p>
+          <p className={cn(styles.text, isMobile ? "text-xs" : "text-sm")}>Tax ({taxRate}%)</p>
           {isEstimateReady ? (
               <p className={cn(styles.text, isMobile ? "text-sm" : "text-lg")}>
-                {formatCurrency(totalCost * 0.085)}
+                {formatCurrency(totalCost * (taxRate/100))}
               </p>
           ) : (
               <div className={cn("bg-gray-200 animate-pulse rounded relative overflow-hidden",

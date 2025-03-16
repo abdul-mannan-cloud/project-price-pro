@@ -119,6 +119,8 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
+    console.log('Context Generated Estimated:',context)
+
     console.log('Generating estimate with AI...');
     const aiResponse = await generateEstimate(
       context,
@@ -133,6 +135,7 @@ serve(async (req) => {
       requestData.category || lead.category,
       requestData.projectDescription || lead.project_description
     );
+
 
     console.log('Updating lead with estimate...');
     await updateLeadWithEstimate(
