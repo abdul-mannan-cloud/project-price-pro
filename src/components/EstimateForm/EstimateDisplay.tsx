@@ -64,6 +64,7 @@ interface ContractorSettings {
   estimate_signature_enabled?: boolean;
   estimate_hide_subtotals?: boolean;
   estimate_compact_view?: boolean;
+  tax_rate?: number;
 }
 
 interface EstimateDisplayProps {
@@ -215,6 +216,7 @@ export const EstimateDisplay = ({
     return <EstimateSkeleton />;
   }
 
+
   return (
       <>
         {!isEstimateReady && (
@@ -300,6 +302,7 @@ export const EstimateDisplay = ({
                 isEstimateReady={isEstimateReady}
                 templateStyle={templateSettings.estimate_template_style || 'modern'}
                 styles={styles}
+                taxRate={settings.tax_rate}
             />
 
             {templateSettings?.estimate_footer_text && (
