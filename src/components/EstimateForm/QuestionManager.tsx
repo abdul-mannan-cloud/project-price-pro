@@ -3,6 +3,7 @@ import {QuestionCard} from "./QuestionCard";
 import {LoadingScreen} from "./LoadingScreen";
 import {CategoryQuestions, AnswersState} from "@/types/estimate";
 import {useQuestionManager} from "@/hooks/useQuestionManager";
+import { toast } from "@/hooks/use-toast";
 
 interface QuestionManagerProps {
     questionSets: CategoryQuestions[];
@@ -18,10 +19,10 @@ export const QuestionManager = ({
                                     questionSets,
                                     onComplete,
                                     onProgressChange,
-                                    contractorId, // Add contractorId as a prop
-                                    projectDescription, // Add projectDescription as a prop
-                                    uploadedPhotos, // Add uploadedPhotos as a prop
-                                    uploadedImageUrl // Ad
+                                    contractorId,
+                                    projectDescription,
+                                    uploadedPhotos,
+                                    uploadedImageUrl
                                 }: QuestionManagerProps) => {
     const {
         currentQuestion,
@@ -35,6 +36,7 @@ export const QuestionManager = ({
         handleAnswer,
         handleMultipleChoiceNext,
         calculateProgress,
+        handleComplete
     } = useQuestionManager(questionSets, onComplete, onProgressChange,contractorId,
         projectDescription,
         uploadedPhotos,
@@ -48,6 +50,20 @@ export const QuestionManager = ({
         }
     }, [currentQuestion, calculateProgress, onProgressChange]);
 
+    // Handle the case when currentQuestion is null
+    useEffect(() => {
+        if (!isLoadingQuestions && !isGeneratingEstimate && !currentQuestion) {
+            // Show error toast
+            toast({
+                title: "Success",
+                description: "No More questions found. Starting estimate process.",
+                variant: "destructive",
+            });
+            // Start the estimate process by calling onComplete with current answers
+            handleComplete();
+        }
+    }, [currentQuestion, isLoadingQuestions, isGeneratingEstimate, currentSetAnswers, onComplete]);
+
     if (isLoadingQuestions) {
         return <LoadingScreen message="Loading questions..."/>;
     }
@@ -57,7 +73,9 @@ export const QuestionManager = ({
     }
 
     if (!currentQuestion) {
-        return <LoadingScreen message="Loading questions..."/>;
+        // Instead of showing a loading screen, we'll return null
+        // The useEffect above will handle showing the toast and starting the estimate
+        return null;
     }
 
     const isLastQuestion = currentStage === totalStages && !hasFollowUpQuestion;
