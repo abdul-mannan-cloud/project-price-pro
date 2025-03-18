@@ -155,6 +155,7 @@ export const EstimateDisplay = ({
   const { data: settings } = useQuery({
     queryKey: ["contractor-settings", contractorId],
     queryFn: async () => {
+
       const { data, error } = await supabase
           .from("contractor_settings")
           .select("*")
@@ -166,6 +167,7 @@ export const EstimateDisplay = ({
     },
     enabled: !!contractorId
   });
+
 
   useEffect(() => {
     if (leadData) {
@@ -216,6 +218,9 @@ export const EstimateDisplay = ({
     return <EstimateSkeleton />;
   }
 
+
+  console.log('Contractor ID',contractorId)
+  console.log('settings',settings)
 
   return (
       <>
@@ -302,7 +307,7 @@ export const EstimateDisplay = ({
                 isEstimateReady={isEstimateReady}
                 templateStyle={templateSettings.estimate_template_style || 'modern'}
                 styles={styles}
-                taxRate={settings.tax_rate}
+                taxRate={settings?.tax_rate??0}
             />
 
             {templateSettings?.estimate_footer_text && (
