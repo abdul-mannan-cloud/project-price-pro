@@ -305,6 +305,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
                         isEditable={isEditing}
                         onEstimateChange={setEditedEstimate}
                         contractor={contractor}
+                        contractorParam={contractor.id}
                       />
                     </div>
                   </>
