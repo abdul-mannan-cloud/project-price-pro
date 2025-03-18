@@ -385,6 +385,7 @@ export const useQuestionManager = (
     totalStages: questionSets.length,
     handleAnswer,
     handleMultipleChoiceNext,
-    calculateProgress
+    calculateProgress,
+    handleComplete
   };
 };
