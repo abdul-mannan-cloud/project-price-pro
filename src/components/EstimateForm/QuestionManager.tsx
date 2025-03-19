@@ -80,6 +80,7 @@ export const QuestionManager = ({
 
     const isLastQuestion = currentStage === totalStages && !hasFollowUpQuestion;
 
+
     return (
         <QuestionCard
             question={currentQuestion}
