@@ -7,87 +7,118 @@ interface EstimateProgressProps {
 }
 
 export const EstimateProgress = ({ stage, progress }: EstimateProgressProps) => {
-  // Store the base progress for each stage
-  const stageBaseProgress = {
-    'photo': 0,
-    'description': 20,
-    'category': 40,
-    'questions': 60,
-    'contact': 80,
+  // Keep the original stage logic for compatibility
+  const fullStageOrder = ['photo', 'description', 'category', 'questions', 'contact', 'estimate'];
+
+  // Map original stages to visible stages for display
+  const stageMapping: Record<string, string> = {
+    'photo': 'description',      // Photo maps to description
+    'description': 'description',
+    'category': 'description',   // Category also maps to description
+    'questions': 'questions',
+    'contact': 'estimate',       // Contact maps to estimate
+    'estimate': 'estimate'
+  };
+
+  // Get the visual stage to display
+  const visualStage = stageMapping[stage] || stage;
+
+  // Define progress points for visual stages only
+  const visualStageBaseProgress = {
+    'description': 0,
+    'questions': 50,
     'estimate': 100
   };
 
+  // Visual stage order (simplified)
+  const visualStageOrder = ['description', 'questions', 'estimate'];
+
   // Store visual progress as state
-  const [visualProgress, setVisualProgress] = useState(stageBaseProgress[stage as keyof typeof stageBaseProgress] || 0);
+  const [visualProgress, setVisualProgress] = useState(0);
 
-  // Store the last stage to detect changes
-  const [lastStage, setLastStage] = useState(stage);
+  // Calculate the percentage within the original stages
+  const calculateVisualProgress = () => {
+    const currentStageIndex = fullStageOrder.indexOf(stage);
+    if (currentStageIndex === -1) return 0;
 
-  // Calculate the next stage progress
-  const getNextStageProgress = (currentStage: string): number => {
-    const stageOrder = ['photo', 'description', 'category', 'questions', 'contact', 'estimate'];
-    const currentIndex = stageOrder.indexOf(currentStage);
-    const nextIndex = currentIndex + 1;
+    const currentVisualStage = stageMapping[stage];
+    const baseProgress = visualStageBaseProgress[currentVisualStage as keyof typeof visualStageBaseProgress];
 
-    if (nextIndex < stageOrder.length) {
-      const nextStage = stageOrder[nextIndex];
-      return stageBaseProgress[nextStage as keyof typeof stageBaseProgress];
+    // Find the next visual stage
+    let nextVisualStage: string | null = null;
+    let i = currentStageIndex + 1;
+
+    while (i < fullStageOrder.length) {
+      const nextMapping = stageMapping[fullStageOrder[i]];
+      if (nextMapping !== currentVisualStage) {
+        nextVisualStage = nextMapping;
+        break;
+      }
+      i++;
     }
 
-    return 100;
+    const nextProgress = nextVisualStage
+        ? visualStageBaseProgress[nextVisualStage as keyof typeof visualStageBaseProgress]
+        : 100;
+
+    const range = nextProgress - baseProgress;
+
+    // For stages that have substages (like description having photo, description, category)
+    // we need to determine how far along we are in the substages
+    const subStages = fullStageOrder.filter(s => stageMapping[s] === currentVisualStage);
+    const subStageIndex = subStages.indexOf(stage);
+    const subStageCount = subStages.length;
+
+    let subStageProgress = 0;
+    if (subStageIndex !== -1 && subStageCount > 0) {
+      // Calculate base progress for this substage
+      subStageProgress = (subStageIndex / subStageCount);
+
+      // Add progress within the current stage if available
+      if (stage === 'questions' && typeof progress === 'number' && !isNaN(progress)) {
+        // For questions stage we use the actual progress value
+        const subStageRange = 1 / subStageCount;
+        const normalizedProgress = Math.min(1, Math.max(0, progress / 100));
+        subStageProgress = (subStageIndex / subStageCount) + (subStageRange * Math.sqrt(normalizedProgress));
+      }
+    }
+
+    // Calculate final visual progress
+    return baseProgress + (range * subStageProgress);
   };
 
-  // Update visual progress when either stage or progress changes
+  // Update visual progress when stage or progress changes
   useEffect(() => {
-    // If stage changed, reset to base progress for that stage
-    if (stage !== lastStage) {
-      setLastStage(stage);
-      setVisualProgress(stageBaseProgress[stage as keyof typeof stageBaseProgress] || 0);
-      return;
-    }
+    const newProgress = calculateVisualProgress();
 
-    // For the questions stage, we want to show incremental progress
-    if (stage === 'questions' && typeof progress === 'number' && !isNaN(progress)) {
-      // Determine the range for this stage
-      const baseForStage = stageBaseProgress.questions;
-      const nextStageProgress = getNextStageProgress('questions');
-      const range = nextStageProgress - baseForStage;
+    // Animate the change
+    setVisualProgress(prev => {
+      // Don't go backwards unless it's a big change
+      if (newProgress < prev && (prev - newProgress) < 5) {
+        return prev;
+      }
+      // Don't jump too far ahead
+      if (newProgress > prev) {
+        return prev + Math.min(1, newProgress - prev);
+      }
+      return newProgress;
+    });
+  }, [stage, progress]);
 
-      // Scale the progress within the stage's range
-      // Using Math.sqrt for non-linear scaling (makes small changes more visible)
-      const normalizedProgress = Math.min(1, Math.max(0, progress / 100));
-      const scaledProgress = baseForStage + (range * Math.sqrt(normalizedProgress));
-
-      // Animate the change
-      setVisualProgress(prev => {
-        // Don't go backwards unless it's a big change
-        if (scaledProgress < prev && (prev - scaledProgress) < 5) {
-          return prev;
-        }
-        // Don't jump too far ahead
-        if (scaledProgress > prev) {
-          return prev + Math.min(1, scaledProgress - prev);
-        }
-        return scaledProgress;
-      });
-    }
-  }, [stage, progress, lastStage]);
-
-  // Determine stage completion
-  const stageOrder = ['photo', 'description', 'category', 'questions', 'contact', 'estimate'];
-  const currentStageIndex = stageOrder.indexOf(stage);
-
-  const isStageComplete = (stageName: string) => {
-    const stageIndex = stageOrder.indexOf(stageName);
-    return stageIndex < currentStageIndex;
+  // Determine stage completion for visual stages
+  const isStageComplete = (visualStageName: string) => {
+    const currentVisualStage = stageMapping[stage];
+    const visualIndex = visualStageOrder.indexOf(visualStageName);
+    const currentVisualIndex = visualStageOrder.indexOf(currentVisualStage);
+    return visualIndex < currentVisualIndex;
   };
 
-  const isStageActive = (stageName: string) => {
-    return stageName === stage;
+  const isStageActive = (visualStageName: string) => {
+    return visualStageName === stageMapping[stage];
   };
 
   // Log values for debugging
-  console.log(`Raw progress: ${progress}, Visual: ${visualProgress.toFixed(2)}, Stage: ${stage}`);
+  console.log(`Stage: ${stage}, Visual stage: ${visualStage}, Progress: ${progress}, Visual progress: ${visualProgress.toFixed(2)}`);
 
   return (
       <div className="w-full bg-secondary border-b border-gray-200">
@@ -99,14 +130,14 @@ export const EstimateProgress = ({ stage, progress }: EstimateProgressProps) => 
                 style={{ width: `${Math.max(0, Math.min(100, visualProgress))}%` }}
             />
 
-            {/* Stage markers */}
+            {/* Stage markers - only 3 now */}
             <div className="absolute inset-0 flex items-center justify-between px-2">
-              {stageOrder.map((stageName) => (
+              {visualStageOrder.map((visualStageName) => (
                   <div
-                      key={stageName}
+                      key={visualStageName}
                       className={cn(
                           "w-3 h-3 rounded-full border-2 z-10 transform transition-all duration-300",
-                          isStageComplete(stageName) || isStageActive(stageName)
+                          isStageComplete(visualStageName) || isStageActive(visualStageName)
                               ? "bg-primary border-white"
                               : "bg-gray-300 border-gray-100"
                       )}
@@ -115,13 +146,10 @@ export const EstimateProgress = ({ stage, progress }: EstimateProgressProps) => 
             </div>
           </div>
 
-          {/* Stage labels */}
+          {/* Stage labels - only 3 now */}
           <div className="flex justify-between text-xs mt-1 text-gray-500">
-            <span className={cn(isStageComplete('photo') || isStageActive('photo') ? "text-primary font-medium" : "")}>Photo</span>
             <span className={cn(isStageComplete('description') || isStageActive('description') ? "text-primary font-medium" : "")}>Description</span>
-            <span className={cn(isStageComplete('category') || isStageActive('category') ? "text-primary font-medium" : "")}>Category</span>
             <span className={cn(isStageComplete('questions') || isStageActive('questions') ? "text-primary font-medium" : "")}>Details</span>
-            <span className={cn(isStageComplete('contact') || isStageActive('contact') ? "text-primary font-medium" : "")}>Contact</span>
             <span className={cn(isStageComplete('estimate') || isStageActive('estimate') ? "text-primary font-medium" : "")}>Estimate</span>
           </div>
         </div>

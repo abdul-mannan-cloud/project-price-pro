@@ -144,6 +144,8 @@ export const useQuestionManager = (
   };
 
   const handleSingleChoiceNavigation = (currentQuestion: Question, selectedValue: string) => {
+
+    console.log('testing current single choice',currentQuestion,selectedValue)
     const selectedOption = currentQuestion.options.find(
         opt => opt.value.toLowerCase() === selectedValue.toLowerCase()
     );
@@ -197,6 +199,7 @@ export const useQuestionManager = (
   };
 
   const handleMultipleChoiceNext = async () => {
+    console.log('Hanlde multiple choice next', currentQuestionId);
     const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
     if (!currentQuestion) return;
 
@@ -351,10 +354,10 @@ export const useQuestionManager = (
   }, [currentSetIndex, questionSets]);
 
   useEffect(() => {
-    if (!isLoadingQuestions && pendingBranchTransition) {
+    if (pendingBranchTransition) {
       handleBranchTransition();
     }
-  }, [pendingBranchTransition, isLoadingQuestions]);
+  }, [pendingBranchTransition, isLoadingQuestions, handleBranchTransition]);
 
   // Analyze question weights when the question sequence changes
   useEffect(() => {
