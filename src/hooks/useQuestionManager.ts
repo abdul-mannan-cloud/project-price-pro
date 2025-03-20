@@ -130,15 +130,19 @@ export const useQuestionManager = (
       setQueuedNextQuestions(prev => prev.slice(1));
       setPendingBranchTransition(false);
     } else {
+      console.log('coming from branch transition');
       moveToNextQuestionSet();
+      setPendingBranchTransition(false);
     }
   };
 
   const moveToNextQuestionSet = () => {
     console.log('Moving to next question set, current index:', currentSetIndex, 'total sets:', questionSets.length);
     if (currentSetIndex < questionSets.length - 1) {
+      console.log('Moving to next Questions set, Thanks You')
       setCurrentSetIndex(prev => prev + 1);
     } else {
+      console.log('Not Moving to next Questions set,No Thanks You')
       handleComplete();
     }
   };
@@ -355,6 +359,7 @@ export const useQuestionManager = (
 
   useEffect(() => {
     if (pendingBranchTransition) {
+      console.log('Pending branch transition, handling...');
       handleBranchTransition();
     }
   }, [pendingBranchTransition, isLoadingQuestions, handleBranchTransition]);

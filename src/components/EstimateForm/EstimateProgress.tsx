@@ -117,9 +117,6 @@ export const EstimateProgress = ({ stage, progress }: EstimateProgressProps) => 
     return visualStageName === stageMapping[stage];
   };
 
-  // Log values for debugging
-  console.log(`Stage: ${stage}, Visual stage: ${visualStage}, Progress: ${progress}, Visual progress: ${visualProgress.toFixed(2)}`);
-
   return (
       <div className="w-full bg-secondary border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-2">

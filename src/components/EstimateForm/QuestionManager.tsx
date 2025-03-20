@@ -42,6 +42,7 @@ export const QuestionManager = ({
         uploadedPhotos,
         uploadedImageUrl);
 
+
     // Update progress whenever current question changes
     useEffect(() => {
         if (currentQuestion) {
@@ -51,18 +52,17 @@ export const QuestionManager = ({
     }, [currentQuestion, calculateProgress, onProgressChange]);
 
     // Handle the case when currentQuestion is null
-    useEffect(() => {
-        if (!isLoadingQuestions && !isGeneratingEstimate && !currentQuestion) {
-            // Show error toast
-            toast({
-                title: "Success",
-                description: "No More questions found. Starting estimate process.",
-                variant: "destructive",
-            });
-            // Start the estimate process by calling onComplete with current answers
-            handleComplete();
-        }
-    }, [currentQuestion, isLoadingQuestions, isGeneratingEstimate, currentSetAnswers, onComplete]);
+    // useEffect(() => {
+    //     if (!isLoadingQuestions && !isGeneratingEstimate && !currentQuestion) {
+    //         // Show error toast
+    //         toast({
+    //             title: "Questions Completed",
+    //             description: "No More questions found. Starting estimate process.",
+    //         });
+    //         // Start the estimate process by calling onComplete with current answers
+    //         handleComplete();
+    //     }
+    // }, [currentQuestion, isLoadingQuestions, isGeneratingEstimate, currentSetAnswers, onComplete]);
 
     if (isLoadingQuestions) {
         return <LoadingScreen message="Loading questions..."/>;

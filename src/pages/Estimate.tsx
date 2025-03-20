@@ -116,8 +116,6 @@ const EstimatePage = () => {
         }
     })();
 
-    console.log('Using contractor ID:', urlContractorId);
-
     // Get the authenticated user's contractor ID for comparison only
     const {data: authenticatedContractor} = useQuery({
         queryKey: ['authenticated-contractor'],
