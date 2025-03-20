@@ -31,7 +31,7 @@ type ContractorWithSettings = Database["public"]["Tables"]["contractors"]["Row"]
   contractor_settings: Database["public"]["Tables"]["contractor_settings"]["Row"];
 };
 
-const DEFAULT_CONTRACTOR_ID = "098bcb69-99c6-445b-bf02-94dc7ef8c938";
+const DEFAULT_CONTRACTOR_ID = "82499c2f-960f-4042-b277-f86ea2d99929";
 
 const PublicEstimate = () => {
   const { id } = useParams();
