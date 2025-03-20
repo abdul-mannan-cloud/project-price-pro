@@ -55,6 +55,7 @@ export const CategoryGrid = ({
   //   findMatch();
   // }, [description, onSelectCategory]);
 
+
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategories(prev => {
       const newSet = new Set(prev);
