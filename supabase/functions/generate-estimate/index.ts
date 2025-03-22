@@ -93,7 +93,7 @@ serve(async (req) => {
       .from('ai_rates')
       .select('*')
       .eq('contractor_id', contractorId)
-      .eq('type', (requestData.category || lead.category || '')?.toLowerCase() || '');
+      // .eq('type', (requestData.category || lead.category || '')?.toLowerCase() || '');
 
     if (ratesError) {
       console.error('Error fetching AI rates:', ratesError);

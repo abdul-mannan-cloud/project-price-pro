@@ -175,7 +175,7 @@ const Settings = () => {
           // Insert new rate
           const { error } = await supabase
               .from("ai_rates")
-              .insert({
+              .upsert({
                 contractor_id: contractor_id,
                 title: rate.title,
                 rate: rate.rate,
@@ -592,60 +592,60 @@ const Settings = () => {
       case "estimate":
         return (
             <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium">{t("Estimate Configuration")}</h3>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {t("Configure your pricing settings, including minimum project costs, markup percentages, and tax rates.")}
-                </p>
-              </div>
+              {/*<div>*/}
+              {/*  <h3 className="text-lg font-medium">{t("Estimate Configuration")}</h3>*/}
+              {/*  <p className="text-sm text-muted-foreground mb-6">*/}
+              {/*    {t("Configure your pricing settings, including minimum project costs, markup percentages, and tax rates.")}*/}
+              {/*  </p>*/}
+              {/*</div>*/}
 
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const data = Object.fromEntries(formData.entries());
-                updateSettings.mutate(data);
-              }} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">{t("Minimum Project Cost ($)")}</label>
-                  <Input
-                      name="minimumProjectCost"
-                      type="number"
-                      defaultValue={contractor?.contractor_settings?.minimum_project_cost}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {t("The minimum cost you're willing to take on for any project")}
-                  </p>
-                </div>
+              {/*<form onSubmit={(e) => {*/}
+              {/*  e.preventDefault();*/}
+              {/*  const formData = new FormData(e.currentTarget);*/}
+              {/*  const data = Object.fromEntries(formData.entries());*/}
+              {/*  updateSettings.mutate(data);*/}
+              {/*}} className="space-y-4">*/}
+              {/*  <div>*/}
+              {/*    <label className="text-sm font-medium">{t("Minimum Project Cost ($)")}</label>*/}
+              {/*    <Input*/}
+              {/*        name="minimumProjectCost"*/}
+              {/*        type="number"*/}
+              {/*        defaultValue={contractor?.contractor_settings?.minimum_project_cost}*/}
+              {/*    />*/}
+              {/*    <p className="text-sm text-muted-foreground mt-1">*/}
+              {/*      {t("The minimum cost you're willing to take on for any project")}*/}
+              {/*    </p>*/}
+              {/*  </div>*/}
 
-                <div>
-                  <label className="text-sm font-medium">{t("Markup Percentage (%)")}</label>
-                  <Input
-                      name="markupPercentage"
-                      type="number"
-                      defaultValue={contractor?.contractor_settings?.markup_percentage}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {t("This markup is automatically applied to all AI-generated estimates")}
-                  </p>
-                </div>
+              {/*  <div>*/}
+              {/*    <label className="text-sm font-medium">{t("Markup Percentage (%)")}</label>*/}
+              {/*    <Input*/}
+              {/*        name="markupPercentage"*/}
+              {/*        type="number"*/}
+              {/*        defaultValue={contractor?.contractor_settings?.markup_percentage}*/}
+              {/*    />*/}
+              {/*    <p className="text-sm text-muted-foreground mt-1">*/}
+              {/*      {t("This markup is automatically applied to all AI-generated estimates")}*/}
+              {/*    </p>*/}
+              {/*  </div>*/}
 
-                <div>
-                  <label className="text-sm font-medium">{t("Tax Rate (%)")}</label>
-                  <Input
-                      name="taxRate"
-                      type="number"
-                      defaultValue={contractor?.contractor_settings?.tax_rate}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {t("Local tax rate automatically applied to all estimates")}
-                  </p>
-                </div>
-                <Button type="submit" disabled={updateSettings.isPending}>
-                  {updateSettings.isPending ? t("Saving...") : t("Save Changes")}
-                </Button>
-              </form>
+              {/*  <div>*/}
+              {/*    <label className="text-sm font-medium">{t("Tax Rate (%)")}</label>*/}
+              {/*    <Input*/}
+              {/*        name="taxRate"*/}
+              {/*        type="number"*/}
+              {/*        defaultValue={contractor?.contractor_settings?.tax_rate}*/}
+              {/*    />*/}
+              {/*    <p className="text-sm text-muted-foreground mt-1">*/}
+              {/*      {t("Local tax rate automatically applied to all estimates")}*/}
+              {/*    </p>*/}
+              {/*  </div>*/}
+              {/*  <Button type="submit" disabled={updateSettings.isPending}>*/}
+              {/*    {updateSettings.isPending ? t("Saving...") : t("Save Changes")}*/}
+              {/*  </Button>*/}
+              {/*</form>*/}
 
-              <div className="pt-6 border-t">
+              <div className="pt-6 ">
                 <EstimateTemplateSettings contractorId={contractor.id}/>
               </div>
             </div>

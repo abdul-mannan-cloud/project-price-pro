@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {supabase} from "@/integrations/supabase/client.ts";
 
 interface AIRate {
   title: string;
@@ -87,7 +88,8 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
     });
   };
 
-  const removeRate = (index: number) => {
+  const removeRate = async (index: number) => {
+    await supabase.from('ai_rates').delete().eq('id', aiRates[index].id);
     setAiRates(aiRates.filter((_, i) => i !== index));
   };
 
