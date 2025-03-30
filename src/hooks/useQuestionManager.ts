@@ -203,7 +203,6 @@ export const useQuestionManager = (
   };
 
   const handleMultipleChoiceNext = async () => {
-    console.log('Hanlde multiple choice next', currentQuestionId);
     const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
     if (!currentQuestion) return;
 
@@ -320,7 +319,6 @@ export const useQuestionManager = (
         address_string=address.data.business_address
       }
 
-
       // Then, generate the estimate
       const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
         body: {
@@ -340,7 +338,7 @@ export const useQuestionManager = (
         throw generateError;
       }
 
-      await onComplete(answers,lead.id);
+      onComplete(answers, lead.id);
     } catch (error) {
       console.error('Error completing questions:', error);
       toast({
