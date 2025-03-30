@@ -82,6 +82,7 @@ interface EstimateDisplayProps {
   handleRefreshEstimate: (id: string) => void;
   leadId: string;
   contractorParam?: string;
+  handleContractSign: (leadId: string) => void;
 }
 
 export const EstimateDisplay = ({
@@ -98,7 +99,8 @@ export const EstimateDisplay = ({
                                   isLoading: initialLoading = false,
                                   handleRefreshEstimate,
                                   leadId,
-                                  contractorParam
+                                  contractorParam,
+                                  handleContractSign
                                 }: EstimateDisplayProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
@@ -201,6 +203,7 @@ export const EstimateDisplay = ({
     if (onSignatureComplete) {
       onSignatureComplete(initials);
     }
+    handleContractSign(leadId)
   };
 
   const templateSettings = settings || {

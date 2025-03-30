@@ -192,7 +192,8 @@ const EstimatePage = () => {
         handleQuestionComplete,
         handleContactSubmit,
         handleRefreshEstimate,
-        changeProgress
+        changeProgress,
+        handleContractSign
     } = useEstimateFlow(estimateConfig);
 
     // Wrapped handleRefreshEstimate to manage loading state
@@ -356,6 +357,7 @@ const EstimatePage = () => {
                                     leadId={currentLeadId}
                                     contractorParam={contractorId}
                                     handleRefreshEstimate={handleRefreshEstimateWithLoading}
+                                    handleContractSign={handleContractSign}
                                 />
                             </div>
                         )}
