@@ -16,6 +16,7 @@ export const useQuestionManager = (
     projectDescription: string,
     uploadedPhotos: string[],
     uploadedImageUrl: string | null,
+    currentStageName: string
 ) => {
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
@@ -94,8 +95,11 @@ export const useQuestionManager = (
   // Enhanced progress calculation that considers question weights
   const calculateProgress = useCallback(() => {
     // If we're using the smooth progress hook, return that value
+    if(currentStageName=='estimate'){
+      return 100
+    }
     return smoothProgress;
-  }, [smoothProgress]);
+  }, [smoothProgress,currentStageName]);
 
   const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {

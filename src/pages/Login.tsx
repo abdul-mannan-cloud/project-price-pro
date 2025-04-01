@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import OtpInput from "@/components/OtpInput";
 
 const Login = () => {
   const [activeTab, setActiveTab] = useState("magic-link");
@@ -21,6 +22,7 @@ const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -33,6 +35,21 @@ const Login = () => {
     };
     checkUser();
   }, [navigate]);
+
+  // Timer for resend OTP button
+  useEffect(() => {
+    let interval;
+    if (otpSent && resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prevTimer) => prevTimer - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [otpSent, resendTimer]);
+
+  const startResendTimer = () => {
+    setResendTimer(60); // 60 seconds timer
+  };
 
   const validateEmail = () => {
     if (!email) {
@@ -97,6 +114,7 @@ const Login = () => {
       if (error) throw error;
 
       setOtpSent(true);
+      startResendTimer();
       toast({
         title: "Magic Link Sent",
         description: "Check your email for a magic link to sign in. You can also enter the OTP code below.",
@@ -114,11 +132,11 @@ const Login = () => {
   };
 
   const verifyOtp = async (e) => {
-    e.preventDefault();
-    if (!otp) {
+    if (e) e.preventDefault();
+    if (!otp || otp.length !== 6) {
       toast({
-        title: "Missing OTP",
-        description: "Please enter the OTP sent to your email.",
+        title: "Invalid OTP",
+        description: "Please enter the 6-digit OTP sent to your email.",
         variant: "destructive",
       });
       return;
@@ -257,7 +275,7 @@ const Login = () => {
   };
 
   const resendOtp = async () => {
-    if (!validateEmail()) return;
+    if (!validateEmail() || resendTimer > 0) return;
 
     setLoading(true);
     try {
@@ -271,6 +289,7 @@ const Login = () => {
 
       if (error) throw error;
 
+      startResendTimer();
       toast({
         title: "OTP Resent",
         description: "A new OTP has been sent to your email.",
@@ -300,6 +319,7 @@ const Login = () => {
       if (error) throw error;
 
       setOtpSent(true);
+      startResendTimer();
       toast({
         title: "Reset Email Sent",
         description: "We've sent a password reset OTP to your email. Please check your inbox.",
@@ -317,11 +337,11 @@ const Login = () => {
   };
 
   const verifyResetOtp = async (e) => {
-    e.preventDefault();
-    if (!otp) {
+    if (e) e.preventDefault();
+    if (!otp || otp.length !== 6) {
       toast({
-        title: "Missing OTP",
-        description: "Please enter the OTP sent to your email.",
+        title: "Invalid OTP",
+        description: "Please enter the 6-digit OTP sent to your email.",
         variant: "destructive",
       });
       return;
@@ -465,14 +485,16 @@ const Login = () => {
                             Please enter it below.
                           </p>
                         </div>
-                        <Input
-                            label="Enter OTP"
-                            id="resetOtp"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value)}
-                            required
-                            placeholder="Enter 6-digit code"
-                        />
+
+                        <div className="flex flex-col items-center">
+                          <h3 className="text-xl font-medium mb-2">OTP input (spaced)</h3>
+                          <OtpInput
+                              length={6}
+                              value={otp}
+                              onChange={setOtp}
+                          />
+                        </div>
+
                         <Button
                             type="submit"
                             className="w-full"
@@ -480,15 +502,22 @@ const Login = () => {
                         >
                           {loading ? "Verifying..." : "Verify OTP"}
                         </Button>
+
                         <div className="text-center">
-                          <button
-                              type="button"
-                              onClick={handleResetPassword}
-                              disabled={loading}
-                              className="text-blue-600 hover:text-blue-800 transition-colors"
-                          >
-                            Resend OTP
-                          </button>
+                          {resendTimer > 0 ? (
+                              <p className="text-sm text-gray-600">
+                                Resend OTP in {resendTimer} seconds
+                              </p>
+                          ) : (
+                              <button
+                                  type="button"
+                                  onClick={handleResetPassword}
+                                  disabled={loading}
+                                  className="text-blue-600 hover:text-blue-800 transition-colors"
+                              >
+                                Resend OTP
+                              </button>
+                          )}
                         </div>
                       </form>
                   ) : (
@@ -616,14 +645,14 @@ const Login = () => {
                           </div>
 
                           <form onSubmit={verifyOtp} className="space-y-4">
-                            <Input
-                                label="Enter OTP"
-                                id="otp"
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                                required
-                                placeholder="Enter 6-digit code"
-                            />
+                            <div className="flex flex-col items-center">
+                              <OtpInput
+                                  length={6}
+                                  value={otp}
+                                  onChange={setOtp}
+                              />
+                            </div>
+
                             <Button
                                 type="submit"
                                 className="w-full"
@@ -634,14 +663,20 @@ const Login = () => {
                           </form>
 
                           <div className="text-center">
-                            <Button
-                                variant="outline"
-                                className="text-sm"
-                                onClick={resendOtp}
-                                disabled={loading}
-                            >
-                              Resend OTP
-                            </Button>
+                            {resendTimer > 0 ? (
+                                <p className="text-sm text-gray-600">
+                                  Resend OTP in {resendTimer} seconds
+                                </p>
+                            ) : (
+                                <Button
+                                    variant="outline"
+                                    className="text-sm"
+                                    onClick={resendOtp}
+                                    disabled={loading}
+                                >
+                                  Resend OTP
+                                </Button>
+                            )}
                           </div>
                         </div>
                     )}

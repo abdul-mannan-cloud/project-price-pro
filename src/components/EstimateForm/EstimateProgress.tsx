@@ -44,6 +44,7 @@ export const EstimateProgress = ({ stage, progress }: EstimateProgressProps) => 
     const currentVisualStage = stageMapping[stage];
     const baseProgress = visualStageBaseProgress[currentVisualStage as keyof typeof visualStageBaseProgress];
 
+
     // Find the next visual stage
     let nextVisualStage: string | null = null;
     let i = currentStageIndex + 1;
@@ -61,6 +62,7 @@ export const EstimateProgress = ({ stage, progress }: EstimateProgressProps) => 
         ? visualStageBaseProgress[nextVisualStage as keyof typeof visualStageBaseProgress]
         : 100;
 
+
     const range = nextProgress - baseProgress;
 
     // For stages that have substages (like description having photo, description, category)
@@ -72,7 +74,8 @@ export const EstimateProgress = ({ stage, progress }: EstimateProgressProps) => 
     let subStageProgress = 0;
     if (subStageIndex !== -1 && subStageCount > 0) {
       // Calculate base progress for this substage
-      subStageProgress = (subStageIndex / subStageCount);
+      subStageProgress = (subStageIndex / (subStageCount-1));
+
 
       // Add progress within the current stage if available
       if (stage === 'questions' && typeof progress === 'number' && !isNaN(progress)) {
@@ -97,12 +100,10 @@ export const EstimateProgress = ({ stage, progress }: EstimateProgressProps) => 
       if (newProgress < prev && (prev - newProgress) < 5) {
         return prev;
       }
-      // Don't jump too far ahead
-      if (newProgress > prev) {
-        return prev + Math.min(1, newProgress - prev);
-      }
+
       return newProgress;
     });
+
   }, [stage, progress]);
 
   // Determine stage completion for visual stages
