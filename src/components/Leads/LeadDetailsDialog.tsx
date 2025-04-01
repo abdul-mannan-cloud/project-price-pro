@@ -22,6 +22,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import Spinner from "../ui/spinner";
 
 interface LeadDetailsDialogProps {
   lead: Lead | null;
@@ -253,9 +254,10 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-full h-[100vh] p-0 m-0">
           <div className="flex items-center justify-center h-full">
-            <div className="text-center">
+            <Spinner />
+            {/* <div className="text-center">
               <p>Loading...</p>
-            </div>
+            </div> */}
           </div>
         </DialogContent>
       </Dialog>

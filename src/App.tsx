@@ -18,6 +18,7 @@ import TeamOnboarding from "@/pages/TeamOnboarding";
 import "./App.css";
 import {IconTrafficCone} from "@tabler/icons-react";
 import {ContractorProvider} from "@/hooks/useContractor.tsx";
+import Spinner from "./components/ui/spinner";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -123,7 +124,12 @@ function App() {
     initialize();
   }, []);
 
-  if (!isAuthInitialized) return <div>Loading...</div>;
+  if (!isAuthInitialized) return ( 
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
+      {/* <div className="text-lg">Loading...</div> */}
+      <Spinner />
+    </div>
+  )
 
   return (
     <QueryClientProvider client={queryClient}>

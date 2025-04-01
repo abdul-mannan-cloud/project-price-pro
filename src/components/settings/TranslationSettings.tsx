@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import i18next from "@/i18n/config";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import Spinner from "../ui/spinner";
 
 const languages = [
   { code: "en", name: "English", nativeName: "English" },
@@ -134,9 +135,10 @@ export const TranslationSettings = () => {
 
   if (isAuthLoading || isSettingsLoading) {
     return (
-      <Card className="p-8 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-muted-foreground">{t("Loading language preferences...")}</span>
+      <Card className="p-8 flex items-center justify-center min-h-full">
+        <Spinner />
+        {/* <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-muted-foreground">{t("Loading language preferences...")}</span> */}
       </Card>
     );
   }

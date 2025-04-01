@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { AIRateForm } from "@/components/settings/AIRateForm";
 import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplateSettings";
+import Spinner from "@/components/ui/spinner";
 
 // Google Maps API key (Note: You should secure this in production)
 const GOOGLE_API_KEY = "AIzaSyBuZj-RWOoAc24CaC2h4SY9LvD-WzQPtJs";
@@ -469,8 +470,9 @@ const Settings = () => {
         <div className="min-h-screen bg-secondary">
           <NavBar items={navItems} />
           <div className="container mx-auto py-8">
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-muted-foreground">{t("Loading settings...")}</div>
+            <div className="flex items-center justify-center min-h-screen">
+              {/* <div className="text-muted-foreground">{t("Loading settings...")}</div> */}
+              <Spinner />
             </div>
           </div>
         </div>

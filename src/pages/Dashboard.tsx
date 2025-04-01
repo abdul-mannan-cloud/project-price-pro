@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import Spinner from "@/components/ui/spinner";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -176,7 +177,8 @@ const Dashboard = () => {
   if (isContractorLoading) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+        {/* <div className="text-lg">Loading...</div> */}
+        <Spinner />
       </div>
     );
   }

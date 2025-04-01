@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import {cn} from "@/lib/utils.ts";
+import CubeLoader from "../ui/loadingAnimtion";
 
 interface QuestionManagerProps {
     questionSets: CategoryQuestions[];
@@ -119,7 +120,8 @@ export const QuestionManager = ({
     }
 
     if (isGeneratingEstimate) {
-        return <LoadingScreen message="Building your custom estimate..." isEstimate={true} />;
+        // return <LoadingScreen message="Building your custom estimate..." isEstimate={true} />;
+        return <CubeLoader />
     }
 
     if (!displayQuestion) {

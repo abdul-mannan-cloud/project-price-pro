@@ -14,7 +14,7 @@ export const SubscriptionSettings = () => {
   return (
     <div className="space-y-4">
       <PricingCard
-        title="Pro Plan"
+        title="Service Plan"
         description="Everything you need to grow your contracting business"
         price={200}
         features={[

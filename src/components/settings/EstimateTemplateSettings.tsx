@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import {Input} from "@/components/ui/input.tsx";
+import Spinner from "../ui/spinner";
 
 const templates = [
   {
@@ -96,7 +97,12 @@ export const EstimateTemplateSettings = ({contractorId}) => {
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-full min-w-full flex items-center justify-center">
+        {/* <div className="text-lg">Loading...</div> */}
+        <Spinner />
+      </div>
+    )
   }
 
   const handleClientMessageChange = (value: string) => {
