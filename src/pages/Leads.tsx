@@ -9,6 +9,7 @@ import { LeadDetailsDialog } from "@/components/Leads/LeadDetailsDialog";
 import { LayoutDashboard, Users, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Lead, EstimateData } from "@/components/Leads/LeadsTable";
+import Spinner from "@/components/ui/spinner";
 
 const Leads = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -166,7 +167,12 @@ const Leads = () => {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        {/* <div className="text-lg">Loading...</div> */}
+        <Spinner />
+      </div>
+    )
   }
 
   return (

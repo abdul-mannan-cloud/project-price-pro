@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
+import Spinner from "../ui/spinner";
 
 export const WebhookSettings = () => {
   const { toast } = useToast();
@@ -90,7 +91,12 @@ export const WebhookSettings = () => {
     addWebhook.mutate();
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return (
+    <div className="min-h-full min-w-full flex items-center justify-center">
+      {/* <div className="text-lg">Loading...</div> */}
+      <Spinner />
+    </div>
+  )
 
   return (
     <div className="space-y-6">

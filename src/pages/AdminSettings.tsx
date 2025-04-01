@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import Spinner from "@/components/ui/spinner";
 
 const ADMIN_EMAILS = ["cairlbrandon@gmail.com", "brandon@reliablepro.net"];
 const KEYPAD_CODE = "123456"; // You might want to store this in a more secure way
@@ -62,7 +63,9 @@ export const AdminSettings = () => {
   const handleBack = () => navigate("/settings");
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center min-w-full min-h-screen">
+      <Spinner />
+    </div>;
   }
 
   if (!isAuthorized) {

@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import Spinner from "../ui/spinner";
 
 // General preferences types
 interface AIPreferences {
@@ -475,7 +476,12 @@ export const AIPreferencesSettings = () => {
   const isLoading = isContractorLoading || isSettingsLoading || isInstructionsLoading || isRatesLoading;
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+       <div className="min-h-full min-w-full flex items-center justify-center">
+          {/* <div className="text-lg">Loading...</div> */}
+          <Spinner />
+        </div>
+    )
   }
 
   return (

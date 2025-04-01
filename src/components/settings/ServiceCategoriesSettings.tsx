@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
 import { Loader2 } from "lucide-react";
+import Spinner from "../ui/spinner";
 
 type ContractorSettings = Database["public"]["Tables"]["contractor_settings"]["Row"];
 
@@ -98,9 +99,10 @@ export const ServiceCategoriesSettings = () => {
 
   if (categoriesLoading || settingsLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-sm text-muted-foreground">Loading categories...</span>
+      <div className="flex items-center justify-center p-8 min-h-full">
+        <Spinner />
+        {/* <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /> */}
+        {/* <span className="ml-2 text-sm text-muted-foreground">Loading categories...</span> */}
       </div>
     );
   }
