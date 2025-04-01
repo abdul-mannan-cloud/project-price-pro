@@ -3,6 +3,7 @@ export interface Option {
   value: string;
   next?: string;
   image_url?: string;
+  description?: string;
 }
 
 export interface Question {

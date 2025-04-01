@@ -113,7 +113,7 @@ export const TimeAvailabilitySelector = ({ onChange }: TimeAvailabilityProps) =>
                         style={{ overflow: 'hidden' }}
                     >
                         <label className="block text-sm font-medium mb-1" htmlFor="date">
-                            {flexibility === "on_date" ? "Select date:" : "Select before date:"}
+                            {flexibility === "on_date" ? "Select your project start date:" : "Select your project deadline:"}
                         </label>
                         <input
                             type="date"

@@ -1,4 +1,3 @@
-
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Option } from "@/types/estimate";
@@ -11,56 +10,88 @@ interface QuestionOptionProps {
   showImage: boolean;
 }
 
-export const QuestionOption = ({ 
-  option, 
-  isSelected, 
-  type, 
-  onClick, 
-  showImage 
-}: QuestionOptionProps) => {
+export const QuestionOption = ({
+                                 option,
+                                 isSelected,
+                                 type,
+                                 onClick,
+                                 showImage
+                               }: QuestionOptionProps) => {
   return (
-    <div
-      onClick={onClick}
-      className={cn(
-        "cursor-pointer transition-all hover:text-primary border-b border-gray-100 last:border-0 pb-4",
-        showImage ? "py-4" : "py-3",
-      )}
-    >
-      {showImage && option.image_url && (
-        <div className="w-full h-32 relative mb-2">
-          <img
-            src={option.image_url}
-            alt={option.label}
-            className="rounded-md w-full h-full object-cover"
-          />
-        </div>
-      )}
-      <div className="flex items-center gap-3 w-full">
-        {type === 'multiple_choice' ? (
-          <div className={cn(
-            "flex-shrink-0 h-6 w-6 rounded border mt-0.5",
-            isSelected ? "bg-primary border-primary" : "border-gray-300",
-            "flex items-center justify-center"
+      <div
+          onClick={onClick}
+          className={cn(
+              "group relative rounded-xl transition-all duration-200 cursor-pointer overflow-hidden",
+              isSelected
+                  ? "bg-primary-100 ring-2 ring-primary ring-offset-1"
+                  : "hover:bg-primary-50 border border-gray-200 hover:border-primary-300",
+              showImage ? "pb-4" : "p-4"
+          )}
+      >
+        {showImage && option.image_url && (
+            <div className="w-full aspect-video overflow-hidden">
+              <img
+                  src={option.image_url}
+                  alt={option.label}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
+        )}
+
+        <div className={cn(
+            "flex items-center gap-3 w-full",
+            showImage ? "px-4 pt-4" : ""
+        )}>
+          {type === 'multiple_choice' ? (
+              <div className={cn(
+                  "flex-shrink-0 h-6 w-6 rounded-md border transition-all duration-200",
+                  isSelected
+                      ? "bg-primary border-primary"
+                      : "border-gray-300 group-hover:border-primary-400",
+                  "flex items-center justify-center"
+              )}>
+                <Check className={cn(
+                    "w-4 h-4 text-white transition-all duration-200",
+                    isSelected ? "opacity-100 scale-100" : "opacity-0 scale-0"
+                )} />
+              </div>
+          ) : (
+              <div className={cn(
+                  "flex-shrink-0 h-6 w-6 rounded-full border transition-all duration-200",
+                  isSelected
+                      ? "border-2 border-primary"
+                      : "border-gray-300 group-hover:border-primary-400"
+              )}>
+                <div className={cn(
+                    "w-3 h-3 rounded-full bg-primary m-[3px] transition-all duration-200",
+                    isSelected ? "opacity-100 scale-100" : "opacity-0 scale-0"
+                )} />
+              </div>
+          )}
+
+          <div className="flex flex-col w-full">
+          <span className={cn(
+              "text-base sm:text-lg transition-all duration-200",
+              isSelected
+                  ? "font-medium text-primary-700"
+                  : "text-gray-800 group-hover:text-primary-600"
           )}>
-            {isSelected && <Check className="w-4 h-4 text-white" />}
-          </div>
-        ) : (
-          <div className={cn(
-            "flex-shrink-0 h-6 w-6 rounded-full border mt-0.5",
-            isSelected ? "bg-primary border-primary" : "border-gray-300"
-          )}>
-            {isSelected && (
-              <div className="w-3 h-3 rounded-full bg-white m-1" />
+            {option.label}
+          </span>
+
+            {option.description && (
+                <span className="text-sm text-gray-500 mt-1">
+              {option.description}
+            </span>
             )}
           </div>
-        )}
-        <div className="flex flex-col w-full">
-          <span className={cn(
-            "text-lg flex-grow",
-            isSelected && "text-primary font-medium"
-          )}>{option.label}</span>
         </div>
+
+        {/* Subtle hover effect overlay */}
+        <div className={cn(
+            "absolute inset-0 bg-primary-100 opacity-0 pointer-events-none transition-opacity duration-300",
+            isSelected ? "opacity-0" : "group-hover:opacity-5"
+        )} />
       </div>
-    </div>
   );
 };

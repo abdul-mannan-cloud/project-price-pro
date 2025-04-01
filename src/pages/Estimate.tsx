@@ -264,9 +264,7 @@ const EstimatePage = () => {
         setIsSpeechSupported(isSupported);
     }, []);
 
-    useEffect(() => {
-        console.log('Current lead ID in estimate:', currentLeadId);
-    }, [currentLeadId]);
+
 
     // Show loading state if contractor data is loading
     if (isContractorLoading) {
@@ -336,6 +334,7 @@ const EstimatePage = () => {
                             projectDescription={projectDescription} // Pass projectDescription
                             uploadedPhotos={uploadedPhotos} // Pass uploadedPhotos
                             uploadedImageUrl={uploadedImageUrl}
+                            currentStageName={stage}
                         />
                     )}
 
