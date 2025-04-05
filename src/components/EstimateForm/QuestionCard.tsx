@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Question } from "@/types/estimate";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -9,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { VoiceInput } from "./VoiceInput";
 import { QuestionOption } from "./QuestionOption";
+import { Camera, Info } from "lucide-react";
 
 type Contractor = Database['public']['Tables']['contractors']['Row'];
 
@@ -22,6 +25,7 @@ interface QuestionCardProps {
   totalStages: number;
   hasFollowUpQuestion?: boolean;
   contractor?: Contractor;
+  setShowNextButton?: (show: boolean) => void;
 }
 
 export const QuestionCard = ({
@@ -34,13 +38,16 @@ export const QuestionCard = ({
                                totalStages,
                                hasFollowUpQuestion = true,
                                contractor,
+    setShowNextButton
                              }: QuestionCardProps) => {
-  const [showNextButton, setShowNextButton] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [measurementValue, setMeasurementValue] = useState("");
+  const [error, setError] = useState("");
   const questionLoadTime = useRef<number>(0);
   const isMobile = useIsMobile();
   const { contractorId } = useParams();
   const toastRef = useRef<string | null>(null);
+  const measurementInputRef = useRef<HTMLInputElement>(null);
 
   // Only fetch contractor data if not provided as prop
   const { data: fetchedContractor } = useQuery({
@@ -63,7 +70,22 @@ export const QuestionCard = ({
 
   useEffect(() => {
     questionLoadTime.current = Date.now();
-    setShowNextButton(question.type === 'multiple_choice' ? selectedAnswers.length > 0 : selectedAnswers.length === 1);
+
+    // Reset measurement value when question changes
+    setMeasurementValue("");
+    setError("");
+
+    if (question.type === 'measurement_input') {
+      // If we have a previously saved answer, load it
+      if (selectedAnswers.length > 0) {
+        setMeasurementValue(selectedAnswers[0]);
+      }
+      // For measurement_input, only show next button when manually triggered
+      setShowNextButton(true);
+    } else {
+      setShowNextButton(question.type === 'multiple_choice' ? selectedAnswers.length > 0 : selectedAnswers.length === 1);
+    }
+
     setIsProcessing(false);
   }, [question.id, selectedAnswers]);
 
@@ -85,6 +107,42 @@ export const QuestionCard = ({
     }
   };
 
+  const handleMeasurementChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setMeasurementValue(value);
+
+    // Validate the measurement based on the validation pattern if provided
+    if (question.validation) {
+      const regex = new RegExp(question.validation);
+      if (value && !regex.test(value)) {
+        setError(question.validation_message || "Please enter a valid measurement");
+        // Do NOT set showNextButton to true
+      } else {
+        setError("");
+        setShowNextButton(false)
+      }
+    } else {
+      // If no validation pattern, just update the selected answer
+      // But do NOT automatically set showNextButton or advance
+      onSelect(question.id, [value]);
+    }
+  };
+
+
+  const handleContinueClick = () => {
+    // Explicitly show next button and allow manual navigation
+    setShowNextButton(true);
+    if (onNext) {
+      onNext();
+    }
+  };
+
+  const handleCameraClick = () => {
+    // Placeholder for camera measurement functionality
+    // This would integrate with your camera measurement system
+    console.log("Opening camera for measurement");
+  };
+
   const shouldShowImage = (option: any) => {
     if (!option.image_url) return false;
     if (option.image_url.includes('example')) return false;
@@ -104,28 +162,90 @@ export const QuestionCard = ({
               "font-semibold text-gray-800",
               isMobile ? "text-lg px-4" : "text-2xl"
           )}>{question?.question}</h2>
-          {/*<VoiceInput */}
-          {/*  question={question} */}
-          {/*  onSelect={(value) => handleOptionClick(value)} */}
-          {/*/>*/}
         </div>
 
-        <div className={cn(
-            "grid gap-6 mb-12",
-            isMobile ? "grid-cols-1 px-4" : question.type === 'multiple_choice' ? "grid-cols-2" : "grid-cols-1"
-        )}>
-          {options.map((option) => (
-              <QuestionOption
-                  key={option.value}
-                  option={option}
-                  isSelected={selectedAnswers.includes(option.value)}
-                  type={question.type}
-                  onClick={() => handleOptionClick(option.value)}
-                  showImage={shouldShowImage(option)}
-              />
-          ))}
-        </div>
+        {question.type === 'measurement_input' ? (
+            <div className="space-y-6 mb-12 px-4 md:px-0">
+              {/* Measurement Input UI */}
+              <div className="space-y-3">
+                {/* Helper text with hint */}
+                {question.helper_text && (
+                    <div className="flex items-start gap-2 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
+                      <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                      <p>{question.helper_text}</p>
+                    </div>
+                )}
 
+                {/* Manual input with unit display */}
+                <div className="space-y-2">
+                  <label htmlFor="measurement-input" className="text-sm font-medium text-gray-700">
+                    Input total {question.unit ? `in ${question.unit}` : ''}
+                  </label>
+                  <div className="relative">
+                    <Input
+                        id="measurement-input"
+                        ref={measurementInputRef}
+                        type="text"
+                        placeholder={question.placeholder || `Enter measurement${question.unit ? ` (${question.unit})` : ''}`}
+                        value={measurementValue}
+                        onChange={handleMeasurementChange}
+                        className={cn(
+                            "pr-12 py-6 text-lg",
+                            error ? "border-red-500 focus:ring-red-500" : "focus:ring-primary"
+                        )}
+                    />
+                    {question.unit && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                          {question.unit}
+                        </div>
+                    )}
+                  </div>
+                  {error && (
+                      <p className="text-sm text-red-500 mt-1">{error}</p>
+                  )}
+                </div>
+
+                {/* Divider with OR text */}
+                {question.camera_option && (
+                    <div className="flex items-center my-6">
+                      <div className="flex-grow border-t border-gray-200"></div>
+                      <div className="px-4 text-gray-500 text-sm">or</div>
+                      <div className="flex-grow border-t border-gray-200"></div>
+                    </div>
+                )}
+
+                {/* Camera measurement option */}
+                {question.camera_option && (
+                    <Button
+                        variant="outline"
+                        className="w-full py-6 flex items-center justify-center gap-2 border-dashed border-gray-300"
+                        onClick={handleCameraClick}
+                    >
+                      <Camera className="h-5 w-5" />
+                      <span>{question.camera_prompt || "Take photo to measure"}</span>
+                    </Button>
+                )}
+
+
+              </div>
+            </div>
+        ) : (
+            <div className={cn(
+                "grid gap-6 mb-12",
+                isMobile ? "grid-cols-1 px-4" : question.type === 'multiple_choice' ? "grid-cols-2" : "grid-cols-1"
+            )}>
+              {options.map((option) => (
+                  <QuestionOption
+                      key={option.value}
+                      option={option}
+                      isSelected={selectedAnswers.includes(option.value)}
+                      type={question.type}
+                      onClick={() => handleOptionClick(option.value)}
+                      showImage={shouldShowImage(option)}
+                  />
+              ))}
+            </div>
+        )}
       </Card>
   );
 };

@@ -8,9 +8,43 @@ export const findNextQuestionId = (
     currentQuestion: Question,
     selectedValue: string
 ): string | null => {
+  // Handle measurement_input type questions which might not have traditional options
+  if (currentQuestion.type === 'measurement_input') {
+    // If the current question has a next property, use that
+    if (currentQuestion.next) {
+      return currentQuestion.next;
+    }
+
+    // Move to the next question in order
+    const currentIndex = questions.findIndex((q) => q.id === currentQuestion.id);
+    if (currentIndex < questions.length - 1) {
+      return questions[currentIndex + 1].id;
+    }
+
+    return null;
+  }
+
+  // Safety check for options array
+  if (!currentQuestion.options || !Array.isArray(currentQuestion.options)) {
+    console.warn(`Question ${currentQuestion.id} has no options array in findNextQuestionId`);
+
+    // If the current question has a next property, use that
+    if (currentQuestion.next) {
+      return currentQuestion.next;
+    }
+
+    // Move to the next question in order
+    const currentIndex = questions.findIndex((q) => q.id === currentQuestion.id);
+    if (currentIndex < questions.length - 1) {
+      return questions[currentIndex + 1].id;
+    }
+
+    return null;
+  }
+
   // First check if the selected option has a next question specified
   const selectedOption = currentQuestion.options.find(
-      (opt) => opt.value === selectedValue
+      (opt) => opt && opt.value === selectedValue
   );
 
   if (selectedOption?.next) {
@@ -86,7 +120,7 @@ function estimateTotalQuestionsInPath(
   if (!questions.length) return 1;
 
   // Start from the first question
-  const startQuestionId = questions[0].id;
+  const startQuestionId = questions[0]?.id;
   if (!startQuestionId) return 1;
 
   const visitedQuestionIds = new Set<string>();
@@ -123,6 +157,40 @@ function simulatePath(
   const question = questions.find(q => q.id === questionId);
   if (!question) return;
 
+  // Handle measurement_input type questions which might have different structure
+  if (question.type === 'measurement_input') {
+    // If there's an explicit next question defined for the measurement input
+    if (question.next) {
+      if (question.next === 'NEXT_BRANCH') {
+        // If there's a branch transition, estimate remaining questions
+        const avgQuestionsPerBranch = Math.ceil(questions.length / 2);
+        for (let i = 0; i < avgQuestionsPerBranch; i++) {
+          estimatedPath.push(`estimated_q_${i}`);
+        }
+      } else if (question.next !== 'END') {
+        simulatePath(question.next, questions, answers, visitedQuestionIds, estimatedPath);
+      }
+      return;
+    }
+
+    // Otherwise follow the default order
+    const nextIndex = questions.findIndex(q => q.id === questionId) + 1;
+    if (nextIndex < questions.length) {
+      simulatePath(questions[nextIndex].id, questions, answers, visitedQuestionIds, estimatedPath);
+    }
+    return;
+  }
+
+  // Skip if question doesn't have valid options
+  if (!question.options || !Array.isArray(question.options)) {
+    // Follow default order if no options available
+    const nextIndex = questions.findIndex(q => q.id === questionId) + 1;
+    if (nextIndex < questions.length) {
+      simulatePath(questions[nextIndex].id, questions, answers, visitedQuestionIds, estimatedPath);
+    }
+    return;
+  }
+
   // If user has already answered this question, use their answer to determine path
   if (answers[questionId]) {
     const userAnswer = answers[questionId];
@@ -133,7 +201,8 @@ function simulatePath(
 
       // Check if any selected option has a 'NEXT_BRANCH' next value
       const hasNextBranch = selectedValues.some(value => {
-        const option = question.options.find(opt => opt.value === value);
+        // Find the option safely with null checks
+        const option = question.options?.find(opt => opt && opt.value === value);
         return option?.next === 'NEXT_BRANCH';
       });
 
@@ -150,7 +219,8 @@ function simulatePath(
       // Check for explicit next questions from selected options
       const nextQuestions = selectedValues
           .map(value => {
-            const option = question.options.find(opt => opt.value === value);
+            // Find the option safely with null checks
+            const option = question.options?.find(opt => opt && opt.value === value);
             return option?.next;
           })
           .filter(next => next && next !== 'END' && next !== 'NEXT_BRANCH') as string[];
@@ -166,7 +236,8 @@ function simulatePath(
       // For single-choice questions, follow the selected option's path
       const selectedValue = userAnswer.answers?.[0];
       if (selectedValue) {
-        const selectedOption = question.options.find(opt => opt.value === selectedValue);
+        // Find the option safely with null checks
+        const selectedOption = question.options?.find(opt => opt && opt.value === selectedValue);
 
         if (selectedOption?.next === 'NEXT_BRANCH') {
           // If there's a branch transition, estimate remaining questions

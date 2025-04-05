@@ -47,24 +47,33 @@ export const useQuestionManager = (
 
     // First pass: identify branches
     questionSequence.forEach(question => {
+      // Make sure question and options exist before accessing them
+      if (!question || !question.options) {
+        console.warn(`Question missing or has no options: ${question?.id || 'unknown'}`);
+        return;
+      }
+
       if (question.type === 'multiple_choice') {
         // Multiple choice can lead to multiple branches
         const branchOptions = question.options
-            .filter(opt => opt.next && opt.next !== 'END' && opt.next !== 'NEXT_BRANCH')
-            .map(opt => opt.next);
+            .filter(opt => opt && opt.next && opt.next !== 'END' && opt.next !== 'NEXT_BRANCH')
+            .map(opt => opt.next as string);
 
         if (branchOptions.length) {
           branches.set(question.id, branchOptions);
         }
-      } else {
-        // Single choice leads to one branch
+      } else if (question.options && Array.isArray(question.options)) {
+        // Handle other question types with options (including measurement_input)
         const branchOptions = question.options
-            .filter(opt => opt.next && opt.next !== 'END' && opt.next !== 'NEXT_BRANCH')
-            .map(opt => opt.next);
+            .filter(opt => opt && opt.next && opt.next !== 'END' && opt.next !== 'NEXT_BRANCH')
+            .map(opt => opt.next as string);
 
         if (branchOptions.length) {
           branches.set(question.id, branchOptions);
         }
+      } else if (question.next) {
+        // Handle direct next for measurement_input without options
+        branches.set(question.id, [question.next]);
       }
     });
 
@@ -86,7 +95,9 @@ export const useQuestionManager = (
 
     // Assign weights to all questions
     questionSequence.forEach(question => {
-      weights[question.id] = calculateBranchDepth(question.id);
+      if (question && question.id) {
+        weights[question.id] = calculateBranchDepth(question.id);
+      }
     });
 
     setQuestionWeight(weights);
@@ -95,11 +106,11 @@ export const useQuestionManager = (
   // Enhanced progress calculation that considers question weights
   const calculateProgress = useCallback(() => {
     // If we're using the smooth progress hook, return that value
-    if(currentStageName=='estimate'){
-      return 100
+    if (currentStageName === 'estimate') {
+      return 100;
     }
     return smoothProgress;
-  }, [smoothProgress,currentStageName]);
+  }, [smoothProgress, currentStageName]);
 
   const loadCurrentQuestionSet = () => {
     if (!questionSets[currentSetIndex]) {
@@ -143,26 +154,58 @@ export const useQuestionManager = (
   const moveToNextQuestionSet = () => {
     console.log('Moving to next question set, current index:', currentSetIndex, 'total sets:', questionSets.length);
     if (currentSetIndex < questionSets.length - 1) {
-      console.log('Moving to next Questions set, Thanks You')
+      console.log('Moving to next Questions set, Thanks You');
       setCurrentSetIndex(prev => prev + 1);
     } else {
-      console.log('Not Moving to next Questions set,No Thanks You')
+      console.log('Not Moving to next Questions set,No Thanks You');
       handleComplete();
     }
   };
 
   const handleSingleChoiceNavigation = (currentQuestion: Question, selectedValue: string) => {
+    console.log('testing current single choice', currentQuestion, selectedValue);
 
-    console.log('testing current single choice',currentQuestion,selectedValue)
+    // Handle measurement_input type which might not have traditional options
+    if (currentQuestion.type === 'measurement_input') {
+      if (currentQuestion.next === 'NEXT_BRANCH') {
+        setPendingBranchTransition(true);
+      } else if (currentQuestion.next === 'END' || !currentQuestion.next) {
+        moveToNextQuestionSet();
+      } else if (currentQuestion.next) {
+        setCurrentQuestionId(currentQuestion.next);
+      } else {
+        const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
+        if (currentIndex < questionSequence.length - 1) {
+          setCurrentQuestionId(questionSequence[currentIndex + 1].id);
+        } else {
+          moveToNextQuestionSet();
+        }
+      }
+      return;
+    }
+
+    // Safety check for options
+    if (!currentQuestion.options || !Array.isArray(currentQuestion.options)) {
+      console.warn(`Question ${currentQuestion.id} has no options array`);
+      moveToNextQuestionSet();
+      return;
+    }
+
     const selectedOption = currentQuestion.options.find(
-        opt => opt.value.toLowerCase() === selectedValue.toLowerCase()
+        opt => opt && opt.value && opt.value.toLowerCase() === selectedValue.toLowerCase()
     );
 
-    if (selectedOption?.next === 'NEXT_BRANCH') {
-      setPendingBranchTransition(true);
-    } else if (selectedOption?.next === 'END' || !selectedOption?.next) {
+    if (!selectedOption) {
+      console.warn(`Selected option not found for value: ${selectedValue}`);
       moveToNextQuestionSet();
-    } else if (selectedOption?.next) {
+      return;
+    }
+
+    if (selectedOption.next === 'NEXT_BRANCH') {
+      setPendingBranchTransition(true);
+    } else if (selectedOption.next === 'END' || !selectedOption.next) {
+      moveToNextQuestionSet();
+    } else if (selectedOption.next) {
       setCurrentQuestionId(selectedOption.next);
     } else {
       const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
@@ -180,18 +223,37 @@ export const useQuestionManager = (
 
     const currentSet = questionSets[currentSetIndex];
 
-    const questionAnswer: QuestionAnswer = {
-      question: currentQuestion.question,
-      type: currentQuestion.type,
-      answers: selectedValues,
-      options: currentQuestion.options
-          .filter(opt => selectedValues.includes(opt.value))
+    // For measurement_input type which might not have options in the traditional sense
+    let options = [];
+    if (currentQuestion.type === 'measurement_input') {
+      // Create a synthetic option for the measurement value
+      options = selectedValues.map(value => ({
+        label: value,
+        value: value,
+        next: currentQuestion.next
+      }));
+    } else if (currentQuestion.options && Array.isArray(currentQuestion.options)) {
+      // For traditional option-based questions
+      options = currentQuestion.options
+          .filter(opt => opt && selectedValues.includes(opt.value))
           .map(opt => ({
             label: opt.label,
             value: opt.value,
             next: opt.next
-          }))
+          }));
+    }
+
+    const questionAnswer: QuestionAnswer = {
+      question: currentQuestion.question,
+      type: currentQuestion.type,
+      answers: selectedValues,
+      options: options
     };
+
+    // For measurement_input, add the unit if available
+    if (currentQuestion.type === 'measurement_input' && currentQuestion.unit) {
+      (questionAnswer as any).unit = currentQuestion.unit;
+    }
 
     setAnswers(prev => ({
       ...prev,
@@ -210,6 +272,13 @@ export const useQuestionManager = (
     const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
     if (!currentQuestion) return;
 
+    // Safety check for options
+    if (!currentQuestion.options || !Array.isArray(currentQuestion.options)) {
+      console.warn(`Question ${currentQuestion.id} has no options array in handleMultipleChoiceNext`);
+      moveToNextQuestionSet();
+      return;
+    }
+
     const currentSet = questionSets[currentSetIndex];
     const currentSetAnswers = answers[currentSet.category] || {};
     const selectedValues = currentSetAnswers[currentQuestion.id]?.answers || [];
@@ -217,7 +286,7 @@ export const useQuestionManager = (
     if (selectedValues.length === 0) return;
 
     const nextQuestions = selectedValues.reduce((acc: string[], value: string) => {
-      const option = currentQuestion.options.find(opt => opt.value === value);
+      const option = currentQuestion.options.find(opt => opt && opt.value === value);
       if (option?.next && option.next !== 'END' && option.next !== 'NEXT_BRANCH') {
         acc.push(option.next);
       }
@@ -233,7 +302,7 @@ export const useQuestionManager = (
       }
     } else {
       const shouldMoveToNextBranch = selectedValues.some(value => {
-        const option = currentQuestion.options.find(opt => opt.value === value);
+        const option = currentQuestion.options.find(opt => opt && opt.value === value);
         return option?.next === 'NEXT_BRANCH';
       });
 
@@ -302,7 +371,7 @@ export const useQuestionManager = (
       }
 
       const address = await supabase.from('contractors').select('business_address').eq('id',contractorId).single();
-      let address_string=""
+      let address_string="";
       if (!address.data || !address.data.business_address) {
         try {
           const response = await fetch('https://ipapi.co/json/?key=AzZ4jUj0F5eFNjhgWgLpikGJxYdf5IzcsfBQSiOMw69RtR8JzX');
@@ -313,14 +382,14 @@ export const useQuestionManager = (
 
           const ipAddressData = await response.json();
 
-          address_string=`${ipAddressData.city}, ${ipAddressData.region}, ${ipAddressData.country_name}`
+          address_string=`${ipAddressData.city}, ${ipAddressData.region}, ${ipAddressData.country_name}`;
 
         } catch (error) {
           console.error('Error fetching IP address data:', error);
           throw error;
         }
       } else {
-        address_string=address.data.business_address
+        address_string=address.data.business_address;
       }
 
       // Then, generate the estimate
@@ -333,7 +402,7 @@ export const useQuestionManager = (
           imageUrl: uploadedImageUrl,
           projectImages: uploadedPhotos,
           answers: answersForDb,
-          address:address_string
+          address: address_string
         }
       });
 
@@ -364,7 +433,7 @@ export const useQuestionManager = (
       console.log('Pending branch transition, handling...');
       handleBranchTransition();
     }
-  }, [pendingBranchTransition, isLoadingQuestions, handleBranchTransition]);
+  }, [pendingBranchTransition]);
 
   // Analyze question weights when the question sequence changes
   useEffect(() => {
@@ -390,7 +459,7 @@ export const useQuestionManager = (
     hasFollowUpQuestion: currentSetIndex < questionSets.length - 1 ||
         queuedNextQuestions.length > 0 ||
         (currentQuestionId && questionSequence.find(q => q.id === currentQuestionId)?.type === 'multiple_choice' &&
-            questionSequence.find(q => q.id === currentQuestionId)?.options.some(opt => opt.next)),
+            questionSequence.find(q => q.id === currentQuestionId)?.options?.some(opt => opt?.next)),
     currentStage: currentSetIndex + 1,
     totalStages: questionSets.length,
     handleAnswer,

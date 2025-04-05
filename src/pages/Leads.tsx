@@ -194,6 +194,7 @@ const Leads = () => {
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
         open={!!selectedLead}
+        urlContractorId={contractorId}
       />
     </div>
   );
