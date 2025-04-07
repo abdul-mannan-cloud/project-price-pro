@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { formatDistanceToNow, format } from "date-fns";
-import { MapPin, ArrowUp, ArrowDown, Search, Download, Trash2, Filter, Phone, Mail, User, Calendar, DollarSign, Check } from "lucide-react";
+import { MapPin, ArrowUp, ArrowDown, Search, Download, Trash2, Filter, Phone, Mail, User, Calendar, DollarSign, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Json } from "@/integrations/supabase/types";
 import {
@@ -106,6 +106,56 @@ export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExp
     dateRange: 'all',
     costRange: 'all',
   });
+
+  useEffect(() => {
+    const cleanupIncompleteLeads = async () => {
+      try {
+        if (leads.length === 0 || !leads[0]?.contractor_id) {
+          console.log('No contractor ID available, skipping cleanup');
+          return;
+        }
+        
+        const contractorId = leads[0].contractor_id;
+        
+        const { data: incompleteLeads, error: fetchError } = await supabase
+          .from('leads')
+          .select('id')
+          .eq('contractor_id', contractorId)
+          .or('user_email.is.null,user_email.eq.')
+          .or('user_phone.is.null,user_phone.eq.')
+          
+        if (fetchError) {
+          console.error('Error fetching incomplete leads:', fetchError);
+          return;
+        }
+        
+        if (!incompleteLeads || incompleteLeads.length === 0) {
+          console.log('No incomplete leads found');
+          return;
+        }
+        
+        const leadIdsToDelete = incompleteLeads.map(lead => lead.id);
+        
+        console.log(`Deleting ${leadIdsToDelete.length} incomplete leads`);
+        
+        const { error: deleteError } = await supabase
+          .from('leads')
+          .delete()
+          .in('id', leadIdsToDelete);
+          
+        if (deleteError) {
+          console.error('Error deleting incomplete leads:', deleteError);
+          return;
+        }
+        
+        console.log(`Successfully deleted ${leadIdsToDelete.length} incomplete leads`);
+      } catch (error) {
+        console.error('Unexpected error during leads cleanup:', error);
+      }
+    };
+
+    cleanupIncompleteLeads();
+  }, []);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -525,10 +575,19 @@ export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExp
         <DialogContent className="sm:max-w-[425px]">
           {selectedMobileLead && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold">
-                {selectedMobileLead.estimate_data?.groups?.map(group => group.name).join(", ") || selectedMobileLead.project_title}
-              </h2>
-              
+              <div className="flex flex-row gap-20 justify-between">
+                <h2 className="text-lg font-semibold">
+                  {selectedMobileLead.estimate_data?.groups?.map(group => group.name).join(", ") || selectedMobileLead.project_title}
+                </h2>
+                {/* Add close button */}
+                <button
+                  onClick={() => setSelectedMobileLead(null)}
+                  className="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  aria-label="Close dialog"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4" />
