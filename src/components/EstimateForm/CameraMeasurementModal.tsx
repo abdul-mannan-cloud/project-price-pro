@@ -1,0 +1,433 @@
+import { useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Camera, Loader2, Upload, X, Ruler } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
+
+interface CameraMeasurementModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onMeasurementComplete: (measurement: string) => void;
+    unit?: string;
+}
+
+export function CameraMeasurementModal({
+                                           isOpen,
+                                           onClose,
+                                           onMeasurementComplete,
+                                           unit = "",
+                                       }: CameraMeasurementModalProps) {
+    const [step, setStep] = useState<'upload' | 'describe' | 'measuring' | 'results'>('upload');
+    const [images, setImages] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+    const [description, setDescription] = useState("");
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [measurementResult, setMeasurementResult] = useState<any>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
+    const { t } = useTranslation();
+
+    // For mobile camera capture
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const newFiles = Array.from(e.target.files);
+            setImages((prev) => [...prev, ...newFiles]);
+
+            // Create preview URLs
+            const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+            setImagePreviews((prev) => [...prev, ...newPreviews]);
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const newFiles = Array.from(e.dataTransfer.files);
+            setImages((prev) => [...prev, ...newFiles]);
+
+            // Create preview URLs
+            const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+            setImagePreviews((prev) => [...prev, ...newPreviews]);
+        }
+    };
+
+    const removeImage = (index: number) => {
+        // Release the object URL to avoid memory leaks
+        URL.revokeObjectURL(imagePreviews[index]);
+
+        setImages((prev) => prev.filter((_, i) => i !== index));
+        setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const startCamera = async () => {
+        setIsCameraOpen(true);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (error) {
+            console.error("Error accessing camera:", error);
+            toast({
+                title: "Camera Error",
+                description: "Could not access your camera. Please check permissions.",
+                variant: "destructive",
+            });
+            setIsCameraOpen(false);
+        }
+    };
+
+    const takePicture = () => {
+        if (videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            const context = canvas.getContext('2d');
+            if (context) {
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Convert to file
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const file = new File([blob], `camera-capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                        setImages((prev) => [...prev, file]);
+
+                        // Create preview URL
+                        const preview = URL.createObjectURL(blob);
+                        setImagePreviews((prev) => [...prev, preview]);
+
+                        // Stop camera
+                        stopCamera();
+                    }
+                }, 'image/jpeg');
+            }
+        }
+    };
+
+    const stopCamera = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+        }
+        setIsCameraOpen(false);
+    };
+
+    const goToDescribeStep = () => {
+        if (images.length === 0) {
+            toast({
+                title: "No Images",
+                description: "Please add at least one image to continue.",
+                variant: "destructive",
+            });
+            return;
+        }
+        setStep('describe');
+    };
+
+    const startMeasuring = async () => {
+        if (description.trim() === "") {
+            toast({
+                title: "Description Required",
+                description: "Please describe what you want to measure.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setStep('measuring');
+        setIsProcessing(true);
+
+        try {
+            // Use the first image for processing (you could enhance this to handle multiple images)
+            const image = images[0];
+
+            // Convert image to base64
+            const base64Image = await fileToBase64(image);
+
+            // Call Supabase Edge Function
+            const { data, error } = await supabase.functions.invoke('get-measurement', {
+                body: {
+                    image: base64Image.split(',')[1], // Remove data:image/jpeg;base64, prefix
+                    description: description
+                }
+            });
+
+            if (error) {
+                throw error;
+            }
+
+            setMeasurementResult(data);
+            setStep('results');
+        } catch (error) {
+            console.error("Error processing measurement:", error);
+            toast({
+                title: "Measurement Error",
+                description: "Could not process the measurement. Please try again.",
+                variant: "destructive",
+            });
+            setStep('describe');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+        });
+    };
+
+    const handleUseMeasurement = () => {
+        if (measurementResult?.measurements?.primary?.value) {
+            // Format the measurement value based on the primary dimension
+            const value = measurementResult.measurements.primary.value.toString();
+            onMeasurementComplete(value);
+            onClose();
+
+            // Clean up
+            cleanUp();
+        }
+    };
+
+    const cleanUp = () => {
+        // Release all object URLs
+        imagePreviews.forEach(url => URL.revokeObjectURL(url));
+
+        // Reset state
+        setImages([]);
+        setImagePreviews([]);
+        setDescription("");
+        setMeasurementResult(null);
+        setStep('upload');
+        setIsProcessing(false);
+    };
+
+    const handleCloseModal = () => {
+        cleanUp();
+        onClose();
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={handleCloseModal}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>
+                        {step === 'upload' && "Add Photos for Measurement"}
+                        {step === 'describe' && "Describe What to Measure"}
+                        {step === 'measuring' && "AI Measuring..."}
+                        {step === 'results' && "Measurement Results"}
+                    </DialogTitle>
+                </DialogHeader>
+
+                {/* Step 1: Upload Photos */}
+                {step === 'upload' && (
+                    <div className="space-y-4">
+                        {isCameraOpen ? (
+                            <div className="relative">
+                                <video
+                                    ref={videoRef}
+                                    autoPlay
+                                    playsInline
+                                    className="w-full h-64 object-cover rounded-lg"
+                                />
+                                <canvas ref={canvasRef} className="hidden" />
+                                <div className="mt-4 flex justify-center gap-4">
+                                    <Button onClick={takePicture} className="flex items-center gap-2">
+                                        <Camera size={16} />
+                                        Capture
+                                    </Button>
+                                    <Button variant="outline" onClick={stopCamera} className="flex items-center gap-2">
+                                        <X size={16} />
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div
+                                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    onDragOver={handleDragOver}
+                                    onDrop={handleDrop}
+                                >
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileChange}
+                                        accept="image/*"
+                                        multiple
+                                        className="hidden"
+                                    />
+                                    <Upload className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                                    <p className="text-sm text-gray-600">Drag & drop images or click to browse</p>
+                                </div>
+
+                                {imagePreviews.length > 0 && (
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {imagePreviews.map((preview, index) => (
+                                            <div key={index} className="relative">
+                                                <img
+                                                    src={preview}
+                                                    alt={`Preview ${index}`}
+                                                    className="w-full h-24 object-cover rounded-md"
+                                                />
+                                                <button
+                                                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white"
+                                                    onClick={() => removeImage(index)}
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="flex gap-2">
+                                    <Button onClick={startCamera} variant="outline" className="flex-1">
+                                        <Camera className="h-4 w-4 mr-2" />
+                                        Take Photo
+                                    </Button>
+                                    <Button onClick={goToDescribeStep} className="flex-1">
+                                        Continue
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* Step 2: Describe what to measure */}
+                {step === 'describe' && (
+                    <div className="space-y-4">
+                        <div>
+                            <div className="mb-4">
+                                <img
+                                    src={imagePreviews[0]}
+                                    alt="Measurement image"
+                                    className="w-full h-48 object-cover rounded-lg"
+                                />
+                            </div>
+
+                            <div className="mb-4">
+                                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Describe what is being measured
+                                </label>
+                                <Textarea
+                                    id="description"
+                                    placeholder="e.g., measure the flooring include all corners"
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    className="h-24"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => setStep('upload')} className="flex-1">
+                                Back
+                            </Button>
+                            <Button onClick={startMeasuring} className="flex-1">
+                                Start Measuring
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 3: Measuring Loader */}
+                {step === 'measuring' && (
+                    <div className="py-8 text-center">
+                        <div className="animate-pulse flex flex-col items-center">
+                            <Ruler className="h-16 w-16 text-primary mb-4" />
+                            <p className="text-lg font-medium text-gray-700">Measuring...</p>
+                            <p className="text-sm text-gray-500 mt-2">Our AI is calculating measurements from your image</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 4: Results */}
+                {step === 'results' && measurementResult && (
+                    <div className="space-y-4">
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-medium text-gray-700 mb-1">Primary Measurement</h3>
+                                <div className="flex items-end">
+                  <span className="text-3xl font-bold">
+                    {measurementResult.measurements.primary.value}
+                  </span>
+                                    <span className="text-xl ml-1 mb-0.5 text-gray-500">
+                    {measurementResult.measurements.primary.unit}
+                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    {measurementResult.measurements.primary.dimension}
+                                </p>
+                            </div>
+
+                            {measurementResult.measurements.additional &&
+                                measurementResult.measurements.additional.length > 0 && (
+                                    <div className="border-t border-gray-200 pt-3 mt-3">
+                                        <h3 className="text-sm font-medium text-gray-700 mb-2">Additional Measurements</h3>
+                                        {measurementResult.measurements.additional.map((item: any, index: number) => (
+                                            <div key={index} className="flex justify-between text-sm">
+                                                <span className="text-gray-600">{item.dimension}</span>
+                                                <span className="font-medium">
+                        {item.value} {item.unit}
+                      </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                            <div className="mt-4">
+                                <h3 className="text-sm font-medium text-gray-700 mb-1">Confidence</h3>
+                                <div className={cn(
+                                    "text-sm px-2 py-1 rounded inline-block",
+                                    measurementResult.confidence === "high" ? "bg-green-100 text-green-800" :
+                                        measurementResult.confidence === "medium" ? "bg-yellow-100 text-yellow-800" :
+                                            "bg-red-100 text-red-800"
+                                )}>
+                                    {measurementResult.confidence.charAt(0).toUpperCase() + measurementResult.confidence.slice(1)}
+                                </div>
+                            </div>
+                        </div>
+
+                        {measurementResult.reasoning && (
+                            <div className="text-sm text-gray-600">
+                                <h3 className="font-medium text-gray-700 mb-1">Reasoning</h3>
+                                <p>{measurementResult.reasoning}</p>
+                            </div>
+                        )}
+
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => setStep('describe')} className="flex-1">
+                                Try Again
+                            </Button>
+                            <Button onClick={handleUseMeasurement} className="flex-1">
+                                Use Measurement
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </DialogContent>
+        </Dialog>
+    );
+}

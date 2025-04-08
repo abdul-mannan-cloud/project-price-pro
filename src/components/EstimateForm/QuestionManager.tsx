@@ -6,7 +6,7 @@ import { useQuestionManager } from "@/hooks/useQuestionManager";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import {cn} from "@/lib/utils.ts";
+import { cn } from "@/lib/utils.ts";
 import CubeLoader from "../ui/loadingAnimtion";
 
 interface QuestionManagerProps {
@@ -59,12 +59,16 @@ export const QuestionManager = ({
     // New state to track question history and navigation
     const [questionHistory, setQuestionHistory] = useState<any[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [isMeasurementInputReady, setIsMeasurementInputReady] = useState(false);
+    const [nextButtonDisabled, setNextButtonDisabled] = useState(true);
 
     // Update history when current question changes
     useEffect(() => {
         if (currentQuestion && !questionHistory.some(q => q.id === currentQuestion.id)) {
             setQuestionHistory(prev => [...prev, currentQuestion]);
             setCurrentQuestionIndex(prev => prev + 1);
+            // Reset measurement input readiness when a new question is added
+            setIsMeasurementInputReady(false);
         }
     }, [currentQuestion, questionHistory]);
 
@@ -83,22 +87,42 @@ export const QuestionManager = ({
         }
     };
 
+
+    useEffect(() => {
+        if(((currentSetAnswers[displayQuestion?.id]?.answers || []).length > 0)){
+            setNextButtonDisabled(false);
+        }
+    }, [currentSetAnswers]);
+
     const handleNext = () => {
         // If we're not at the last question in history, just navigate to the next saved question
         if (currentQuestionIndex < questionHistory.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
         } else {
             // If we're at the latest question, try to advance to a new question
+
             const currentAnswer = currentSetAnswers[displayQuestion.id]?.answers || [];
-            const hasAnswer = currentAnswer.length > 0;
+            let hasAnswer = currentAnswer.length > 0;
+
+            if( displayQuestion.type==='measurement_input' && isMeasurementInputReady){
+                hasAnswer = true
+            }
 
             // Only proceed if we have an answer for the current question
             if (hasAnswer) {
                 if (displayQuestion.type === 'multiple_choice') {
                     handleMultipleChoiceNext();
+                } else if (displayQuestion.type === 'measurement_input') {
+                    // For measurement inputs, only proceed if explicitly marked as ready
+                    if (isMeasurementInputReady) {
+                        const currentAnswerData = {
+                            questionId: displayQuestion.id,
+                            answers: currentAnswer
+                        };
+                        handleComplete(currentAnswerData);
+                    }
                 } else {
                     // For single choice/radio, we can also try to advance
-                    // This is similar to what handleMultipleChoiceNext would do
                     const currentAnswerData = {
                         questionId: displayQuestion.id,
                         answers: currentAnswer
@@ -120,7 +144,6 @@ export const QuestionManager = ({
     }
 
     if (isGeneratingEstimate) {
-        // return <LoadingScreen message="Building your custom estimate..." isEstimate={true} />;
         return <CubeLoader />
     }
 
@@ -130,51 +153,80 @@ export const QuestionManager = ({
 
     const isLastQuestion = currentStage === totalStages && !hasFollowUpQuestion && isLatestQuestion;
 
+    // Always show navigation buttons
+    const shouldShowNavButtons = true;
+
+    // Define a proper onNext handler that does absolutely nothing for measurement inputs
+    const handleMeasurementInputNext = () => {
+        // This is a no-op function that explicitly does nothing
+        return;
+    };
+
+
     return (
         <div className="space-y-6">
             <QuestionCard
                 question={displayQuestion}
                 selectedAnswers={currentSetAnswers[displayQuestion.id]?.answers || []}
-                onSelect={handleAnswer}
-                onNext={isLatestQuestion && displayQuestion.type === 'multiple_choice' ? handleMultipleChoiceNext : handleNext}
+                onSelect={(question, answers) => {
+                    handleAnswer(question, answers);
+                }}
+                onNext={
+                    // Important fix: Always use handleMeasurementInputNext for measurement_input type
+                    displayQuestion.type === 'measurement_input'
+                        ? handleMeasurementInputNext
+                        : (isLatestQuestion ?
+                            (displayQuestion.type === 'multiple_choice' ?
+                                handleMultipleChoiceNext :
+                                undefined) :
+                            handleNext)
+                }
                 isLastQuestion={isLastQuestion}
                 currentStage={currentStage}
                 totalStages={totalStages}
                 hasFollowUpQuestion={hasFollowUpQuestion}
                 contractor={contractor}
+                setShowNextButton={setNextButtonDisabled}
             />
 
-            <div className="flex justify-between mt-8 px-4 md:px-0">
-                <Button
-                    variant={isFirstQuestion ? "outline" : "default"}
-                    onClick={handlePrevious}
-                    disabled={isFirstQuestion}
-                    className={cn(
-                        "flex items-center gap-2 px-6 py-5 text-base font-medium transition-all duration-200 w-40",
-                        isFirstQuestion
-                            ? "text-gray-400 border-gray-200"
-                            : "bg-primary-100 hover:bg-primary-200 text-primary-700 border-primary-200"
-                    )}
-                >
-                    <ArrowLeft size={20} />
-                    Back
-                </Button>
+            {shouldShowNavButtons && (
+                <div className="flex justify-between mt-8 px-4 md:px-0">
+                    <Button
+                        variant={isFirstQuestion ? "outline" : "default"}
+                        onClick={handlePrevious}
+                        disabled={isFirstQuestion}
+                        className={cn(
+                            "flex items-center gap-2 px-6 py-5 text-base font-medium transition-all duration-200 w-40",
+                            isFirstQuestion
+                                ? "text-gray-400 border-gray-200"
+                                : "bg-primary-100 hover:bg-primary-200 text-primary-700 border-primary-200"
+                        )}
+                    >
+                        <ArrowLeft size={20} />
+                        Back
+                    </Button>
 
-                <Button
-                    variant="default"
-                    onClick={handleNext}
-                    disabled={isLatestQuestion && displayQuestion.type !== 'multiple_choice'}
-                    className={cn(
-                        "flex items-center gap-2 px-6 py-5 text-base font-medium transition-all duration-200 w-40",
-                        isLatestQuestion && displayQuestion.type !== 'multiple_choice'
-                            ? "bg-gray-200 text-gray-500"
-                            : "bg-primary hover:bg-primary-700 text-primary-foreground"
-                    )}
-                >
-                    Continue
-                    <ArrowRight size={20} />
-                </Button>
-            </div>
+                    <Button
+                        variant="default"
+                        onClick={() => {
+                            // For measurement input, mark as ready before proceeding
+                            if (displayQuestion.type === 'measurement_input') {
+                                setIsMeasurementInputReady(true);
+                            }
+                            handleNext();
+                        }}
+                        disabled={
+                            nextButtonDisabled
+                        }
+                        className={cn(
+                            "flex items-center gap-2 px-6 py-5 text-base font-medium transition-all duration-200 w-40 bg-primary hover:bg-primary-700 text-primary-foreground"
+                        )}
+                    >
+                        Continue
+                        <ArrowRight size={20} />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 };

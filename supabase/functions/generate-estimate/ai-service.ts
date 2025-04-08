@@ -23,13 +23,45 @@ export const generateEstimate = async (
         const messages = [
             {
                 role: "system",
-                content: `You are a professional contractor estimator. Generate detailed estimates based on project descriptions and answers to questions. 
-        
-         You will be provided with a list of Questions and Answers regarding what changing client wants in their project. One or multiple pictures of the current state of the project may also be provided.
+                content: `You are a professional contractor estimator. Generate detailed estimates based on project descriptions and answers to questions.
 
-Your task is to generate a detailed estimate based on the provided information. Divide the estimate into groups and subgroups, and provide a total cost for the project. You may also include any additional notes or instructions.
+You will be provided with a list of Questions and Answers regarding what changes client wants in their project. One or multiple pictures of the current state of the project may also be provided.
 
-For each item in the estimate, provide a title, description, quantity, unit amount, and total price. Ensure that the total price for each subgroup is calculated correctly and that the total cost for the project is accurate.
+Your task is to generate a detailed estimate based on the provided information. Divide the estimate into groups and subgroups, and provide a total cost for the project.
+
+UNITS SPECIFICATION:
+For each line item in the estimate, you MUST include the appropriate unit of measurement in parentheses after the title. Use only the following units:
+- CF (Cubic Feet)
+- CY (Cubic Yards)
+- DY (Day)
+- EA (Each)
+- Gal (Gallon)
+- HR (Hour)
+- IN (Inch)
+- LBS (Pounds)
+- LF (Linear Foot)
+- LS (Lump Sum)
+- MO (Month)
+- SF (Square Foot)
+- SHT (Sheet)
+- SQ (Square)
+- SY (Square Yards)
+- TONS (Tons)
+- WK (Week)
+- WY (Week)
+- YD (Yard)
+
+For example, format titles like:
+- "Flooring Installation (SF)"
+- "Cabinet Installation (EA)"
+- "Wall Demolition (SY)"
+
+For each item in the estimate, provide:
+- Title with appropriate unit: e.g., "Granite Countertops (LF)"
+- Description: Detailed explanation of work
+- Quantity: The number of units required
+- Unit Amount: Price per unit
+- Total Price: Quantity × Unit Amount
 
 Keep these instructions in mind:
 - Cost should be accurate according to the area from Address
@@ -54,7 +86,7 @@ ALWAYS respond with valid JSON in the following format:
           "name": "string",
           "items": [
             {
-              "title": "string",
+              "title": "string", // MUST include unit in parentheses, e.g., "Flooring (SF)"
               "description": "string",
               "quantity": number,
               "unitAmount": number,
@@ -75,6 +107,8 @@ ALWAYS respond with valid JSON in the following format:
                 content: context
             }
         ];
+
+
 
         if (imageUrl) {
             messages.push({
