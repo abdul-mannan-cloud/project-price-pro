@@ -28,9 +28,10 @@ interface LeadDetailsDialogProps {
   lead: Lead | null;
   onClose: () => void;
   open: boolean;
+  urlContractorId?: string | null;
 }
 
-export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProps) => {
+export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadDetailsDialogProps) => {
   const [view, setView] = useState<"estimate" | "questions">("estimate");
   const [isEditing, setIsEditing] = useState(false);
   const [editedEstimate, setEditedEstimate] = useState(lead?.estimate_data);
@@ -38,7 +39,6 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
   const [emailRecipient, setEmailRecipient] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const isMobile = useIsMobile();
-  const { contractorId: urlContractorId } = useParams<{ contractorId: string }>();
 
   // Get current user data if no URL contractor ID
   const { data: currentUser, isLoading: isLoadingUser } = useQuery({
@@ -60,15 +60,14 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
     queryKey: ['contractor', effectiveContractorId],
     queryFn: async () => {
       if (!effectiveContractorId) throw new Error('No contractor ID available');
-      
-      console.log('Fetching contractor with ID:', effectiveContractorId);
-      
+
       const { data, error } = await supabase
         .from('contractors')
         .select('*')
         .eq('id', effectiveContractorId)
         .single();
-      
+
+
       if (error) throw error;
       if (!data) throw new Error('No contractor found');
       return data;
@@ -263,6 +262,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open }: LeadDetailsDialogProp
       </Dialog>
     );
   }
+
 
   return (
     <>

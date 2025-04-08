@@ -290,11 +290,11 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         actionButtons.style.display = 'flex';
       }
 
-      // Success notification
-      toast({
-        title: "PDF generated successfully",
-        description: "Your estimate has been saved as a PDF file",
-      });
+      // // Success notification
+      // toast({
+      //   title: "PDF generated successfully",
+      //   description: "Your estimate has been saved as a PDF file",
+      // });
 
       return pdf;
     } catch (error) {
@@ -343,7 +343,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         throw emailFetchError;
       }
 
-      const { error: emailError1 } = await supabase.functions.invoke('send-contractor-notification', {
+      const { error: emailError1 } = supabase.functions.invoke('send-contractor-notification', {
         body: {
           estimate: {
             totalCost: lead.estimate_data.totalCost,
@@ -371,7 +371,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       // Generate PDF if not provided
       const pdfToSend = pdfBase64 || await handleExportPDF(emailData.business_name || "Estimate");
 
-      const { error: emailError } = await supabase.functions.invoke('send-estimate-email', {
+      const { error: emailError } = supabase.functions.invoke('send-estimate-email', {
         body: {
           estimateId: leadId,
           contractorEmail: emailData.contact_email || "abdulmannankhan1000@gmail.com",
