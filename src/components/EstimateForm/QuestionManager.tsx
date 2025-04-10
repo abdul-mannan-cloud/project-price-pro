@@ -6,7 +6,7 @@ import { useQuestionManager } from "@/hooks/useQuestionManager";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils.ts";
+import { cn } from "@/lib/utils";
 import CubeLoader from "../ui/loadingAnimtion";
 
 interface QuestionManagerProps {
@@ -87,10 +87,12 @@ export const QuestionManager = ({
         }
     };
 
-
+    // Update next button state based on current answers
     useEffect(() => {
-        if(((currentSetAnswers[displayQuestion?.id]?.answers || []).length > 0)){
-            setNextButtonDisabled(false);
+        if (displayQuestion) {
+            if ((currentSetAnswers[displayQuestion?.id]?.answers || []).length > 0) {
+                setNextButtonDisabled(false);
+            }
         }
     }, [currentSetAnswers]);
 
@@ -100,27 +102,26 @@ export const QuestionManager = ({
             setCurrentQuestionIndex(prev => prev + 1);
         } else {
             // If we're at the latest question, try to advance to a new question
-
             const currentAnswer = currentSetAnswers[displayQuestion.id]?.answers || [];
             let hasAnswer = currentAnswer.length > 0;
 
-            if( displayQuestion.type==='measurement_input' && isMeasurementInputReady){
-                hasAnswer = true
+            if ((displayQuestion.type === 'measurement_input' || displayQuestion.type==='camera_measurement') && isMeasurementInputReady ) {
+                hasAnswer = true;
             }
+
 
             // Only proceed if we have an answer for the current question
             if (hasAnswer) {
                 if (displayQuestion.type === 'multiple_choice') {
                     handleMultipleChoiceNext();
-                } else if (displayQuestion.type === 'measurement_input') {
+                } else if (displayQuestion.type === 'measurement_input' || displayQuestion.type === 'camera_measurement') {
                     // For measurement inputs, only proceed if explicitly marked as ready
-                    if (isMeasurementInputReady) {
+                        console.log("Measurement input ready, proceeding to next question", currentAnswer, displayQuestion.id);
                         const currentAnswerData = {
                             questionId: displayQuestion.id,
                             answers: currentAnswer
                         };
                         handleComplete(currentAnswerData);
-                    }
                 } else {
                     // For single choice/radio, we can also try to advance
                     const currentAnswerData = {
@@ -162,7 +163,6 @@ export const QuestionManager = ({
         return;
     };
 
-
     return (
         <div className="space-y-6">
             <QuestionCard
@@ -172,8 +172,8 @@ export const QuestionManager = ({
                     handleAnswer(question, answers);
                 }}
                 onNext={
-                    // Important fix: Always use handleMeasurementInputNext for measurement_input type
-                    displayQuestion.type === 'measurement_input'
+                    // Use handleMeasurementInputNext for measurement_input and camera_measurement types
+                    displayQuestion.type === 'measurement_input' || displayQuestion.type === 'camera_measurement'
                         ? handleMeasurementInputNext
                         : (isLatestQuestion ?
                             (displayQuestion.type === 'multiple_choice' ?
@@ -210,14 +210,12 @@ export const QuestionManager = ({
                         variant="default"
                         onClick={() => {
                             // For measurement input, mark as ready before proceeding
-                            if (displayQuestion.type === 'measurement_input') {
+                            if (displayQuestion.type === 'measurement_input' || displayQuestion.type === 'camera_measurement') {
                                 setIsMeasurementInputReady(true);
                             }
                             handleNext();
                         }}
-                        disabled={
-                            nextButtonDisabled
-                        }
+                        disabled={nextButtonDisabled}
                         className={cn(
                             "flex items-center gap-2 px-6 py-5 text-base font-medium transition-all duration-200 w-40 bg-primary hover:bg-primary-700 text-primary-foreground"
                         )}
