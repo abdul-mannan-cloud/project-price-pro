@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, Loader2, Upload, X, Ruler } from "lucide-react";
+import { Camera, CameraOff, Loader2, Upload, X, Ruler, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,8 +34,10 @@ export function CameraMeasurementModal({
 
     // For mobile camera capture
     const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('environment');
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -75,7 +77,22 @@ export function CameraMeasurementModal({
     const startCamera = async () => {
         setIsCameraOpen(true);
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            // Stop any existing stream
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+            }
+
+            // Start new stream with current facing mode
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: cameraFacingMode,
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                }
+            });
+
+            streamRef.current = stream;
+
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
             }
@@ -87,6 +104,16 @@ export function CameraMeasurementModal({
                 variant: "destructive",
             });
             setIsCameraOpen(false);
+        }
+    };
+
+    const switchCamera = async () => {
+        // Toggle the camera facing mode
+        setCameraFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+
+        // Restart the camera with the new facing mode
+        if (isCameraOpen) {
+            await startCamera();
         }
     };
 
@@ -121,9 +148,9 @@ export function CameraMeasurementModal({
     };
 
     const stopCamera = () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
         }
         setIsCameraOpen(false);
     };
@@ -150,6 +177,16 @@ export function CameraMeasurementModal({
             return;
         }
 
+        // Check minimum character length
+        if (description.trim().length < 30) {
+            toast({
+                title: "Description Too Short",
+                description: "Please provide a more detailed description (minimum 30 characters).",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setStep('measuring');
         setIsProcessing(true);
 
@@ -164,7 +201,7 @@ export function CameraMeasurementModal({
             const { data, error } = await supabase.functions.invoke('get-measurement', {
                 body: {
                     image: base64Image.split(',')[1], // Remove data:image/jpeg;base64, prefix
-                    description: description
+                    description: description + '\n The Unit for measurement is ' + unit
                 }
             });
 
@@ -200,6 +237,7 @@ export function CameraMeasurementModal({
         if (measurementResult?.measurements?.primary?.value) {
             // Format the measurement value based on the primary dimension
             const value = measurementResult.measurements.primary.value.toString();
+            // Just update the measurement value but don't close the modal or proceed automatically
             onMeasurementComplete(value);
             onClose();
 
@@ -212,6 +250,12 @@ export function CameraMeasurementModal({
         // Release all object URLs
         imagePreviews.forEach(url => URL.revokeObjectURL(url));
 
+        // Stop any active camera stream
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+
         // Reset state
         setImages([]);
         setImagePreviews([]);
@@ -219,11 +263,24 @@ export function CameraMeasurementModal({
         setMeasurementResult(null);
         setStep('upload');
         setIsProcessing(false);
+        setIsCameraOpen(false);
     };
 
     const handleCloseModal = () => {
         cleanUp();
         onClose();
+    };
+
+    // Check if device has multiple cameras
+    const hasMultipleCameras = async (): Promise<boolean> => {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            return videoDevices.length > 1;
+        } catch (error) {
+            console.error("Error checking for cameras:", error);
+            return false;
+        }
     };
 
     return (
@@ -250,13 +307,27 @@ export function CameraMeasurementModal({
                                     className="w-full h-64 object-cover rounded-lg"
                                 />
                                 <canvas ref={canvasRef} className="hidden" />
+
+                                {/* Camera controls */}
+                                <div className="absolute top-2 right-2 flex gap-2">
+                                    {/* Switch camera button */}
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className="bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 p-0"
+                                        onClick={switchCamera}
+                                    >
+                                        <RefreshCw size={16} />
+                                    </Button>
+                                </div>
+
                                 <div className="mt-4 flex justify-center gap-4">
                                     <Button onClick={takePicture} className="flex items-center gap-2">
                                         <Camera size={16} />
                                         Capture
                                     </Button>
                                     <Button variant="outline" onClick={stopCamera} className="flex items-center gap-2">
-                                        <X size={16} />
+                                        <CameraOff size={16} />
                                         Cancel
                                     </Button>
                                 </div>
@@ -306,7 +377,7 @@ export function CameraMeasurementModal({
                                         <Camera className="h-4 w-4 mr-2" />
                                         Take Photo
                                     </Button>
-                                    <Button onClick={goToDescribeStep} className="flex-1">
+                                    <Button onClick={goToDescribeStep} className="flex-1" disabled={imagePreviews.length === 0}>
                                         Continue
                                     </Button>
                                 </div>
@@ -333,11 +404,17 @@ export function CameraMeasurementModal({
                                 </label>
                                 <Textarea
                                     id="description"
-                                    placeholder="e.g., measure the flooring include all corners"
+                                    placeholder="e.g., measure the flooring include all corners (minimum 30 characters)"
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     className="h-24"
                                 />
+                                {description.length > 0 && description.length < 30 && (
+                                    <p className="text-sm text-red-500 mt-1">
+                                        Please provide a more detailed description (minimum 30 characters).
+                                        Currently {description.length}/30 characters.
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -370,12 +447,12 @@ export function CameraMeasurementModal({
                             <div className="mb-4">
                                 <h3 className="text-sm font-medium text-gray-700 mb-1">Primary Measurement</h3>
                                 <div className="flex items-end">
-                  <span className="text-3xl font-bold">
-                    {measurementResult.measurements.primary.value}
-                  </span>
+                                    <span className="text-3xl font-bold">
+                                        {measurementResult.measurements.primary.value}
+                                    </span>
                                     <span className="text-xl ml-1 mb-0.5 text-gray-500">
-                    {measurementResult.measurements.primary.unit}
-                  </span>
+                                        {measurementResult.measurements.primary.unit}
+                                    </span>
                                 </div>
                                 <p className="text-sm text-gray-600 mt-1">
                                     {measurementResult.measurements.primary.dimension}
@@ -390,8 +467,8 @@ export function CameraMeasurementModal({
                                             <div key={index} className="flex justify-between text-sm">
                                                 <span className="text-gray-600">{item.dimension}</span>
                                                 <span className="font-medium">
-                        {item.value} {item.unit}
-                      </span>
+                                                    {item.value} {item.unit}
+                                                </span>
                                             </div>
                                         ))}
                                     </div>

@@ -1,6 +1,12 @@
 export interface Option {
   label: string;
   value: string;
+  type?: string;
+  tooltip?: string;
+  placeholder?: string;
+  min?: number;
+    max?: number;
+    camera_prompt?: string;
   next?: string;
   image_url?: string;
   description?: string;
@@ -9,7 +15,7 @@ export interface Option {
 export interface Question {
   id: string;
   question: string;
-  type: 'yes_no' | 'single_choice' | 'multiple_choice' | 'measurement_input' | 'text_input' | 'image_input';
+  type: 'yes_no' | 'single_choice' | 'multiple_choice' | 'measurement_input' | 'text_input' | 'image_input' | 'camera_measurement';
   order: number;
   options: Option[];
   next?: string;
@@ -24,6 +30,9 @@ export interface Question {
   camera_option?: boolean;
   camera_prompt?: string;
   helper_text?: string;
+  tooltip?: string;
+  video_guide?: string;
+
 }
 
 export interface QuestionAnswer {
