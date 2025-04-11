@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ContactFormFieldsProps {
     formData: {
@@ -15,29 +16,42 @@ interface ContactFormFieldsProps {
 // Google Maps API key (Note: You should secure this in production)
 const GOOGLE_API_KEY = "AIzaSyBuZj-RWOoAc24CaC2h4SY9LvD-WzQPtJs";
 
+// Validation utilities
+const validateEmail = (email: string) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+    return regex.test(email);
+};
+
+const validatePhone = (phone: string) => {
+    const regex = /^(\+?\d{1,3}[-.\s]?|)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/;
+    return regex.test(phone) && !phone.includes("555");
+};
+
+const validateFullAddress = (address: string) => {
+    return address.split(",").length >= 4;
+};
+
 export const ContactFormFields = ({ formData, onChange }: ContactFormFieldsProps) => {
     const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const suggestionRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Handle clicks outside the suggestions dropdown
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (suggestionRef.current && !suggestionRef.current.contains(event.target as Node) &&
-                inputRef.current && !inputRef.current.contains(event.target as Node)) {
+            if (
+                suggestionRef.current && !suggestionRef.current.contains(event.target as Node) &&
+                inputRef.current && !inputRef.current.contains(event.target as Node)
+            ) {
                 setShowSuggestions(false);
             }
         };
-
         document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Fetch address suggestions when user types in address field
     const getAddressSuggestions = async (input: string) => {
         if (!input || input.length < 3) {
             setAddressSuggestions([]);
@@ -66,34 +80,48 @@ export const ContactFormFields = ({ formData, onChange }: ContactFormFieldsProps
         }
     };
 
-    // Debounce function to prevent too many API calls
     const debounce = (func: Function, delay: number) => {
         let timeoutId: NodeJS.Timeout;
-        return function(...args: any[]) {
+        return (...args: any[]) => {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => func(...args), delay);
         };
     };
 
-    // Debounced version of getAddressSuggestions
-    const debouncedGetSuggestions = useRef(
-        debounce(getAddressSuggestions, 500)
-    ).current;
+    const debouncedGetSuggestions = useRef(debounce(getAddressSuggestions, 500)).current;
 
-    // Handle address input change
     const handleAddressChange = (value: string) => {
         onChange('address', value);
         debouncedGetSuggestions(value);
     };
 
-    // Handle suggestion selection
     const handleSelectSuggestion = (suggestion: string) => {
         onChange('address', suggestion);
         setShowSuggestions(false);
     };
 
+    const validateFields = () => {
+        const newErrors: { [key: string]: string } = {};
+
+        if (!formData.fullName.trim()) newErrors.fullName = "Full name is required.";
+        if (!validateEmail(formData.email)) newErrors.email = "Enter a valid email address.";
+        if (!validatePhone(formData.phone)) newErrors.phone = "Enter a real phone number with area code.";
+        if (!validateFullAddress(formData.address)) newErrors.address = "Please enter full address (Street, City, State, Zip).";
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = () => {
+        if (validateFields()) {
+            alert("Form is valid! Proceeding to estimate view.");
+            // Continue to next step...
+        }
+    };
+
     return (
-        <div className="space-y-5">
+        <div className="space-y-6">
+            {/* Full Name */}
             <div className="form-group relative">
                 <Input
                     placeholder="Full Name"
@@ -105,8 +133,10 @@ export const ContactFormFields = ({ formData, onChange }: ContactFormFieldsProps
                 <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
                     Full Name
                 </label>
+                {errors.fullName && <p className="text-sm text-red-500 mt-1">{errors.fullName}</p>}
             </div>
 
+            {/* Email */}
             <div className="form-group relative">
                 <Input
                     type="email"
@@ -119,8 +149,10 @@ export const ContactFormFields = ({ formData, onChange }: ContactFormFieldsProps
                 <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
                     Email
                 </label>
+                {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email}</p>}
             </div>
 
+            {/* Phone */}
             <div className="form-group relative">
                 <Input
                     type="tel"
@@ -133,8 +165,10 @@ export const ContactFormFields = ({ formData, onChange }: ContactFormFieldsProps
                 <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
                     Phone Number
                 </label>
+                {errors.phone && <p className="text-sm text-red-500 mt-1">{errors.phone}</p>}
             </div>
 
+            {/* Address */}
             <div className="form-group relative">
                 <Input
                     ref={inputRef}
@@ -173,9 +207,15 @@ export const ContactFormFields = ({ formData, onChange }: ContactFormFieldsProps
                         </ul>
                     </div>
                 )}
+                {errors.address && <p className="text-sm text-red-500 mt-1">{errors.address}</p>}
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-2">
+                <Button className="w-full h-12 text-base" onClick={handleSubmit}>
+                    View Estimate
+                </Button>
             </div>
         </div>
     );
 };
-
-export default ContactFormFields;

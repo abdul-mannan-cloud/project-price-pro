@@ -1,31 +1,55 @@
-
 export const MultiStepSkeleton = () => {
   return (
-    <div className="space-y-8 animate-pulse">
-      {/* Header section */}
-      <div className="text-center space-y-4">
-        <div className="h-8 w-3/4 bg-gray-200 rounded mx-auto" />
-        <div className="h-4 w-1/2 bg-gray-200 rounded mx-auto" />
+    <div className="animate-pulse bg-pink-100 min-h-screen">
+      {/* Tab navigation */}
+      <div className="flex px-4 py-2 border-b">
+        <div className="flex-1 flex items-center">
+          <div className="h-4 w-24 bg-pink-300 rounded-full" />
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="h-4 w-16 bg-gray-200 rounded-full" />
+        </div>
+        <div className="flex-1 flex items-center justify-end">
+          <div className="h-4 w-20 bg-gray-200 rounded-full" />
+        </div>
       </div>
 
-      {/* Main content area */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="bg-white rounded-lg p-6 space-y-4 border">
-            <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto" />
-            <div className="space-y-2">
-              <div className="h-4 w-3/4 bg-gray-200 rounded mx-auto" />
-              <div className="h-3 w-1/2 bg-gray-200 rounded mx-auto" />
-            </div>
+      {/* Back button */}
+      <div className="px-4 py-3">
+        <div className="h-5 w-32 bg-gray-200 rounded" />
+      </div>
+
+      {/* Main card */}
+      <div className="mx-4 bg-white p-6 rounded-lg shadow">
+        {/* Icon and title */}
+        <div className="flex items-center mb-4">
+          <div className="w-12 h-12 bg-gray-200 rounded mr-3" />
+          <div className="space-y-2">
+            <div className="h-6 w-40 bg-gray-200 rounded" />
+            <div className="h-5 w-32 bg-gray-200 rounded" />
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* Bottom navigation */}
-      <div className="flex justify-between items-center pt-6">
-        <div className="h-10 w-24 bg-gray-200 rounded" />
-        <div className="h-10 w-24 bg-gray-200 rounded" />
+        {/* Description text */}
+        <div className="space-y-2 mb-6">
+          <div className="h-4 w-full bg-gray-200 rounded" />
+          <div className="h-4 w-5/6 bg-gray-200 rounded" />
+          <div className="h-4 w-4/6 bg-gray-200 rounded" />
+        </div>
+
+        {/* Upload box */}
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center mb-4 max-w-[50%]">
+          <div className="w-8 h-8 bg-gray-200 rounded-full mb-2" />
+          <div className="h-4 w-20 bg-gray-200 rounded mx-auto" />
+        </div>
+
+        {/* Skip button */}
+        <div className="flex justify-center">
+          <div className="h-5 w-20 bg-gray-200 rounded" />
+        </div>
       </div>
     </div>
   );
 };
+
+export default MultiStepSkeleton;
