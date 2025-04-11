@@ -192,15 +192,23 @@ export function CameraMeasurementModal({
 
         try {
             // Use the first image for processing (you could enhance this to handle multiple images)
-            const image = images[0];
+            //const image = images[0];
+
+            const processedImages = await Promise.all(
+                images.map(async (image) => {
+                    const base64 = await fileToBase64(image);
+                    // Remove data:image/jpeg;base64, prefix
+                    return base64.split(',')[1];
+                })
+            );
 
             // Convert image to base64
-            const base64Image = await fileToBase64(image);
+            //const base64Image = await fileToBase64(image);
 
             // Call Supabase Edge Function
             const { data, error } = await supabase.functions.invoke('get-measurement', {
                 body: {
-                    image: base64Image.split(',')[1], // Remove data:image/jpeg;base64, prefix
+                    images: processedImages, // Send array of images
                     description: description + '\n The Unit for measurement is ' + unit
                 }
             });

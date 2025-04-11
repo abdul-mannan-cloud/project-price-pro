@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 interface MeasurementRequest {
-    image: string; // base64 encoded image
+    image?: string; // Single base64 encoded image (legacy support)
+    images?: string[]; // Array of base64 encoded images
     description: string;
 }
 
@@ -27,8 +28,17 @@ serve(async (req) => {
         const clonedReq = req.clone();
         const requestData: MeasurementRequest = await clonedReq.json();
 
-        if (!requestData.image) {
-            throw new Error('Base64 image data is required');
+        // Handle both single image and multiple images
+        const images: string[] = [];
+        if (requestData.images && Array.isArray(requestData.images)) {
+            images.push(...requestData.images);
+        } else if (requestData.image) {
+            // For backward compatibility
+            images.push(requestData.image);
+        }
+
+        if (images.length === 0) {
+            throw new Error('At least one image is required');
         }
 
         if (!requestData.description) {
@@ -40,16 +50,17 @@ serve(async (req) => {
             throw new Error('OpenAI API key not configured');
         }
 
-        const measurement = await getMeasurementFromAI(
-            requestData.image,
+        // Process all images and get measurements
+        const measurements = await getMeasurementsFromAI(
+            images,
             requestData.description,
             openAIApiKey,
             signal
         );
 
-        console.log('Measurement completed successfully');
+        console.log('Measurements completed successfully');
         return new Response(
-            JSON.stringify(measurement),
+            JSON.stringify(measurements),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
 
@@ -71,30 +82,32 @@ serve(async (req) => {
     }
 });
 
-async function getMeasurementFromAI(
-    base64Image: string,
+async function getMeasurementsFromAI(
+    base64Images: string[],
     description: string,
     openAIApiKey: string,
     signal: AbortSignal
 ): Promise<any> {
     try {
-        // Make sure the base64 image is properly formatted
-        let imageData = base64Image;
-        if (!imageData.startsWith('data:image/')) {
-            // Add data URI prefix if not present
-            imageData = `data:image/jpeg;base64,${imageData}`;
-        }
+        // Format the images with data URI prefix if needed
+        const formattedImages = base64Images.map(img => {
+            if (!img.startsWith('data:image/')) {
+                return `data:image/jpeg;base64,${img}`;
+            }
+            return img;
+        });
 
         const systemPrompt = `You are a professional measurement expert specialized in extracting accurate measurements from images.
     
-Your task is to analyze the provided image and determine the measurement of the specific part described by the user.
+Your task is to analyze the provided images and determine the measurement of the specific part described by the user.
 
 Instructions:
-1. Focus only on the described part of the image
-2. Provide your best estimate of the measurements (width, height, length, area, or volume as appropriate)
-3. Explain your reasoning process, including any visual cues you used to determine scale
-4. Express measurements in the most appropriate unit (inches, feet, meters, etc.)
-5. Indicate your confidence level in the measurement (low, medium, high)
+1. Focus only on the described part of the images
+2. You may be provided with multiple images of the same object from different angles - use all provided images to improve accuracy
+3. Provide your best estimate of the measurements (width, height, length, area, or volume as appropriate)
+4. Explain your reasoning process, including any visual cues you used to determine scale
+5. Express measurements in the most appropriate unit (inches, feet, meters, etc.)
+6. Indicate your confidence level in the measurement (low, medium, high)
 
 ALWAYS respond with valid JSON in the following format:
 {
@@ -117,6 +130,24 @@ ALWAYS respond with valid JSON in the following format:
   "recommendations": "string" // optional advice for more accurate measurement
 }`;
 
+        // Create message content array with all images
+        const content: any[] = [
+            {
+                type: "text",
+                text: `Please measure the following in ${formattedImages.length > 1 ? 'these images' : 'this image'}: ${description}`
+            }
+        ];
+
+        // Add all images to the content array
+        formattedImages.forEach(img => {
+            content.push({
+                type: "image_url",
+                image_url: {
+                    url: img
+                }
+            });
+        });
+
         const messages = [
             {
                 role: "system",
@@ -124,18 +155,7 @@ ALWAYS respond with valid JSON in the following format:
             },
             {
                 role: "user",
-                content: [
-                    {
-                        type: "text",
-                        text: `Please measure the following in this image: ${description}`
-                    },
-                    {
-                        type: "image_url",
-                        image_url: {
-                            url: imageData
-                        }
-                    }
-                ]
+                content: content
             }
         ];
 
@@ -165,11 +185,11 @@ ALWAYS respond with valid JSON in the following format:
             throw new Error('Invalid response format from OpenAI');
         }
 
-        const content = data.choices[0].message.content;
-        console.log('Raw AI measurement response:', content);
+        const content_response = data.choices[0].message.content;
+        console.log('Raw AI measurement response:', content_response);
 
         // Ensure we have valid JSON
-        const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+        const parsed = typeof content_response === 'string' ? JSON.parse(content_response) : content_response;
 
         // Validate structure
         if (!parsed.measurements || !parsed.measurements.primary) {
