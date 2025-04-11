@@ -343,15 +343,14 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         throw emailFetchError;
       }
 
-      const { error: emailError1 } = supabase.functions.invoke('send-contractor-notification', {
+      // Send email notification to contractor
+      const { error: emailError1 } = await supabase.functions.invoke('send-contractor-notification', {
         body: {
           estimate: {
             totalCost: lead.estimate_data.totalCost,
           },
           contractor: {
-            // Use the actual email from the database
-            contact_email:emailData?.contact_email,
-            // contact_email:  "abdulmannankhan1000@gmail.com"
+            contact_email: emailData?.contact_email,
           },
           questions: matchedQuestionSets,
           answers,
@@ -369,14 +368,33 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       });
 
       if (emailError1) {
-        console.error("Failed to send first email", emailError1);
-        //throw emailError1;
+        console.error("Failed to send contractor email", emailError1);
       }
+
+      // Send SMS to contractor
+      // if (emailData?.contact_phone && !skip) {
+      //   try {
+      //     const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
+      //       body: {
+      //         phone: emailData.contact_phone,
+      //         message: `New estimate opportunity! ${lead.user_name} is requesting an estimate for ${formatCurrency(lead.estimate_data.totalCost)}. Check your email for details.`,
+      //         recipientType: 'contractor'
+      //       }
+      //     });
+          
+      //     if (smsSendError) {
+      //       console.error("Failed to send contractor SMS", smsSendError);
+      //     }
+      //   } catch (smsError) {
+      //     console.error("Error sending contractor SMS:", smsError);
+      //   }
+      // }
 
       // Generate PDF if not provided
       const pdfToSend = pdfBase64 || await handleExportPDF(emailData.business_name || "Estimate");
 
-      const { error: emailError } = supabase.functions.invoke('send-estimate-email', {
+      // Send email to customer
+      const { error: emailError } = await supabase.functions.invoke('send-estimate-email', {
         body: {
           estimateId: leadId,
           contractorEmail: emailData.contact_email || "abdulmannankhan1000@gmail.com",
@@ -392,11 +410,29 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         }
       });
 
-      if (emailError){
-        console.log("Error sending second email");
-        
+      if (emailError) {
+        console.log("Error sending customer email");
         throw emailError;
-      } 
+      }
+
+      // Send SMS to customer
+      // if (lead.user_phone && !skip) {
+      //   try {
+      //     const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
+      //       body: {
+      //         phone: lead.user_phone,
+      //         message: `Your estimate from ${emailData.business_name || "Your Contractor"} is ready! Total: ${formatCurrency(lead.estimate_data.totalCost)}. Check your email for details or view online: ${window.location.origin}/e/${leadId}`,
+      //         recipientType: 'customer'
+      //       }
+      //     });
+          
+      //     if (smsSendError) {
+      //       console.error("Failed to send customer SMS", smsSendError);
+      //     }
+      //   } catch (smsError) {
+      //     console.error("Error sending customer SMS:", smsError);
+      //   }
+      // }
 
       setIsGeneratingEstimate(false);
       setStage('estimate');
@@ -405,6 +441,14 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
     return false;
   };
+
+  // Helper function to format currency
+  // const formatCurrency = (amount: number): string => {
+  //   return new Intl.NumberFormat('en-US', {
+  //     style: 'currency',
+  //     currency: 'USD',
+  //   }).format(amount);
+  // };
 
   const formatAnswersForJson = (answers: AnswersState): Json => {
     const formattedAnswers = Object.entries(answers).reduce<Record<string, Record<string, unknown>>>((acc, [category, categoryAnswers]) => {
