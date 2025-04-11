@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -166,28 +165,41 @@ const Leads = () => {
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        {/* <div className="text-lg">Loading...</div> */}
-        <Spinner />
-      </div>
-    )
-  }
+  // if (isLoading) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       {/* <div className="text-lg">Loading...</div> */}
+  //       <Spinner />
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="min-h-screen bg-secondary">
       <NavBar items={navItems} />
       <div className="container mx-auto py-8">
         <h1 className="text-2xl font-semibold mb-6">Leads</h1>
-        
-        <LeadsTable
+        {
+          leads.length > 0 ? 
+          <LeadsTable
+            leads={leads}
+            updateLead={(lead)=> updateLead.mutate(lead)}
+            onLeadClick={handleLeadClick}
+            onDeleteLeads={(leadIds) => deleteLead.mutate(leadIds)}
+            onExport={handleExport}
+          /> :
+          <div className="min-h-screen flex items-center justify-center">
+            {/* <div className="text-lg">Loading...</div> */}
+            <Spinner />
+          </div>
+        }
+        {/* <LeadsTable
           leads={leads}
           updateLead={(lead)=> updateLead.mutate(lead)}
           onLeadClick={handleLeadClick}
           onDeleteLeads={(leadIds) => deleteLead.mutate(leadIds)}
           onExport={handleExport}
-        />
+        /> */}
       </div>
 
       <LeadDetailsDialog
