@@ -411,8 +411,9 @@ export function CameraMeasurementModal({
                                 />
                                 {description.length > 0 && description.length < 30 && (
                                     <p className="text-sm text-red-500 mt-1">
-                                        Please provide a more detailed description (minimum 30 characters).
-                                        Currently {description.length}/30 characters.
+                                        {/* Please provide a more detailed description (minimum 30 characters).
+                                        Currently {description.length}/30 characters. */}
+                                        [{30 - description.length} characters remaining]
                                     </p>
                                 )}
                             </div>
