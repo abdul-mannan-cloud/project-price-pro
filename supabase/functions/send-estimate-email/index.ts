@@ -136,7 +136,7 @@ serve(async (req) => {
 
     const emailResponse = await resend.emails.send({
       from: `${businessName} <${businessName}@estimatrix.io>`,
-      to: [customerEmail],
+      to: customerEmail,
       subject: subject,
       attachments: attachments,
       html: `

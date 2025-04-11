@@ -368,6 +368,11 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         }
       });
 
+      if (emailError1) {
+        console.error("Failed to send first email", emailError1);
+        //throw emailError1;
+      }
+
       // Generate PDF if not provided
       const pdfToSend = pdfBase64 || await handleExportPDF(emailData.business_name || "Estimate");
 
@@ -387,7 +392,11 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         }
       });
 
-      if (emailError) throw emailError;
+      if (emailError){
+        console.log("Error sending second email");
+        
+        throw emailError;
+      } 
 
       setIsGeneratingEstimate(false);
       setStage('estimate');
