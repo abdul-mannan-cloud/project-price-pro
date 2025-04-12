@@ -82,13 +82,7 @@ export const QuestionCard = ({
         // Reset selected input method when question changes
         setSelectedInputMethod(null);
 
-        if (question.type === 'camera_measurement') {
-            // For camera measurement questions, don't auto-disable next button
-            // We'll handle this based on selected input method
-        } else {
-            // For other question types, handle as before
             setShowNextButton(question.type === 'multiple_choice' ? selectedAnswers.length > 0 : selectedAnswers.length === 1);
-        }
 
         setIsProcessing(false);
     }, [question.id, selectedAnswers]);

@@ -2,8 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 interface MeasurementRequest {
-    image?: string; // Single base64 encoded image (legacy support)
-    images?: string[]; // Array of base64 encoded images
+    images: string[]; // array of base64 encoded images
     description: string;
 }
 
@@ -28,17 +27,12 @@ serve(async (req) => {
         const clonedReq = req.clone();
         const requestData: MeasurementRequest = await clonedReq.json();
 
-        // Handle both single image and multiple images
-        const images: string[] = [];
-        if (requestData.images && Array.isArray(requestData.images)) {
-            images.push(...requestData.images);
-        } else if (requestData.image) {
-            // For backward compatibility
-            images.push(requestData.image);
-        }
-
-        if (images.length === 0) {
-            throw new Error('At least one image is required');
+        // Check if image data is provided in the old format (single image)
+        if (requestData.image && !requestData.images) {
+            // Convert to new format for backward compatibility
+            requestData.images = [requestData.image];
+        } else if (!requestData.images || !Array.isArray(requestData.images) || requestData.images.length === 0) {
+            throw new Error('At least one base64 image is required');
         }
 
         if (!requestData.description) {
@@ -50,17 +44,16 @@ serve(async (req) => {
             throw new Error('OpenAI API key not configured');
         }
 
-        // Process all images and get measurements
-        const measurements = await getMeasurementsFromAI(
-            images,
+        const measurement = await getMeasurementFromAI(
+            requestData.images,
             requestData.description,
             openAIApiKey,
             signal
         );
 
-        console.log('Measurements completed successfully');
+        console.log('Measurement completed successfully');
         return new Response(
-            JSON.stringify(measurements),
+            JSON.stringify(measurement),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
 
@@ -82,14 +75,14 @@ serve(async (req) => {
     }
 });
 
-async function getMeasurementsFromAI(
+async function getMeasurementFromAI(
     base64Images: string[],
     description: string,
     openAIApiKey: string,
     signal: AbortSignal
 ): Promise<any> {
     try {
-        // Format the images with data URI prefix if needed
+        // Format all images with proper data URI prefix if not present
         const formattedImages = base64Images.map(img => {
             if (!img.startsWith('data:image/')) {
                 return `data:image/jpeg;base64,${img}`;
@@ -103,11 +96,12 @@ Your task is to analyze the provided images and determine the measurement of the
 
 Instructions:
 1. Focus only on the described part of the images
-2. You may be provided with multiple images of the same object from different angles - use all provided images to improve accuracy
+2. Use all provided images to make a more accurate assessment - multiple angles can help with perspective
 3. Provide your best estimate of the measurements (width, height, length, area, or volume as appropriate)
 4. Explain your reasoning process, including any visual cues you used to determine scale
 5. Express measurements in the most appropriate unit (inches, feet, meters, etc.)
 6. Indicate your confidence level in the measurement (low, medium, high)
+7. If the images provide different or conflicting information, explain how you reconciled the differences
 
 ALWAYS respond with valid JSON in the following format:
 {
@@ -130,20 +124,20 @@ ALWAYS respond with valid JSON in the following format:
   "recommendations": "string" // optional advice for more accurate measurement
 }`;
 
-        // Create message content array with all images
-        const content: any[] = [
+        // Prepare the content array with the description and all images
+        const content = [
             {
                 type: "text",
-                text: `Please measure the following in ${formattedImages.length > 1 ? 'these images' : 'this image'}: ${description}`
+                text: `Please measure the following in these images: ${description}`
             }
         ];
 
-        // Add all images to the content array
-        formattedImages.forEach(img => {
+        // Add each image to the content array
+        formattedImages.forEach(imageData => {
             content.push({
                 type: "image_url",
                 image_url: {
-                    url: img
+                    url: imageData
                 }
             });
         });
@@ -185,11 +179,11 @@ ALWAYS respond with valid JSON in the following format:
             throw new Error('Invalid response format from OpenAI');
         }
 
-        const content_response = data.choices[0].message.content;
-        console.log('Raw AI measurement response:', content_response);
+        const content = data.choices[0].message.content;
+        console.log('Raw AI measurement response:', content);
 
         // Ensure we have valid JSON
-        const parsed = typeof content_response === 'string' ? JSON.parse(content_response) : content_response;
+        const parsed = typeof content === 'string' ? JSON.parse(content) : content;
 
         // Validate structure
         if (!parsed.measurements || !parsed.measurements.primary) {

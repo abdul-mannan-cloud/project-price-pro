@@ -105,7 +105,7 @@ export const QuestionManager = ({
             const currentAnswer = currentSetAnswers[displayQuestion.id]?.answers || [];
             let hasAnswer = currentAnswer.length > 0;
 
-            if ((displayQuestion.type === 'measurement_input' || displayQuestion.type==='camera_measurement') && isMeasurementInputReady ) {
+            if ((displayQuestion.type === 'measurement_input' || displayQuestion.type==='camera_measurement')) {
                 hasAnswer = true;
             }
 
@@ -209,10 +209,7 @@ export const QuestionManager = ({
                     <Button
                         variant="default"
                         onClick={() => {
-                            // For measurement input, mark as ready before proceeding
-                            if (displayQuestion.type === 'measurement_input' || displayQuestion.type === 'camera_measurement') {
-                                setIsMeasurementInputReady(true);
-                            }
+
                             handleNext();
                         }}
                         disabled={nextButtonDisabled}
