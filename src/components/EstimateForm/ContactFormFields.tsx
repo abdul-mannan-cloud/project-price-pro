@@ -225,11 +225,11 @@ export const ContactFormFields = ({ formData, onChange }: ContactFormFieldsProps
             </div>
 
             {/* Submit Button */}
-            <div className="pt-2">
-                <Button className="w-full h-12 text-base" onClick={handleSubmit}>
-                    View Estimate
-                </Button>
-            </div>
+            {/*<div className="pt-2">*/}
+            {/*    <Button className="w-full h-12 text-base" onClick={handleSubmit}>*/}
+            {/*        View Estimate*/}
+            {/*    </Button>*/}
+            {/*</div>*/}
         </div>
     );
 };

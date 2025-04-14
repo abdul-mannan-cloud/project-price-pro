@@ -251,7 +251,7 @@ export const useQuestionManager = (
     };
 
     // For measurement_input, add the unit if available
-    if (currentQuestion.type === 'measurement_input' && currentQuestion.unit) {
+    if ((currentQuestion.type === 'measurement_input' || currentQuestion.type==='camera_measurement') && currentQuestion.unit) {
       (questionAnswer as any).unit = currentQuestion.unit;
     }
 
@@ -263,14 +263,172 @@ export const useQuestionManager = (
       }
     }));
 
-    if (currentQuestion.type !== 'multiple_choice') {
+
+    if (currentQuestion.type == 'single_choice' || currentQuestion.type == 'yes_no' ){
       handleSingleChoiceNavigation(currentQuestion, selectedValues[0]);
+    }
+  };
+
+  // Generic handler for input-type questions (text_input, number_input)
+  const handleInputTypeNext = (questionType: string) => {
+    const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
+    if (!currentQuestion) {
+      return;
+    }
+
+    console.log(`Handling ${questionType} next for question:`, currentQuestion.id);
+
+    // Find the current answer
+    const currentSet = questionSets[currentSetIndex];
+    const currentSetAnswers = answers[currentSet.category] || {};
+    const selectedValue = currentSetAnswers[currentQuestion.id]?.answers[0] || null;
+
+    if (!selectedValue) {
+      console.warn(`No value provided for ${questionType} question`);
+      return;
+    }
+
+    // Find the specific input option if it exists
+    const inputOption = currentQuestion.options?.find(
+        opt => opt && opt.type === questionType
+    );
+
+    // Navigate based on the option or question properties
+    if (inputOption?.next === 'NEXT_BRANCH') {
+      setPendingBranchTransition(true);
+    } else if (inputOption?.next === 'END' || !inputOption?.next) {
+      // If no input option next or it's END, try the question next
+      if (currentQuestion.next === 'NEXT_BRANCH') {
+        setPendingBranchTransition(true);
+      } else if (currentQuestion.next === 'END' || !currentQuestion.next) {
+        moveToNextQuestionSet();
+      } else {
+        setCurrentQuestionId(currentQuestion.next);
+      }
+    } else if (inputOption?.next) {
+      setCurrentQuestionId(inputOption.next);
+    } else {
+      // If no navigation is specified, try to go to the next question in sequence
+      const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
+      if (currentIndex < questionSequence.length - 1) {
+        setCurrentQuestionId(questionSequence[currentIndex + 1].id);
+      } else {
+        moveToNextQuestionSet();
+      }
+    }
+  };
+
+  // Handler for text_input questions
+  const handleTextInputNext = () => {
+    handleInputTypeNext('text_input');
+  };
+
+  // Handler for number_input questions
+  const handleNumberInputNext = () => {
+    handleInputTypeNext('number_input');
+  };
+
+  // Handler for camera_measurement questions
+  const handleCameraMeasurementNext = () => {
+    const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
+    if (!currentQuestion) {
+      return;
+    }
+
+    console.log('Handling camera measurement next for question:', currentQuestion.id);
+
+    // Find the selected option for camera_measurement
+    const currentSet = questionSets[currentSetIndex];
+    const currentSetAnswers = answers[currentSet.category] || {};
+    const selectedValue = currentSetAnswers[currentQuestion.id]?.answers[0] || null;
+
+    if (!selectedValue) {
+      console.warn('No value selected for camera measurement question');
+      return;
+    }
+
+    // Find the camera_measurement option to get its 'next' property
+    const cameraMeasurementOption = currentQuestion.options?.find(
+        opt => opt && opt.type === 'camera_measurement'
+    );
+
+    // Alternatively, find a number_input option if that's what was used
+    const numberInputOption = currentQuestion.options?.find(
+        opt => opt && opt.type === 'number_input'
+    );
+
+    // Use the appropriate option's 'next' value
+    const optionToUse = cameraMeasurementOption || numberInputOption;
+
+    if (optionToUse?.next === 'NEXT_BRANCH') {
+      setPendingBranchTransition(true);
+    } else if (optionToUse?.next === 'END' || !optionToUse?.next) {
+      // If no specific option next is found, try the question's next property
+      if (currentQuestion.next === 'NEXT_BRANCH') {
+        setPendingBranchTransition(true);
+      } else if (currentQuestion.next === 'END' || !currentQuestion.next) {
+        moveToNextQuestionSet();
+      } else {
+        setCurrentQuestionId(currentQuestion.next);
+      }
+    } else if (optionToUse?.next) {
+      setCurrentQuestionId(optionToUse.next);
+    } else {
+      // If no navigation is specified, try to go to the next question in sequence
+      const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
+      if (currentIndex < questionSequence.length - 1) {
+        setCurrentQuestionId(questionSequence[currentIndex + 1].id);
+      } else {
+        moveToNextQuestionSet();
+      }
+    }
+  };
+
+  // Handler for yes_no questions (simplified version of single_choice)
+  const handleYesNoNext = () => {
+    const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
+    if (!currentQuestion) {
+      return;
+    }
+
+    console.log('Handling yes_no next for question:', currentQuestion.id);
+
+    const currentSet = questionSets[currentSetIndex];
+    const currentSetAnswers = answers[currentSet.category] || {};
+    const selectedValue = currentSetAnswers[currentQuestion.id]?.answers[0] || null;
+
+    if (!selectedValue) {
+      console.warn('No value selected for yes_no question');
+      return;
+    }
+
+    // Find the selected option
+    const selectedOption = currentQuestion.options?.find(
+        opt => opt && opt.value === selectedValue
+    );
+
+    if (selectedOption?.next === 'NEXT_BRANCH') {
+      setPendingBranchTransition(true);
+    } else if (selectedOption?.next === 'END' || !selectedOption?.next) {
+      moveToNextQuestionSet();
+    } else if (selectedOption?.next) {
+      setCurrentQuestionId(selectedOption.next);
+    } else {
+      // If no navigation is specified, try to go to the next question in sequence
+      const currentIndex = questionSequence.findIndex(q => q.id === currentQuestion.id);
+      if (currentIndex < questionSequence.length - 1) {
+        setCurrentQuestionId(questionSequence[currentIndex + 1].id);
+      } else {
+        moveToNextQuestionSet();
+      }
     }
   };
 
   const handleMultipleChoiceNext = async () => {
     const currentQuestion = questionSequence.find(q => q.id === currentQuestionId);
-    if (!currentQuestion) return;
+    if (!currentQuestion) {
+      return;
+    }
 
     // Safety check for options
     if (!currentQuestion.options || !Array.isArray(currentQuestion.options)) {
@@ -464,6 +622,10 @@ export const useQuestionManager = (
     totalStages: questionSets.length,
     handleAnswer,
     handleMultipleChoiceNext,
+    handleCameraMeasurementNext,
+    handleTextInputNext,
+    handleNumberInputNext,
+    handleYesNoNext,
     calculateProgress,
     handleComplete
   };
