@@ -11,11 +11,9 @@ export async function findMatchingQuestionSets(
 ): Promise<CategoryQuestions[]> {
   const lowerDesc = description.toLowerCase();
   const matches: MatchedQuestionSet[] = [];
-  console.log("findMatchingQuestionSets: description =", lowerDesc);
 
   categories.forEach((category) => {
     if (!category.keywords || category.keywords.length === 0) {
-      console.log(`Skipping category ${category.id}: no keywords array`);
       return;
     }
 
@@ -23,7 +21,6 @@ export async function findMatchingQuestionSets(
     const matchingKeywords = category.keywords.filter(keyword => {
       const kw = keyword.trim().toLowerCase();
       const isMatch = lowerDesc.includes(kw);
-      console.log(`Checking keyword: "${kw}" with includes() -> match:`, isMatch);
       return isMatch;
     });
 

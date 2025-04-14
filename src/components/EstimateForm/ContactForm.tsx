@@ -80,9 +80,10 @@ export const ContactForm = ({
   }, []);
 
   const verifyEmailExistence = async (email: string): Promise<boolean> => {
-    const res = await fetch(`https://apilayer.net/api/check?access_key=YOUR_API_KEY&email=${email}`);
-    const data = await res.json();
-    return data.smtp_check === true; // smtp_check indicates if mailbox exists
+    // const res = await fetch(`https://apilayer.net/api/check?access_key=YOUR_API_KEY&email=${email}`);
+    // const data = await res.json();
+    // return data.smtp_check === true; // smtp_check indicates if mailbox exists
+    return true
   };  
 
   const handleSubmit = async (e: React.FormEvent) => {

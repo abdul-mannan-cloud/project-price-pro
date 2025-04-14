@@ -11,12 +11,12 @@ import CubeLoader from "../ui/loadingAnimtion";
 
 interface QuestionManagerProps {
     questionSets: CategoryQuestions[];
-    onComplete: (answers: AnswersState) => void;
+    onComplete: (answers: AnswersState, leadId: string) => void;
     onProgressChange: (progress: number) => void;
     contractorId: string;
     projectDescription: string;
     uploadedPhotos: string[];
-    uploadedImageUrl: string;
+    uploadedImageUrl: string | null;
     currentStageName: string;
     contractor?: any;
 }
@@ -43,6 +43,10 @@ export const QuestionManager = ({
         totalStages,
         handleAnswer,
         handleMultipleChoiceNext,
+        handleCameraMeasurementNext,
+        handleTextInputNext,
+        handleNumberInputNext,
+        handleYesNoNext,
         calculateProgress,
         handleComplete
     } = useQuestionManager(
@@ -105,34 +109,45 @@ export const QuestionManager = ({
             const currentAnswer = currentSetAnswers[displayQuestion.id]?.answers || [];
             let hasAnswer = currentAnswer.length > 0;
 
-            if ((displayQuestion.type === 'measurement_input' || displayQuestion.type==='camera_measurement')) {
+            if ((displayQuestion.type !== 'single_choice' && displayQuestion.type !== 'multiple_choice')) {
                 hasAnswer = true;
             }
 
-
             // Only proceed if we have an answer for the current question
             if (hasAnswer) {
-                if (displayQuestion.type === 'multiple_choice') {
-                    handleMultipleChoiceNext();
-                } else if (displayQuestion.type === 'measurement_input' || displayQuestion.type === 'camera_measurement') {
-                    // For measurement inputs, only proceed if explicitly marked as ready
-                        console.log("Measurement input ready, proceeding to next question", currentAnswer, displayQuestion.id);
-                        const currentAnswerData = {
-                            questionId: displayQuestion.id,
-                            answers: currentAnswer
-                        };
-                        handleComplete(currentAnswerData);
-                } else {
-                    // For single choice/radio, we can also try to advance
-                    const currentAnswerData = {
-                        questionId: displayQuestion.id,
-                        answers: currentAnswer
-                    };
-                    handleComplete(currentAnswerData);
+                switch (displayQuestion.type) {
+                    case 'multiple_choice':
+                        handleMultipleChoiceNext();
+                        break;
+                    case 'camera_measurement':
+                        handleCameraMeasurementNext();
+                        break;
+                    case 'text_input':
+                        handleTextInputNext();
+                        break;
+                    case 'number_input':
+                        handleNumberInputNext();
+                        break;
+                    case 'yes_no':
+                        handleYesNoNext();
+                        break;
+                    case 'single_choice':
+                        // For single_choice, we don't need to do anything here as it's handled in handleAnswer
+                        // This is just for clarity
+                        break;
+                    case 'measurement_input':
+                        // For measurement_input, use the standard handleComplete
+                        handleComplete();
+                        break;
+                    default:
+                        console.log(`Unhandled question type: ${displayQuestion.type}`);
+                        handleComplete();
+                        break;
                 }
             }
         }
     };
+
 
     const isFirstQuestion = currentQuestionIndex === 0;
     const isLatestQuestion = currentQuestionIndex === questionHistory.length - 1;
@@ -209,7 +224,6 @@ export const QuestionManager = ({
                     <Button
                         variant="default"
                         onClick={() => {
-
                             handleNext();
                         }}
                         disabled={nextButtonDisabled}
