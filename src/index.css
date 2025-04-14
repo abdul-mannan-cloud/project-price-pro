@@ -116,3 +116,8 @@
     @apply w-full mx-auto;
   }
 }
+
+.PhoneInputInput {
+  outline: none !important;
+  box-shadow: none !important;
+}

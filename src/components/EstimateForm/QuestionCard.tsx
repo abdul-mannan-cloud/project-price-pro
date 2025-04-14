@@ -113,31 +113,56 @@ export const QuestionCard = ({
 
     const handleMeasurementChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
+    
+        // Allow only numbers and one optional dot
+        if (!/^\d*\.?\d*$/.test(value)) {
+            setError("Only numbers and decimals are allowed.");
+            setShowNextButton(false);
+            return;
+        }
+    
+        // Always update input state
         setMeasurementValue(value);
-
+    
         if (value === "") {
             setError("");
             setShowNextButton(true);
             return;
         }
-
-        // Validate the measurement based on the validation pattern if provided
+    
+        const numValue = parseFloat(value);
+    
+        if (!isNaN(numValue)) {
+            if (question?.options[0]?.min !== undefined && numValue < question?.options[0]?.min) {
+                console.log("HELOOOOOO");
+                setError(`Value must be at least ${question.options[0].min} ${question.unit || ''}`);
+                setShowNextButton(false);
+                return;
+            }
+            if (question.options[0].max !== undefined && numValue > question.options[0].max) {
+                setError(`Value must be at most ${question.options[0].max} ${question.unit || ''}`);
+                setShowNextButton(false);
+                return;
+            }
+        }
+    
+        // Regex validation (if exists)
         if (question.validation) {
             const regex = new RegExp(question.validation);
-            if (value && !regex.test(value)) {
+            if (!regex.test(value)) {
                 setError(question.validation_message || "Please enter a valid measurement");
-                // Do NOT set showNextButton to true
-            } else {
-                setError("");
-                // onSelect(question.id, [value]);
                 setShowNextButton(false);
+                return;
             }
-        } else {
-            // If no validation pattern, just update the selected answer
-            // onSelect(question.id, [value]);
-            setShowNextButton(false);
         }
+    
+        // All good
+        setError("");
+        setShowNextButton(false);
     };
+    
+    
+    
 
     const handleContinueClick = () => {
         // Explicitly show next button and allow manual navigation
