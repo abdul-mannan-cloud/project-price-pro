@@ -278,6 +278,8 @@ const EstimatePage = () => {
         );
     }
 
+    console.log('THIS IS THE QUESTION SET:', matchedQuestionSets);
+    
 
     return (
         <>

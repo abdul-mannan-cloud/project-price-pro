@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import 'react-phone-number-input/style.css'
+import PhoneInput from 'react-phone-number-input'
+import { cn } from '@/lib/utils';
 
 interface ContactFormFieldsProps {
     formData: {
@@ -154,13 +157,24 @@ export const ContactFormFields = ({ formData, onChange }: ContactFormFieldsProps
 
             {/* Phone */}
             <div className="form-group relative">
-                <Input
+                {/* <Input
                     type="tel"
                     placeholder="Phone Number"
                     value={formData.phone}
                     onChange={(e) => onChange('phone', e.target.value)}
                     required
                     className="h-12 px-4 pt-2"
+                /> */}
+                <PhoneInput
+                    international
+                    countryCallingCodeEditable={false}
+                    defaultCountry="US"
+                    value={formData.phone}
+                    onChange={(value) => onChange('phone', value || '')}
+                    className={cn(
+                        "form-input",
+                        "h-12 px-4 pt-2"
+                      )}
                 />
                 <label className="absolute -top-2.5 left-2 text-sm bg-background px-1 text-muted-foreground">
                     Phone Number
