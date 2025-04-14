@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, CameraOff, Loader2, Upload, X, Ruler, RefreshCw } from "lucide-react";
+import { Camera, CameraOff, Loader2, Upload, X, Ruler, RefreshCw, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -139,8 +139,13 @@ export function CameraMeasurementModal({
                         const preview = URL.createObjectURL(blob);
                         setImagePreviews((prev) => [...prev, preview]);
 
-                        // Stop camera
-                        stopCamera();
+                        // Don't automatically stop camera to allow taking more pictures
+                        // Just show a toast to indicate success
+                        toast({
+                            title: "Image Captured",
+                            description: `${images.length + 1} image${images.length > 0 ? 's' : ''} added.`,
+                            variant: "default",
+                        });
                     }
                 }, 'image/jpeg');
             }
@@ -178,10 +183,19 @@ export function CameraMeasurementModal({
         }
 
         // Check minimum character length
-        if (description.trim().length < 30) {
+        if (description.trim().length < 10) {
             toast({
                 title: "Description Too Short",
-                description: "Please provide a more detailed description (minimum 30 characters).",
+                description: "Please provide a more detailed description (minimum 10 characters).",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        if (description.trim().length > 220) {
+            toast({
+                title: "Description Too Long",
+                description: "Please provide a less detailed description (maximum 220 characters).",
                 variant: "destructive",
             });
             return;
@@ -191,24 +205,17 @@ export function CameraMeasurementModal({
         setIsProcessing(true);
 
         try {
-            // Use the first image for processing (you could enhance this to handle multiple images)
-            //const image = images[0];
+            // Convert all images to base64
+            const base64Images = await Promise.all(images.map(image => fileToBase64(image)));
 
-            const processedImages = await Promise.all(
-                images.map(async (image) => {
-                    const base64 = await fileToBase64(image);
-                    // Remove data:image/jpeg;base64, prefix
-                    return base64.split(',')[1];
-                })
-            );
-
-            // Convert image to base64
-            //const base64Image = await fileToBase64(image);
+            // Extract the base64 data (remove the data:image/jpeg;base64, prefix)
+            const processedImages = base64Images.map(img => img.split(',')[1]);
 
             // Call Supabase Edge Function
             const { data, error } = await supabase.functions.invoke('get-measurement', {
                 body: {
-                    images: processedImages, // Send array of images
+                    image: processedImages[0], // Send first image for compatibility
+                    images: processedImages, // Also send array of images
                     description: description + '\n The Unit for measurement is ' + unit
                 }
             });
@@ -279,16 +286,9 @@ export function CameraMeasurementModal({
         onClose();
     };
 
-    // Check if device has multiple cameras
-    const hasMultipleCameras = async (): Promise<boolean> => {
-        try {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            return videoDevices.length > 1;
-        } catch (error) {
-            console.error("Error checking for cameras:", error);
-            return false;
-        }
+    // Handle adding more photos when in the describe step
+    const handleAddMorePhotos = () => {
+        setStep('upload');
     };
 
     return (
@@ -307,38 +307,73 @@ export function CameraMeasurementModal({
                 {step === 'upload' && (
                     <div className="space-y-4">
                         {isCameraOpen ? (
-                            <div className="relative">
-                                <video
-                                    ref={videoRef}
-                                    autoPlay
-                                    playsInline
-                                    className="w-full h-64 object-cover rounded-lg"
-                                />
-                                <canvas ref={canvasRef} className="hidden" />
+                            <div className="space-y-4">
+                                <div className="relative">
+                                    <video
+                                        ref={videoRef}
+                                        autoPlay
+                                        playsInline
+                                        className="w-full h-64 object-cover rounded-lg"
+                                    />
+                                    <canvas ref={canvasRef} className="hidden" />
 
-                                {/* Camera controls */}
-                                <div className="absolute top-2 right-2 flex gap-2">
-                                    {/* Switch camera button */}
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        className="bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 p-0"
-                                        onClick={switchCamera}
-                                    >
-                                        <RefreshCw size={16} />
-                                    </Button>
+                                    {/* Camera controls */}
+                                    <div className="absolute top-2 right-2 flex gap-2">
+                                        {/* Switch camera button */}
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            className="bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 p-0"
+                                            onClick={switchCamera}
+                                        >
+                                            <RefreshCw size={16} />
+                                        </Button>
+                                    </div>
+
+                                    <div className="mt-4 flex justify-center gap-4">
+                                        <Button onClick={takePicture} className="flex items-center gap-2">
+                                            <Camera size={16} />
+                                            Capture
+                                        </Button>
+                                        <Button variant="outline" onClick={stopCamera} className="flex items-center gap-2">
+                                            <CameraOff size={16} />
+                                            Done
+                                        </Button>
+                                    </div>
                                 </div>
 
-                                <div className="mt-4 flex justify-center gap-4">
-                                    <Button onClick={takePicture} className="flex items-center gap-2">
-                                        <Camera size={16} />
-                                        Capture
-                                    </Button>
-                                    <Button variant="outline" onClick={stopCamera} className="flex items-center gap-2">
-                                        <CameraOff size={16} />
-                                        Cancel
-                                    </Button>
-                                </div>
+                                {/* Show captured images below camera */}
+                                {imagePreviews.length > 0 && (
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-700 mb-2">Captured Images:</p>
+                                        <div className="grid grid-cols-2 gap-2 pb-2">
+                                            {imagePreviews.map((preview, index) => (
+                                                <div key={index} className="relative  flex-shrink-0">
+                                                    <img
+                                                        src={preview}
+                                                        alt={`Preview ${index}`}
+                                                        className="w-full h-full object-cover rounded-md"
+                                                    />
+                                                    <button
+                                                        className="absolute right-0 top-0 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white"
+                                                        onClick={() => removeImage(index)}
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Next button when in camera mode with images */}
+                                {imagePreviews.length > 0 && (
+                                    <div className="mt-2">
+                                        <Button onClick={goToDescribeStep} className="w-full">
+                                            Continue with {imagePreviews.length} image{imagePreviews.length > 1 ? 's' : ''}
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <>
@@ -398,12 +433,43 @@ export function CameraMeasurementModal({
                 {step === 'describe' && (
                     <div className="space-y-4">
                         <div>
+                            {/* Main image display */}
                             <div className="mb-4">
-                                <img
-                                    src={imagePreviews[0]}
-                                    alt="Measurement image"
-                                    className="w-full h-48 object-cover rounded-lg"
-                                />
+                                {imagePreviews.length > 0 && (
+                                    <img
+                                        src={imagePreviews[0]}
+                                        alt="Main measurement image"
+                                        className="w-full h-48 object-cover rounded-lg"
+                                    />
+                                )}
+                            </div>
+
+                            {/* Image thumbnails with add more button */}
+                            <div className="mb-4">
+                                <div className="flex overflow-x-auto gap-2 pb-2">
+                                    {imagePreviews.map((preview, index) => (
+                                        <div key={index} className="relative min-w-16 w-16 h-16 flex-shrink-0">
+                                            <img
+                                                src={preview}
+                                                alt={`Preview ${index}`}
+                                                className="w-full h-full object-cover rounded-md"
+                                            />
+                                            <button
+                                                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white"
+                                                onClick={() => removeImage(index)}
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {/* Add more photos button */}
+                                    <div
+                                        className="relative border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center min-w-16 w-16 h-16 flex-shrink-0 cursor-pointer hover:bg-gray-50 transition-colors"
+                                        onClick={handleAddMorePhotos}
+                                    >
+                                        <Plus size={20} className="text-gray-400" />
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="mb-4">
@@ -417,11 +483,10 @@ export function CameraMeasurementModal({
                                     onChange={(e) => setDescription(e.target.value)}
                                     className="h-24"
                                 />
-                                {description.length > 0 && description.length < 30 && (
+                                {description.length > 0 && description.trim().length < 10 && (
                                     <p className="text-sm text-red-500 mt-1">
-                                        {/* Please provide a more detailed description (minimum 30 characters).
-                                        Currently {description.length}/30 characters. */}
-                                        [{30 - description.length} characters remaining]
+                                        Please provide a more detailed description (minimum 30 characters).
+                                        Currently {description.length}/30 characters.
                                     </p>
                                 )}
                             </div>
@@ -444,7 +509,7 @@ export function CameraMeasurementModal({
                         <div className="animate-pulse flex flex-col items-center">
                             <Ruler className="h-16 w-16 text-primary mb-4" />
                             <p className="text-lg font-medium text-gray-700">Measuring...</p>
-                            <p className="text-sm text-gray-500 mt-2">Our AI is calculating measurements from your image</p>
+                            <p className="text-sm text-gray-500 mt-2">Our AI is calculating measurements from your images</p>
                         </div>
                     </div>
                 )}
