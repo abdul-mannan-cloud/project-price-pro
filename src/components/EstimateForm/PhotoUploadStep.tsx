@@ -58,7 +58,7 @@ export const PhotoUploadStep = ({ onPhotoUploaded, onSkip, contractor }: PhotoUp
             onClick={onSkip}
         >
           <SkipForward className="mr-2"/>
-          Skip Photo
+          Skip Photo 
         </Button>}
       </div>
     </div>

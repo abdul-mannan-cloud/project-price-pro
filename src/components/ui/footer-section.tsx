@@ -121,6 +121,9 @@ export function Footerdemo() {
             </div>
           </div>
         </div>
+        <div className="flex justify-center">
+          <p>© {new Date().getFullYear()} ESTIMATIRX LLC. All rights reserved.</p>
+        </div>
       </div>
 
       {/* Privacy Policy Dialog */}

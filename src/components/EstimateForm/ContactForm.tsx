@@ -8,6 +8,7 @@ import { ContactFormButtons } from "./ContactFormButtons";
 import { EstimateAnimation } from "./EstimateAnimation";
 import { TimeAvailabilitySelector } from "./TimeAvailabilitySelector";
 
+
 interface ContactFormProps {
   onSubmit: (data: {
     fullName: string;
@@ -79,13 +80,6 @@ export const ContactForm = ({
     checkCurrentUser();
   }, []);
 
-  const verifyEmailExistence = async (email: string): Promise<boolean> => {
-    // const res = await fetch(`https://apilayer.net/api/check?access_key=YOUR_API_KEY&email=${email}`);
-    // const data = await res.json();
-    // return data.smtp_check === true; // smtp_check indicates if mailbox exists
-    return true
-  };  
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -93,18 +87,10 @@ export const ContactForm = ({
     try {
       const { email } = formData;
   
-      const emailExists = await verifyEmailExistence(email);
-      if (!emailExists) {
-        throw new Error("The email address appears to be invalid or not reachable.");
-      }
-  
-      // Proceed with your existing logic...
       if (!leadId) {
         console.error('Missing leadId in ContactForm');
         throw new Error("Unable to process your request at this time");
       }
-  
-      // (rest of submission logic...)
   
       onSubmit({
         ...formData,
