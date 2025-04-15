@@ -84,19 +84,29 @@ export const QuestionCard = ({
 
     // Set initial values from selectedAnswers
     useEffect(() => {
+        console.log('Into the useEffect selected answers', selectedAnswers);
+        
         if (selectedAnswers.length > 0) {
+            console.log('Into the useEffect selected answers', selectedAnswers);
+
             if (question.type === 'text_input') {
                 setTextInputValue(selectedAnswers[0] || "");
             } else if (question.type === 'number_input') {
                 setNumberInputValue(selectedAnswers[0] || "");
             } else if (question.type === 'measurement_input' || question.type === 'camera_measurement') {
                 setMeasurementValue(selectedAnswers[0] || "");
+                console.log('Resetting values in useEffect');
+                setShowNextButton(true)
             }
         } else {
             // Reset values when question changes
             setTextInputValue("");
             setNumberInputValue("");
-            setMeasurementValue("");
+            //setMeasurementValue("");
+            setShowNextButton(true)
+
+            console.log('resetting values in else');
+            
         }
     }, [question.id, selectedAnswers]);
 
@@ -254,30 +264,31 @@ export const QuestionCard = ({
         // Allow only numbers and one optional dot
         if (!/^\d*\.?\d*$/.test(value)) {
             setError("Only numbers and decimals are allowed.");
-            setShowNextButton?.(false);
+            setShowNextButton?.(true);
+            return;
+        }
+
+        if (value === "") {
+            setError("");
+            setShowNextButton?.(true);
+            setMeasurementValue(value);
             return;
         }
 
         // Always update input state
         setMeasurementValue(value);
 
-        if (value === "") {
-            setError("");
-            setShowNextButton?.(false);
-            return;
-        }
-
         const numValue = parseFloat(value);
 
         if (!isNaN(numValue)) {
             if (question?.options?.[0]?.min !== undefined && numValue < question?.options[0]?.min) {
                 setError(`Value must be at least ${question.options[0].min} ${question.unit || ''}`);
-                setShowNextButton?.(false);
+                setShowNextButton?.(true);
                 return;
             }
             if (question.options?.[0]?.max !== undefined && numValue > question.options[0].max) {
                 setError(`Value must be at most ${question.options[0].max} ${question.unit || ''}`);
-                setShowNextButton?.(false);
+                setShowNextButton?.(true);
                 return;
             }
         }
@@ -287,7 +298,7 @@ export const QuestionCard = ({
             const regex = new RegExp(question.validation);
             if (!regex.test(value)) {
                 setError(question.validation_message || "Please enter a valid measurement");
-                setShowNextButton?.(false);
+                setShowNextButton?.(true);
                 return;
             }
         }
