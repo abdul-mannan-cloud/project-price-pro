@@ -122,7 +122,11 @@ export const QuestionCard = ({
         setIsProcessing(false);
     }, [question.id, selectedAnswers]);
 
+
+    const [showField, setShowField] = useState('');
     const handleOptionClick = async (value: string, option?: any) => {
+        console.log('value is', value, option);
+        
         if (question.type === 'multiple_choice') {
             const newSelection = selectedAnswers.includes(value)
                 ? selectedAnswers.filter(v => v !== value)
@@ -151,14 +155,23 @@ export const QuestionCard = ({
                 }
             }, 100);
         } else {
-            if (isProcessing) return;
-            setIsProcessing(true);
-            onSelect(question.id, [value]);
+            if (value === 'number' || value === 'text') {
+                if(value === 'number') {setShowField('number')}
+                else {setShowField('text')}
+            } else {
+                if (option.value === 'number' || option.value === 'text') {
+                    console.log('Helloo World');
+                } else {
+                    if (isProcessing) return;
+                    setIsProcessing(true);
+                    onSelect(question.id, [value]);
 
-            // For radio buttons, just select the option without auto-advancing
-            setTimeout(() => {
-                setIsProcessing(false);
-            }, 200);
+                    // For radio buttons, just select the option without auto-advancing
+                    setTimeout(() => {
+                        setIsProcessing(false);
+                    }, 200);
+                }
+            }
         }
     };
 
@@ -696,6 +709,82 @@ export const QuestionCard = ({
                                 showImage={shouldShowImage(option)}
                             />
                         ))}
+                        {
+                            question.type === 'single_choice' && 
+                            <>
+                                <QuestionOption
+                                    key="number_input"
+                                    option={{
+                                        next: question.options[0].next,
+                                        label: "Number Input",
+                                        value: "number",
+                                        image_url: "http://example.com/small.png"
+                                    }}
+                                    isSelected={selectedAnswers.includes('number')}
+                                    type="single_choice"
+                                    onClick={() =>
+                                        handleOptionClick('number', {
+                                            next: question.options[0].next,
+                                            label: "Number Input",
+                                            value: "number",
+                                            image_url: "http://example.com/small.png"
+                                        })
+                                    }
+                                    showImage={shouldShowImage({
+                                        next: question.options[0].next,
+                                        label: "Number Input",
+                                        value: "number",
+                                        image_url: "http://example.com/small.png"
+                                    })}
+                                />
+                                <QuestionOption
+                                    key="text_input"
+                                    option={{
+                                        next: question.options[0].next,
+                                        label: "text Input",
+                                        value: "text",
+                                        image_url: "http://example.com/small.png"
+                                    }}
+                                    isSelected={selectedAnswers.includes('text')}
+                                    type="single_choice"
+                                    onClick={() =>
+                                        handleOptionClick('text', {
+                                            next: question.options[0].next,
+                                            label: "text Input",
+                                            value: "text",
+                                            image_url: "http://example.com/small.png"
+                                        })
+                                    }
+                                    showImage={shouldShowImage({
+                                        next: question.options[0].next,
+                                        label: "text Input",
+                                        value: "text",
+                                        image_url: "http://example.com/small.png"
+                                    })}
+                                />
+                            </>
+
+                        }
+                        {
+                            //showField === 'number' ? renderNumberInput() : showField === 'text' ?  renderTextInput() : ''
+                            showField === 'number' ? 
+                                <input onChange={(e) => {handleOptionClick(e.target.value, {
+                                    next: question.options[0].next,
+                                    label: "Number Input",
+                                    value: "number",
+                                    image_url: "http://example.com/small.png"
+                                })}} type="number" className="p-2 rounded-lg border border-green-500"></input> 
+                            : showField === 'text' ?  
+                                <input type="text" 
+                                    onChange={(e) => handleOptionClick(e.target.value, {
+                                        next: question.options[0].next,
+                                        label: "Text Input",
+                                        value: "text",
+                                        image_url: "http://example.com/small.png"
+                                })}
+                                className="p-2 rounded-lg border border-red-500"
+                                ></input> : ''
+                        }
                     </div>
                 )}
             </Card>
