@@ -54,6 +54,7 @@ export const QuestionCard = ({
     const [error, setError] = useState("");
     const [isCameraMeasurementOpen, setIsCameraMeasurementOpen] = useState(false);
     const [selectedInputMethod, setSelectedInputMethod] = useState<string | null>(null);
+    const [optionInputValues, setOptionInputValues] = useState<Record<string, string>>({});
     const questionLoadTime = useRef<number>(0);
     const isMobile = useIsMobile();
     const {contractorId} = useParams();
@@ -84,29 +85,33 @@ export const QuestionCard = ({
 
     // Set initial values from selectedAnswers
     useEffect(() => {
-        console.log('Into the useEffect selected answers', selectedAnswers);
-        
         if (selectedAnswers.length > 0) {
-            console.log('Into the useEffect selected answers', selectedAnswers);
-
             if (question.type === 'text_input') {
                 setTextInputValue(selectedAnswers[0] || "");
             } else if (question.type === 'number_input') {
                 setNumberInputValue(selectedAnswers[0] || "");
             } else if (question.type === 'measurement_input' || question.type === 'camera_measurement') {
                 setMeasurementValue(selectedAnswers[0] || "");
-                console.log('Resetting values in useEffect');
-                setShowNextButton(true)
+                setShowNextButton?.(true);
+            } else if (question.type === 'single_choice') {
+                // For single choice, we need to check if the selected answer is an option with special input
+                const selectedOption = question.options.find(opt => opt.value === selectedAnswers[0]);
+                if (selectedOption && (selectedOption.type === 'text_input' || selectedOption.type === 'number_input')) {
+                    // If this option has additional input, we need to set its value if available
+                    if (selectedAnswers.length > 1) {
+                        setOptionInputValues({
+                            ...optionInputValues,
+                            [selectedAnswers[0]]: selectedAnswers[1]
+                        });
+                    }
+                }
             }
         } else {
             // Reset values when question changes
             setTextInputValue("");
             setNumberInputValue("");
-            //setMeasurementValue("");
-            setShowNextButton(true)
-
-            console.log('resetting values in else');
-            
+            setOptionInputValues({});
+            setShowNextButton?.(true);
         }
     }, [question.id, selectedAnswers]);
 
@@ -117,7 +122,7 @@ export const QuestionCard = ({
         setSelectedInputMethod(null);
         setActiveInputOption(null);
 
-        setShowNextButton?.(question.type === 'multiple_choice' ? selectedAnswers.length > 0 : selectedAnswers.length === 1);
+        setShowNextButton?.(question.type === 'multiple_choice' ? selectedAnswers.length > 0 : selectedAnswers.length >= 1);
 
         setIsProcessing(false);
     }, [question.id, selectedAnswers]);
@@ -128,38 +133,36 @@ export const QuestionCard = ({
                 ? selectedAnswers.filter(v => v !== value)
                 : [...selectedAnswers, value];
             onSelect(question.id, newSelection);
-        } else if (option && option.type === 'text_input') {
-            // For text_input options within a single_choice question
-            setSelectedInputMethod('text_input');
-            setActiveInputOption(option);
-
-            // Focus on the text input field
-            setTimeout(() => {
-                if (textInputRef.current) {
-                    textInputRef.current.focus();
-                }
-            }, 100);
-        } else if (option && option.type === 'number_input') {
-            // For number_input options within a single_choice question
-            setSelectedInputMethod('number_input');
-            setActiveInputOption(option);
-
-            // Focus on the number input field
-            setTimeout(() => {
-                if (numberInputRef.current) {
-                    numberInputRef.current.focus();
-                }
-            }, 100);
         } else {
             if (isProcessing) return;
             setIsProcessing(true);
-            onSelect(question.id, [value]);
 
-            // For radio buttons, just select the option without auto-advancing
+            // For single_choice with special input types
+            if (option && (option.type === 'text_input' || option.type === 'number_input')) {
+                // Just select the option, don't auto-advance
+                // If we already have an input value for this option, include it
+                const optionValue = optionInputValues[value] || "";
+                onSelect(question.id, [value, optionValue]);
+            } else {
+                // Regular option selection
+                onSelect(question.id, [value]);
+            }
+
             setTimeout(() => {
                 setIsProcessing(false);
             }, 200);
         }
+    };
+
+    const handleOptionInputChange = (optionValue: string, inputValue: string) => {
+        // Update the option input values
+        setOptionInputValues({
+            ...optionInputValues,
+            [optionValue]: inputValue
+        });
+
+        // Update the selected answer with both the option value and input value
+        onSelect(question.id, [optionValue, inputValue]);
     };
 
     const handleTextInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -671,16 +674,6 @@ export const QuestionCard = ({
                         {/* Number Input UI */}
                         {renderNumberInput()}
                     </div>
-                ) : selectedInputMethod === 'text_input' && activeInputOption ? (
-                    <div className="space-y-6 mb-12 px-4 md:px-0">
-                        {/* Text Input UI for options */}
-                        {renderTextInput(activeInputOption)}
-                    </div>
-                ) : selectedInputMethod === 'number_input' && activeInputOption ? (
-                    <div className="space-y-6 mb-12 px-4 md:px-0">
-                        {/* Number Input UI for options */}
-                        {renderNumberInput(activeInputOption)}
-                    </div>
                 ) : (
                     <div className={cn(
                         "grid gap-6 mb-12",
@@ -694,6 +687,8 @@ export const QuestionCard = ({
                                 type={question.type}
                                 onClick={() => handleOptionClick(option.value, option)}
                                 showImage={shouldShowImage(option)}
+                                onInputChange={(value) => handleOptionInputChange(option.value, value)}
+                                inputValue={optionInputValues[option.value] || ""}
                             />
                         ))}
                     </div>

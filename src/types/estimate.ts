@@ -1,17 +1,20 @@
 export interface Option {
+  unit?: string;
   label: string;
   value: string;
-  type?: string;
+  type?: 'text_input' | 'number_input' | 'camera_measurement';
   tooltip?: string;
   placeholder?: string;
   min?: number;
-    max?: number;
-    camera_prompt?: string;
+  max?: number;
+  camera_prompt?: string;
+  validation?: string;
+  validation_message?: string;
+  character_limit?: string;
   next?: string;
   image_url?: string;
   description?: string;
 }
-
 export interface Question {
   id: string;
   question: string;
@@ -111,3 +114,4 @@ export function categoryToQuestionSet(category: CategoryWithQuestions): Category
     questions: category.questions
   };
 }
+

@@ -163,7 +163,6 @@ export const useQuestionManager = (
   };
 
   const handleSingleChoiceNavigation = (currentQuestion: Question, selectedValue: string) => {
-    console.log('testing current single choice', currentQuestion, selectedValue);
 
     // Handle measurement_input type which might not have traditional options
     if (currentQuestion.type === 'measurement_input') {
