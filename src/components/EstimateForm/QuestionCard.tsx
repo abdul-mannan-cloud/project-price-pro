@@ -523,7 +523,7 @@ export const QuestionCard = ({
                                         const inputOption = options.find(opt => opt.type === 'number_input' || opt.type === 'text_input');
                                         return inputOption ? (
                                             <div>
-                                                <div className="font-medium text-gray-700 mb-2">{inputOption.label}</div>
+                                                {/* <div className="font-medium text-gray-700 mb-2">{inputOption.label}</div> */}
                                                 <div className="relative group">
                                                     <NumberLabelInput
                                                         label={inputOption.placeholder || `Enter ${question.unit ? `in ${question.unit}` : ''}`}
