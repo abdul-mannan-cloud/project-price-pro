@@ -119,7 +119,7 @@ export const QuestionOption = ({
             if (characterLimit && characterLimit > 100) {
                 // Render textarea for longer inputs
                 return (
-                    <div className="mt-3 px-4 pb-4">
+                    <div className="mt-3 px-4 pb-4 ">
                         <Textarea
                             ref={textareaRef}
                             value={localInputValue}
@@ -128,7 +128,7 @@ export const QuestionOption = ({
                             maxLength={characterLimit}
                             rows={3}
                             className={cn(
-                                "w-full rounded-md border focus:ring-2 focus:border-primary focus:ring-primary-100",
+                                "w-full rounded-md ",
                                 error ? "border-red-500 focus:ring-red-500" : "border-gray-300"
                             )}
                         />
@@ -210,17 +210,17 @@ export const QuestionOption = ({
     return (
         <div className={cn(
             "rounded-xl overflow-hidden transition-all duration-200",
-            hasSpecialInput && isSelected ? "shadow-sm" : ""
+            hasSpecialInput && isSelected ? "shadow-sm border-2 border-primary " : ""
         )}>
             <div
                 onClick={onClick}
                 className={cn(
                     "group relative rounded-xl transition-all duration-200 cursor-pointer overflow-hidden",
                     isSelected
-                        ? "bg-primary-100 ring-2 ring-primary ring-offset-1"
+                        ? "bg-primary-100"
                         : "hover:bg-primary-50 border border-gray-200 hover:border-primary-300",
                     showImage ? "pb-4" : "p-4",
-                    hasSpecialInput && isSelected ? "rounded-b-none" : ""
+                    hasSpecialInput && isSelected ? "rounded-b-none ring-0" : " ring-2 ring-primary ring-offset-1"
                 )}
             >
                 {showImage && option.image_url && (
@@ -252,7 +252,7 @@ export const QuestionOption = ({
                         </div>
                     ) : (
                         <div className={cn(
-                            "flex-shrink-0 h-6 w-6 rounded-full border transition-all duration-200",
+                            "flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center border transition-all duration-200",
                             isSelected
                                 ? "border-2 border-primary"
                                 : "border-gray-300 group-hover:border-primary-400"
