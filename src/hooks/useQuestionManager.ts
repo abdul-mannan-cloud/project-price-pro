@@ -264,7 +264,7 @@ export const useQuestionManager = (
 
 
     if (currentQuestion.type == 'single_choice' || currentQuestion.type == 'yes_no' ){
-      handleSingleChoiceNavigation(currentQuestion, selectedValues[0]);
+      //handleSingleChoiceNavigation(currentQuestion, selectedValues[0]);
     }
   };
 
@@ -620,6 +620,7 @@ export const useQuestionManager = (
     currentStage: currentSetIndex + 1,
     totalStages: questionSets.length,
     handleAnswer,
+    handleSingleChoiceNavigation,
     handleMultipleChoiceNext,
     handleCameraMeasurementNext,
     handleTextInputNext,

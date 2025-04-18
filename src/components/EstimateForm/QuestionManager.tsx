@@ -42,6 +42,7 @@ export const QuestionManager = ({
         currentStage,
         totalStages,
         handleAnswer,
+        handleSingleChoiceNavigation,
         handleMultipleChoiceNext,
         handleCameraMeasurementNext,
         handleTextInputNext,
@@ -110,14 +111,19 @@ export const QuestionManager = ({
             // If we're at the latest question, try to advance to a new question
             const currentAnswer = currentSetAnswers[displayQuestion.id]?.answers || [];
             let hasAnswer = currentAnswer.length > 0;
-
+    
             if ((displayQuestion.type !== 'single_choice' && displayQuestion.type !== 'multiple_choice')) {
                 hasAnswer = true;
             }
-
+    
             // Only proceed if we have an answer for the current question
             if (hasAnswer) {
                 switch (displayQuestion.type) {
+                    case 'single_choice':
+                        // For single_choice, we need to explicitly call handleSingleChoiceNavigation
+                        // since it's no longer being called in handleAnswer
+                        handleSingleChoiceNavigation(displayQuestion, currentAnswer[0]);
+                        break;
                     case 'multiple_choice':
                         handleMultipleChoiceNext();
                         break;
@@ -133,10 +139,6 @@ export const QuestionManager = ({
                         break;
                     case 'yes_no':
                         handleYesNoNext();
-                        break;
-                    case 'single_choice':
-                        // For single_choice, we don't need to do anything here as it's handled in handleAnswer
-                        // This is just for clarity
                         break;
                     case 'measurement_input':
                         // For measurement_input, use the standard handleComplete
