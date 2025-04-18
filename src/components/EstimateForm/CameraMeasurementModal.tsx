@@ -294,6 +294,17 @@ export function CameraMeasurementModal({
     return (
         <Dialog open={isOpen} onOpenChange={handleCloseModal}>
             <DialogContent className="sm:max-w-lg">
+                {/* Add a close button in the top-right corner */}
+                <button 
+                    onClick={handleCloseModal}
+                    className="absolute right-4 top-4 rounded-sm opacity-70 disabled:pointer-events-none"
+                    type="button"
+                    aria-label="Close"
+                >
+                    <X className="h-4 w-4 hover:text-primary" />
+                    <span className="sr-only">Close</span>
+                </button>
+                
                 <DialogHeader>
                     <DialogTitle>
                         {step === 'upload' && "Add Photos for Measurement"}
@@ -429,6 +440,7 @@ export function CameraMeasurementModal({
                     </div>
                 )}
 
+                {/* Rest of the code remains the same... */}
                 {/* Step 2: Describe what to measure */}
                 {step === 'describe' && (
                     <div className="space-y-4">
@@ -484,9 +496,18 @@ export function CameraMeasurementModal({
                                     className="h-24"
                                 />
                                 {description.length > 0 && description.trim().length < 10 && (
-                                    <p className="text-sm text-red-500 mt-1">
-                                        Please provide a more detailed description (minimum 30 characters).
-                                        Currently {description.length}/30 characters.
+                                    <p className="text-sm text-red-500 mt-1 text-right">
+                                        [{10 - description.length} more characters]
+                                    </p>
+                                )}
+                                {description.length > 9 && description.trim().length < 250 && (
+                                    <p className={`text-sm mt-1 text-right ${description.length > 250 ? 'text-red-500' : 'text-grey-500'}`}>
+                                        [{250 - description.length}/250 characters remaining]
+                                    </p>
+                                )}
+                                {description.trim().length > 250 && (
+                                    <p className={`text-sm mt-1 text-right ${description.length > 250 ? 'text-red-500' : 'text-grey-500'}`}>
+                                        [{description.length}/250 characters]
                                     </p>
                                 )}
                             </div>
@@ -496,7 +517,7 @@ export function CameraMeasurementModal({
                             <Button variant="outline" onClick={() => setStep('upload')} className="flex-1">
                                 Back
                             </Button>
-                            <Button onClick={startMeasuring} className="flex-1">
+                            <Button disabled={description.trim().length < 10 || description.trim().length > 250} onClick={startMeasuring} className="flex-1 disabled:opacity-50">
                                 Start Measuring
                             </Button>
                         </div>

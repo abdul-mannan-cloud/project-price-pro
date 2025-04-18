@@ -151,7 +151,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
       const response = await supabase.functions.invoke('send-estimate-email', {
         body: {
           name: lead?.user_name,
-          email: emailRecipient,
+          customerEmail: emailRecipient,
           estimateData: lead?.estimate_data,
           estimateUrl,
           contractorId: effectiveContractorId

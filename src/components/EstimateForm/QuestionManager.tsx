@@ -233,7 +233,7 @@ export const QuestionManager = ({
                         }}
                         disabled={nextButtonDisabled}
                         className={cn(
-                            "flex items-center gap-2 px-6 py-5 text-base font-medium transition-all duration-200 w-40 bg-primary hover:bg-primary-700 text-primary-foreground"
+                            "flex items-center gap-2 px-6 py-5 text-base font-medium transition-all duration-200 w-40 bg-primary text-primary-foreground"
                         )}
                     >
                         Continue
