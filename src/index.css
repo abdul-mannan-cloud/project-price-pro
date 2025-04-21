@@ -54,7 +54,7 @@
 
 @layer components {
   .form-group {
-    @apply relative mb-6;
+    @apply relative;
   }
 
   .form-input {
@@ -72,8 +72,11 @@
   .form-input:focus + .form-label,
   .form-input:not(:placeholder-shown) + .form-label {
     @apply text-[11px] text-muted-foreground;
-    top: 8px;
+    top: -7px;
     transform: translateY(0);
+    background-color: white;
+    padding-left: 4px;
+    padding-right: 4px
   }
 
   .select-wrapper {

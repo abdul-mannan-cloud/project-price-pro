@@ -500,9 +500,9 @@ const Settings = () => {
     switch (activeSection) {
       case "business":
         return (
-            <div className="space-y-4">
-              <LogoUpload currentLogo={contractor?.business_logo_url} />
-              <form onSubmit={handleSubmitBusinessForm} className="space-y-2">
+            <div className="space-y-4 pt-4">
+              <LogoUpload currentLogo={contractor?.business_logo_url}/>
+              <form onSubmit={handleSubmitBusinessForm} className="space-y-2 pt-6 flex flex-col gap-3">
                 <Input
                     label={t("Business Name")}
                     name="businessName"
@@ -524,42 +524,48 @@ const Settings = () => {
                 />
 
                 {/* Address input with autocomplete */}
-                <div className="form-group relative">
+                <div className="form-group mb-0 relative group">
                   <Input
-                      ref={addressInputRef}
-                      placeholder={t("Business Address")}
-                      value={businessAddress}
-                      onChange={(e) => handleAddressChange(e.target.value)}
-                      onFocus={() => businessAddress && setShowSuggestions(true)}
-                      className="h-12 px-4 pt-3 mt-2"
+                    ref={addressInputRef}
+                    placeholder=""
+                    value={businessAddress}
+                    onChange={(e) => handleAddressChange(e.target.value)}
+                    onFocus={() => businessAddress && setShowSuggestions(true)}
+                    className="h-12 px-4 pt-3"
+                    id="business-address-input"
                   />
-                  <label className="absolute top-1 left-2 mt-2 text-xs bg-transparent px-1 text-muted-foreground">
+                  <label 
+                    htmlFor="business-address-input"
+                    className={`absolute left-3 transition-all duration-200 ${
+                      businessAddress ? "-top-[7px] text-xs bg-white px-[4px]" : "top-[22px] text-sm bg-transparent"
+                    } group-focus-within:-top-[7px] group-focus-within:text-xs group-focus-within:bg-white group-focus-within:px-[4px] text-muted-foreground cursor-text pointer-events-none`}
+                  >
                     {t("Business Address")}
                   </label>
 
                   {isLoadingAddress && (
-                      <div className="absolute right-3 top-3">
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                      </div>
+                    <div className="absolute right-3 top-3">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
                   )}
 
                   {showSuggestions && addressSuggestions.length > 0 && (
-                      <div
-                          ref={suggestionRef}
-                          className="absolute z-10 -mt-5 w-full bg-background border border-input rounded-md shadow-lg"
-                      >
-                        <ul className="py-1 max-h-60 overflow-auto">
-                          {addressSuggestions.map((suggestion, index) => (
-                              <li
-                                  key={index}
-                                  className="px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
-                                  onClick={() => handleSelectSuggestion(suggestion)}
-                              >
-                                {suggestion}
-                              </li>
-                          ))}
-                        </ul>
-                      </div>
+                    <div
+                      ref={suggestionRef}
+                      className="absolute z-10 -mt-5 w-full bg-background border border-input rounded-md shadow-lg"
+                    >
+                      <ul className="py-1 max-h-60 overflow-auto">
+                        {addressSuggestions.map((suggestion, index) => (
+                          <li
+                            key={index}
+                            className="px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                            onClick={() => handleSelectSuggestion(suggestion)}
+                          >
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </div>
 

@@ -10,7 +10,7 @@ export interface InputProps
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, label, labelClassName, ...props }, ref) => {
     return (
-      <div className="form-group">
+      <div className="form-group flex">
         <input
           type={type}
           className={cn(

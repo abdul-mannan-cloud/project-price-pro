@@ -249,7 +249,7 @@ const Onboarding = () => {
               business_name: formData.businessName,
               contact_email: formData.contactEmail,
               contact_phone: formData.contactPhone,
-              business_address: formData.address,
+              business_address: businessAddress,
               license_number: formData.licenseNumber,
               branding_colors: {
                 primary: formData.primaryColor,
