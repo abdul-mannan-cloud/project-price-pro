@@ -61,7 +61,7 @@ export const LogoUpload = ({ currentLogo }: { currentLogo?: string | null }) => 
   return (
     <div className="space-y-4">
       {currentLogo && (
-        <div className="w-32 h-32 rounded-lg border overflow-hidden">
+        <div className="w-32 h-32 rounded-lg border overflow-hidden ">
           <img
             src={currentLogo}
             alt="Business Logo"
@@ -69,7 +69,7 @@ export const LogoUpload = ({ currentLogo }: { currentLogo?: string | null }) => 
           />
         </div>
       )}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 relative">
         <Input
           type="file"
           accept="image/*"
@@ -82,6 +82,7 @@ export const LogoUpload = ({ currentLogo }: { currentLogo?: string | null }) => 
           asChild
           variant="outline"
           disabled={uploading}
+          className="absolute left-0"
         >
           <label htmlFor="logo-upload" className="cursor-pointer">
             <Upload className="h-4 w-4 mr-2" />

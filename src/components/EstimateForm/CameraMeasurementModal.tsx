@@ -407,7 +407,7 @@ export function CameraMeasurementModal({
                                 </div>
 
                                 {imagePreviews.length > 0 && (
-                                    <div className="grid grid-cols-3 gap-2">
+                                    <div className="grid grid-cols-3 gap-2 max-h-[40vh] overflow-y-auto overflow-x-hidden p-4">
                                         {imagePreviews.map((preview, index) => (
                                             <div key={index} className="relative">
                                                 <img
@@ -443,7 +443,7 @@ export function CameraMeasurementModal({
                 {/* Rest of the code remains the same... */}
                 {/* Step 2: Describe what to measure */}
                 {step === 'describe' && (
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-w-full overflow-hidden px-2">
                         <div>
                             {/* Main image display */}
                             <div className="mb-4">
@@ -458,7 +458,7 @@ export function CameraMeasurementModal({
 
                             {/* Image thumbnails with add more button */}
                             <div className="mb-4">
-                                <div className="flex overflow-x-auto gap-2 pb-2">
+                                <div className="flex overflow-x-auto gap-2 pb-2 pt-2">
                                     {imagePreviews.map((preview, index) => (
                                         <div key={index} className="relative min-w-16 w-16 h-16 flex-shrink-0">
                                             <img
@@ -490,7 +490,7 @@ export function CameraMeasurementModal({
                                 </label>
                                 <Textarea
                                     id="description"
-                                    placeholder="e.g., measure the flooring include all corners (minimum 30 characters)"
+                                    placeholder="e.g., measure the flooring include all corners (minimum 10 characters)"
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     className="h-24"
