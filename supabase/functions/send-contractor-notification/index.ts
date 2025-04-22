@@ -240,12 +240,6 @@ serve(async (req: Request): Promise<Response> => {
       isTestEstimate = false,
     } = requestData;
 
-    console.log("Processing contractor notification for:", {
-      customer: customerInfo.fullName,
-      contractor: contractor.contact_email,
-      isTestEstimate,
-    });
-
     // Validate required fields
     if (!contractor?.contact_email) {
       throw new Error("Contractor email not provided");
@@ -261,7 +255,7 @@ serve(async (req: Request): Promise<Response> => {
         <ul style="list-style-type: none; padding: 0;">
           <li><strong>Name:</strong> ${customerInfo.fullName}</li>
           <li><strong>Email:</strong> ${customerInfo.email}</li>
-          <li><strong>Phone:</strong> ${customerInfo.phone}</li>
+           <li><strong>Phone:</strong> <a href="tel:${customerInfo.phone}" style="color: #1a73e8; text-decoration: none;">${customerInfo.phone}</a></li>
           <li><strong>Address:</strong> ${customerInfo.address}</li>
         </ul>
       `;

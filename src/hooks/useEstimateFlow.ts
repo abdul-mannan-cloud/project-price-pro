@@ -330,6 +330,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       throw new Error(lead.error_message || 'Failed to generate estimate');
     }
 
+
     if (lead.status === 'complete' && lead.estimate_data) {
       setEstimate(lead.estimate_data);
 
@@ -487,23 +488,6 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     try {
       if (!currentLeadId) {
         throw new Error('No lead ID available');
-      }
-
-      if (skip) {
-        const { error: updateError } = await supabase
-            .from('leads')
-            .update({
-              user_name: contactData.fullName,
-              user_email: contactData.email,
-              user_phone: contactData.phone,
-              project_address: contactData.address,
-              available_date: contactData.available_date,
-              available_time: contactData.available_time,
-              flexible: contactData.flexible
-            })
-            .eq('id', currentLeadId);
-
-        if (updateError) throw updateError;
       }
 
       const isComplete = await checkEstimateStatus(currentLeadId, skip);
