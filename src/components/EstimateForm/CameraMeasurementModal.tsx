@@ -293,7 +293,7 @@ export function CameraMeasurementModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleCloseModal}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg  ">
                 {/* Add a close button in the top-right corner */}
                 <button 
                     onClick={handleCloseModal}
@@ -316,7 +316,7 @@ export function CameraMeasurementModal({
 
                 {/* Step 1: Upload Photos */}
                 {step === 'upload' && (
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[70vh] overflow-y-scroll">
                         {isCameraOpen ? (
                             <div className="space-y-4">
                                 <div className="relative">

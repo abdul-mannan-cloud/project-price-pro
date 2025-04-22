@@ -596,7 +596,7 @@ export type Database = {
         | "bold"
         | "excel"
       question_template_type: "single_choice" | "multi_choice"
-      question_type: "multiple_choice" | "multi_select" | "yes_no"
+      question_type: "multiple_choice" | "multi_select" | "yes_no" | "number_input" | "text_input" | "camera_measurement" | "measurement_input" | "single_choice"
       subscription_status: "active" | "inactive" | "trial"
     }
     CompositeTypes: {

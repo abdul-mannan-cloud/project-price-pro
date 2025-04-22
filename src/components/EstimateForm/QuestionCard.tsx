@@ -85,8 +85,7 @@ export const QuestionCard = ({
 
     // Set initial values from selectedAnswers
     useEffect(() => {
-        console.log("I AM SOMETHINGGGGGGGGGG", selectedAnswers, question);
-        
+
         if (selectedAnswers.length > 0) {
             setNextButtonDisable(false);
             if (question.type === 'text_input') {
@@ -112,8 +111,7 @@ export const QuestionCard = ({
         } else {
             // Reset values when question changes
             setNextButtonDisable(true);
-            console.log("Setting false disbaling");
-            
+
             setTextInputValue("");
             setNumberInputValue("");
             setOptionInputValues({});
@@ -288,9 +286,6 @@ export const QuestionCard = ({
             return;
         }
 
-        // Always update input state
-        setMeasurementValue(value);
-
         const numValue = parseFloat(value);
 
         if (!isNaN(numValue)) {
@@ -342,28 +337,6 @@ export const QuestionCard = ({
         //setNextButtonDisable?.(false);
     };
 
-    const handleInputMethodSelect = (option: any) => {
-        setSelectedInputMethod(option.type);
-        setActiveInputOption(option);
-
-        if (option.type === 'camera_measurement') {
-            handleCameraClick(option);
-        } else if (option.type === 'number_input') {
-            // Focus on input field if it's a number input
-            setTimeout(() => {
-                if (numberInputRef.current) {
-                    numberInputRef.current.focus();
-                }
-            }, 100);
-        } else if (option.type === 'text_input') {
-            // Focus on input field if it's a text input
-            setTimeout(() => {
-                if (textInputRef.current) {
-                    textInputRef.current.focus();
-                }
-            }, 100);
-        }
-    };
 
     const shouldShowImage = (option: any) => {
         if (!option.image_url) return false;
@@ -450,6 +423,49 @@ export const QuestionCard = ({
             </div>
         );
     };
+
+    useEffect(() => {
+        // Reset values when question changes
+        if (selectedAnswers.length > 0) {
+            setNextButtonDisable?.(false);
+            if (question.type === 'text_input') {
+                setTextInputValue(selectedAnswers[0] || "");
+            } else if (question.type === 'number_input') {
+                setNumberInputValue(selectedAnswers[0] || "");
+            } else if (question.type === 'measurement_input' || question.type === 'camera_measurement') {
+                setMeasurementValue(selectedAnswers[0] || "");
+            } else if (question.type === 'single_choice') {
+                // For single choice, we need to check if the selected answer is an option with special input
+                const selectedOption = question.options.find(opt => opt.value === selectedAnswers[0]);
+                if (selectedOption && (selectedOption.type === 'text_input' || selectedOption.type === 'number_input')) {
+                    // If this option has additional input, we need to set its value if available
+                    if (selectedAnswers.length > 1) {
+                        setOptionInputValues({
+                            ...optionInputValues,
+                            [selectedAnswers[0]]: selectedAnswers[1]
+                        });
+                    }
+                }
+            }
+        } else {
+            // Reset values when question changes
+            setNextButtonDisable?.(true);
+            setTextInputValue("");
+            setNumberInputValue("");
+            setMeasurementValue(""); // This was missing or not effectively clearing
+            setOptionInputValues({});
+        }
+    }, [question.id, selectedAnswers]);
+
+// Additionally, add this useEffect to ensure measurement value is reset when question type changes
+    useEffect(() => {
+        // This will ensure measurement values are reset when the question type changes
+        if (question.type !== 'measurement_input' && question.type !== 'camera_measurement') {
+            setMeasurementValue("");
+        } else if (selectedAnswers.length === 0) {
+            setMeasurementValue("");
+        }
+    }, [question.type, question.id]);
 
     // Render number input
     const renderNumberInput = (inputOption = null) => {

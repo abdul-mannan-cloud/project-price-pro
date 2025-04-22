@@ -18,7 +18,7 @@ export interface Option {
 export interface Question {
   id: string;
   question: string;
-  type: 'yes_no' | 'single_choice' | 'multiple_choice' | 'measurement_input' | 'text_input' | 'image_input' | 'camera_measurement';
+  type: 'yes_no' | 'single_choice' | 'multiple_choice' | 'measurement_input' | 'text_input' | 'image_input' | 'camera_measurement' | 'number_input';
   order: number;
   options: Option[];
   next?: string;
@@ -40,7 +40,7 @@ export interface Question {
 
 export interface QuestionAnswer {
   question: string;
-  type: 'yes_no' | 'single_choice' | 'multiple_choice' | 'measurement_input' | 'text_input' | 'image_input';
+  type: 'yes_no' | 'single_choice' | 'multiple_choice' | 'measurement_input' | 'text_input' | 'image_input' | 'camera_measurement' | 'number_input';
   answers: string[];
   options: {
     label: string;
