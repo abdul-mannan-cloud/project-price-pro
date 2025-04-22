@@ -15,6 +15,7 @@ interface QuestionOptionProps {
     showImage: boolean;
     onInputChange?: (value: string) => void;
     inputValue?: string;
+    setNextButtonDisable?: (show: boolean) => void;
 }
 
 export const QuestionOption = ({
@@ -24,6 +25,7 @@ export const QuestionOption = ({
                                    onClick,
                                    showImage,
                                    onInputChange,
+                                   setNextButtonDisable,
                                    inputValue = ""
                                }: QuestionOptionProps) => {
     // Determine if this option has a special input type (text_input or number_input)
@@ -69,6 +71,7 @@ export const QuestionOption = ({
             if (value.length > charLimit) {
                 setError(`Input is too long. Maximum ${charLimit} characters allowed.`);
                 hasError = true;
+                setNextButtonDisable(true);
             }
         }
 
@@ -77,15 +80,18 @@ export const QuestionOption = ({
             if (value !== "" && !/^\d*\.?\d*$/.test(value)) {
                 setError("Only numbers and decimals are allowed.");
                 hasError = true;
+                setNextButtonDisable(true);
             } else {
                 const numValue = parseFloat(value);
                 if (!isNaN(numValue)) {
                     if (option.min !== undefined && numValue < option.min) {
                         setError(`Value must be at least ${option.min}`);
                         hasError = true;
+                        setNextButtonDisable(true);
                     } else if (option.max !== undefined && numValue > option.max) {
                         setError(`Value must be at most ${option.max}`);
                         hasError = true;
+                        setNextButtonDisable(true);
                     }
                 }
             }
@@ -98,6 +104,7 @@ export const QuestionOption = ({
                 if (!regex.test(value)) {
                     setError(option.validation_message || "Please enter valid input");
                     hasError = true;
+                    setNextButtonDisable(true);
                 }
             } catch (e) {
                 console.error("Invalid regex pattern:", option.validation);
@@ -107,6 +114,7 @@ export const QuestionOption = ({
         if (!hasError) {
             setError("");
             onInputChange?.(value);
+            setNextButtonDisable(false);
         }
     };
 

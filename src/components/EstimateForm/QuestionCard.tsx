@@ -31,7 +31,7 @@ interface QuestionCardProps {
     totalStages: number;
     hasFollowUpQuestion?: boolean;
     contractor?: Contractor;
-    setShowNextButton?: (show: boolean) => void;
+    setNextButtonDisable?: (show: boolean) => void;
 }
 
 export const QuestionCard = ({
@@ -44,7 +44,7 @@ export const QuestionCard = ({
                                  totalStages,
                                  hasFollowUpQuestion = true,
                                  contractor,
-                                 setShowNextButton
+                                 setNextButtonDisable
                              }: QuestionCardProps) => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [measurementValue, setMeasurementValue] = useState("");
@@ -85,15 +85,18 @@ export const QuestionCard = ({
 
     // Set initial values from selectedAnswers
     useEffect(() => {
+        console.log("I AM SOMETHINGGGGGGGGGG", selectedAnswers, question);
+        
         if (selectedAnswers.length > 0) {
+            setNextButtonDisable(false);
             if (question.type === 'text_input') {
                 setTextInputValue(selectedAnswers[0] || "");
             } else if (question.type === 'number_input') {
                 setNumberInputValue(selectedAnswers[0] || "");
             } else if (question.type === 'measurement_input' || question.type === 'camera_measurement') {
                 setMeasurementValue(selectedAnswers[0] || "");
-                setShowNextButton?.(true);
             } else if (question.type === 'single_choice') {
+                // if(selectedAnswers[0] === 'custom_size' && )
                 // For single choice, we need to check if the selected answer is an option with special input
                 const selectedOption = question.options.find(opt => opt.value === selectedAnswers[0]);
                 if (selectedOption && (selectedOption.type === 'text_input' || selectedOption.type === 'number_input')) {
@@ -108,12 +111,15 @@ export const QuestionCard = ({
             }
         } else {
             // Reset values when question changes
+            setNextButtonDisable(true);
+            console.log("Setting false disbaling");
+            
             setTextInputValue("");
             setNumberInputValue("");
             setOptionInputValues({});
-            setShowNextButton?.(true);
         }
     }, [question.id, selectedAnswers]);
+
 
     useEffect(() => {
         questionLoadTime.current = Date.now();
@@ -122,7 +128,7 @@ export const QuestionCard = ({
         setSelectedInputMethod(null);
         setActiveInputOption(null);
 
-        setShowNextButton?.(question.type === 'multiple_choice' ? selectedAnswers.length > 0 : selectedAnswers.length >= 1);
+        //setNextButtonDisable?.(question.type === 'multiple_choice' ? selectedAnswers.length > 0 : selectedAnswers.length >= 1);
 
         setIsProcessing(false);
     }, [question.id, selectedAnswers]);
@@ -133,19 +139,23 @@ export const QuestionCard = ({
                 ? selectedAnswers.filter(v => v !== value)
                 : [...selectedAnswers, value];
             onSelect(question.id, newSelection);
+            setNextButtonDisable(false);
         } else {
             if (isProcessing) return;
             setIsProcessing(true);
 
             // For single_choice with special input types
             if (option && (option.type === 'text_input' || option.type === 'number_input')) {
-                // Just select the option, don't auto-advance
-                // If we already have an input value for this option, include it
                 const optionValue = optionInputValues[value] || "";
                 onSelect(question.id, [value, optionValue]);
+
+                setNextButtonDisable(true);
+                // Just select the option, don't auto-advance
+                // If we already have an input value for this option, include it
             } else {
                 // Regular option selection
                 onSelect(question.id, [value]);
+                setNextButtonDisable(false);
             }
 
             setTimeout(() => {
@@ -155,13 +165,11 @@ export const QuestionCard = ({
     };
 
     const handleOptionInputChange = (optionValue: string, inputValue: string) => {
-        // Update the option input values
+        //setNextButtonDisable(true)
         setOptionInputValues({
             ...optionInputValues,
             [optionValue]: inputValue
         });
-
-        // Update the selected answer with both the option value and input value
         onSelect(question.id, [optionValue, inputValue]);
     };
 
@@ -176,7 +184,7 @@ export const QuestionCard = ({
         const charLimit = activeInputOption?.character_limit || question.character_limit;
         if (charLimit && value.length > parseInt(charLimit)) {
             setError(`Input is too long. Maximum ${charLimit} characters allowed.`);
-            setShowNextButton?.(false);
+            //setNextButtonDisable?.(false);
             hasError = true;
         }
 
@@ -187,7 +195,7 @@ export const QuestionCard = ({
                 const regex = new RegExp(validationRegex);
                 if (!regex.test(value)) {
                     setError(activeInputOption?.validation_message || question.validation_message || "Please enter valid input");
-                    setShowNextButton?.(false);
+                    //setNextButtonDisable?.(false);
                     hasError = true;
                 }
             } catch (e) {
@@ -198,7 +206,7 @@ export const QuestionCard = ({
         if (!hasError) {
             setError("");
             onSelect(question.id, [value]);
-            setShowNextButton?.(value.trim().length > 0);
+            //setNextButtonDisable?.(value.trim().length > 0);
         }
     };
 
@@ -208,7 +216,7 @@ export const QuestionCard = ({
         // Validate that input is a valid number
         if (value !== "" && !/^\d*\.?\d*$/.test(value)) {
             setError("Only numbers and decimals are allowed.");
-            setShowNextButton?.(false);
+            setNextButtonDisable(true);
             return;
         }
 
@@ -216,7 +224,7 @@ export const QuestionCard = ({
 
         if (value === "") {
             setError("");
-            setShowNextButton?.(false);
+            setNextButtonDisable(true);
             return;
         }
 
@@ -230,11 +238,11 @@ export const QuestionCard = ({
         if (!isNaN(numValue)) {
             if (minValue !== undefined && numValue < parseFloat(minValue)) {
                 setError(`Value must be at least ${minValue}`);
-                setShowNextButton?.(false);
+                setNextButtonDisable(true);
                 hasError = true;
             } else if (maxValue !== undefined && numValue > parseFloat(maxValue)) {
                 setError(`Value must be at most ${maxValue}`);
-                setShowNextButton?.(false);
+                setNextButtonDisable(true);
                 hasError = true;
             }
         }
@@ -246,7 +254,7 @@ export const QuestionCard = ({
                 const regex = new RegExp(validationRegex);
                 if (!regex.test(value)) {
                     setError(activeInputOption?.validation_message || question.validation_message || "Please enter a valid number");
-                    setShowNextButton?.(false);
+                    setNextButtonDisable(true);
                     hasError = true;
                 }
             } catch (e) {
@@ -257,7 +265,9 @@ export const QuestionCard = ({
         if (!hasError) {
             setError("");
             onSelect(question.id, [value]);
-            setShowNextButton?.(true);
+            setNextButtonDisable(false);
+            console.log("Enabling the next button");
+            
         }
     };
 
@@ -267,13 +277,13 @@ export const QuestionCard = ({
         // Allow only numbers and one optional dot
         if (!/^\d*\.?\d*$/.test(value)) {
             setError("Only numbers and decimals are allowed.");
-            setShowNextButton?.(true);
+            setNextButtonDisable(true);
             return;
         }
 
         if (value === "") {
             setError("");
-            setShowNextButton?.(true);
+            setNextButtonDisable(true);
             setMeasurementValue(value);
             return;
         }
@@ -286,12 +296,12 @@ export const QuestionCard = ({
         if (!isNaN(numValue)) {
             if (question?.options?.[0]?.min !== undefined && numValue < question?.options[0]?.min) {
                 setError(`Value must be at least ${question.options[0].min} ${question.unit || ''}`);
-                setShowNextButton?.(true);
+                setNextButtonDisable(true);
                 return;
             }
             if (question.options?.[0]?.max !== undefined && numValue > question.options[0].max) {
                 setError(`Value must be at most ${question.options[0].max} ${question.unit || ''}`);
-                setShowNextButton?.(true);
+                setNextButtonDisable(true);
                 return;
             }
         }
@@ -301,7 +311,7 @@ export const QuestionCard = ({
             const regex = new RegExp(question.validation);
             if (!regex.test(value)) {
                 setError(question.validation_message || "Please enter a valid measurement");
-                setShowNextButton?.(true);
+                setNextButtonDisable(true);
                 return;
             }
         }
@@ -309,7 +319,8 @@ export const QuestionCard = ({
         // All good
         onSelect(question.id, [value]);
         setError("");
-        setShowNextButton?.(false);
+        setNextButtonDisable(false);
+        console.log("Enabling the next button");
     };
 
     const handleCameraClick = (option?: any) => {
@@ -328,7 +339,7 @@ export const QuestionCard = ({
         // Update the selected answer but don't call onSelect which would advance to next question
         onSelect(question.id, [value]);
         // Enable next button - user will need to click Continue manually
-        setShowNextButton?.(false);
+        //setNextButtonDisable?.(false);
     };
 
     const handleInputMethodSelect = (option: any) => {
@@ -682,6 +693,7 @@ export const QuestionCard = ({
                         {options.map((option) => (
                             <QuestionOption
                                 key={option.value || option.label}
+                                setNextButtonDisable={setNextButtonDisable}
                                 option={option}
                                 isSelected={selectedAnswers.includes(option.value)}
                                 type={question.type}

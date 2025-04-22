@@ -66,6 +66,7 @@ export const QuestionManager = ({
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [isMeasurementInputReady, setIsMeasurementInputReady] = useState(false);
     const [nextButtonDisabled, setNextButtonDisabled] = useState(true);
+    const [disableNextButton, setDisableNextButton] = useState(true);
 
     // Update history when current question changes
     useEffect(() => {
@@ -206,7 +207,7 @@ export const QuestionManager = ({
                 totalStages={totalStages}
                 hasFollowUpQuestion={hasFollowUpQuestion}
                 contractor={contractor}
-                setShowNextButton={setNextButtonDisabled}
+                setNextButtonDisable={setDisableNextButton}
             />
 
             {shouldShowNavButtons && (
@@ -231,9 +232,9 @@ export const QuestionManager = ({
                         onClick={() => {
                             handleNext();
                         }}
-                        disabled={nextButtonDisabled}
+                        disabled={disableNextButton}
                         className={cn(
-                            "flex items-center gap-2 px-6 py-5 text-base font-medium transition-all duration-200 w-40 bg-primary text-primary-foreground"
+                            "flex items-center gap-2 px-6 py-5 text-base disabled:opacity-20 font-medium transition-all duration-200 w-40 bg-primary text-primary-foreground"
                         )}
                     >
                         Continue
