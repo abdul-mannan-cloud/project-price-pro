@@ -85,18 +85,35 @@ export const ContactForm = ({
     setIsSubmitting(true);
   
     try {
-      const { email } = formData;
-  
       if (!leadId) {
         console.error('Missing leadId in ContactForm');
         throw new Error("Unable to process your request at this time");
       }
-  
+
+      const { error: updateError } = await supabase
+          .from('leads')
+          .update({
+            user_name: formData.fullName,
+            user_email: formData.email,
+            user_phone: formData.phone,
+            project_address: formData.address,
+            available_time: timePreference.timeOfDay,
+            available_date: timePreference.date,
+            flexible: timePreference.flexibility
+          })
+          .eq('id', leadId);
+
+      if (updateError) {
+        console.error('Supabase update error:', updateError);
+        throw updateError;
+      }
+
       onSubmit({
         ...formData,
         timePreference
       });
-  
+
+
     } catch (error: any) {
       console.error('Error processing form:', error);
       setIsSubmitting(false);
@@ -165,7 +182,9 @@ export const ContactForm = ({
             <form onSubmit={handleSubmit} className="space-y-6">
               <ContactFormFields
                   formData={formData}
-                  onChange={(field, value) => setFormData(prev => ({ ...prev, [field]: value }))}
+                  onChange={(field, value) => setFormData((prev) => {
+                    return ({...prev, [field]: value})
+                  })}
               />
 
               {/* Time Availability Component */}
