@@ -56,6 +56,7 @@ const Settings = () => {
   const [businessAddress, setBusinessAddress] = useState("");
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+  const [websiteInput, setWebsiteInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionRef = useRef(null);
   const addressInputRef = useRef(null);
@@ -82,6 +83,23 @@ const Settings = () => {
       return data;
     },
   });
+
+  useEffect(() => {
+    if (contractor?.website) {
+      setWebsiteInput(contractor.website);
+    }
+  }, [contractor]);
+
+  const handleWebsiteChange = (e) => {
+    let value = e.target.value;
+
+    // If user is starting to type and hasn't entered a protocol yet
+    if (value && !value.startsWith('http://') && !value.startsWith('https://')) {
+      value = 'https://' + value;
+    }
+
+    setWebsiteInput(value);
+  };
 
   const { data: aiInstructions, isLoading: aiInstructionsLoading } = useQuery({
     queryKey: ["aiInstructions"],
@@ -568,12 +586,12 @@ const Settings = () => {
                     </div>
                   )}
                 </div>
-
                 <Input
                     label={t("Website")}
                     name="website"
                     type="url"
-                    defaultValue={contractor?.website}
+                    value={websiteInput}
+                    onChange={handleWebsiteChange}
                 />
                 <Input
                     label={t("License Number")}

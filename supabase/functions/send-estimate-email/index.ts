@@ -199,16 +199,21 @@ ${generateEstimateItemsHtml(estimateData)}
               <h3>Contractor Information</h3>
               <p><strong>Name:</strong> ${contractorName}</p>
               <p><strong>Email:</strong> ${contractorEmail}</p>
-              <p><strong>Phone:</strong> ${contractorPhone}</p>
+           <li><strong>Phone:</strong> <a href="tel:${contractorPhone}" style="color: #1a73e8; text-decoration: none;">${contractorPhone}</a></li>
             </div>
 
             <p>You can view and respond to this estimate online by clicking the button below:</p>
-            <a href="${estimateUrl}" class="
-                background-color: #4F46E5;
-                color: white;
-                text-decoration: none;
-                border-radius: 6px;
-            ">View Estimate</a>
+            <a href="${estimateUrl}" style="
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: #4F46E5;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 16px;
+    margin-top: 10px;
+">View Estimate</a>
             
             <p>A PDF copy of this estimate is also attached to this email for your records.</p>
             
