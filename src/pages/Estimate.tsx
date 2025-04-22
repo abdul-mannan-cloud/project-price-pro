@@ -284,12 +284,12 @@ const EstimatePage = () => {
             <GlobalBrandingLoader contractorId={urlContractorId}/>
             <div className="min-h-screen bg-secondary">
                 {isAuthenticated && authenticatedContractor?.id === urlContractorId && (
-                    <div className="w-screen bg-white border-b border-gray-200 flex justify-between py-2 align-middle items-center px-20">
-                        <div className="flex gap-5  items-center">
+                    <div className="w-screen bg-white border-b border-gray-200 flex justify-between py-2 align-middle items-center px-3 md:px-20">
+                        <div className="flex gap-2 md:gap-5  items-center">
                             <img src={contractor.business_logo_url} className="w-10 h-10" alt=""/>
                             <span className="font-bold">{contractor.business_name}</span>
                         </div>
-                        <div className="flex gap-10">
+                        <div className="flex md:gap-10 md:flex-row flex-col text-xs md:text-[16px]">
                             <span><span className="font-semibold">Phone: </span>{contractor.contact_phone}</span>
                             <span><span className="font-semibold">Email: </span>{contractor.contact_email}</span>
                         </div>
