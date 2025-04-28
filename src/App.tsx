@@ -19,8 +19,8 @@ import "./App.css";
 import {IconTrafficCone} from "@tabler/icons-react";
 import {ContractorProvider} from "@/hooks/useContractor.tsx";
 import Spinner from "./components/ui/spinner";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacyPolicy from "./pages/privacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
+import PrivacyPolicy from "@/pages/privacyPolicy";
 
 const queryClient = new QueryClient({
   defaultOptions: {
