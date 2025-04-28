@@ -71,19 +71,17 @@ export function Footerdemo() {
               <h3 className="text-sm font-semibold text-gray-900">Legal</h3>
               <ul role="list" className="mt-6 space-y-4">
                 <li>
-                  <button 
-                    onClick={() => setShowPrivacy(true)} 
+                  <button  
                     className="text-sm text-gray-600 hover:text-gray-900"
                   >
-                    Privacy Policy
+                    <a href="/privacy-policy">Privacy Policy</a>
                   </button>
                 </li>
                 <li>
                   <button 
-                    onClick={() => setShowTerms(true)} 
                     className="text-sm text-gray-600 hover:text-gray-900"
                   >
-                    Terms of Service
+                    <a href="/terms-of-service">Terms of Service</a>
                   </button>
                 </li>
                 <li>
