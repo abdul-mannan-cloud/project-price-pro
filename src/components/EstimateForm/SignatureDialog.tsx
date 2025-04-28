@@ -56,7 +56,7 @@ export const SignatureDialog = ({
       if (contractorId) {
         const { data: contractor, error: contractorError } = await supabase
           .from('contractors')
-          .select('contact_email')
+          .select('contact_email,business_name')
           .eq('id', contractorId)
           .single();
 
@@ -69,7 +69,8 @@ export const SignatureDialog = ({
             contractorEmail: contractor.contact_email,
             estimateData,
             estimateUrl: `${window.location.origin}/estimate/${leadId}`,
-            clientName: initials
+            clientName: initials,
+            businessName: contractor.business_name,
           }
         });
 
