@@ -154,7 +154,8 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
           customerEmail: emailRecipient,
           estimateData: lead?.estimate_data,
           estimateUrl,
-          contractorId: effectiveContractorId
+          contractorId: effectiveContractorId,
+          businessName: contractor?.business_name,
         },
       });
 
