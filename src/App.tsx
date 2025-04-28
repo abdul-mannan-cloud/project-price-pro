@@ -20,7 +20,7 @@ import {IconTrafficCone} from "@tabler/icons-react";
 import {ContractorProvider} from "@/hooks/useContractor.tsx";
 import Spinner from "./components/ui/spinner";
 import TermsOfService from "@/pages/TermsOfService";
-import PrivacyPolicy from "@/pages/privacyPolicy";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient({
   defaultOptions: {
