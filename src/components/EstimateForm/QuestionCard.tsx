@@ -85,9 +85,12 @@ export const QuestionCard = ({
 
     // Set initial values from selectedAnswers
     useEffect(() => {
-
         if (selectedAnswers.length > 0) {
-            setNextButtonDisable(false);
+            if (selectedAnswers[0] === 'custom_size' && !selectedAnswers[1]) {
+                setNextButtonDisable(true);
+            } else {
+                setNextButtonDisable(false);
+            }
             if (question.type === 'text_input') {
                 setTextInputValue(selectedAnswers[0] || "");
             } else if (question.type === 'number_input') {
@@ -146,7 +149,6 @@ export const QuestionCard = ({
             if (option && (option.type === 'text_input' || option.type === 'number_input')) {
                 const optionValue = optionInputValues[value] || "";
                 onSelect(question.id, [value, optionValue]);
-
                 setNextButtonDisable(true);
                 // Just select the option, don't auto-advance
                 // If we already have an input value for this option, include it
@@ -264,8 +266,6 @@ export const QuestionCard = ({
             setError("");
             onSelect(question.id, [value]);
             setNextButtonDisable(false);
-            console.log("Enabling the next button");
-            
         }
     };
 
@@ -285,6 +285,9 @@ export const QuestionCard = ({
             setMeasurementValue(value);
             return;
         }
+
+        // Always update input state
+        setMeasurementValue(value);
 
         const numValue = parseFloat(value);
 
@@ -315,7 +318,6 @@ export const QuestionCard = ({
         onSelect(question.id, [value]);
         setError("");
         setNextButtonDisable(false);
-        console.log("Enabling the next button");
     };
 
     const handleCameraClick = (option?: any) => {
