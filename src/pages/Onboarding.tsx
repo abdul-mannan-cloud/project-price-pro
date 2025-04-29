@@ -10,6 +10,7 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import {Loader2} from "lucide-react";
 import { set } from "date-fns";
 import { cn } from "@/lib/utils";
+import PricingPlans from "@/components/PricingPlans";
 
 type OnboardingStep = 0 | 1 | 2;
 
@@ -674,64 +675,35 @@ const Onboarding = () => {
       case OnboardingSteps.PRICING:
         return (
           <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
-                Business Settings
-              </h1>
-              <p className="text-[15px] text-[#86868b]">
-                Configure your business settings for estimates and invoices.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
-              <div className="space-y-4">
-                <Input
-                  id="minimumProjectCost"
-                  name="minimumProjectCost"
-                  type="number"
-                  label="Minimum Project Cost ($)"
-                  value={formData.minimumProjectCost}
-                  onChange={handleInputChange}
-                />
-
-                <Input
-                  id="markupPercentage"
-                  name="markupPercentage"
-                  type="number"
-                  label="Markup Percentage (%)"
-                  value={formData.markupPercentage}
-                  onChange={handleInputChange}
-                />
-
-                <Input
-                  id="taxRate"
-                  name="taxRate"
-                  type="number"
-                  label="Tax Rate (%)"
-                  value={formData.taxRate}
-                  onChange={handleInputChange}
-                />
-
-                <div className="flex justify-between pt-6">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
-                    disabled={loading}
-                    className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleNext}
-                    // disabled={loading}
-                    className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Saving..." : "Next"}
-                  </Button>
-                </div>
+              <div className="text-center space-y-2">
+                <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
+                  Pricing Plans
+                </h1>
+                <p className="text-[15px] text-[#86868b]">
+                  Select the pricing plan to proceed further
+                </p>
               </div>
+              <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-6">
+              <PricingPlans />
+              <div className="flex justify-between pt-6">
+              <Button
+                variant="ghost"
+                onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
+                disabled={loading}
+                className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
+              >
+                Back
+              </Button>
+              <Button
+                onClick={handleNext}
+                // disabled={loading}
+                className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
+              >
+                {loading ? "Saving..." : "Next"}
+              </Button>
             </div>
           </div>
+        </div>
         );
         case OnboardingSteps.Payment_METHOD:
           return (
