@@ -458,6 +458,25 @@ const Onboarding = () => {
     updateGlobalColors(formData.primaryColor, newColor);
   };
 
+
+  const createContact = async () => {
+    try {
+      const response = supabase.functions.invoke('create-contact', {
+        body: {
+          email: "m.khizerr01@gmail.com",
+          firstName: "khizer",
+          lastName: "test",
+          audienceId: "78261eea-8f8b-4381-83c6-79fa7120f1cf",
+        },
+      });
+  
+      console.log("Contact created successfully:", response);
+    } catch (error) {
+      console.error("Failed to create contact:", error);
+    }
+  };
+  
+
   const renderStep = () => {
     switch (currentStep) {
       case OnboardingSteps.BUSINESS_INFO:
@@ -718,7 +737,12 @@ const Onboarding = () => {
               </div>
   
               <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
-                
+                <Button
+                  onClick={createContact}
+                  // disabled={loading}
+                  className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
+                >Create
+                </Button>              
               </div>
             </div>
           );
