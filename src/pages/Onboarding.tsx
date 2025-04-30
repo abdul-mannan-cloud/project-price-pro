@@ -469,8 +469,15 @@ const Onboarding = () => {
           audienceId: "78261eea-8f8b-4381-83c6-79fa7120f1cf",
         },
       });
+
+      const stripeResponse =  supabase.functions.invoke('create-stripe-customer', {
+        body: {
+          email: "m.khizerr01@gmail.com",
+          name: "khizer",
+        }
+      });
   
-      console.log("Contact created successfully:", response);
+      console.log("Contact created successfully:", response, stripeResponse);
     } catch (error) {
       console.error("Failed to create contact:", error);
     }
