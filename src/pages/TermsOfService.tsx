@@ -1,10 +1,28 @@
+import { useNavigate } from "react-router-dom";
 import { Header1 } from "@/components/ui/header";
 
 const TermsOfService = () => {
+    const navigate = useNavigate();
+
+    const handleBack = () => {
+        if (window.history.length > 2) {
+            navigate(-1); // Go back to the previous page in history
+        } else {
+            navigate("/"); // Fallback to home if there's no history
+        }
+    };
+
     return (
         <div className="px-4 md:px-20 py-10 max-w-6xl mx-auto">
             <Header1 />
             <div className="mt-12 text-gray-700 text-base leading-relaxed">
+                <button
+                    onClick={handleBack}
+                    className="text-primary hover:underline text-sm mb-4"
+                >
+                    ← Back
+                </button>
+
                 <h1>Terms of Service</h1>
                 <p>Last Updated: 3/14/2025</p>
 
