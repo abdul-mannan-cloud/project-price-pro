@@ -21,6 +21,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const navigate = useNavigate();
@@ -240,6 +241,15 @@ const Login = () => {
   const handleSignUp = async (e) => {
     e.preventDefault();
     if (!validateSignUpForm()) return;
+
+    if (!acceptTerms) {
+      toast({
+        title: "Accept Terms",
+        description: "Please accept the terms and conditions to proceed.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -585,6 +595,19 @@ const Login = () => {
                       required
                       minLength={6}
                   />
+                  <div className="w-full flex flex-row gap-2 items-center justify-start">
+                  <Input
+                      id="acceptTerms"
+                      type="checkbox"
+                      onChange={(e) => setAcceptTerms(e.target.checked)}
+                      required
+                      minLength={6}
+                      className="w-5 h-5"
+                  />
+                    <label htmlFor="acceptTerms" className="text-sm text-gray-600">
+                      I accept the <a href="/terms-of-service" className="underline">terms of services</a>
+                    </label>
+                  </div>
                   <Button
                       type="submit"
                       className="w-full"
