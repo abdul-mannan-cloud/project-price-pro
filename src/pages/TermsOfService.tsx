@@ -6,9 +6,9 @@ const TermsOfService = () => {
 
     const handleBack = () => {
         if (window.history.length > 2) {
-            navigate(-1); // Go back to the previous page in history
+            navigate(-1);
         } else {
-            navigate("/"); // Fallback to home if there's no history
+            navigate("/");
         }
     };
 
@@ -106,6 +106,17 @@ const TermsOfService = () => {
                     <p>
                         We reserve the right to suspend or terminate accounts that violate these Terms or engage in fraudulent activities.
                     </p>
+                </section>
+
+                <section>
+                    <h2 className="text-lg font-semibold leading-none tracking-tight my-4">11. SMS Terms</h2>
+                    <ul className="list-disc list-inside space-y-2 text-[15px] text-muted-foreground px-5">
+                        <li>By providing your phone number and opting in, you consent to receive text messages from Estimatrix related to service updates, appointment reminders, estimate alerts, and promotional offers.</li>
+                        <li>Message frequency may vary. Message and data rates may apply depending on your mobile carrier and plan.</li>
+                        <li>You can opt out at any time by replying STOP to any message. You may also reply HELP for assistance.</li>
+                        <li>If you unsubscribe, you will no longer receive text communications from Estimatrix unless you opt in again by replying START.</li>
+                        <li>We will never sell or share your mobile number with third parties for marketing purposes. See our <a href="https://estimatrix.io/privacy-policy" className="text-primary underline">Privacy Policy</a> for more details on how your information is used.</li>
+                    </ul>
                 </section>
             </div>
         </div>

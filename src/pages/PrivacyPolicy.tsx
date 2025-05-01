@@ -25,6 +25,7 @@ const PrivacyPolicy = () => {
                         <li><strong>Project Details:</strong> Information users provide about their construction project.</li>
                         <li><strong>Payment Information:</strong> Credit/debit card details, billing address (processed securely).</li>
                         <li><strong>Technical Data:</strong> IP address, device information, browsing activity on our site.</li>
+                        <li><strong>SMS Consent Data:</strong> If you opt in to receive text messages, we collect your mobile number and record your opt-in status, preferences, and related SMS communications.</li>
                     </ul>
                 </section>
 
@@ -33,7 +34,8 @@ const PrivacyPolicy = () => {
                     <ul className="list-disc list-inside space-y-2 text-[15px] text-muted-foreground px-5">
                         <li>Generating construction estimates using AI.</li>
                         <li>Connecting users with contractors who can provide services.</li>
-                        <li>Marketing and promotional activities (email campaigns, special offers, etc.).</li>
+                        <li>Sending service notifications and updates via SMS if opted in.</li>
+                        <li>Providing marketing and promotional offers (via email or SMS, if consent is given).</li>
                         <li>Analyzing website performance using tracking tools like Google Analytics.</li>
                         <li>Processing payments securely through third-party payment providers.</li>
                     </ul>
@@ -43,7 +45,7 @@ const PrivacyPolicy = () => {
                     <h2 className="text-lg font-semibold leading-none tracking-tight my-4">4. Data Sharing with Contractors & Third Parties</h2>
                     <ul className="list-disc list-inside space-y-2 text-[15px] text-muted-foreground px-5">
                         <li>Contractors to provide project estimates and services.</li>
-                        <li>Third-party service providers (e.g., payment processors, analytics tools).</li>
+                        <li>Third-party service providers (e.g., SMS providers, payment processors, analytics tools).</li>
                     </ul>
                     <p className="mt-2">
                         All third-party providers follow data protection regulations to ensure user privacy.
@@ -53,17 +55,20 @@ const PrivacyPolicy = () => {
                 <section>
                     <h2 className="text-lg font-semibold leading-none tracking-tight my-4">5. Legal Basis for Processing (GDPR Compliance)</h2>
                     <ul className="list-disc list-inside space-y-2 text-[15px] text-muted-foreground px-5">
-                        <li>Performance of a contract (to provide estimates and connect users with contractors).</li>
-                        <li>Legitimate interests (marketing and service improvements).</li>
-                        <li>User consent (for marketing communications).</li>
+                        <li><strong>Performance of a contract:</strong> To provide estimates and connect users with contractors.</li>
+                        <li><strong>Legitimate interests:</strong> To improve services and communicate updates.</li>
+                        <li><strong>User consent:</strong> For marketing and SMS communications.</li>
                     </ul>
+                    <p className="mt-2">
+                        Users may revoke SMS or email marketing consent at any time.
+                    </p>
                 </section>
 
                 <section>
                     <h2 className="text-lg font-semibold leading-none tracking-tight my-4">6. Data Security & Retention</h2>
                     <ul className="list-disc list-inside space-y-2 text-[15px] text-muted-foreground px-5">
                         <li><strong>Encryption & Secure Storage:</strong> All personal and payment data is encrypted and stored securely.</li>
-                        <li><strong>Retention Period:</strong> User data is stored indefinitely unless a deletion request is made.</li>
+                        <li><strong>Retention Period:</strong> User data is stored indefinitely unless a deletion request is made. SMS opt-in records are retained for compliance purposes even after unsubscribing.</li>
                     </ul>
                 </section>
 
@@ -74,11 +79,14 @@ const PrivacyPolicy = () => {
                         <li><strong>Right to access:</strong> Request a copy of the data we hold about you.</li>
                         <li><strong>Right to rectify:</strong> Correct inaccurate or incomplete data.</li>
                         <li><strong>Right to erase:</strong> Request deletion of your data.</li>
-                        <li><strong>Right to object:</strong> Opt out of certain data processing (e.g., marketing).</li>
+                        <li><strong>Right to object:</strong> Opt out of certain data processing (e.g., marketing or SMS).</li>
                         <li><strong>Right to data portability:</strong> Request your data in a structured format.</li>
                     </ul>
                     <p className="mt-2">
                         To exercise any of these rights, please contact us at: <span className="text-blue-600 underline">[Insert Contact Email]</span>
+                    </p>
+                    <p className="mt-2">
+                        To stop receiving SMS messages, reply <strong>STOP</strong> at any time. For assistance, reply <strong>HELP</strong>.
                     </p>
                 </section>
 
@@ -98,6 +106,6 @@ const PrivacyPolicy = () => {
             </div>
         </div>
     );
-}
+};
 
 export default PrivacyPolicy;
