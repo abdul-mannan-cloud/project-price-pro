@@ -1,4 +1,3 @@
-
 import {BrowserRouter, Routes, Route, Navigate, useParams} from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -21,11 +20,15 @@ import {ContractorProvider} from "@/hooks/useContractor.tsx";
 import Spinner from "./components/ui/spinner";
 import TermsOfService from "@/pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+// Import AddLinePage component
+import AddLinePage from "@/components/EstimateForm/AddLinePage";
 
+// Configure the query client with retry options
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: 3, // Increase retry attempts for better reliability
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30000), // Exponential backoff
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000,
     },
@@ -61,7 +64,6 @@ const setColorVariables = (colors: { primary: string; secondary: string }) => {
 };
 
 function GlobalBrandingLoader() {
-
   const { data: session } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
@@ -86,7 +88,6 @@ function GlobalBrandingLoader() {
         return null;
       }
 
-
       const colors = contractor.branding_colors as { primary: string; secondary: string } | null;
       if (colors) {
         setColorVariables(colors);
@@ -100,9 +101,9 @@ function GlobalBrandingLoader() {
 
 function App() {
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
-  const {contractorId} = useParams()
+  const {contractorId} = useParams();
 
-  console.log('contractor parameter id:', contractorId)
+  console.log('contractor parameter id:', contractorId);
 
   useEffect(() => {
     const initialize = async () => {
@@ -128,7 +129,6 @@ function App() {
 
   if (!isAuthInitialized) return ( 
     <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-      {/* <div className="text-lg">Loading...</div> */}
       <Spinner />
     </div>
   )
@@ -136,26 +136,34 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ContractorProvider>
-      <GlobalBrandingLoader />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Login />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/estimate/:contractorId?" element={<Estimate />} />
-          <Route path="/e/:id" element={<PublicEstimate />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/team-onboarding" element={<TeamOnboarding />} />
-          <Route path="/terms-of-service" element={<TermsOfService />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster />
-      </BrowserRouter>
+        <GlobalBrandingLoader />
+        <BrowserRouter>
+          <Routes>
+            {/* Main Routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/leads" element={<Leads />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/estimate/:contractorId?" element={<Estimate />} />
+            <Route path="/e/:id" element={<PublicEstimate />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/team-onboarding" element={<TeamOnboarding />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            
+            {/* Add Line Item routes - all possible patterns for compatibility */}
+            <Route path="/leads/:leadId/add-line" element={<AddLinePage />} />
+            <Route path="/add-line/:leadId" element={<AddLinePage />} />
+            <Route path="/dashboard/add-line/:leadId" element={<AddLinePage />} />
+            
+            {/* Catch-all route for 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster />
+        </BrowserRouter>
       </ContractorProvider>
     </QueryClientProvider>
   );

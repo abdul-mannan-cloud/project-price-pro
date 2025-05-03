@@ -1,15 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { Copy, FileDown, RefreshCw, Settings, Menu } from "lucide-react";
+import { Copy, FileDown, RefreshCw, Settings, Menu, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import html2pdf from 'html2pdf.js';
+import html2pdf from "html2pdf.js";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuItem
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
 interface EstimateActionsProps {
@@ -19,270 +20,240 @@ interface EstimateActionsProps {
   onShowSettings: () => void;
   onShowAIPreferences: () => void;
   styles: Record<string, string>;
-  contractor?: any;
-  projectSummary?: string;
   groups: any[];
   totalCost: number;
   leadId: string;
+  contractor?: any;
+  projectSummary?: string;
 }
 
-export const EstimateActions = ({
-                                  isContractor,
-                                  companyName,
-                                  onRefreshEstimate,
-                                  onShowSettings,
-                                  onShowAIPreferences,
-                                  styles,
-                                  contractor,
-                                  projectSummary,
-                                  groups,
-                                  totalCost,
-                                  leadId
-                                }: EstimateActionsProps) => {
+export const EstimateActions: React.FC<EstimateActionsProps> = ({
+  isContractor,
+  companyName,
+  onRefreshEstimate,
+  onShowSettings,
+  onShowAIPreferences,
+  styles,
+  groups,
+  totalCost,
+  leadId,
+  contractor,
+  projectSummary,
+}) => {
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 640px)");
   const [isExporting, setIsExporting] = useState(false);
+  const navigate = useNavigate();
 
-  const handleExportPDF = () => {
-    const element = document.getElementById('estimate-content');
-    if (!element) return;
-
-    // Set exporting state
-    setIsExporting(true);
-
-    // Hide action buttons during export
-    const actionButtons = document.getElementById('estimate-actions');
-    if (actionButtons) {
-      actionButtons.style.display = 'none';
-    }
-
-    // Create a loading toast
-    toast({
-      title: "Generating PDF",
-      description: "Please wait while your PDF is being created...",
-    });
-
-    // Add a slight delay to ensure UI updates before PDF generation
-    setTimeout(() => {
-      // Improved options for better image rendering and page formatting
-      const opt = {
-        margin: [15, 15, 20, 15], // [top, right, bottom, left] - extra bottom margin to prevent cutoff
-        filename: `${companyName}-estimate.pdf`,
-        image: {
-          type: 'jpeg',
-          quality: 1.0 // Maximum image quality
-        },
-        html2canvas: {
-          scale: 2,
-          useCORS: true, // Allow cross-origin images
-          logging: false,
-          letterRendering: true,
-          allowTaint: true, // Important for including images
-          imageTimeout: 0, // No timeout for images
-          backgroundColor: '#ffffff' // Ensure white background
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'portrait',
-          compress: true,
-          putOnlyUsedFonts: true
-        },
-        pagebreak: { mode: 'avoid-all' } // Try to avoid breaking elements across pages
-      };
-
-      // Wait for all images to load before generating PDF
-      const images = element.getElementsByTagName('img');
-      const imagePromises = Array.from(images).map(img => {
-        if (img.complete) return Promise.resolve();
-        return new Promise(resolve => {
-          img.onload = resolve;
-          img.onerror = resolve; // Continue even if image fails to load
-        });
-      });
-
-      Promise.all(imagePromises)
-          .then(() => {
-            return html2pdf()
-                .set(opt)
-                .from(element)
-                .toPdf() // Convert to PDF
-                .get('pdf') // Get the PDF object
-                .then(pdf => {
-                  // Add metadata
-                  pdf.setProperties({
-                    title: `${companyName} Estimate`,
-                    subject: 'Project Estimate',
-                    creator: companyName,
-                    author: companyName
-                  });
-                  return pdf;
-                })
-                .save(); // Save the PDF
-          })
-          .then(() => {
-            // Restore UI elements
-            if (actionButtons) {
-              actionButtons.style.display = 'flex';
-            }
-
-            // Success notification
-            toast({
-              title: "PDF exported successfully",
-              description: "Your estimate has been saved as a PDF file",
-            });
-            setIsExporting(false);
-          })
-          .catch(error => {
-            console.error("PDF generation error:", error);
-
-            // Restore UI elements
-            if (actionButtons) {
-              actionButtons.style.display = 'flex';
-            }
-
-            // Error notification
-            toast({
-              title: "Error",
-              description: "Failed to export PDF. Please try again.",
-              variant: "destructive",
-            });
-            setIsExporting(false);
-          });
-    }, 100);
-  };
-
-  const handleCopyEstimate = () => {
+  // Improved handleAddLineItem function that uses session storage for data persistence
+  const handleAddLineItem = () => {
     if (!leadId) {
       toast({
         title: "Error",
-        description: "Lead ID is missing.",
+        description: "Cannot add line item without lead ID",
         variant: "destructive",
       });
       return;
     }
 
-    const estimateLink = `${window.location.origin}/e/${leadId}`;
-
-    navigator.clipboard.writeText(estimateLink)
-        .then(() => {
+    console.log("Navigating to add line item page with leadId:", leadId);
+    
+    // Store essential data in session storage to ensure it's available after navigation
+    try {
+      const dataToStore = {
+        leadId: leadId,
+        estimateData: {
+          groups,
+          totalCost
+        },
+        contractorId: contractor?.id || null,
+        projectSummary: projectSummary || ""
+      };
+      
+      console.log("Storing estimate data in session storage:", dataToStore);
+      sessionStorage.setItem('pendingAddLine', JSON.stringify(dataToStore));
+    } catch (error) {
+      console.error("Failed to store estimate data in session storage:", error);
+    }
+    
+    // Navigate with multiple fallbacks in case the primary path fails
+    try {
+      // Add contractor ID as query parameter if available
+      const queryParams = contractor?.id ? `?cid=${contractor.id}` : '';
+      navigate(`/add-line/${leadId}${queryParams}`);
+    } catch (error) {
+      console.error("Navigation error:", error);
+      
+      try {
+        navigate(`/leads/${leadId}/add-line`);
+      } catch (error2) {
+        console.error("Second navigation attempt failed:", error2);
+        
+        try {
+          navigate(`/dashboard/add-line/${leadId}`);
+        } catch (error3) {
+          console.error("All navigation attempts failed:", error3);
           toast({
-            title: "Success",
-            description: "Estimate link copied to clipboard",
-          });
-        })
-        .catch((error) => {
-          console.error("Error copying estimate link:", error);
-          toast({
-            title: "Error",
-            description: "Failed to copy estimate link.",
+            title: "Navigation Error",
+            description: "Could not navigate to add line item page. Please try again.",
             variant: "destructive",
           });
-        });
+        }
+      }
+    }
   };
 
-  // Mobile dropdown menu version
+  const handleExportPDF = () => {
+    const element = document.getElementById("estimate-content");
+    if (!element) return;
+    setIsExporting(true);
+    const actionButtons = document.getElementById("estimate-actions");
+    if (actionButtons) actionButtons.style.display = "none";
+
+    toast({
+      title: "Generating PDF",
+      description: "Please wait…",
+    });
+
+    setTimeout(() => {
+      const opt = {
+        margin: [15, 15, 20, 15],
+        filename: `${companyName}-estimate.pdf`,
+        image: { type: "jpeg", quality: 1.0 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#fff",
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: "avoid-all" },
+      };
+
+      const images = element.getElementsByTagName("img");
+      const promises = Array.from(images).map((img) =>
+        img.complete
+          ? Promise.resolve()
+          : new Promise((r) => {
+              img.onload = r;
+              img.onerror = r;
+            })
+      );
+
+      Promise.all(promises)
+        .then(() =>
+          html2pdf()
+            .set(opt)
+            .from(element)
+            .toPdf()
+            .get("pdf")
+            .then((pdf) => {
+              pdf.setProperties({
+                title: `${companyName} Estimate`,
+                author: companyName,
+              });
+              return pdf;
+            })
+            .save()
+        )
+        .then(() => {
+          if (actionButtons) actionButtons.style.display = "flex";
+          toast({ title: "PDF ready" });
+          setIsExporting(false);
+        })
+        .catch((e) => {
+          console.error(e);
+          if (actionButtons) actionButtons.style.display = "flex";
+          toast({
+            title: "Error exporting",
+            variant: "destructive",
+          });
+          setIsExporting(false);
+        });
+    }, 100);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard
+      .writeText(`${window.origin}/e/${leadId}`)
+      .then(() => toast({ title: "Link copied" }))
+      .catch(() =>
+        toast({
+          title: "Copy failed",
+          variant: "destructive",
+        })
+      );
+  };
+
+  // Mobile dropdown menu
   if (isMobile) {
     return (
-        <div className={cn(styles.buttonsContainer, "flex justify-end")} id="estimate-actions">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={isExporting}
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {isContractor && (
-                  <>
-                    <DropdownMenuItem onClick={onRefreshEstimate}>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Refresh Results
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={onShowAIPreferences}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      AI Preferences
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={onShowSettings}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      Estimate Settings
-                    </DropdownMenuItem>
-                  </>
-              )}
-              <DropdownMenuItem onClick={handleCopyEstimate}>
-                <Copy className="h-4 w-4 mr-2" />
-                Copy Link
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF} disabled={isExporting}>
-                <FileDown className="h-4 w-4 mr-2" />
-                {isExporting ? "Exporting..." : "Export PDF"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+      <div className={cn(styles.buttonsContainer, "flex justify-end")} id="estimate-actions">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" disabled={isExporting}>
+              <Menu className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {isContractor && (
+              <>
+                <DropdownMenuItem onClick={onRefreshEstimate}>
+                  <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onShowAIPreferences}>
+                  <Settings className="mr-2 h-4 w-4" /> AI Prefs
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onShowSettings}>
+                  <Settings className="mr-2 h-4 w-4" /> Settings
+                </DropdownMenuItem>
+                {leadId && (
+                  <DropdownMenuItem onClick={handleAddLineItem}>
+                    <Plus className="mr-2 h-4 w-4" /> Add Line Item
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
+            <DropdownMenuItem onClick={handleCopy}>
+              <Copy className="mr-2 h-4 w-4" /> Copy Link
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportPDF} disabled={isExporting}>
+              <FileDown className="mr-2 h-4 w-4" /> PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     );
   }
 
-  // Desktop version with buttons
+  // Desktop buttons
   return (
-      <div className={styles.buttonsContainer} id="estimate-actions">
-        {isContractor && (
-            <>
-              <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onRefreshEstimate}
-                  className={styles.button}
-                  title="Refresh estimate"
-              >
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Refresh
-              </Button>
-              <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onShowAIPreferences}
-                  className={styles.button}
-                  title="AI Preferences"
-              >
-                <Settings className="h-4 w-4 mr-1" />
-                AI Preferences
-              </Button>
-              <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onShowSettings}
-                  className={styles.button}
-                  title="Template Settings"
-              >
-                <Settings className="h-4 w-4 mr-1" />
-                Settings
-              </Button>
-            </>
-        )}
-        <Button
-            variant="ghost"
-            size="sm"
-            className={cn("gap-1", styles.button)}
-            onClick={handleCopyEstimate}
-        >
-          <Copy className="h-4 w-4" />
-          Copy
+    <div className={styles.buttonsContainer} id="estimate-actions">
+      {isContractor && (
+        <>
+          <Button variant="ghost" size="sm" onClick={onRefreshEstimate}>
+            <RefreshCw className="mr-1 h-4 w-4" /> Refresh
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onShowAIPreferences}>
+            <Settings className="mr-1 h-4 w-4" /> AI Prefs
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onShowSettings}>
+            <Settings className="mr-1 h-4 w-4" /> Settings
+          </Button>
+        </>
+      )}
+
+      <Button variant="ghost" size="sm" onClick={handleCopy}>
+        <Copy className="h-4 w-4" /> Copy
+      </Button>
+      <Button variant="ghost" size="sm" onClick={handleExportPDF} disabled={isExporting}>
+        <FileDown className="h-4 w-4" /> PDF
+      </Button>
+      {isContractor && leadId && (
+        <Button variant="ghost" size="sm" onClick={handleAddLineItem}>
+          <Plus className="h-4 w-4" /> Add Line Item
         </Button>
-        <Button
-            variant="ghost"
-            size="sm"
-            className={cn("gap-1", styles.button)}
-            onClick={handleExportPDF}
-            disabled={isExporting}
-        >
-          <FileDown className="h-4 w-4" />
-          {isExporting ? "Exporting..." : "PDF"}
-        </Button>
-      </div>
+      )}
+    </div>
   );
 };

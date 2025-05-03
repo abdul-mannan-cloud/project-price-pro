@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,22 +39,14 @@ export const CategoryGrid = ({
   const [matchedCategory, setMatchedCategory] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
 
-  // useEffect(() => {
-  //   const findMatch = async () => {
-  //     if (description) {
-  //       const match = await findBestMatchingCategory(description);
-  //       if (match) {
-  //         console.log('Found matching category:', match);
-  //         setMatchedCategory(match.categoryId);
-  //         onSelectCategory(match.categoryId);
-  //       }
-  //     }
-  //   };
-  //
-  //   findMatch();
-  // }, [description, onSelectCategory]);
+  // Set initial selection if there's a selectedCategory prop
+  useEffect(() => {
+    if (selectedCategory && !selectedCategories.has(selectedCategory)) {
+      setSelectedCategories(new Set([selectedCategory]));
+    }
+  }, [selectedCategory]);
 
-
+  // For backwards compatibility - ensure the function works with both array and single string parameters
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategories(prev => {
       const newSet = new Set(prev);
@@ -78,7 +69,7 @@ export const CategoryGrid = ({
       });
 
     if (sortedSelectedCategories.length > 0) {
-      onSelectCategory(sortedSelectedCategories); // Start with the first category
+      onSelectCategory(sortedSelectedCategories); // Pass array to onSelectCategory
     }
   };
 
@@ -164,5 +155,4 @@ export const CategoryGrid = ({
       </div>
     </div>
   );
-};
-
+}
