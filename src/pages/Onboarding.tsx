@@ -11,7 +11,7 @@ import {Loader2} from "lucide-react";
 import { set } from "date-fns";
 import { cn } from "@/lib/utils";
 import PricingPlans from "@/components/PricingPlans";
-import AddPaymentMethod from "@/components/ui/addPaymentMethod";
+import PaymentMethodForm from "@/components/Onboarding/PaymentMethodForms";
 
 type OnboardingStep = 0 | 1 | 2;
 
@@ -19,7 +19,7 @@ const OnboardingSteps = {
   BUSINESS_INFO: 0,
   BRANDING: 1,
   PRICING: 2,
-  PAYMENT_METHOD: 3,
+  Payment_METHOD: 3,
 } as const;
 
 const CONSTRUCTION_INDUSTRIES = [
@@ -223,160 +223,170 @@ const Onboarding = () => {
     return requiredFields.every(field => formData[field as keyof typeof formData]);
   };
 
-  const handleSubmit = async () => {
-    setLoading(true);
-    try {
-      // const { data: { user } } = await supabase.auth.getUser();
+  // const handleSubmit = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const { data: { user } } = await supabase.auth.getUser();
 
-      // if (!user) {
-      //   toast({
-      //     title: "Error",
-      //     description: "No authenticated user found. Please log in again.",
-      //     variant: "destructive",
-      //   });
-      //   return;
-      // }
+  //     if (!user) {
+  //       toast({
+  //         title: "Error",
+  //         description: "No authenticated user found. Please log in again.",
+  //         variant: "destructive",
+  //       });
+  //       return;
+  //     }
 
-      // // First, try to get existing contractor
-      // const { data: existingContractor, error: fetchError } = await supabase
-      //     .from("contractors")
-      //     .select('id')
-      //     .eq('user_id', user.id)
-      //     .maybeSingle();
+  //     // First, try to get existing contractor
+  //     const { data: existingContractor, error: fetchError } = await supabase
+  //         .from("contractors")
+  //         .select('id')
+  //         .eq('user_id', user.id)
+  //         .maybeSingle();
 
-      // if (fetchError) throw fetchError;
+  //     if (fetchError) throw fetchError;
 
-      // if (existingContractor) {
-      //   // Update existing contractor
-      //   const { error: updateError } = await supabase
-      //       .from("contractors")
-      //       .update({
-      //         business_name: formData.businessName,
-      //         contact_email: formData.contactEmail,
-      //         contact_phone: formData.contactPhone,
-      //         business_address: businessAddress,
-      //         license_number: formData.licenseNumber,
-      //         branding_colors: {
-      //           primary: formData.primaryColor,
-      //           secondary: formData.secondaryColor,
-      //         },
-      //       })
-      //       .eq('id', existingContractor.id);
+  //     if (existingContractor) {
+  //       // Update existing contractor
+  //       const { error: updateError } = await supabase
+  //           .from("contractors")
+  //           .update({
+  //             business_name: formData.businessName,
+  //             contact_email: formData.contactEmail,
+  //             contact_phone: formData.contactPhone,
+  //             business_address: businessAddress,
+  //             license_number: formData.licenseNumber,
+  //             branding_colors: {
+  //               primary: formData.primaryColor,
+  //               secondary: formData.secondaryColor,
+  //             },
+  //           })
+  //           .eq('id', existingContractor.id);
 
-      //   if (updateError) throw updateError;
+  //       if (updateError) throw updateError;
 
-      //   // Update settings with same ID
-      //   const { error: settingsError } = await supabase
-      //       .from("contractor_settings")
-      //       .update({
-      //         minimum_project_cost: parseFloat(formData.minimumProjectCost),
-      //         markup_percentage: parseFloat(formData.markupPercentage),
-      //         tax_rate: parseFloat(formData.taxRate),
-      //       })
-      //       .eq('id', existingContractor.id);
+  //       // Update settings with same ID
+  //       const { error: settingsError } = await supabase
+  //           .from("contractor_settings")
+  //           .update({
+  //             minimum_project_cost: parseFloat(formData.minimumProjectCost),
+  //             markup_percentage: parseFloat(formData.markupPercentage),
+  //             tax_rate: parseFloat(formData.taxRate),
+  //           })
+  //           .eq('id', existingContractor.id);
 
-      //   if (settingsError) throw settingsError;
-      // } else {
-      //   // Generate a new UUID
-      //   const newId = crypto.randomUUID();
+  //       if (settingsError) throw settingsError;
+  //     } else {
+  //       // Generate a new UUID
+  //       const newId = crypto.randomUUID();
 
-      //   // Create new contractor with specified ID
-      //   const { error: insertError } = await supabase
-      //       .from("contractors")
-      //       .insert({
-      //         id: newId,
-      //         user_id: user.id,
-      //         business_name: formData.businessName,
-      //         contact_email: formData.contactEmail,
-      //         contact_phone: formData.contactPhone,
-      //         business_address: formData.address,
-      //         license_number: formData.licenseNumber,
-      //         branding_colors: {
-      //           primary: formData.primaryColor,
-      //           secondary: formData.secondaryColor,
-      //         },
-      //       });
+  //       // Create new contractor with specified ID
+  //       const { error: insertError } = await supabase
+  //           .from("contractors")
+  //           .insert({
+  //             id: newId,
+  //             user_id: user.id,
+  //             business_name: formData.businessName,
+  //             contact_email: formData.contactEmail,
+  //             contact_phone: formData.contactPhone,
+  //             business_address: formData.address,
+  //             license_number: formData.licenseNumber,
+  //             branding_colors: {
+  //               primary: formData.primaryColor,
+  //               secondary: formData.secondaryColor,
+  //             },
+  //           });
 
-      //   if (insertError) throw insertError;
+  //       if (insertError) throw insertError;
 
-      //   // Create settings with same ID
-      //   const { error: settingsError } = await supabase
-      //       .from("contractor_settings")
-      //       .upsert({
-      //         id: newId,
-      //         minimum_project_cost: parseFloat(formData.minimumProjectCost),
-      //         markup_percentage: parseFloat(formData.markupPercentage),
-      //         tax_rate: parseFloat(formData.taxRate),
-      //       });
+  //       // Create settings with same ID
+  //       const { error: settingsError } = await supabase
+  //           .from("contractor_settings")
+  //           .upsert({
+  //             id: newId,
+  //             minimum_project_cost: parseFloat(formData.minimumProjectCost),
+  //             markup_percentage: parseFloat(formData.markupPercentage),
+  //             tax_rate: parseFloat(formData.taxRate),
+  //           });
 
-      //   if (settingsError) throw settingsError;
-      // }
+  //       if (settingsError) throw settingsError;
+  //     }
 
-      // toast({
-      //   title: "Information saved!",
-      //   description: "Your business information has been saved successfully.",
-      // });
+  //     toast({
+  //       title: "Information saved!",
+  //       description: "Your business information has been saved successfully.",
+  //     });
 
-      if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
-        navigate("/dashboard");
-      } else {
-        setCurrentStep((prev) => (prev + 1) as OnboardingStep);
-      }
-    } catch (error: any) {
-      console.error('Onboarding error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "An error occurred while saving your information.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+  //     if (currentStep === OnboardingSteps.SETTINGS) {
+  //       navigate("/dashboard");
+  //     } else {
+  //       setCurrentStep((prev) => (prev + 1) as OnboardingStep);
+  //     }
+  //   } catch (error: any) {
+  //     console.error('Onboarding error:', error);
+  //     toast({
+  //       title: "Error",
+  //       description: error.message || "An error occurred while saving your information.",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const handleNext = () => {
+    if (currentStep === OnboardingSteps.BUSINESS_INFO) {
+      setCurrentStep(OnboardingSteps.BRANDING);
+    } else if (currentStep === OnboardingSteps.BRANDING) {
+      setCurrentStep(OnboardingSteps.PRICING);
+    } else if (currentStep === OnboardingSteps.PRICING) {
+      setCurrentStep(OnboardingSteps.Payment_METHOD);  
     }
-  };
+  }
 
+    useEffect(() => {
+        const checkBusinessInfo = async () => {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    toast({
+                        title: "Error",
+                        description: "No authenticated user found. Please log in again.",
+                        variant: "destructive",
+                    });
+                    navigate("/login");
+                    return;
+                }
 
-  useEffect(() => {
-      const checkBusinessInfo = async () => {
-          try {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (!user) {
-                  toast({
-                      title: "Error",
-                      description: "No authenticated user found. Please log in again.",
-                      variant: "destructive",
-                  });
-                  navigate("/login");
-                  return;
-              }
+                // Check if the contractor exists
+                const { data: existingContractor, error } = await supabase
+                    .from("contractors")
+                    .select("id")
+                    .eq("user_id", user.id)
+                    .maybeSingle();
 
-              // Check if the contractor exists
-              const { data: existingContractor, error } = await supabase
-                  .from("contractors")
-                  .select("id")
-                  .eq("user_id", user.id)
-                  .maybeSingle();
+                if (error) throw error;
 
-              if (error) throw error;
+                // If the business info exists, redirect to dashboard
+                if (existingContractor) {
+                    // navigate("/dashboard");
+                    return;
+                }
 
-              // If the business info exists, redirect to dashboard
-              if (existingContractor) {
-                  // navigate("/dashboard");
-                  return;
-              }
+                setLoading(false); // No business info found, allow onboarding to continue
+            } catch (error: any) {
+                console.error("Error checking business info:", error);
+                toast({
+                    title: "Error",
+                    description: "Something went wrong while checking business information.",
+                    variant: "destructive",
+                });
+                setLoading(false);
+            }
+        };
 
-              setLoading(false); // No business info found, allow onboarding to continue
-          } catch (error: any) {
-              console.error("Error checking business info:", error);
-              toast({
-                  title: "Error",
-                  description: "Something went wrong while checking business information.",
-                  variant: "destructive",
-              });
-              setLoading(false);
-          }
-      };
-      //checkBusinessInfo();
-  }, [navigate, toast]);
+        checkBusinessInfo();
+    }, [navigate, toast]);
 
 
 
@@ -448,32 +458,6 @@ const Onboarding = () => {
     }));
     updateGlobalColors(formData.primaryColor, newColor);
   };
-
-
-  const createContact = async () => {
-    // try {
-    //   const response = supabase.functions.invoke('create-contact', {
-    //     body: {
-    //       email: "m.khizerr01@gmail.com",
-    //       firstName: "khizer",
-    //       lastName: "test",
-    //       audienceId: "78261eea-8f8b-4381-83c6-79fa7120f1cf",
-    //     },
-    //   });
-
-    //   const stripeResponse =  supabase.functions.invoke('create-stripe-customer', {
-    //     body: {
-    //       email: "m.khizerr01@gmail.com",
-    //       name: "khizer",
-    //     }
-    //   });
-  
-    //   console.log("Contact created successfully:", response, stripeResponse);
-    // } catch (error) {
-    //   console.error("Failed to create contact:", error);
-    // }
-  };
-  
 
   const renderStep = () => {
     switch (currentStep) {
@@ -617,7 +601,7 @@ const Onboarding = () => {
                     Back
                   </Button>
                   <Button
-                    onClick={handleSubmit}
+                    onClick={handleNext}
                     // disabled={!isBusinessInfoValid() || loading}
                     className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
                   >
@@ -677,7 +661,7 @@ const Onboarding = () => {
                     Back
                   </Button>
                   <Button
-                    onClick={handleSubmit}
+                    onClick={handleNext}
                     // disabled={loading}
                     className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
                   >
@@ -700,7 +684,7 @@ const Onboarding = () => {
                   Select the pricing plan to proceed further
                 </p>
               </div>
-              <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-6">
+            <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-6">
               <PricingPlans />
               <div className="flex justify-between pt-6">
               <Button
@@ -712,7 +696,7 @@ const Onboarding = () => {
                 Back
               </Button>
               <Button
-                onClick={handleSubmit}
+                onClick={handleNext}
                 // disabled={loading}
                 className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
               >
@@ -722,7 +706,7 @@ const Onboarding = () => {
           </div>
         </div>
         );
-        case OnboardingSteps.PAYMENT_METHOD:
+        case OnboardingSteps.Payment_METHOD:
           return (
             <div className="space-y-6">
               <div className="text-center space-y-2">
@@ -730,17 +714,28 @@ const Onboarding = () => {
                   Payment Method
                 </h1>
                 <p className="text-[15px] text-[#86868b]">
-                  Configure your payment method for estimates and invoices.
+                  Add a payment method to complete your account setup.
+                </p>
+                <p className="text-[15px] text-primary font-medium">
+                  Your card will not be charged now. You'll receive $1,000 in estimate credits to get started.
                 </p>
               </div>
-              <AddPaymentMethod customerId="12345667" />
-              <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
-                <Button
-                  onClick={createContact}
-                  // disabled={loading}
-                  className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
-                >Create
-                </Button>              
+  
+              <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8">
+                <PaymentMethodForm 
+                  onComplete={() => {
+                    toast({
+                      title: "Setup Complete",
+                      description: "Your account is now ready to use!",
+                    });
+                    navigate("/dashboard");
+                  }} 
+                />
+                
+                <div className="mt-6 text-xs text-center text-gray-500">
+                  <p>Your payment information is securely processed by Stripe.</p>
+                  <p>By adding a payment method, you agree to our Terms of Service and Privacy Policy.</p>
+                </div>
               </div>
             </div>
           );
