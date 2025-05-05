@@ -12,6 +12,7 @@ import { set } from "date-fns";
 import { cn } from "@/lib/utils";
 import PricingPlans from "@/components/PricingPlans";
 import PaymentMethodForm from "@/components/Onboarding/PaymentMethodForms";
+import AddPaymentMethod from "@/components/Onboarding/addPaymentMethod";
 
 type OnboardingStep = 0 | 1 | 2;
 
@@ -19,7 +20,7 @@ const OnboardingSteps = {
   BUSINESS_INFO: 0,
   BRANDING: 1,
   PRICING: 2,
-  Payment_METHOD: 3,
+  PAYMENT_METHOD: 3,
 } as const;
 
 const CONSTRUCTION_INDUSTRIES = [
@@ -223,126 +224,126 @@ const Onboarding = () => {
     return requiredFields.every(field => formData[field as keyof typeof formData]);
   };
 
-  // const handleSubmit = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const { data: { user } } = await supabase.auth.getUser();
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+    //   const { data: { user } } = await supabase.auth.getUser();
 
-  //     if (!user) {
-  //       toast({
-  //         title: "Error",
-  //         description: "No authenticated user found. Please log in again.",
-  //         variant: "destructive",
-  //       });
-  //       return;
-  //     }
+    //   if (!user) {
+    //     toast({
+    //       title: "Error",
+    //       description: "No authenticated user found. Please log in again.",
+    //       variant: "destructive",
+    //     });
+    //     return;
+    //   }
 
-  //     // First, try to get existing contractor
-  //     const { data: existingContractor, error: fetchError } = await supabase
-  //         .from("contractors")
-  //         .select('id')
-  //         .eq('user_id', user.id)
-  //         .maybeSingle();
+    //   // First, try to get existing contractor
+    //   const { data: existingContractor, error: fetchError } = await supabase
+    //       .from("contractors")
+    //       .select('id')
+    //       .eq('user_id', user.id)
+    //       .maybeSingle();
 
-  //     if (fetchError) throw fetchError;
+    //   if (fetchError) throw fetchError;
 
-  //     if (existingContractor) {
-  //       // Update existing contractor
-  //       const { error: updateError } = await supabase
-  //           .from("contractors")
-  //           .update({
-  //             business_name: formData.businessName,
-  //             contact_email: formData.contactEmail,
-  //             contact_phone: formData.contactPhone,
-  //             business_address: businessAddress,
-  //             license_number: formData.licenseNumber,
-  //             branding_colors: {
-  //               primary: formData.primaryColor,
-  //               secondary: formData.secondaryColor,
-  //             },
-  //           })
-  //           .eq('id', existingContractor.id);
+    //   if (existingContractor) {
+    //     // Update existing contractor
+    //     const { error: updateError } = await supabase
+    //         .from("contractors")
+    //         .update({
+    //           business_name: formData.businessName,
+    //           contact_email: formData.contactEmail,
+    //           contact_phone: formData.contactPhone,
+    //           business_address: businessAddress,
+    //           license_number: formData.licenseNumber,
+    //           branding_colors: {
+    //             primary: formData.primaryColor,
+    //             secondary: formData.secondaryColor,
+    //           },
+    //         })
+    //         .eq('id', existingContractor.id);
 
-  //       if (updateError) throw updateError;
+    //     if (updateError) throw updateError;
 
-  //       // Update settings with same ID
-  //       const { error: settingsError } = await supabase
-  //           .from("contractor_settings")
-  //           .update({
-  //             minimum_project_cost: parseFloat(formData.minimumProjectCost),
-  //             markup_percentage: parseFloat(formData.markupPercentage),
-  //             tax_rate: parseFloat(formData.taxRate),
-  //           })
-  //           .eq('id', existingContractor.id);
+    //     // Update settings with same ID
+    //     const { error: settingsError } = await supabase
+    //         .from("contractor_settings")
+    //         .update({
+    //           minimum_project_cost: parseFloat(formData.minimumProjectCost),
+    //           markup_percentage: parseFloat(formData.markupPercentage),
+    //           tax_rate: parseFloat(formData.taxRate),
+    //         })
+    //         .eq('id', existingContractor.id);
 
-  //       if (settingsError) throw settingsError;
-  //     } else {
-  //       // Generate a new UUID
-  //       const newId = crypto.randomUUID();
+    //     if (settingsError) throw settingsError;
+    //   } else {
+    //     // Generate a new UUID
+    //     const newId = crypto.randomUUID();
 
-  //       // Create new contractor with specified ID
-  //       const { error: insertError } = await supabase
-  //           .from("contractors")
-  //           .insert({
-  //             id: newId,
-  //             user_id: user.id,
-  //             business_name: formData.businessName,
-  //             contact_email: formData.contactEmail,
-  //             contact_phone: formData.contactPhone,
-  //             business_address: formData.address,
-  //             license_number: formData.licenseNumber,
-  //             branding_colors: {
-  //               primary: formData.primaryColor,
-  //               secondary: formData.secondaryColor,
-  //             },
-  //           });
+    //     // Create new contractor with specified ID
+    //     const { error: insertError } = await supabase
+    //         .from("contractors")
+    //         .insert({
+    //           id: newId,
+    //           user_id: user.id,
+    //           business_name: formData.businessName,
+    //           contact_email: formData.contactEmail,
+    //           contact_phone: formData.contactPhone,
+    //           business_address: formData.address,
+    //           license_number: formData.licenseNumber,
+    //           branding_colors: {
+    //             primary: formData.primaryColor,
+    //             secondary: formData.secondaryColor,
+    //           },
+    //         });
 
-  //       if (insertError) throw insertError;
+    //     if (insertError) throw insertError;
 
-  //       // Create settings with same ID
-  //       const { error: settingsError } = await supabase
-  //           .from("contractor_settings")
-  //           .upsert({
-  //             id: newId,
-  //             minimum_project_cost: parseFloat(formData.minimumProjectCost),
-  //             markup_percentage: parseFloat(formData.markupPercentage),
-  //             tax_rate: parseFloat(formData.taxRate),
-  //           });
+    //     // Create settings with same ID
+    //     const { error: settingsError } = await supabase
+    //         .from("contractor_settings")
+    //         .upsert({
+    //           id: newId,
+    //           minimum_project_cost: parseFloat(formData.minimumProjectCost),
+    //           markup_percentage: parseFloat(formData.markupPercentage),
+    //           tax_rate: parseFloat(formData.taxRate),
+    //         });
 
-  //       if (settingsError) throw settingsError;
-  //     }
+    //     if (settingsError) throw settingsError;
+    //   }
 
-  //     toast({
-  //       title: "Information saved!",
-  //       description: "Your business information has been saved successfully.",
-  //     });
+    //   toast({
+    //     title: "Information saved!",
+    //     description: "Your business information has been saved successfully.",
+    //   });
 
-  //     if (currentStep === OnboardingSteps.SETTINGS) {
-  //       navigate("/dashboard");
-  //     } else {
-  //       setCurrentStep((prev) => (prev + 1) as OnboardingStep);
-  //     }
-  //   } catch (error: any) {
-  //     console.error('Onboarding error:', error);
-  //     toast({
-  //       title: "Error",
-  //       description: error.message || "An error occurred while saving your information.",
-  //       variant: "destructive",
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  const handleNext = () => {
-    if (currentStep === OnboardingSteps.BUSINESS_INFO) {
-      setCurrentStep(OnboardingSteps.BRANDING);
-    } else if (currentStep === OnboardingSteps.BRANDING) {
-      setCurrentStep(OnboardingSteps.PRICING);
-    } else if (currentStep === OnboardingSteps.PRICING) {
-      setCurrentStep(OnboardingSteps.Payment_METHOD);  
+      if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
+        navigate("/dashboard");
+      } else {
+        setCurrentStep((prev) => (prev + 1) as OnboardingStep);
+      }
+    } catch (error: any) {
+      console.error('Onboarding error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred while saving your information.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+
+  // const handleNext = () => {
+  //   if (currentStep === OnboardingSteps.BUSINESS_INFO) {
+  //     setCurrentStep(OnboardingSteps.BRANDING);
+  //   } else if (currentStep === OnboardingSteps.BRANDING) {
+  //     setCurrentStep(OnboardingSteps.PRICING);
+  //   } else if (currentStep === OnboardingSteps.PRICING) {
+  //     setCurrentStep(OnboardingSteps.Payment_METHOD);  
+  //   }
+  // }
 
     useEffect(() => {
         const checkBusinessInfo = async () => {
@@ -385,10 +386,48 @@ const Onboarding = () => {
             }
         };
 
-        checkBusinessInfo();
+        //checkBusinessInfo();
     }, [navigate, toast]);
 
+    const [clientSecret, setClientSecret] = useState<string | null>(null);
 
+    const createContact = async () => {
+      try {
+        const response = supabase.functions.invoke('create-contact', {
+          body: {
+            email: "m.khizerr01@gmail.com",
+            firstName: "khizer",
+            lastName: "test",
+            audienceId: "78261eea-8f8b-4381-83c6-79fa7120f1cf",
+          },
+        });
+  
+        const stripeResponse = await supabase.functions.invoke('create-stripe-customer', {
+          body: {
+            email: "m.khizerr01@gmail.com",
+            name: "khizer",
+          }
+        });
+
+          
+        console.log("Contact created successfully:", response);
+        console.log("Stripe response:", stripeResponse);
+
+        if (stripeResponse.data && stripeResponse.data.clientSecret) {
+          setClientSecret(stripeResponse.data.clientSecret);
+        } else {
+          console.error("Failed to retrieve client_secret:", stripeResponse.error);
+        }
+
+        if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
+          navigate("/dashboard");
+        } else {
+          setCurrentStep((prev) => (prev + 1) as OnboardingStep);
+        }
+      } catch (error) {
+        console.error("Failed to create contact:", error);
+      }
+    };
 
 
     const updateGlobalColors = (primaryColor: string, secondaryColor: string) => {
@@ -601,7 +640,7 @@ const Onboarding = () => {
                     Back
                   </Button>
                   <Button
-                    onClick={handleNext}
+                    onClick={handleSubmit}
                     // disabled={!isBusinessInfoValid() || loading}
                     className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
                   >
@@ -661,7 +700,7 @@ const Onboarding = () => {
                     Back
                   </Button>
                   <Button
-                    onClick={handleNext}
+                    onClick={handleSubmit}
                     // disabled={loading}
                     className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
                   >
@@ -696,7 +735,7 @@ const Onboarding = () => {
                 Back
               </Button>
               <Button
-                onClick={handleNext}
+                onClick={createContact}
                 // disabled={loading}
                 className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
               >
@@ -706,7 +745,7 @@ const Onboarding = () => {
           </div>
         </div>
         );
-        case OnboardingSteps.Payment_METHOD:
+        case OnboardingSteps.PAYMENT_METHOD:
           return (
             <div className="space-y-6">
               <div className="text-center space-y-2">
@@ -722,15 +761,33 @@ const Onboarding = () => {
               </div>
   
               <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8">
-                <PaymentMethodForm 
+                {/* <PaymentMethodForm 
                   onComplete={() => {
                     toast({
                       title: "Setup Complete",
                       description: "Your account is now ready to use!",
                     });
-                    navigate("/dashboard");
+                    //navigate("/dashboard");
                   }} 
-                />
+                /> */}
+                <AddPaymentMethod customerName={'Abdul Mannan'} clientSecret={clientSecret} />
+                                <div className="flex justify-between pt-6">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
+                    disabled={loading}
+                    className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    // disabled={loading}
+                    className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
+                  >
+                    {loading ? "Saving..." : "Next"}
+                  </Button>
+                </div>
                 
                 <div className="mt-6 text-xs text-center text-gray-500">
                   <p>Your payment information is securely processed by Stripe.</p>

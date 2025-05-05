@@ -123,23 +123,23 @@ const PaymentMethodForm = ({ onComplete }) => {
     
     try {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      //const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) {
-        toast({
-          title: "Error",
-          description: "No authenticated user found. Please log in again.",
-          variant: "destructive",
-        });
-        navigate("/login");
-        return;
-      }
+      // if (!user) {
+      //   toast({
+      //     title: "Error",
+      //     description: "No authenticated user found. Please log in again.",
+      //     variant: "destructive",
+      //   });
+      //   navigate("/login");
+      //   return;
+      // }
       
       // Call Supabase Edge Function to create Stripe customer and attach payment method
-      const { data, error } = await supabase.functions.invoke('stripe-create-customer', {
+      const { data, error } = await supabase.functions.invoke('attach-payment-method', {
         body: {
-          userId: user.id,
-          email: user.email,
+          name: 'Khizer',
+          email: 'khizerch2001@gmail.com',
           paymentMethod: {
             card: {
               number: cardDetails.cardNumber.replace(/\s/g, ''),
@@ -148,7 +148,7 @@ const PaymentMethodForm = ({ onComplete }) => {
               cvc: cardDetails.cardCvc,
             },
             billing_details: {
-              name: cardDetails.cardName,
+              name: 'Khizer',
             }
           }
         }
