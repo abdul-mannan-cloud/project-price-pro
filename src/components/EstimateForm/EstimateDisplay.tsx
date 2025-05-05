@@ -1,25 +1,29 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import React, { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getTemplateStyles } from "@/lib/template-styles";
-import { useToast } from "@/hooks/use-toast";
-import { SettingsDialog } from "@/components/settings/SettingsDialog";
-import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplateSettings";
-import { AIPreferencesSettings } from "@/components/settings/AIPreferencesSettings";
-import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { SignatureDialog } from "./SignatureDialog";
-import { EstimateSkeleton } from "./EstimateSkeleton";
-import { EstimateAnimation } from "./EstimateAnimation";
 import { EstimateHeader } from "./EstimateHeader";
 import { EstimateActions } from "./EstimateActions";
-import { EstimateTable } from "./EstimateTable";
 import { EstimateTotals } from "./EstimateTotals";
 import { EstimateSignature } from "./EstimateSignature";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { EstimateSkeleton } from "./EstimateSkeleton";
+import { EstimateAnimation } from "./EstimateAnimation";
 
+// TABLES
+import { EstimateTable as EstimateTableReadOnly } from "./EstimateTable";
+import { EstimateTable as EstimateTableEditable } from "./EstimateTableEditable";
+
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { Json } from "@/integrations/supabase/types";
+
+/***********************
+ * TYPES               *
+ ***********************/
 export interface LineItem {
   title: string;
   description?: string;
@@ -39,6 +43,7 @@ export interface ItemGroup {
   name: string;
   description?: string;
   subgroups: SubGroup[];
+  subtotal?: number; // ensure present for math
 }
 
 export type ContractorDisplay = {
@@ -73,11 +78,14 @@ interface EstimateDisplayProps {
   isBlurred?: boolean;
   contractor?: ContractorDisplay;
   projectSummary?: string;
+  /** When `true` cells become editable & Add‑line row appears */
   isEditable?: boolean;
-  onEstimateChange?: (estimate: any) => void;
+  /** Fires after user edits anything */
+  onEstimateChange?: (updated: { groups: ItemGroup[]; totalCost: number }) => void;
   onSignatureComplete?: (initials: string) => void;
   projectImages?: string[];
   estimate?: any;
+  /** Show skeleton etc. */
   isLoading?: boolean;
   handleRefreshEstimate: (id: string) => void;
   leadId: string;
@@ -85,284 +93,160 @@ interface EstimateDisplayProps {
   handleContractSign: (leadId: string) => void;
 }
 
-export const EstimateDisplay = ({
-                                  groups = [],
-                                  totalCost = 0,
-                                  isBlurred = false,
-                                  contractor,
-                                  projectSummary,
-                                  isEditable = false,
-                                  onEstimateChange,
-                                  onSignatureComplete,
-                                  projectImages = [],
-                                  estimate,
-                                  isLoading: initialLoading = false,
-                                  handleRefreshEstimate,
-                                  leadId,
-                                  contractorParam,
-                                  handleContractSign
-                                }: EstimateDisplayProps) => {
-  const [showSettings, setShowSettings] = useState(false);
-  const [showAIPreferences, setShowAIPreferences] = useState(false);
-  const [contractorId, setContractorId] = useState<string>(contractorParam);
-  const [isContractor, setIsContractor] = useState(false);
-  const [showSignatureDialog, setShowSignatureDialog] = useState(false);
+/***********************
+ * COMPONENT           *
+ ***********************/
+export const EstimateDisplay: React.FC<EstimateDisplayProps> = ({
+  groups: incomingGroups = [],
+  totalCost: incomingTotal = 0,
+  isBlurred = false,
+  contractor,
+  projectSummary,
+  isEditable = false,
+  onEstimateChange,
+  onSignatureComplete,
+  projectImages = [],
+  estimate,
+  isLoading: initialLoading = false,
+  handleRefreshEstimate,
+  leadId,
+  contractorParam,
+  handleContractSign,
+}) => {
+  /*****************
+   * LOCAL STATE   *
+   *****************/
+  const [groups, setGroups] = useState<ItemGroup[]>(() =>
+    JSON.parse(JSON.stringify(incomingGroups))
+  );
+  const [loading, setLoading] = useState(initialLoading);
   const [signature, setSignature] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(initialLoading);
-  const [isEstimateReady, setIsEstimateReady] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const [showSignatureDialog, setShowSignatureDialog] = useState(false);
 
-  // Check if the screen is mobile-sized
-  const isMobile = useMediaQuery("(max-width: 640px)");
-  const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)");
-
+  /** Sync when parent replaces props */
   useEffect(() => {
-    if (!contractorId) {
-      getContractorId();
+    setGroups(JSON.parse(JSON.stringify(incomingGroups)));
+  }, [incomingGroups]);
+
+  /** Derived total */
+  const derivedTotal = useMemo(() => {
+    return groups.reduce((acc, g) => acc + (g.subtotal ?? 0), 0);
+  }, [groups]);
+
+  /** Bubble up after every edit */
+  useEffect(() => {
+    if (onEstimateChange) {
+      onEstimateChange({ groups, totalCost: derivedTotal });
     }
-  }, [contractorId]);
+  }, [groups, derivedTotal]);
 
-  const getContractorId = async () => {
-    const lead = await supabase
-        .from('leads')
-        .select('contractor_id')
-        .eq('id', leadId)
-        .single();
-    setContractorId(lead.data.contractor_id);
-  };
-
-  const { data: leadData } = useQuery({
-    queryKey: ['estimate-status', leadId],
-    queryFn: async () => {
-      if (!leadId) return null;
-
-      const { data, error } = await supabase
-          .from('leads')
-          .select('estimate_data, status')
-          .eq('id', leadId)
-          .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching lead:', error);
-        return null;
-      }
-
-      return data;
-    },
-    refetchInterval: !isEstimateReady ? 3000 : false,
-    enabled: !!leadId
-  });
-
+  /*****************
+   * SETTINGS FETCH *
+   *****************/
+  const contractorId = contractorParam;
   const { data: settings } = useQuery({
     queryKey: ["contractor-settings", contractorId],
     queryFn: async () => {
-
-      const { data, error } = await supabase
-          .from("contractor_settings")
-          .select("*")
-          .eq("id", contractorId)
-          .single();
-
-      if (error) throw error;
-      return data as ContractorSettings;
+      if (!contractorId) return {} as ContractorSettings;
+      const { data } = await supabase
+        .from("contractor_settings")
+        .select("*")
+        .eq("id", contractorId)
+        .single();
+      return (data || {}) as ContractorSettings;
     },
-    enabled: !!contractorId
+    enabled: !!contractorId,
   });
 
+  const styles = getTemplateStyles(
+    settings?.estimate_template_style ?? "modern"
+  );
 
-  useEffect(() => {
-    if (leadData) {
-      const isComplete = !!leadData.estimate_data && leadData.status === 'complete';
-      setIsEstimateReady(isComplete);
+  /*****************
+   * MEDIA Q        *
+   *****************/
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
-      if (isComplete && onEstimateChange) {
-        onEstimateChange(leadData.estimate_data);
-      }
-    }
-  }, [leadData]);
-
-  useEffect(() => {
-    const hasValidEstimate = groups?.length > 0 && totalCost > 0;
-    setIsEstimateReady(hasValidEstimate);
-  }, [groups, totalCost]);
-
-  useEffect(() => {
-    const checkContractorAccess = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: contractor } = await supabase.from('contractors').select('id').eq('user_id', user.id).maybeSingle();
-      if (user && contractor.id === contractorParam) {
-        setIsContractor(true);
-      }
-    };
-    checkContractorAccess();
-  }, [contractorId]);
-
+  /*****************
+   * SIGNATURE      *
+   *****************/
   const handleSignature = (initials: string) => {
     setSignature(initials);
-    if (onSignatureComplete) {
-      onSignatureComplete(initials);
-    }
-    handleContractSign(leadId)
+    onSignatureComplete?.(initials);
+    handleContractSign(leadId);
   };
 
-  const templateSettings = settings || {
-    estimate_template_style: 'modern',
-    estimate_signature_enabled: false,
-    estimate_client_message: '',
-    estimate_footer_text: '',
-    estimate_hide_subtotals: false,
-    estimate_compact_view: true
-  };
+  /*****************
+   * RENDER         *
+   *****************/
+  if (loading) return <EstimateSkeleton />;
 
-  const styles = getTemplateStyles(templateSettings.estimate_template_style);
-
-  if (isLoading) {
-    return <EstimateSkeleton />;
-  }
-
-
-  console.log('Contractor ID',contractorId)
-  console.log('settings',settings)
+  const TableComponent = isEditable ? EstimateTableEditable : EstimateTableReadOnly;
 
   return (
-      <>
-        {!isEstimateReady && (
-            <div className="fixed top-0 left-0 right-0 bg-primary text-white p-2 sm:p-4 text-center z-50 animate-in fade-in-0">
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4">
-                  {/*<EstimateAnimation />*/}
-                </div>
-                <span className="text-xs sm:text-sm">Generating your estimate...</span>
-              </div>
-            </div>
-        )}
+    <Card
+      className={cn(
+        styles.card,
+        isBlurred && "blur-md pointer-events-none",
+        "max-w-full mx-auto overflow-hidden"
+      )}
+    >
+      <div id="estimate-content" className="p-2 sm:p-4 md:p-6">
+        {/* Header */}
+        <EstimateHeader contractor={contractor} styles={styles} />
 
-        <Card className={cn(styles.card, isBlurred && "blur-md pointer-events-none", "max-w-full mx-auto overflow-hidden")}>
-          <div id="estimate-content" className="p-2 sm:p-4 md:p-6">
-            <div className={cn("flex flex-col sm:flex-row justify-between gap-4 sm:gap-2", isMobile ? "mb-4" : "")}>
-              <EstimateHeader contractor={contractor} styles={styles} />
-
-              <div className={cn(styles.headerContent, "mt-2 sm:mt-0")}>
-                <EstimateActions
-                    isContractor={isContractor}
-                    companyName={contractor?.business_name || 'Estimate'}
-                    onRefreshEstimate={async () => {
-                      handleRefreshEstimate(leadId);
-                    }}
-                    onShowSettings={() => setShowSettings(true)}
-                    onShowAIPreferences={() => setShowAIPreferences(true)}
-                    styles={styles}
-                    groups={groups || []}
-                    totalCost={totalCost || 0}
-                    contractor={contractor}
-                    projectSummary={projectSummary}
-                    leadId={leadId}
-                />
-              </div>
-            </div>
-
-            {estimate?.ai_generated_title && (
-                <h2 className={cn(styles.title, "mb-3 text-center text-base sm:text-lg md:text-xl")}>
-                  {estimate.ai_generated_title}
-                </h2>
-            )}
-
-            {(settings?.estimate_client_message || projectSummary) && (
-                <div className={cn(styles.message, "mb-4 sm:mb-6 text-sm sm:text-base")}>
-                  <p className={styles.text}>
-                    {settings?.estimate_client_message || projectSummary}
-                  </p>
-                </div>
-            )}
-
-            {projectImages && projectImages.length > 0 && (
-                <div className="mb-4 sm:mb-6 overflow-x-auto">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
-                    {projectImages.map((image, index) => (
-                        <div
-                            key={index}
-                            className="aspect-square relative rounded-lg overflow-hidden"
-                        >
-                          <img
-                              src={image}
-                              alt={`Project image ${index + 1}`}
-                              className="w-full h-full object-cover"
-                          />
-                        </div>
-                    ))}
-                  </div>
-                </div>
-            )}
-
-            <div className="overflow-x-auto">
-              <EstimateTable
-                  groups={groups}
-                  isLoading={isLoading}
-                  styles={styles}
-                  hideSubtotals={templateSettings.estimate_hide_subtotals || false}
-                  isMobile={isMobile}
-              />
-            </div>
-
-            <EstimateTotals
-                totalCost={totalCost}
-                isEstimateReady={isEstimateReady}
-                templateStyle={templateSettings.estimate_template_style || 'modern'}
-                styles={styles}
-                taxRate={settings?.tax_rate??0}
-            />
-
-            {templateSettings?.estimate_footer_text && (
-                <div className={cn("mt-6 sm:mt-8 pt-4 sm:pt-6 border-t", styles.text, "text-xs sm:text-sm")}>
-                  <p className="whitespace-pre-wrap">
-                    {templateSettings.estimate_footer_text}
-                  </p>
-                </div>
-            )}
-
-            {templateSettings?.estimate_signature_enabled && (
-                <EstimateSignature
-                    signature={signature}
-                    isEstimateReady={isEstimateReady}
-                    onSignatureClick={() => setShowSignatureDialog(true)}
-                    styles={styles}
-                />
-            )}
-          </div>
-        </Card>
-
-        <SignatureDialog
-            isOpen={showSignatureDialog}
-            onClose={() => setShowSignatureDialog(false)}
-            onSign={handleSignature}
+        {/* Actions */}
+        <EstimateActions
+          isContractor={false}
+          companyName={contractor?.business_name || "Estimate"}
+          onRefreshEstimate={() => handleRefreshEstimate(leadId)}
+          styles={styles}
+          groups={groups}
+          totalCost={derivedTotal}
+          contractor={contractor}
+          projectSummary={projectSummary}
+          leadId={leadId}
         />
 
+        {/* Dynamic table */}
+        <div className="overflow-x-auto">
+          <TableComponent
+            groups={groups}
+            isLoading={loading}
+            styles={styles}
+            hideSubtotals={settings?.estimate_hide_subtotals ?? false}
+            isMobile={isMobile}
+            isEditable={isEditable}
+            onGroupsChange={setGroups}
+          />
+        </div>
 
-        {isContractor && (
-            <>
-              {showSettings && (
-                  <SettingsDialog
-                      title="Estimate Settings"
-                      description="Customize how your estimates appear to clients"
-                      isOpen={showSettings}
-                      onClose={() => setShowSettings(false)}
-                  >
-                    <EstimateTemplateSettings contractorId={contractorId} />
-                  </SettingsDialog>
-              )}
-              {showAIPreferences && (
-                  <SettingsDialog
-                      title="AI Preferences"
-                      description="Configure AI settings for estimate generation"
-                      isOpen={showAIPreferences}
-                      onClose={() => setShowAIPreferences(false)}
-                  >
-                    <AIPreferencesSettings key={`ai-preferences-${showAIPreferences}`} />
-                  </SettingsDialog>
-              )}
-            </>
+        {/* Totals */}
+        <EstimateTotals
+          totalCost={derivedTotal}
+          isEstimateReady={true}
+          templateStyle={settings?.estimate_template_style ?? "modern"}
+          styles={styles}
+          taxRate={settings?.tax_rate ?? 0}
+        />
+
+        {/* Optional signature */}
+        {settings?.estimate_signature_enabled && (
+          <EstimateSignature
+            signature={signature}
+            isEstimateReady={true}
+            onSignatureClick={() => setShowSignatureDialog(true)}
+            styles={styles}
+          />
         )}
-      </>
+      </div>
+
+      {/* Signature dialog */}
+      <SignatureDialog
+        isOpen={showSignatureDialog}
+        onClose={() => setShowSignatureDialog(false)}
+        onSign={handleSignature}
+      />
+    </Card>
   );
 };
