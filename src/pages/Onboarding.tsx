@@ -14,7 +14,7 @@ import PricingPlans from "@/components/PricingPlans";
 import PaymentMethodForm from "@/components/Onboarding/PaymentMethodForms";
 import AddPaymentMethod from "@/components/Onboarding/addPaymentMethod";
 
-type OnboardingStep = 0 | 1 | 2;
+type OnboardingStep = 0 | 1 | 2 | 3;
 
 const OnboardingSteps = {
   BUSINESS_INFO: 0,
@@ -61,6 +61,9 @@ const Onboarding = () => {
     minimumProjectCost: "1000",
     markupPercentage: "20",
     taxRate: "8.5",
+    stripe_customer_id: null,
+    resend_contact_key: null,
+    tier: null
   });
 
     const [businessAddress, setBusinessAddress] = useState("");
@@ -69,7 +72,6 @@ const Onboarding = () => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const suggestionRef = useRef(null);
     const addressInputRef = useRef(null);
-
 
     useEffect(() => {
         if (formData?.address) {
@@ -156,6 +158,207 @@ const Onboarding = () => {
     contactPhone: false,
   });
 
+    useEffect(() => {
+        const checkBusinessInfo = async () => {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    toast({
+                        title: "Error",
+                        description: "No authenticated user found. Please log in again.",
+                        variant: "destructive",
+                    });
+                    navigate("/login");
+                    return;
+                }
+
+                const { data: existingContractor, error } = await supabase
+                    .from("contractors")
+                    .select("*")
+                    .eq("user_id", user.id)
+                    .maybeSingle();
+
+                if (error) throw error;
+
+                if (existingContractor.verfied) {
+                  navigate("/dashboard");
+                } else if (existingContractor.tier) {
+                  formData.tier = existingContractor.tier;
+                  formData.businessName = existingContractor.business_name;
+                  formData.contactEmail = existingContractor.contact_email;
+                  formData.contactPhone = existingContractor.contact_phone;
+                  formData.address = existingContractor.business_address;
+                  formData.licenseNumber = existingContractor.license_number;
+                  setCurrentStep(OnboardingSteps.PAYMENT_METHOD);
+                } else if (existingContractor.business_name 
+                    && existingContractor.contact_email  
+                    && existingContractor.contact_phone ) {
+                      formData.businessName = existingContractor.business_name;
+                      formData.contactEmail = existingContractor.contact_email;
+                      formData.contactPhone = existingContractor.contact_phone;
+                      formData.address = existingContractor.business_address;
+                      formData.licenseNumber = existingContractor.license_number;
+
+                      setCurrentStep(OnboardingSteps.PRICING);
+                    toast({
+                        title: "Business info exists",
+                        description: "Your business information has already been set up.",
+                    })
+                    return;
+                }  
+
+                setLoading(false); 
+            } catch (error: any) {
+                console.error("Error checking business info:", error);
+                toast({
+                    title: "Error",
+                    description: "Something went wrong while checking business information.",
+                    variant: "destructive",
+                });
+                setLoading(false);
+            }
+        };
+
+        checkBusinessInfo();
+    }, [navigate, toast]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, industry: value }));
+    setTouched((prev) => ({ ...prev, industry: true }));
+  };
+
+  const isRequiredFieldEmpty = (fieldName: string) => {
+    return touched[fieldName as keyof typeof touched] && !formData[fieldName as keyof typeof formData];
+  };
+
+  const isBusinessInfoValid = () => {
+    const requiredFields = ['businessName', 'fullName', 'industry', 'contactEmail', 'contactPhone'];
+    return requiredFields.every(field => formData[field as keyof typeof formData]);
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "No authenticated user found. Please log in again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // First, try to get existing contractor
+      const { data: existingContractor, error: fetchError } = await supabase
+          .from("contractors")
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      if (existingContractor) {
+        // Update existing contractor
+        const { error: updateError } = await supabase
+            .from("contractors")
+            .update({
+              business_name: formData.businessName,
+              contact_email: formData.contactEmail,
+              contact_phone: formData.contactPhone,
+              business_address: businessAddress,
+              license_number: formData.licenseNumber,
+              branding_colors: {
+                primary: formData.primaryColor,
+                secondary: formData.secondaryColor,
+              },
+              tier: formData.tier,
+              stripe_customer_id: formData.stripe_customer_id,
+              resend_contact_key: formData.resend_contact_key,
+            })
+            .eq('id', existingContractor.id);
+
+        if (updateError) throw updateError;
+
+        // Update settings with same ID
+        const { error: settingsError } = await supabase
+            .from("contractor_settings")
+            .update({
+              minimum_project_cost: parseFloat(formData.minimumProjectCost),
+              markup_percentage: parseFloat(formData.markupPercentage),
+              tax_rate: parseFloat(formData.taxRate),
+            })
+            .eq('id', existingContractor.id);
+
+        if (settingsError) throw settingsError;
+      } else {
+        // Generate a new UUID
+        const newId = crypto.randomUUID();
+
+        // Create new contractor with specified ID
+        const { error: insertError } = await supabase
+            .from("contractors")
+            .insert({
+              id: newId,
+              user_id: user.id,
+              business_name: formData.businessName,
+              contact_email: formData.contactEmail,
+              contact_phone: formData.contactPhone,
+              business_address: formData.address,
+              license_number: formData.licenseNumber,
+              branding_colors: {
+                primary: formData.primaryColor,
+                secondary: formData.secondaryColor,
+              },
+              tier: formData.tier,
+              stripe_customer_id: formData.stripe_customer_id,
+              resend_contact_key: formData.resend_contact_key,
+            });
+
+        if (insertError) throw insertError;
+
+        // Create settings with same ID
+        const { error: settingsError } = await supabase
+            .from("contractor_settings")
+            .upsert({
+              id: newId,
+              minimum_project_cost: parseFloat(formData.minimumProjectCost),
+              markup_percentage: parseFloat(formData.markupPercentage),
+              tax_rate: parseFloat(formData.taxRate),
+            });
+
+        if (settingsError) throw settingsError;
+      }
+
+      toast({
+        title: "Information saved!",
+        description: "Your business information has been saved successfully.",
+      });
+
+      if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
+        navigate("/dashboard");
+      } else {
+        setCurrentStep((prev) => (prev + 1) as OnboardingStep);
+      }
+    } catch (error: any) {
+      console.error('Onboarding error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred while saving your information.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
     // useEffect(() => {
     //     const checkBusinessInfo = async () => {
     //         try {
@@ -181,11 +384,7 @@ const Onboarding = () => {
 
     //             // If the business info exists, redirect to dashboard
     //             if (existingContractor) {
-    //                 toast({
-    //                     title: "Business info exists",
-    //                     description: "Your business information has already been set up.",
-    //                 })
-    //                 navigate("/dashboard");
+    //                 // navigate("/dashboard");
     //                 return;
     //             }
 
@@ -204,196 +403,11 @@ const Onboarding = () => {
     //     checkBusinessInfo();
     // }, [navigate, toast]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setTouched((prev) => ({ ...prev, [name]: true }));
-  };
-
-  const handleSelectChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, industry: value }));
-    setTouched((prev) => ({ ...prev, industry: true }));
-  };
-
-  const isRequiredFieldEmpty = (fieldName: string) => {
-    return touched[fieldName as keyof typeof touched] && !formData[fieldName as keyof typeof formData];
-  };
-
-  const isBusinessInfoValid = () => {
-    const requiredFields = ['businessName', 'fullName', 'industry', 'contactEmail', 'contactPhone'];
-    return requiredFields.every(field => formData[field as keyof typeof formData]);
-  };
-
-  const handleSubmit = async () => {
-    setLoading(true);
-    try {
-    //   const { data: { user } } = await supabase.auth.getUser();
-
-    //   if (!user) {
-    //     toast({
-    //       title: "Error",
-    //       description: "No authenticated user found. Please log in again.",
-    //       variant: "destructive",
-    //     });
-    //     return;
-    //   }
-
-    //   // First, try to get existing contractor
-    //   const { data: existingContractor, error: fetchError } = await supabase
-    //       .from("contractors")
-    //       .select('id')
-    //       .eq('user_id', user.id)
-    //       .maybeSingle();
-
-    //   if (fetchError) throw fetchError;
-
-    //   if (existingContractor) {
-    //     // Update existing contractor
-    //     const { error: updateError } = await supabase
-    //         .from("contractors")
-    //         .update({
-    //           business_name: formData.businessName,
-    //           contact_email: formData.contactEmail,
-    //           contact_phone: formData.contactPhone,
-    //           business_address: businessAddress,
-    //           license_number: formData.licenseNumber,
-    //           branding_colors: {
-    //             primary: formData.primaryColor,
-    //             secondary: formData.secondaryColor,
-    //           },
-    //         })
-    //         .eq('id', existingContractor.id);
-
-    //     if (updateError) throw updateError;
-
-    //     // Update settings with same ID
-    //     const { error: settingsError } = await supabase
-    //         .from("contractor_settings")
-    //         .update({
-    //           minimum_project_cost: parseFloat(formData.minimumProjectCost),
-    //           markup_percentage: parseFloat(formData.markupPercentage),
-    //           tax_rate: parseFloat(formData.taxRate),
-    //         })
-    //         .eq('id', existingContractor.id);
-
-    //     if (settingsError) throw settingsError;
-    //   } else {
-    //     // Generate a new UUID
-    //     const newId = crypto.randomUUID();
-
-    //     // Create new contractor with specified ID
-    //     const { error: insertError } = await supabase
-    //         .from("contractors")
-    //         .insert({
-    //           id: newId,
-    //           user_id: user.id,
-    //           business_name: formData.businessName,
-    //           contact_email: formData.contactEmail,
-    //           contact_phone: formData.contactPhone,
-    //           business_address: formData.address,
-    //           license_number: formData.licenseNumber,
-    //           branding_colors: {
-    //             primary: formData.primaryColor,
-    //             secondary: formData.secondaryColor,
-    //           },
-    //         });
-
-    //     if (insertError) throw insertError;
-
-    //     // Create settings with same ID
-    //     const { error: settingsError } = await supabase
-    //         .from("contractor_settings")
-    //         .upsert({
-    //           id: newId,
-    //           minimum_project_cost: parseFloat(formData.minimumProjectCost),
-    //           markup_percentage: parseFloat(formData.markupPercentage),
-    //           tax_rate: parseFloat(formData.taxRate),
-    //         });
-
-    //     if (settingsError) throw settingsError;
-    //   }
-
-    //   toast({
-    //     title: "Information saved!",
-    //     description: "Your business information has been saved successfully.",
-    //   });
-
-      if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
-        navigate("/dashboard");
-      } else {
-        setCurrentStep((prev) => (prev + 1) as OnboardingStep);
-      }
-    } catch (error: any) {
-      console.error('Onboarding error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "An error occurred while saving your information.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // const handleNext = () => {
-  //   if (currentStep === OnboardingSteps.BUSINESS_INFO) {
-  //     setCurrentStep(OnboardingSteps.BRANDING);
-  //   } else if (currentStep === OnboardingSteps.BRANDING) {
-  //     setCurrentStep(OnboardingSteps.PRICING);
-  //   } else if (currentStep === OnboardingSteps.PRICING) {
-  //     setCurrentStep(OnboardingSteps.Payment_METHOD);  
-  //   }
-  // }
-
-    useEffect(() => {
-        const checkBusinessInfo = async () => {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
-                    toast({
-                        title: "Error",
-                        description: "No authenticated user found. Please log in again.",
-                        variant: "destructive",
-                    });
-                    navigate("/login");
-                    return;
-                }
-
-                // Check if the contractor exists
-                const { data: existingContractor, error } = await supabase
-                    .from("contractors")
-                    .select("id")
-                    .eq("user_id", user.id)
-                    .maybeSingle();
-
-                if (error) throw error;
-
-                // If the business info exists, redirect to dashboard
-                if (existingContractor) {
-                    // navigate("/dashboard");
-                    return;
-                }
-
-                setLoading(false); // No business info found, allow onboarding to continue
-            } catch (error: any) {
-                console.error("Error checking business info:", error);
-                toast({
-                    title: "Error",
-                    description: "Something went wrong while checking business information.",
-                    variant: "destructive",
-                });
-                setLoading(false);
-            }
-        };
-
-        //checkBusinessInfo();
-    }, [navigate, toast]);
-
     const [clientSecret, setClientSecret] = useState<string | null>(null);
 
     const createContact = async () => {
       try {
-        const response = supabase.functions.invoke('create-contact', {
+        const response = await supabase.functions.invoke('create-contact', {
           body: {
             email: "m.khizerr01@gmail.com",
             firstName: "khizer",
@@ -401,6 +415,10 @@ const Onboarding = () => {
             audienceId: "78261eea-8f8b-4381-83c6-79fa7120f1cf",
           },
         });
+
+        if (response && response.data) {
+          setFormData((prev) => ({ ...prev, resend_contact_key: response.data.data.data.id }));
+        }
   
         const stripeResponse = await supabase.functions.invoke('create-stripe-customer', {
           body: {
@@ -409,26 +427,20 @@ const Onboarding = () => {
           }
         });
 
-          
-        console.log("Contact created successfully:", response);
-        console.log("Stripe response:", stripeResponse);
-
         if (stripeResponse.data && stripeResponse.data.clientSecret) {
+          setFormData((prev) => ({ ...prev, stripe_customer_id: stripeResponse.data.customer.id }));
           setClientSecret(stripeResponse.data.clientSecret);
         } else {
           console.error("Failed to retrieve client_secret:", stripeResponse.error);
         }
 
-        if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
-          navigate("/dashboard");
-        } else {
-          setCurrentStep((prev) => (prev + 1) as OnboardingStep);
+        if (response && stripeResponse) {          
+          handleSubmit();
         }
       } catch (error) {
         console.error("Failed to create contact:", error);
       }
     };
-
 
     const updateGlobalColors = (primaryColor: string, secondaryColor: string) => {
     const root = document.documentElement;
@@ -724,7 +736,7 @@ const Onboarding = () => {
                 </p>
               </div>
             <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-6">
-              <PricingPlans />
+              <PricingPlans formData={formData} setFormData={setFormData} />
               <div className="flex justify-between pt-6">
               <Button
                 variant="ghost"
@@ -761,38 +773,7 @@ const Onboarding = () => {
               </div>
   
               <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8">
-                {/* <PaymentMethodForm 
-                  onComplete={() => {
-                    toast({
-                      title: "Setup Complete",
-                      description: "Your account is now ready to use!",
-                    });
-                    //navigate("/dashboard");
-                  }} 
-                /> */}
-                <AddPaymentMethod customerName={'Abdul Mannan'} clientSecret={clientSecret} />
-                                <div className="flex justify-between pt-6">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setCurrentStep((prev) => (prev - 1) as OnboardingStep)}
-                    disabled={loading}
-                    className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    // disabled={loading}
-                    className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
-                  >
-                    {loading ? "Saving..." : "Next"}
-                  </Button>
-                </div>
-                
-                <div className="mt-6 text-xs text-center text-gray-500">
-                  <p>Your payment information is securely processed by Stripe.</p>
-                  <p>By adding a payment method, you agree to our Terms of Service and Privacy Policy.</p>
-                </div>
+                <AddPaymentMethod customerName={formData.businessName} clientSecret={clientSecret} setCurrentStep={setCurrentStep}/>
               </div>
             </div>
           );
@@ -806,7 +787,7 @@ const Onboarding = () => {
     { label: "Business Info", value: OnboardingSteps.BUSINESS_INFO },
     { label: "Branding", value: OnboardingSteps.BRANDING },
     { label: "Pricing", value: OnboardingSteps.PRICING },
-    { label: "Payment", value: OnboardingSteps.Payment_METHOD },
+    { label: "Payment", value: OnboardingSteps.PAYMENT_METHOD },
   ]
 
   return (
