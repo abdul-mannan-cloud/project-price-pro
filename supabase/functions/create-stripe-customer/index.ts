@@ -28,19 +28,32 @@ serve(async (req) => {
       );
     }
 
+    // Create the Stripe Customer
     const customer = await stripe.customers.create({
       email,
       name,
     });
 
-    return new Response(JSON.stringify({ customer }), {
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-      status: 200,
+    // Create SetupIntent for that Customer
+    const setupIntent = await stripe.setupIntents.create({
+      customer: customer.id,
+      usage: "off_session",
     });
-  } catch (error) {
-    console.error("Stripe Customer Creation Error:", error);
+
     return new Response(
-      JSON.stringify({ error: "Failed to create customer" }),
+      JSON.stringify({
+        customer,
+        clientSecret: setupIntent.client_secret,
+      }),
+      {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error("Error creating customer or setup intent:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to create customer or setup intent" }),
       {
         headers: { "Content-Type": "application/json", ...corsHeaders },
         status: 500,

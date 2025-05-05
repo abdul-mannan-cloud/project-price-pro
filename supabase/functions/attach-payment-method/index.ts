@@ -1,36 +1,21 @@
-// supabase/functions/stripe-create-customer/index.ts
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import Stripe from 'https://esm.sh/stripe@11.1.0?target=deno';
+import { serve } from "https://deno.land/std@0.203.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@12.3.0?target=deno";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"));
 
-serve(async (req: Request): Promise<Response> => {
-  // CORS headers
-  const headers: HeadersInit = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  };
-
-  // Handle CORS preflight request
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers });
-  }
-
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+serve(async (req) => {
   try {
-    const { name, email, paymentMethod } = await req.json();
-
-    if (!name || !email || !paymentMethod) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Missing required fields',
-        }),
-        {
-          status: 400,
-          headers: { ...headers, 'Content-Type': 'application/json' },
-        }
-      );
+   
+    if (req.method === 'OPTIONS') {
+      return new Response('ok', { headers: corsHeaders });
     }
+    const { name, email, paymentMethod } = await req.json();
 
     // Step 1: Create a Stripe customer
     const customer = await stripe.customers.create({
@@ -44,6 +29,15 @@ serve(async (req: Request): Promise<Response> => {
       card: paymentMethod.card,
       billing_details: paymentMethod.billing_details,
     });
+
+    return new Response(
+      JSON.stringify(stripePaymentMethod),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+
 
     // Step 3: Attach the payment method to the customer
     await stripe.paymentMethods.attach(stripePaymentMethod.id, {
@@ -70,7 +64,7 @@ serve(async (req: Request): Promise<Response> => {
       JSON.stringify(responseData),
       {
         status: 200,
-        headers: { ...headers, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   } catch (error) {
@@ -80,13 +74,13 @@ serve(async (req: Request): Promise<Response> => {
     let status = 500;
     
     // Handle common Stripe errors
-    if (error instanceof Stripe.errors.StripeCardError) {
-      message = error.message || 'Your card was declined';
-      status = 400;
-    } else if (error instanceof Stripe.errors.StripeInvalidRequestError) {
-      message = 'Invalid payment information';
-      status = 400;
-    }
+    // if (error instanceof Stripe.errors.StripeCardError) {
+    //   message = error.message || 'Your card was declined';
+    //   status = 400;
+    // } else if (error instanceof Stripe.errors.StripeInvalidRequestError) {
+    //   message = 'Invalid payment information';
+    //   status = 400;
+    // }
     
     const responseData = {
       success: false,
@@ -98,7 +92,7 @@ serve(async (req: Request): Promise<Response> => {
       JSON.stringify(responseData),
       {
         status,
-        headers: { ...headers, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }
