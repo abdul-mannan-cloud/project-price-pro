@@ -40,6 +40,7 @@ import {
 import { AIRateForm } from "@/components/settings/AIRateForm";
 import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplateSettings";
 import Spinner from "@/components/ui/spinner";
+import { UsageSettings } from "@/components/settings/UsageSettings";
 
 // Google Maps API key (Note: You should secure this in production)
 const GOOGLE_API_KEY = "AIzaSyBuZj-RWOoAc24CaC2h4SY9LvD-WzQPtJs";
@@ -503,6 +504,7 @@ const Settings = () => {
       case "business": return t("Business Information");
       case "team": return t("Team Members");
       case "subscription": return t("Subscription");
+      case "usage": return "Usage";
       case "branding": return t("Branding");
       case "estimate": return t("Estimate Settings");
       case "ai": return t("AI Preferences");
@@ -608,6 +610,8 @@ const Settings = () => {
         return <TeammateSettings />;
       case "subscription":
         return <SubscriptionSettings />;
+      case "usage":
+        return <UsageSettings />;
       case "branding":
         return (
             <BrandingSettings
@@ -738,6 +742,13 @@ const Settings = () => {
                   description={t("Manage your subscription and billing")}
                   onClick={() => handleSectionChange("subscription")}
                   isActive={activeSection === "subscription"}
+              />
+              <SettingsMenuItem
+                  icon={<CreditCard className="h-5 w-5" />}
+                  title={"Usage"}
+                  description={t("Manage Usage")}
+                  onClick={() => handleSectionChange("usage")}
+                  isActive={activeSection === "usage"}
               />
               <SettingsMenuItem
                   icon={<Palette className="h-5 w-5" />}
