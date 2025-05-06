@@ -416,6 +416,13 @@ const Onboarding = () => {
           },
         });
 
+        // const response = await supabase.functions.invoke('send-sms', {
+        //   body: {
+        //     phone: "+19716128447",
+        //     message: "Hello, this is a test message.",
+        //   },
+        // });
+
         if (response && response.data) {
           setFormData((prev) => ({ ...prev, resend_contact_key: response.data.data.data.id }));
         }
