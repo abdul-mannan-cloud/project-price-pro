@@ -1,3 +1,6 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+
+
 export const formatAnswersForContext = (answers: Record<string, any>) => {
     return Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
         acc[category] = Object.entries(categoryAnswers || {}).reduce((catAcc, [questionId, answer]) => {
@@ -17,8 +20,15 @@ export const generateEstimate = async (
     context: string,
     imageUrl: string | undefined,
     openAIApiKey: string,
-    signal: AbortSignal
+    signal: AbortSignal,
+    description: string,
+    category: string
 ) => {
+
+    console.log('description testing ', description + ' ' + category)
+    const similarTasks = await findSimilarTasks(`${category} : ${description}`, 3);
+    console.log('similar tasks ', similarTasks)
+
     try {
         const messages = [
             {
@@ -31,25 +41,7 @@ Your task is to generate a detailed estimate based on the provided information. 
 
 UNITS SPECIFICATION:
 For each line item in the estimate, you MUST include the appropriate unit of measurement in parentheses after the title. Use only the following units:
-- CF (Cubic Feet)
-- CY (Cubic Yards)
-- DY (Day)
-- EA (Each)
-- Gal (Gallon)
-- HR (Hour)
-- IN (Inch)
-- LBS (Pounds)
-- LF (Linear Foot)
-- LS (Lump Sum)
-- MO (Month)
-- SF (Square Foot)
-- SHT (Sheet)
-- SQ (Square)
-- SY (Square Yards)
-- TONS (Tons)
-- WK (Week)
-- WY (Week)
-- YD (Yard)
+${similarTasks}
 
 For example, format titles like:
 - "Flooring Installation (SF)"
@@ -177,3 +169,37 @@ ALWAYS respond with valid JSON in the following format:
         throw error;
     }
 };
+
+async function findSimilarTasks(query: string, limit = 10) {
+
+    const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Generate embedding for the query
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            input: query,
+            model: 'text-embedding-3-small'
+        })
+    });
+
+    const { data } = await response.json();
+
+    // Query Supabase
+    const { data: similarTasks } = await supabase.rpc('match_tasks', {
+        query_embedding: data[0].embedding,
+        match_threshold: 0.7,
+        match_count: limit
+    });
+
+    console.log('rpc response', similarTasks);
+
+    return similarTasks || [];
+}
