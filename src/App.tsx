@@ -19,6 +19,8 @@ import "./App.css";
 import {IconTrafficCone} from "@tabler/icons-react";
 import {ContractorProvider} from "@/hooks/useContractor.tsx";
 import Spinner from "./components/ui/spinner";
+import TermsOfService from "@/pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -148,6 +150,8 @@ function App() {
           <Route path="/e/:id" element={<PublicEstimate />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/team-onboarding" element={<TeamOnboarding />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />
