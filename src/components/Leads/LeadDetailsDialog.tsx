@@ -1,7 +1,17 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
-import { Phone, MessageSquare, Download, FileSpreadsheet, Mail, X, Edit, Link, Trash2 } from "lucide-react";
+import { 
+  Phone, 
+  MessageSquare, 
+  Mail, 
+  X, 
+  Edit, 
+  Link, 
+  Trash2, 
+  MoreHorizontal, 
+  Copy
+} from "lucide-react";
 import type { Lead } from "./LeadsTable";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -23,6 +33,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import Spinner from "../ui/spinner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LeadDetailsDialogProps {
   lead: Lead | null;
@@ -40,6 +57,7 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   const [emailRecipient, setEmailRecipient] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
@@ -263,6 +281,61 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
     }
   };
 
+  const handleDuplicateLead = async () => {
+    if (!lead || !effectiveContractorId) return;
+    
+    setIsDuplicating(true);
+    
+    try {
+      // Create a deep copy of the lead to avoid reference issues
+      const leadCopy = JSON.parse(JSON.stringify(lead));
+      
+      // Remove unique identifiers and timestamps
+      delete leadCopy.id;
+      delete leadCopy.created_at;
+      delete leadCopy.updated_at;
+      
+      // Update title to indicate it's a duplicate
+      leadCopy.project_title = `${leadCopy.project_title} (Copy)`;
+      
+      // Ensure contractor ID is set
+      leadCopy.contractor_id = effectiveContractorId;
+      
+      // Insert the duplicate lead
+      const { data, error } = await supabase
+        .from('leads')
+        .insert(leadCopy)
+        .select();
+      
+      if (error) throw error;
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: "Lead duplicated successfully",
+      });
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries(['leads']);
+      
+      // Navigate to the new lead
+      if (data && data.length > 0) {
+        navigate(`${location.pathname}?leadId=${data[0].id}`, { replace: true });
+        handleCloseDialog();
+      }
+      
+    } catch (error) {
+      console.error('Error duplicating lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to duplicate lead. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
   const handleSendEmail = async () => {
     if (!emailRecipient || !lead || !effectiveContractorId) {
       toast({
@@ -356,69 +429,59 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
     const isLoading = !urlContractorId && isLoadingUser;
     const disabled = isLoading || !effectiveContractorId;
 
-    if (isMobile) {
-      return (
-        <div className="grid grid-cols-3 gap-2">
+    return (
+      <div className="flex justify-end items-center">
+        <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse">
           <Button 
-            variant="outline" 
-            onClick={() => setIsEditing(true)} 
-            className="w-full gap-2"
+            className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10"
+            variant="outline"
+            onClick={() => setIsEditing(true)}
             disabled={disabled}
           >
-            <Edit className="h-4 w-4" />
+            <Edit className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
             Edit
           </Button>
           <Button 
-            variant="outline" 
-            onClick={() => setShowEmailDialog(true)} 
-            className="w-full gap-2"
+            className="rounded-none shadow-none focus-visible:z-10"
+            variant="outline"
+            onClick={() => setShowEmailDialog(true)}
             disabled={disabled}
           >
-            <Mail className="h-4 w-4" />
+            <Mail className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
             Email
           </Button>
-          <Button 
-            variant="destructive" 
-            onClick={() => setShowDeleteDialog(true)} 
-            className="w-full gap-2"
-            disabled={disabled}
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                className="rounded-none shadow-none last:rounded-e-lg focus-visible:z-10"
+                variant="outline"
+                size="icon"
+                aria-label="More options"
+                disabled={disabled}
+              >
+                <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                onClick={handleDuplicateLead}
+                disabled={isDuplicating}
+                className="cursor-pointer"
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Duplicate Lead
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-destructive cursor-pointer focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Lead
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      );
-    }
-
-    return (
-      <div className="w-full grid grid-cols-3 gap-4">
-        <Button 
-          variant="default" 
-          onClick={() => setIsEditing(true)} 
-          className="w-full gap-2"
-          disabled={disabled}
-        >
-          <Edit className="h-4 w-4" />
-          Edit Estimate
-        </Button>
-        <Button 
-          variant="default" 
-          onClick={() => setShowEmailDialog(true)} 
-          className="w-full gap-2"
-          disabled={disabled}
-        >
-          <Mail className="h-4 w-4" />
-          Email Estimate
-        </Button>
-        <Button 
-          variant="destructive" 
-          onClick={() => setShowDeleteDialog(true)} 
-          className="w-full gap-2"
-          disabled={disabled}
-        >
-          <Trash2 className="h-4 w-4" />
-          Delete Lead
-        </Button>
       </div>
     );
   };
@@ -510,26 +573,38 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
                   </>
                 )}
                 {view === "questions" && (
-                  <LeadQuestionsView lead={lead} />
+                  <LeadQuestionsView lead={lead} refetchLead={refetchLead} />
                 )}
               </div>
             </div>
 
             {/* Bottom Action Bar */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">
-              <div className="container max-w-6xl mx-auto flex justify-between gap-4">
-                <Button variant="outline" className="w-full gap-2">
-                  <Phone className="h-4 w-4" />
-                  Call
-                </Button>
-                <Button variant="outline" className="w-full gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  Text
-                </Button>
-                <Button variant="outline" className="w-full gap-2" onClick={handleCopyLink}>
-                  <Link className="h-4 w-4" />
-                  Copy Link
-                </Button>
+              <div className="container max-w-6xl mx-auto">
+                <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse w-full">
+                  <Button 
+                    variant="outline" 
+                    className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
+                  >
+                    <Phone className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+                    Call
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="rounded-none shadow-none focus-visible:z-10 flex-1"
+                  >
+                    <MessageSquare className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+                    Text
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="rounded-none shadow-none last:rounded-e-lg focus-visible:z-10 flex-1"
+                    onClick={handleCopyLink}
+                  >
+                    <Link className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+                    Copy Link
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
