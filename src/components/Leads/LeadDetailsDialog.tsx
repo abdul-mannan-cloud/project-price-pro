@@ -1,8 +1,7 @@
-
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
-import { Phone, MessageSquare, Download, FileSpreadsheet, Mail, X, Edit, Link } from "lucide-react";
+import { Phone, MessageSquare, Download, FileSpreadsheet, Mail, X, Edit, Link, Trash2 } from "lucide-react";
 import type { Lead } from "./LeadsTable";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -10,16 +9,17 @@ import { LeadViewToggle } from "./LeadViewToggle";
 import { LeadQuestionsView } from "./LeadQuestionsView";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogCancel,
+  AlertDialogHeader,
+  AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import Spinner from "../ui/spinner";
@@ -31,14 +31,26 @@ interface LeadDetailsDialogProps {
   urlContractorId?: string | null;
 }
 
-export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadDetailsDialogProps) => {
+export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContractorId }: LeadDetailsDialogProps) => {
   const [view, setView] = useState<"estimate" | "questions">("estimate");
   const [isEditing, setIsEditing] = useState(false);
-  const [editedEstimate, setEditedEstimate] = useState(lead?.estimate_data);
+  const [editedEstimate, setEditedEstimate] = useState<any>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
+  // Extract leadId from URL query parameters
+  const searchParams = new URLSearchParams(location.search);
+  const leadIdFromUrl = searchParams.get('leadId');
+  
+  // State to hold the lead data
+  const [lead, setLead] = useState<Lead | null>(initialLead);
 
   // Get current user data if no URL contractor ID
   const { data: currentUser, isLoading: isLoadingUser } = useQuery({
@@ -55,6 +67,24 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
   // Determine the actual contractor ID to use
   const effectiveContractorId = urlContractorId || currentUser?.id;
 
+  // Fetch lead data if we have a leadId in the URL
+  const { data: fetchedLead, isLoading: isLoadingLead, refetch: refetchLead } = useQuery({
+    queryKey: ['lead', leadIdFromUrl],
+    queryFn: async () => {
+      if (!leadIdFromUrl) return null;
+      
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('id', leadIdFromUrl)
+        .single();
+        
+      if (error) throw error;
+      return data as Lead;
+    },
+    enabled: !!leadIdFromUrl,
+  });
+
   // Fetch contractor data using the effective ID
   const { data: contractor, isLoading: isLoadingContractor } = useQuery({
     queryKey: ['contractor', effectiveContractorId],
@@ -67,7 +97,6 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
         .eq('id', effectiveContractorId)
         .single();
 
-
       if (error) throw error;
       if (!data) throw new Error('No contractor found');
       return data;
@@ -75,6 +104,41 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
     enabled: !!effectiveContractorId
   });
 
+  // Initialize editedEstimate with deep copy when lead changes
+  useEffect(() => {
+    if (initialLead?.estimate_data) {
+      const deepCopy = JSON.parse(JSON.stringify(initialLead.estimate_data));
+      setEditedEstimate(deepCopy);
+    }
+  }, [initialLead]);
+
+  // Update lead state when initialLead changes
+  useEffect(() => {
+    if (initialLead) {
+      setLead(initialLead);
+      
+      // Update URL with the leadId to support reloads
+      if (initialLead.id && !leadIdFromUrl) {
+        navigate(`${location.pathname}?leadId=${initialLead.id}`, { replace: true });
+      }
+    }
+  }, [initialLead, leadIdFromUrl, navigate, location.pathname]);
+
+  // Update lead state when fetchedLead changes
+  useEffect(() => {
+    if (fetchedLead) {
+      console.log("Setting lead from fetchedLead:", fetchedLead);
+      setLead(fetchedLead);
+      
+      // Deep copy estimate data to avoid reference issues
+      if (fetchedLead.estimate_data) {
+        const deepCopy = JSON.parse(JSON.stringify(fetchedLead.estimate_data));
+        setEditedEstimate(deepCopy);
+      }
+    }
+  }, [fetchedLead]);
+
+  // Update email recipient when lead changes
   useEffect(() => {
     if (lead?.user_email) {
       setEmailRecipient(lead.user_email);
@@ -95,29 +159,53 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
 
     try {
       console.log('Updating estimate with contractorId:', effectiveContractorId);
+      console.log('Edited estimate data:', editedEstimate);
 
-      // First update the estimate data
-      const { error: updateError } = await supabase
+      // Create a properly structured update payload
+      const updatePayload = {
+        project_title: lead.project_title,
+        project_description: lead.project_description,
+        estimate_data: editedEstimate,
+        estimated_cost: editedEstimate.totalCost
+      };
+
+      console.log("Saving with payload:", updatePayload);
+
+      // Update the lead without trying to select in the same query
+      const { error } = await supabase
         .from('leads')
-        .update({ estimate_data: editedEstimate })
+        .update(updatePayload)
         .eq('id', lead.id);
 
-      if (updateError) throw updateError;
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
 
-      // Then generate a new estimate
-      const { error: estimateError } = await supabase.functions.invoke('generate-estimate', {
-        body: { 
-          leadId: lead.id,
-          contractorId: effectiveContractorId,
-          answers: lead.answers,
-          category: lead.category,
-          projectDescription: lead.project_description,
-          imageUrl: lead.image_url || undefined,
-          projectImages: lead.project_images || []
-        }
-      });
+      // Manually fetch the updated lead
+      const { data: updatedLead, error: fetchError } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('id', lead.id)
+        .single();
+        
+      if (fetchError) {
+        console.error('Error fetching updated lead:', fetchError);
+        throw fetchError;
+      }
 
-      if (estimateError) throw estimateError;
+      // Update local state with the fresh data
+      setLead(updatedLead as Lead);
+      
+      // Make a deep copy of the estimate data
+      if (updatedLead.estimate_data) {
+        const deepCopy = JSON.parse(JSON.stringify(updatedLead.estimate_data));
+        setEditedEstimate(deepCopy);
+      }
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries(['lead', lead.id]);
+      queryClient.invalidateQueries(['leads']);
 
       toast({
         title: "Success",
@@ -136,8 +224,47 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
     }
   };
 
+  const handleDeleteLead = async () => {
+    if (!lead) return;
+    
+    setIsDeleting(true);
+    
+    try {
+      // Delete lead from database
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', lead.id);
+      
+      if (error) throw error;
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: "Lead deleted successfully",
+      });
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries(['leads']);
+      
+      // Close the dialogs
+      setShowDeleteDialog(false);
+      handleCloseDialog();
+      
+    } catch (error) {
+      console.error('Error deleting lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete lead. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleSendEmail = async () => {
-    if (!emailRecipient || !currentUser?.id) {
+    if (!emailRecipient || !lead || !effectiveContractorId) {
       toast({
         title: "Error",
         description: "Please provide an email address.",
@@ -176,13 +303,42 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
   };
 
   const handleCopyLink = () => {
-    const estimateUrl = `${window.location.origin}/e/${lead?.id}`;
+    if (!lead) return;
+    
+    const estimateUrl = `${window.location.origin}/e/${lead.id}`;
     navigator.clipboard.writeText(estimateUrl).then(() => {
       toast({
         title: "Link copied",
         description: "The estimate link has been copied to your clipboard.",
       });
     });
+  };
+
+  const handleCloseDialog = () => {
+    // Remove the leadId from URL when closing
+    if (leadIdFromUrl) {
+      navigate(location.pathname, { replace: true });
+    }
+    
+    // Exit edit mode if active
+    if (isEditing) {
+      setIsEditing(false);
+    }
+    
+    onClose();
+  };
+
+  const handleEstimateChange = (updated: any) => {
+    console.log("Estimate changed:", updated);
+    if (updated) {
+      // Use a fresh object to avoid reference issues
+      const newEstimate = {
+        ...editedEstimate,
+        groups: updated.groups,
+        totalCost: updated.totalCost
+      };
+      setEditedEstimate(newEstimate);
+    }
   };
 
   const renderActionButtons = () => {
@@ -202,7 +358,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
 
     if (isMobile) {
       return (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Button 
             variant="outline" 
             onClick={() => setIsEditing(true)} 
@@ -210,7 +366,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
             disabled={disabled}
           >
             <Edit className="h-4 w-4" />
-            Edit Estimate
+            Edit
           </Button>
           <Button 
             variant="outline" 
@@ -219,14 +375,23 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
             disabled={disabled}
           >
             <Mail className="h-4 w-4" />
-            Email Estimate
+            Email
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={() => setShowDeleteDialog(true)} 
+            className="w-full gap-2"
+            disabled={disabled}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
           </Button>
         </div>
       );
     }
 
     return (
-      <div className="w-full grid grid-cols-2 gap-4">
+      <div className="w-full grid grid-cols-3 gap-4">
         <Button 
           variant="default" 
           onClick={() => setIsEditing(true)} 
@@ -245,35 +410,63 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
           <Mail className="h-4 w-4" />
           Email Estimate
         </Button>
+        <Button 
+          variant="destructive" 
+          onClick={() => setShowDeleteDialog(true)} 
+          className="w-full gap-2"
+          disabled={disabled}
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete Lead
+        </Button>
       </div>
     );
   };
 
-  if ((isLoadingUser && !urlContractorId) || isLoadingContractor) {
+  // Show loading state while fetching lead or contractor
+  if ((isLoadingLead && leadIdFromUrl) || (isLoadingUser && !urlContractorId) || isLoadingContractor) {
     return (
-      <Dialog open={open} onOpenChange={onClose}>
+      <Dialog open={open} onOpenChange={handleCloseDialog}>
         <DialogContent className="max-w-full h-[100vh] p-0 m-0">
+          <DialogTitle className="sr-only">Lead Details</DialogTitle>
+          <DialogDescription className="sr-only">View and manage lead details</DialogDescription>
           <div className="flex items-center justify-center h-full">
             <Spinner />
-            {/* <div className="text-center">
-              <p>Loading...</p>
-            </div> */}
           </div>
         </DialogContent>
       </Dialog>
     );
   }
 
+  // Don't render if no lead data is available
+  if (!lead && !isLoadingLead) {
+    return (
+      <Dialog open={open} onOpenChange={handleCloseDialog}>
+        <DialogContent className="max-w-full h-[100vh] p-0 m-0">
+          <DialogTitle className="sr-only">Lead Details</DialogTitle>
+          <DialogDescription className="sr-only">View and manage lead details</DialogDescription>
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <p>No lead data available. The lead may have been deleted.</p>
+              <Button onClick={handleCloseDialog} className="mt-4">Close</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-full h-[100vh]  p-0 m-0">
+      <Dialog open={open} onOpenChange={handleCloseDialog}>
+        <DialogContent className="max-w-full h-[100vh] p-0 m-0">
+          <DialogTitle className="sr-only">Lead Details</DialogTitle>
+          <DialogDescription className="sr-only">View and manage lead details</DialogDescription>
           <div className="flex flex-col h-full relative overflow-y-scroll pb-20">
             {isMobile ? (
               <div className="sticky top-0 z-50 bg-white border-b">
                 <button
-                  onClick={onClose}
+                  onClick={handleCloseDialog}
                   className="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
                 >
                   <X className="h-5 w-5 text-gray-500" />
@@ -282,7 +475,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
               </div>
             ) : (
               <button
-                onClick={onClose}
+                onClick={handleCloseDialog}
                 className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-50"
               >
                 <X className="h-5 w-5 text-gray-500" />
@@ -297,18 +490,21 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
 
             <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
               <div className="max-w-6xl mx-auto pt-6">
-                {view === "estimate" && (
+                {view === "estimate" && lead && (
                   <>
                     {renderActionButtons()}
                     <div className="mt-4">
                       <EstimateDisplay 
-                        groups={lead?.estimate_data?.groups || []}
-                        totalCost={lead?.estimate_data.totalCost || 0}
-                        projectSummary={lead?.project_description}
+                        groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
+                        totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
+                        projectSummary={lead.project_description}
                         isEditable={isEditing}
-                        onEstimateChange={setEditedEstimate}
+                        onEstimateChange={handleEstimateChange}
                         contractor={contractor}
-                        contractorParam={contractor.id}
+                        contractorParam={contractor?.id}
+                        handleRefreshEstimate={() => refetchLead()}
+                        leadId={lead.id}
+                        handleContractSign={() => {}}
                       />
                     </div>
                   </>
@@ -340,6 +536,7 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
         </DialogContent>
       </Dialog>
 
+      {/* Email Dialog */}
       <AlertDialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -358,12 +555,34 @@ export const LeadDetailsDialog = ({ lead, onClose, open,urlContractorId }: LeadD
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button 
+            <AlertDialogAction
               onClick={handleSendEmail}
               disabled={isLoadingUser || !currentUser}
             >
               Send Email
-            </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Lead</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this lead? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteLead}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete Lead"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
