@@ -24,21 +24,23 @@ interface EstimateActionsProps {
   groups: any[];
   totalCost: number;
   leadId: string;
+  isEditable?: boolean; // Add this prop to control visibility of buttons
 }
 
 export const EstimateActions = ({
-                                  isContractor,
-                                  companyName,
-                                  onRefreshEstimate,
-                                  onShowSettings,
-                                  onShowAIPreferences,
-                                  styles,
-                                  contractor,
-                                  projectSummary,
-                                  groups,
-                                  totalCost,
-                                  leadId
-                                }: EstimateActionsProps) => {
+  isContractor,
+  companyName,
+  onRefreshEstimate,
+  onShowSettings,
+  onShowAIPreferences,
+  styles,
+  contractor,
+  projectSummary,
+  groups,
+  totalCost,
+  leadId,
+  isEditable = false // Default to not in edit mode
+}: EstimateActionsProps) => {
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 640px)");
   const [isExporting, setIsExporting] = useState(false);
@@ -102,53 +104,53 @@ export const EstimateActions = ({
       });
 
       Promise.all(imagePromises)
-          .then(() => {
-            return html2pdf()
-                .set(opt)
-                .from(element)
-                .toPdf() // Convert to PDF
-                .get('pdf') // Get the PDF object
-                .then(pdf => {
-                  // Add metadata
-                  pdf.setProperties({
-                    title: `${companyName} Estimate`,
-                    subject: 'Project Estimate',
-                    creator: companyName,
-                    author: companyName
-                  });
-                  return pdf;
-                })
-                .save(); // Save the PDF
-          })
-          .then(() => {
-            // Restore UI elements
-            if (actionButtons) {
-              actionButtons.style.display = 'flex';
-            }
+        .then(() => {
+          return html2pdf()
+            .set(opt)
+            .from(element)
+            .toPdf() // Convert to PDF
+            .get('pdf') // Get the PDF object
+            .then(pdf => {
+              // Add metadata
+              pdf.setProperties({
+                title: `${companyName} Estimate`,
+                subject: 'Project Estimate',
+                creator: companyName,
+                author: companyName
+              });
+              return pdf;
+            })
+            .save(); // Save the PDF
+        })
+        .then(() => {
+          // Restore UI elements
+          if (actionButtons) {
+            actionButtons.style.display = 'flex';
+          }
 
-            // Success notification
-            toast({
-              title: "PDF exported successfully",
-              description: "Your estimate has been saved as a PDF file",
-            });
-            setIsExporting(false);
-          })
-          .catch(error => {
-            console.error("PDF generation error:", error);
-
-            // Restore UI elements
-            if (actionButtons) {
-              actionButtons.style.display = 'flex';
-            }
-
-            // Error notification
-            toast({
-              title: "Error",
-              description: "Failed to export PDF. Please try again.",
-              variant: "destructive",
-            });
-            setIsExporting(false);
+          // Success notification
+          toast({
+            title: "PDF exported successfully",
+            description: "Your estimate has been saved as a PDF file",
           });
+          setIsExporting(false);
+        })
+        .catch(error => {
+          console.error("PDF generation error:", error);
+
+          // Restore UI elements
+          if (actionButtons) {
+            actionButtons.style.display = 'flex';
+          }
+
+          // Error notification
+          toast({
+            title: "Error",
+            description: "Failed to export PDF. Please try again.",
+            variant: "destructive",
+          });
+          setIsExporting(false);
+        });
     }, 100);
   };
 
@@ -165,124 +167,126 @@ export const EstimateActions = ({
     const estimateLink = `${window.location.origin}/e/${leadId}`;
 
     navigator.clipboard.writeText(estimateLink)
-        .then(() => {
-          toast({
-            title: "Success",
-            description: "Estimate link copied to clipboard",
-          });
-        })
-        .catch((error) => {
-          console.error("Error copying estimate link:", error);
-          toast({
-            title: "Error",
-            description: "Failed to copy estimate link.",
-            variant: "destructive",
-          });
+      .then(() => {
+        toast({
+          title: "Success",
+          description: "Estimate link copied to clipboard",
         });
+      })
+      .catch((error) => {
+        console.error("Error copying estimate link:", error);
+        toast({
+          title: "Error",
+          description: "Failed to copy estimate link.",
+          variant: "destructive",
+        });
+      });
   };
 
   // Mobile dropdown menu version
   if (isMobile) {
     return (
-        <div className={cn(styles.buttonsContainer, "flex justify-end")} id="estimate-actions">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={isExporting}
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {isContractor && (
-                  <>
-                    <DropdownMenuItem onClick={onRefreshEstimate}>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Refresh Results
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={onShowAIPreferences}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      AI Preferences
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={onShowSettings}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      Estimate Settings
-                    </DropdownMenuItem>
-                  </>
-              )}
-              <DropdownMenuItem onClick={handleCopyEstimate}>
-                <Copy className="h-4 w-4 mr-2" />
-                Copy Link
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF} disabled={isExporting}>
-                <FileDown className="h-4 w-4 mr-2" />
-                {isExporting ? "Exporting..." : "Export PDF"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+      <div className={cn(styles.buttonsContainer, "flex justify-end")} id="estimate-actions">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              disabled={isExporting}
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {/* Only show these items when not in edit mode and user is contractor */}
+            {isContractor && !isEditable && (
+              <>
+                <DropdownMenuItem onClick={onRefreshEstimate}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Results
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onShowAIPreferences}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  AI Preferences
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onShowSettings}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Estimate Settings
+                </DropdownMenuItem>
+              </>
+            )}
+            <DropdownMenuItem onClick={handleCopyEstimate}>
+              <Copy className="h-4 w-4 mr-2" />
+              Copy Link
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportPDF} disabled={isExporting}>
+              <FileDown className="h-4 w-4 mr-2" />
+              {isExporting ? "Exporting..." : "Export PDF"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     );
   }
 
   // Desktop version with buttons
   return (
-      <div className={styles.buttonsContainer} id="estimate-actions">
-        {isContractor && (
-            <>
-              <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onRefreshEstimate}
-                  className={styles.button}
-                  title="Refresh estimate"
-              >
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Refresh
-              </Button>
-              <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onShowAIPreferences}
-                  className={styles.button}
-                  title="AI Preferences"
-              >
-                <Settings className="h-4 w-4 mr-1" />
-                AI Preferences
-              </Button>
-              <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onShowSettings}
-                  className={styles.button}
-                  title="Template Settings"
-              >
-                <Settings className="h-4 w-4 mr-1" />
-                Settings
-              </Button>
-            </>
-        )}
-        <Button
+    <div className={styles.buttonsContainer} id="estimate-actions">
+      {/* Only show these buttons when not in edit mode and user is contractor */}
+      {isContractor && !isEditable && (
+        <>
+          <Button
             variant="ghost"
             size="sm"
-            className={cn("gap-1", styles.button)}
-            onClick={handleCopyEstimate}
-        >
-          <Copy className="h-4 w-4" />
-          Copy
-        </Button>
-        <Button
+            onClick={onRefreshEstimate}
+            className={styles.button}
+            title="Refresh estimate"
+          >
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Refresh
+          </Button>
+          <Button
             variant="ghost"
             size="sm"
-            className={cn("gap-1", styles.button)}
-            onClick={handleExportPDF}
-            disabled={isExporting}
-        >
-          <FileDown className="h-4 w-4" />
-          {isExporting ? "Exporting..." : "PDF"}
-        </Button>
-      </div>
+            onClick={onShowAIPreferences}
+            className={styles.button}
+            title="AI Preferences"
+          >
+            <Settings className="h-4 w-4 mr-1" />
+            AI Preferences
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onShowSettings}
+            className={styles.button}
+            title="Template Settings"
+          >
+            <Settings className="h-4 w-4 mr-1" />
+            Settings
+          </Button>
+        </>
+      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        className={cn("gap-1", styles.button)}
+        onClick={handleCopyEstimate}
+      >
+        <Copy className="h-4 w-4" />
+        Copy
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className={cn("gap-1", styles.button)}
+        onClick={handleExportPDF}
+        disabled={isExporting}
+      >
+        <FileDown className="h-4 w-4" />
+        {isExporting ? "Exporting..." : "PDF"}
+      </Button>
+    </div>
   );
 };

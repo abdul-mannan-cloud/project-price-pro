@@ -516,22 +516,23 @@ export const EstimateDisplay = ({
             <EstimateHeader contractor={contractor} styles={styles} />
 
             <div className={cn(styles.headerContent, "mt-2 sm:mt-0")}>
-              <EstimateActions
-                isContractor={isContractor}
-                companyName={contractor?.business_name || 'Estimate'}
-                onRefreshEstimate={async () => {
-                  handleRefreshEstimate(leadId);
-                }}
-                onShowSettings={() => setShowSettings(true)}
-                onShowAIPreferences={() => setShowAIPreferences(true)}
-                styles={styles}
-                groups={editableGroups || []}
-                totalCost={editableTotalCost || 0}
-                contractor={contractor}
-                projectSummary={projectSummary}
-                leadId={leadId}
-              />
-            </div>
+  <EstimateActions
+    isContractor={isContractor}
+    companyName={contractor?.business_name || 'Estimate'}
+    onRefreshEstimate={async () => {
+      handleRefreshEstimate(leadId);
+    }}
+    onShowSettings={() => setShowSettings(true)}
+    onShowAIPreferences={() => setShowAIPreferences(true)}
+    styles={styles}
+    groups={editableGroups || []}
+    totalCost={editableTotalCost || 0}
+    contractor={contractor}
+    projectSummary={projectSummary}
+    leadId={leadId}
+    isEditable={isEditable} // Add this prop here
+  />
+</div>
           </div>
 
           {estimate?.ai_generated_title && (
