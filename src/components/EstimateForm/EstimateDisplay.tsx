@@ -19,6 +19,10 @@ import { EstimateTable } from "./EstimateTable";
 import { EstimateTotals } from "./EstimateTotals";
 import { EstimateSignature } from "./EstimateSignature";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Plus, Trash2, MinusCircle, Save } from "lucide-react";
 
 export interface LineItem {
   title: string;
@@ -39,6 +43,7 @@ export interface ItemGroup {
   name: string;
   description?: string;
   subgroups: SubGroup[];
+  subtotal?: number;
 }
 
 export type ContractorDisplay = {
@@ -86,22 +91,24 @@ interface EstimateDisplayProps {
 }
 
 export const EstimateDisplay = ({
-                                  groups = [],
-                                  totalCost = 0,
-                                  isBlurred = false,
-                                  contractor,
-                                  projectSummary,
-                                  isEditable = false,
-                                  onEstimateChange,
-                                  onSignatureComplete,
-                                  projectImages = [],
-                                  estimate,
-                                  isLoading: initialLoading = false,
-                                  handleRefreshEstimate,
-                                  leadId,
-                                  contractorParam,
-                                  handleContractSign
-                                }: EstimateDisplayProps) => {
+  groups = [],
+  totalCost = 0,
+  isBlurred = false,
+  contractor,
+  projectSummary,
+  isEditable = false,
+  onEstimateChange,
+  onSignatureComplete,
+  projectImages = [],
+  estimate,
+  isLoading: initialLoading = false,
+  handleRefreshEstimate,
+  leadId,
+  contractorParam,
+  handleContractSign
+}: EstimateDisplayProps) => {
+  const [editableGroups, setEditableGroups] = useState<ItemGroup[]>([]);
+  const [editableTotalCost, setEditableTotalCost] = useState(totalCost);
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
   const [contractorId, setContractorId] = useState<string>(contractorParam);
@@ -117,6 +124,25 @@ export const EstimateDisplay = ({
   const isMobile = useMediaQuery("(max-width: 640px)");
   const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)");
 
+  // Initialize editable groups when component mounts or when groups change
+  useEffect(() => {
+    if (groups && groups.length > 0) {
+      setEditableGroups(JSON.parse(JSON.stringify(groups)));
+      setEditableTotalCost(totalCost);
+    }
+  }, [groups, totalCost]);
+
+  // Effect for updating parent component on editable groups change
+  useEffect(() => {
+    if (isEditable && onEstimateChange && editableGroups.length > 0) {
+      const estimate = {
+        groups: editableGroups,
+        totalCost: editableTotalCost
+      };
+      onEstimateChange(estimate);
+    }
+  }, [editableGroups, editableTotalCost, isEditable, onEstimateChange]);
+
   useEffect(() => {
     if (!contractorId) {
       getContractorId();
@@ -125,10 +151,10 @@ export const EstimateDisplay = ({
 
   const getContractorId = async () => {
     const lead = await supabase
-        .from('leads')
-        .select('contractor_id')
-        .eq('id', leadId)
-        .single();
+      .from('leads')
+      .select('contractor_id')
+      .eq('id', leadId)
+      .single();
     setContractorId(lead.data.contractor_id);
   };
 
@@ -138,10 +164,10 @@ export const EstimateDisplay = ({
       if (!leadId) return null;
 
       const { data, error } = await supabase
-          .from('leads')
-          .select('estimate_data, status')
-          .eq('id', leadId)
-          .maybeSingle();
+        .from('leads')
+        .select('estimate_data, status')
+        .eq('id', leadId)
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching lead:', error);
@@ -157,12 +183,11 @@ export const EstimateDisplay = ({
   const { data: settings } = useQuery({
     queryKey: ["contractor-settings", contractorId],
     queryFn: async () => {
-
       const { data, error } = await supabase
-          .from("contractor_settings")
-          .select("*")
-          .eq("id", contractorId)
-          .single();
+        .from("contractor_settings")
+        .select("*")
+        .eq("id", contractorId)
+        .single();
 
       if (error) throw error;
       return data as ContractorSettings;
@@ -170,17 +195,16 @@ export const EstimateDisplay = ({
     enabled: !!contractorId
   });
 
-
   useEffect(() => {
     if (leadData) {
       const isComplete = !!leadData.estimate_data && leadData.status === 'complete';
       setIsEstimateReady(isComplete);
 
-      if (isComplete && onEstimateChange) {
+      if (isComplete && onEstimateChange && !isEditable) {
         onEstimateChange(leadData.estimate_data);
       }
     }
-  }, [leadData]);
+  }, [leadData, isEditable, onEstimateChange]);
 
   useEffect(() => {
     const hasValidEstimate = groups?.length > 0 && totalCost > 0;
@@ -191,19 +215,130 @@ export const EstimateDisplay = ({
     const checkContractorAccess = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       const { data: contractor } = await supabase.from('contractors').select('id').eq('user_id', user.id).maybeSingle();
-      if (user && contractor.id === contractorParam) {
+      if (user && contractor && contractor.id === contractorParam) {
         setIsContractor(true);
       }
     };
     checkContractorAccess();
-  }, [contractorId]);
+  }, [contractorId, contractorParam]);
 
   const handleSignature = (initials: string) => {
     setSignature(initials);
     if (onSignatureComplete) {
       onSignatureComplete(initials);
     }
-    handleContractSign(leadId)
+    handleContractSign(leadId);
+  };
+
+  // Handle changes to line items
+  const handleLineItemChange = (
+    groupIndex: number,
+    subgroupIndex: number,
+    itemIndex: number,
+    field: string,
+    value: any
+  ) => {
+    if (!editableGroups?.[groupIndex]?.subgroups?.[subgroupIndex]?.items?.[itemIndex]) return;
+    
+    // Create a deep copy to avoid mutating state directly
+    const newGroups = JSON.parse(JSON.stringify(editableGroups));
+    const item = newGroups[groupIndex].subgroups[subgroupIndex].items[itemIndex];
+    
+    // Update the field
+    if (field === 'quantity') {
+      // Convert to number and ensure it's positive
+      const newQuantity = Math.max(1, Number(value));
+      item.quantity = newQuantity;
+      
+      // Recalculate total price
+      item.totalPrice = newQuantity * item.unitAmount;
+    } else if (field === 'unitAmount') {
+      // Convert to number and ensure it's positive
+      const newUnitAmount = Math.max(0, Number(value));
+      item.unitAmount = newUnitAmount;
+      
+      // Recalculate total price
+      item.totalPrice = item.quantity * newUnitAmount;
+    } else {
+      // For text fields like title and description
+      item[field] = value;
+    }
+    
+    // Recalculate subtotals and total cost
+    recalculateEstimateTotals(newGroups);
+    
+    // Update state
+    setEditableGroups(newGroups);
+  };
+  
+  // Add a new line item to a subgroup
+  const handleAddLineItem = (groupIndex: number, subgroupIndex: number) => {
+    if (!editableGroups?.[groupIndex]?.subgroups?.[subgroupIndex]) return;
+    
+    const newGroups = JSON.parse(JSON.stringify(editableGroups));
+    
+    // Create a new line item with default values
+    const newItem = {
+      title: "New Item",
+      description: "",
+      quantity: 1,
+      unitAmount: 0,
+      totalPrice: 0
+    };
+    
+    // Add the new item to the specified subgroup
+    newGroups[groupIndex].subgroups[subgroupIndex].items.push(newItem);
+    
+    // Recalculate subtotals and total cost
+    recalculateEstimateTotals(newGroups);
+    
+    // Update state
+    setEditableGroups(newGroups);
+  };
+  
+  // Delete a line item from a subgroup
+  const handleDeleteLineItem = (groupIndex: number, subgroupIndex: number, itemIndex: number) => {
+    if (!editableGroups?.[groupIndex]?.subgroups?.[subgroupIndex]?.items) return;
+    
+    const newGroups = JSON.parse(JSON.stringify(editableGroups));
+    
+    // Remove the item from the subgroup
+    newGroups[groupIndex].subgroups[subgroupIndex].items.splice(itemIndex, 1);
+    
+    // Recalculate subtotals and total cost
+    recalculateEstimateTotals(newGroups);
+    
+    // Update state
+    setEditableGroups(newGroups);
+  };
+  
+  // Recalculate all subtotals and total cost
+  const recalculateEstimateTotals = (groups: ItemGroup[]) => {
+    let totalCost = 0;
+    
+    // Recalculate each group's subtotal
+    groups.forEach(group => {
+      let groupTotal = 0;
+      
+      // Recalculate each subgroup's subtotal
+      group.subgroups.forEach(subgroup => {
+        let subgroupTotal = 0;
+        
+        // Sum up all line items in the subgroup
+        subgroup.items.forEach(item => {
+          subgroupTotal += item.totalPrice;
+        });
+        
+        subgroup.subtotal = subgroupTotal;
+        groupTotal += subgroupTotal;
+      });
+      
+      group.subtotal = groupTotal;
+      totalCost += groupTotal;
+    });
+    
+    // Update the total cost
+    setEditableTotalCost(totalCost);
   };
 
   const templateSettings = settings || {
@@ -221,148 +356,290 @@ export const EstimateDisplay = ({
     return <EstimateSkeleton />;
   }
 
-
-  console.log('Contractor ID',contractorId)
-  console.log('settings',settings)
-
-  return (
-      <>
-        {!isEstimateReady && (
-            <div className="fixed top-0 left-0 right-0 bg-primary text-white p-2 sm:p-4 text-center z-50 animate-in fade-in-0">
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4">
-                  {/*<EstimateAnimation />*/}
-                </div>
-                <span className="text-xs sm:text-sm">Generating your estimate...</span>
-              </div>
-            </div>
-        )}
-
-        <Card className={cn(styles.card, isBlurred && "blur-md pointer-events-none", "max-w-full mx-auto overflow-hidden")}>
-          <div id="estimate-content" className="p-2 sm:p-4 md:p-6">
-            <div className={cn("flex flex-col sm:flex-row justify-between gap-4 sm:gap-2", isMobile ? "mb-4" : "")}>
-              <EstimateHeader contractor={contractor} styles={styles} />
-
-              <div className={cn(styles.headerContent, "mt-2 sm:mt-0")}>
-                <EstimateActions
-                    isContractor={isContractor}
-                    companyName={contractor?.business_name || 'Estimate'}
-                    onRefreshEstimate={async () => {
-                      handleRefreshEstimate(leadId);
-                    }}
-                    onShowSettings={() => setShowSettings(true)}
-                    onShowAIPreferences={() => setShowAIPreferences(true)}
-                    styles={styles}
-                    groups={groups || []}
-                    totalCost={totalCost || 0}
-                    contractor={contractor}
-                    projectSummary={projectSummary}
-                    leadId={leadId}
-                />
-              </div>
-            </div>
-
-            {estimate?.ai_generated_title && (
-                <h2 className={cn(styles.title, "mb-3 text-center text-base sm:text-lg md:text-xl")}>
-                  {estimate.ai_generated_title}
-                </h2>
+  // Render editable estimate table when in edit mode
+  const renderEditableEstimateTable = () => {
+    return (
+      <div className="space-y-6">
+        {editableGroups.map((group, groupIndex) => (
+          <div key={`group-${groupIndex}`} className={styles.section}>
+            <h3 className={styles.groupTitle}>{group.name}</h3>
+            {group.description && (
+              <p className="text-sm text-gray-600 mb-4">{group.description}</p>
             )}
 
-            {(settings?.estimate_client_message || projectSummary) && (
-                <div className={cn(styles.message, "mb-4 sm:mb-6 text-sm sm:text-base")}>
-                  <p className={styles.text}>
-                    {settings?.estimate_client_message || projectSummary}
-                  </p>
-                </div>
-            )}
-
-            {projectImages && projectImages.length > 0 && (
-                <div className="mb-4 sm:mb-6 overflow-x-auto">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
-                    {projectImages.map((image, index) => (
-                        <div
-                            key={index}
-                            className="aspect-square relative rounded-lg overflow-hidden"
+            <div className="space-y-6">
+              {group.subgroups?.map((subgroup, subgroupIndex) => (
+                <div key={`subgroup-${groupIndex}-${subgroupIndex}`} className="space-y-3 border p-4 rounded-md">
+                  <div className="flex justify-between items-center">
+                    <h5 className="text-sm font-medium text-muted-foreground">{subgroup.name}</h5>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleAddLineItem(groupIndex, subgroupIndex)}
+                      className="h-8 px-2"
+                    >
+                      <Plus className="h-4 w-4 mr-1" /> Add Item
+                    </Button>
+                  </div>
+                  
+                  {subgroup.items?.map((item, itemIndex) => (
+                    <div 
+                      key={`item-${groupIndex}-${subgroupIndex}-${itemIndex}`} 
+                      className="grid grid-cols-12 gap-2 border-b pb-3"
+                    >
+                      <div className="col-span-12 sm:col-span-5">
+                        <Label 
+                          htmlFor={`item-title-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                          className="text-xs"
                         >
-                          <img
-                              src={image}
-                              alt={`Project image ${index + 1}`}
-                              className="w-full h-full object-cover"
-                          />
+                          Title
+                        </Label>
+                        <Input
+                          id={`item-title-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                          value={item.title}
+                          onChange={(e) => handleLineItemChange(
+                            groupIndex, 
+                            subgroupIndex, 
+                            itemIndex, 
+                            'title', 
+                            e.target.value
+                          )}
+                          className="h-8"
+                        />
+                      </div>
+                      
+                      <div className="col-span-4 sm:col-span-2">
+                        <Label 
+                          htmlFor={`item-qty-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                          className="text-xs"
+                        >
+                          Quantity
+                        </Label>
+                        <Input
+                          id={`item-qty-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => handleLineItemChange(
+                            groupIndex, 
+                            subgroupIndex, 
+                            itemIndex, 
+                            'quantity', 
+                            e.target.value
+                          )}
+                          className="h-8"
+                        />
+                      </div>
+                      
+                      <div className="col-span-4 sm:col-span-2">
+                        <Label 
+                          htmlFor={`item-price-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                          className="text-xs"
+                        >
+                          Unit Price
+                        </Label>
+                        <Input
+                          id={`item-price-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unitAmount}
+                          onChange={(e) => handleLineItemChange(
+                            groupIndex, 
+                            subgroupIndex, 
+                            itemIndex, 
+                            'unitAmount', 
+                            e.target.value
+                          )}
+                          className="h-8"
+                        />
+                      </div>
+                      
+                      <div className="col-span-3 sm:col-span-2">
+                        <Label className="text-xs">Total</Label>
+                        <div className="h-8 flex items-center text-sm">
+                          ${item.totalPrice.toFixed(2)}
                         </div>
-                    ))}
+                      </div>
+                      
+                      <div className="col-span-1 sm:col-span-1 flex items-end justify-end">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteLineItem(groupIndex, subgroupIndex, itemIndex)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive/90"
+                        >
+                          <MinusCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="text-right text-sm">
+                    Subtotal: ${subgroup.subtotal.toFixed(2)}
                   </div>
                 </div>
-            )}
+              ))}
+            </div>
+            
+            <div className="text-right font-medium mt-2">
+              Group Total: ${group.subtotal?.toFixed(2) || "0.00"}
+            </div>
+          </div>
+        ))}
 
-            <div className="overflow-x-auto">
-              <EstimateTable
-                  groups={groups}
-                  isLoading={isLoading}
-                  styles={styles}
-                  hideSubtotals={templateSettings.estimate_hide_subtotals || false}
-                  isMobile={isMobile}
+        <div className="text-right text-lg font-bold mt-4">
+          Total Estimate: ${editableTotalCost.toFixed(2)}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {!isEstimateReady && (
+        <div className="fixed top-0 left-0 right-0 bg-primary text-white p-2 sm:p-4 text-center z-50 animate-in fade-in-0">
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-4 h-4">
+              {/*<EstimateAnimation />*/}
+            </div>
+            <span className="text-xs sm:text-sm">Generating your estimate...</span>
+          </div>
+        </div>
+      )}
+
+      <Card className={cn(styles.card, isBlurred && "blur-md pointer-events-none", "max-w-full mx-auto overflow-hidden")}>
+        <div id="estimate-content" className="p-2 sm:p-4 md:p-6">
+          <div className={cn("flex flex-col sm:flex-row justify-between gap-4 sm:gap-2", isMobile ? "mb-4" : "")}>
+            <EstimateHeader contractor={contractor} styles={styles} />
+
+            <div className={cn(styles.headerContent, "mt-2 sm:mt-0")}>
+              <EstimateActions
+                isContractor={isContractor}
+                companyName={contractor?.business_name || 'Estimate'}
+                onRefreshEstimate={async () => {
+                  handleRefreshEstimate(leadId);
+                }}
+                onShowSettings={() => setShowSettings(true)}
+                onShowAIPreferences={() => setShowAIPreferences(true)}
+                styles={styles}
+                groups={editableGroups || []}
+                totalCost={editableTotalCost || 0}
+                contractor={contractor}
+                projectSummary={projectSummary}
+                leadId={leadId}
               />
             </div>
+          </div>
 
-            <EstimateTotals
-                totalCost={totalCost}
-                isEstimateReady={isEstimateReady}
-                templateStyle={templateSettings.estimate_template_style || 'modern'}
+          {estimate?.ai_generated_title && (
+            <h2 className={cn(styles.title, "mb-3 text-center text-base sm:text-lg md:text-xl")}>
+              {estimate.ai_generated_title}
+            </h2>
+          )}
+
+          {(settings?.estimate_client_message || projectSummary) && (
+            <div className={cn(styles.message, "mb-4 sm:mb-6 text-sm sm:text-base")}>
+              <p className={styles.text}>
+                {settings?.estimate_client_message || projectSummary}
+              </p>
+            </div>
+          )}
+
+          {projectImages && projectImages.length > 0 && (
+            <div className="mb-4 sm:mb-6 overflow-x-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
+                {projectImages.map((image, index) => (
+                  <div
+                    key={index}
+                    className="aspect-square relative rounded-lg overflow-hidden"
+                  >
+                    <img
+                      src={image}
+                      alt={`Project image ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            {isEditable ? (
+              renderEditableEstimateTable()
+            ) : (
+              <EstimateTable
+                groups={groups}
+                isLoading={isLoading}
                 styles={styles}
-                taxRate={settings?.tax_rate??0}
-            />
-
-            {templateSettings?.estimate_footer_text && (
-                <div className={cn("mt-6 sm:mt-8 pt-4 sm:pt-6 border-t", styles.text, "text-xs sm:text-sm")}>
-                  <p className="whitespace-pre-wrap">
-                    {templateSettings.estimate_footer_text}
-                  </p>
-                </div>
-            )}
-
-            {templateSettings?.estimate_signature_enabled && (
-                <EstimateSignature
-                    signature={signature}
-                    isEstimateReady={isEstimateReady}
-                    onSignatureClick={() => setShowSignatureDialog(true)}
-                    styles={styles}
-                />
+                hideSubtotals={templateSettings.estimate_hide_subtotals || false}
+                isMobile={isMobile}
+              />
             )}
           </div>
-        </Card>
 
-        <SignatureDialog
-            isOpen={showSignatureDialog}
-            onClose={() => setShowSignatureDialog(false)}
-            onSign={handleSignature}
-        />
+          {!isEditable && (
+            <EstimateTotals
+              totalCost={totalCost}
+              isEstimateReady={isEstimateReady}
+              templateStyle={templateSettings.estimate_template_style || 'modern'}
+              styles={styles}
+              taxRate={settings?.tax_rate ?? 0}
+            />
+          )}
 
+          {templateSettings?.estimate_footer_text && (
+            <div className={cn("mt-6 sm:mt-8 pt-4 sm:pt-6 border-t", styles.text, "text-xs sm:text-sm")}>
+              <p className="whitespace-pre-wrap">
+                {templateSettings.estimate_footer_text}
+              </p>
+            </div>
+          )}
 
-        {isContractor && (
-            <>
-              {showSettings && (
-                  <SettingsDialog
-                      title="Estimate Settings"
-                      description="Customize how your estimates appear to clients"
-                      isOpen={showSettings}
-                      onClose={() => setShowSettings(false)}
-                  >
-                    <EstimateTemplateSettings contractorId={contractorId} />
-                  </SettingsDialog>
-              )}
-              {showAIPreferences && (
-                  <SettingsDialog
-                      title="AI Preferences"
-                      description="Configure AI settings for estimate generation"
-                      isOpen={showAIPreferences}
-                      onClose={() => setShowAIPreferences(false)}
-                  >
-                    <AIPreferencesSettings key={`ai-preferences-${showAIPreferences}`} />
-                  </SettingsDialog>
-              )}
-            </>
-        )}
-      </>
+          {templateSettings?.estimate_signature_enabled && (
+            <EstimateSignature
+              signature={signature}
+              isEstimateReady={isEstimateReady}
+              onSignatureClick={() => setShowSignatureDialog(true)}
+              styles={styles}
+            />
+          )}
+        </div>
+      </Card>
+
+      <SignatureDialog
+        isOpen={showSignatureDialog}
+        onClose={() => setShowSignatureDialog(false)}
+        onSign={handleSignature}
+      />
+
+      {isContractor && (
+        <>
+          {showSettings && (
+            <SettingsDialog
+              title="Estimate Settings"
+              description="Customize how your estimates appear to clients"
+              isOpen={showSettings}
+              onClose={() => setShowSettings(false)}
+            >
+              <EstimateTemplateSettings contractorId={contractorId} />
+            </SettingsDialog>
+          )}
+          {showAIPreferences && (
+            <SettingsDialog
+              title="AI Preferences"
+              description="Configure AI settings for estimate generation"
+              isOpen={showAIPreferences}
+              onClose={() => setShowAIPreferences(false)}
+            >
+              <AIPreferencesSettings key={`ai-preferences-${showAIPreferences}`} />
+            </SettingsDialog>
+          )}
+        </>
+      )}
+    </>
   );
 };
