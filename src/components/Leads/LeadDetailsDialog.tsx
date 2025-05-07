@@ -417,12 +417,27 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   const renderActionButtons = () => {
     if (isEditing) {
       return (
-        <Button 
-          onClick={handleSaveEstimate} 
-          disabled={isSaving || (!effectiveContractorId || (isLoadingUser && !urlContractorId))}
-        >
-          {isSaving ? "Saving..." : "Save Changes"}
-        </Button>
+        <div className="flex justify-end items-center space-x-2">
+          <Button 
+            variant="outline"
+            onClick={() => {
+              setIsEditing(false);
+              // Reset edited estimate to original values
+              if (lead?.estimate_data) {
+                const deepCopy = JSON.parse(JSON.stringify(lead.estimate_data));
+                setEditedEstimate(deepCopy);
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSaveEstimate} 
+            disabled={isSaving || (!effectiveContractorId || (isLoadingUser && !urlContractorId))}
+          >
+            {isSaving ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
       );
     }
 
