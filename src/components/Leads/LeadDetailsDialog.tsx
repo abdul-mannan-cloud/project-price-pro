@@ -453,9 +453,8 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                className="rounded-none shadow-none last:rounded-e-lg focus-visible:z-10"
+                className="rounded-none shadow-none last:rounded-e-lg focus-visible:z-10 px-4"
                 variant="outline"
-                size="icon"
                 aria-label="More options"
                 disabled={disabled}
               >
