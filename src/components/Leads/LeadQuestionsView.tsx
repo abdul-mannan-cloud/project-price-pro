@@ -1,12 +1,30 @@
 import { Separator } from "@/components/ui/separator";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, Edit, Save, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Lead } from "./LeadsTable";
 
 interface LeadQuestionsViewProps {
   lead: Lead | null;
+  refetchLead?: () => void;
 }
 
-export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
+export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editedData, setEditedData] = useState({
+    user_name: lead?.user_name || "",
+    user_email: lead?.user_email || "",
+    user_phone: lead?.user_phone || "",
+    project_address: lead?.project_address || "",
+    project_title: lead?.project_title || ""
+  });
+  const queryClient = useQueryClient();
+
   if (!lead) {
     return <div>No lead data available</div>;
   }
@@ -19,49 +37,193 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
     window.location.href = `tel:${phone}`;
   };
 
-  console.log("LEad DAta",lead)
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditedData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    if (!lead?.id) return;
+    
+    setIsSaving(true);
+    
+    try {
+      // Update lead in database
+      const { data, error } = await supabase
+        .from('leads')
+        .update({
+          user_name: editedData.user_name,
+          user_email: editedData.user_email,
+          user_phone: editedData.user_phone,
+          project_address: editedData.project_address,
+          project_title: editedData.project_title
+        })
+        .eq('id', lead.id);
+      
+      if (error) throw error;
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries(['lead', lead.id]);
+      queryClient.invalidateQueries(['leads']);
+      
+      // Refetch lead data if callback provided
+      if (refetchLead) {
+        refetchLead();
+      }
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: "Customer information updated successfully.",
+      });
+      
+      // Exit edit mode
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update customer information. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    // Reset to original values
+    setEditedData({
+      user_name: lead.user_name || "",
+      user_email: lead.user_email || "",
+      user_phone: lead.user_phone || "",
+      project_address: lead.project_address || "",
+      project_title: lead.project_title || ""
+    });
+    setIsEditing(false);
+  };
 
   return (
-    <div className="space-y-8 ">
+    <div className="space-y-8">
       {/* Customer Information */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Customer Information</h3>
+          {isEditing ? (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleCancel}
+                className="gap-1"
+              >
+                <X className="h-4 w-4" />
+                Cancel
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={handleSave}
+                disabled={isSaving}
+                className="gap-1"
+              >
+                <Save className="h-4 w-4" />
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsEditing(true)}
+              className="gap-1"
+            >
+              <Edit className="h-4 w-4" />
+              Edit Information
+            </Button>
+          )}
+        </div>
+        
         <div className="grid gap-4 bg-muted/30 p-6 rounded-lg">
           <div>
             <p className="text-sm text-muted-foreground">Name</p>
-            <p className="font-medium">{lead?.user_name || "Not provided"}</p>
+            {isEditing ? (
+              <Input
+                name="user_name"
+                value={editedData.user_name}
+                onChange={handleChange}
+                className="mt-1"
+                placeholder="Enter customer name"
+              />
+            ) : (
+              <p className="font-medium">{lead?.user_name || "Not provided"}</p>
+            )}
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Email</p>
-            {lead?.user_email ? (
-              <button
-                onClick={() => handleEmailClick(lead.user_email!)}
-                className="font-medium text-primary hover:underline inline-flex items-center gap-2"
-              >
-                <Mail className="h-4 w-4" />
-                {lead.user_email}
-              </button>
+            {isEditing ? (
+              <Input
+                type="email"
+                name="user_email"
+                value={editedData.user_email}
+                onChange={handleChange}
+                className="mt-1"
+                placeholder="Enter email address"
+              />
             ) : (
-              <p className="font-medium">Not provided</p>
+              lead?.user_email ? (
+                <button
+                  onClick={() => handleEmailClick(lead.user_email!)}
+                  className="font-medium text-primary hover:underline inline-flex items-center gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  {lead.user_email}
+                </button>
+              ) : (
+                <p className="font-medium">Not provided</p>
+              )
             )}
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Phone</p>
-            {lead?.user_phone ? (
-              <button
-                onClick={() => handlePhoneClick(lead.user_phone!)}
-                className="font-medium text-primary hover:underline inline-flex items-center gap-2"
-              >
-                <Phone className="h-4 w-4" />
-                {lead.user_phone}
-              </button>
+            {isEditing ? (
+              <Input
+                type="tel"
+                name="user_phone"
+                value={editedData.user_phone}
+                onChange={handleChange}
+                className="mt-1"
+                placeholder="Enter phone number"
+              />
             ) : (
-              <p className="font-medium">Not provided</p>
+              lead?.user_phone ? (
+                <button
+                  onClick={() => handlePhoneClick(lead.user_phone!)}
+                  className="font-medium text-primary hover:underline inline-flex items-center gap-2"
+                >
+                  <Phone className="h-4 w-4" />
+                  {lead.user_phone}
+                </button>
+              ) : (
+                <p className="font-medium">Not provided</p>
+              )
             )}
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Project Address</p>
-            <p className="font-medium">{lead?.project_address || "Not provided"}</p>
+            {isEditing ? (
+              <Input
+                name="project_address"
+                value={editedData.project_address}
+                onChange={handleChange}
+                className="mt-1"
+                placeholder="Enter project address"
+              />
+            ) : (
+              <p className="font-medium">{lead?.project_address || "Not provided"}</p>
+            )}
           </div>
         </div>
       </div>
@@ -74,7 +236,17 @@ export const LeadQuestionsView = ({ lead }: LeadQuestionsViewProps) => {
         <div className="space-y-4 bg-muted/30 p-6 rounded-lg">
           <div>
             <p className="text-sm text-muted-foreground">Title</p>
-            <p className="font-medium">{lead?.project_title || "Not provided"}</p>
+            {isEditing ? (
+              <Input
+                name="project_title"
+                value={editedData.project_title}
+                onChange={handleChange}
+                className="mt-1"
+                placeholder="Enter project title"
+              />
+            ) : (
+              <p className="font-medium">{lead?.project_title || "Not provided"}</p>
+            )}
           </div>
           {lead?.project_description && (
             <div>
