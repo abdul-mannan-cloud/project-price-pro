@@ -7,13 +7,15 @@ interface EstimateSignatureProps {
   isEstimateReady: boolean;
   onSignatureClick: () => void;
   styles: Record<string, string>;
+  contractorSignature?: string | null; // Added to track contractor signature
 }
 
 export const EstimateSignature = ({
   signature,
   isEstimateReady,
   onSignatureClick,
-  styles
+  styles,
+  contractorSignature = null // Default to null if not provided
 }: EstimateSignatureProps) => {
   const isMobile = useMediaQuery("(max-width: 640px)");
 
@@ -31,34 +33,12 @@ export const EstimateSignature = ({
         "grid gap-4 sm:gap-6",
         isMobile ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"
       )}>
-        {/* Client Signature - Not clickable */}
+        {/* Client Signature - Now clickable */}
         <div className="space-y-2 sm:space-y-3">
           <p className={cn(
             "font-medium",
             isMobile ? "text-xs" : "text-sm"
           )}>Client Signature</p>
-
-          {!isEstimateReady ? (
-            <div className={cn(
-              "bg-gray-200 animate-pulse rounded relative overflow-hidden",
-              isMobile ? "h-24" : "h-32"
-            )} />
-          ) : (
-            <div className={cn(
-              styles.signatureBox,
-              "bg-gray-50",
-              isMobile ? "h-24" : "h-32"
-            )}></div>
-          )}
-          <p className={isMobile ? "text-xs" : "text-sm"}>Client approval</p>
-        </div>
-
-        {/* Contractor Signature - Clickable */}
-        <div className="space-y-2 sm:space-y-3">
-          <p className={cn(
-            "font-medium",
-            isMobile ? "text-xs" : "text-sm"
-          )}>Contractor Signature</p>
 
           {!isEstimateReady ? (
             <div className={cn(
@@ -101,6 +81,49 @@ export const EstimateSignature = ({
             </div>
           )}
           <p className={isMobile ? "text-xs" : "text-sm"}>Sign above to approve this estimate</p>
+        </div>
+
+        {/* Contractor Signature - Now non-clickable */}
+        <div className="space-y-2 sm:space-y-3">
+          <p className={cn(
+            "font-medium",
+            isMobile ? "text-xs" : "text-sm"
+          )}>Contractor Signature</p>
+
+          {!isEstimateReady ? (
+            <div className={cn(
+              "bg-gray-200 animate-pulse rounded relative overflow-hidden",
+              isMobile ? "h-24" : "h-32"
+            )} />
+          ) : (
+            <div className={cn(
+              styles.signatureBox,
+              "bg-gray-50",
+              isMobile ? "h-24" : "h-32"
+            )}>
+              {contractorSignature && (
+                <div className="p-2 sm:p-4">
+                  <p className={cn(
+                    styles.signatureText,
+                    isMobile ? "text-sm" : "text-base"
+                  )}>
+                    {contractorSignature}
+                  </p>
+                  <p className={cn(
+                    styles.signatureDate,
+                    isMobile ? "text-xs" : "text-sm"
+                  )}>
+                    {new Date().toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          <p className={isMobile ? "text-xs" : "text-sm"}>Contractor approval</p>
         </div>
       </div>
     </div>

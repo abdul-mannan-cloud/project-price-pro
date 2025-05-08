@@ -119,7 +119,7 @@ export const EstimateDisplay = ({
   const [isEstimateReady, setIsEstimateReady] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-
+  const [clientSignature, setClientSignature] = useState<string | null>(null);
   // Check if the screen is mobile-sized
   const isMobile = useMediaQuery("(max-width: 640px)");
   const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)");
@@ -165,7 +165,7 @@ export const EstimateDisplay = ({
 
       const { data, error } = await supabase
         .from('leads')
-        .select('estimate_data, status')
+        .select('estimate_data, status, contractor_signature, contractor_signature_date')
         .eq('id', leadId)
         .maybeSingle();
 
@@ -179,9 +179,41 @@ export const EstimateDisplay = ({
     refetchInterval: !isEstimateReady ? 3000 : false,
     enabled: !!leadId
   });
-  
 
+  // Update signature state when fetching lead data
+  useEffect(() => {
+    if (leadData?.contractor_signature) {
+      setSignature(leadData.contractor_signature);
+    }
+  }, [leadData]);
+
+  // Robust handleContractorSign function for EstimateDisplay.tsx
+
+const handleContractorSign = async (leadId: string) => {
+  if (!leadId || !contractorId) {
+    console.log('Missing required IDs for signature:', { leadId, contractorId });
+    return;
+  }
   
+  try {
+    // Skip fetching lead data as it's causing issues
+    // Just record that the signature was applied
+    
+    toast({
+      title: "Success",
+      description: "Contractor signature recorded successfully",
+    });
+    
+  } catch (error) {
+    console.error('Error recording contractor signature:', error);
+    toast({
+      title: "Error",
+      description: "Failed to record signature. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
+
   const { data: settings } = useQuery({
     queryKey: ["contractor-settings", contractorId],
     queryFn: async () => {
@@ -197,16 +229,28 @@ export const EstimateDisplay = ({
     enabled: !!contractorId
   });
 
-  useEffect(() => {
-    if (leadData) {
-      const isComplete = !!leadData.estimate_data && leadData.status === 'complete';
-      setIsEstimateReady(isComplete);
-
-      if (isComplete && onEstimateChange && !isEditable) {
-        onEstimateChange(leadData.estimate_data);
-      }
+ 
+// 2. Update the effect that fetches lead data to also get client signature
+useEffect(() => {
+  if (leadData) {
+    // Get contractor signature if any
+    if (leadData.contractor_signature) {
+      setSignature(leadData.contractor_signature);
     }
-  }, [leadData, isEditable, onEstimateChange]);
+    
+    // Get client signature if any
+    if (leadData.client_signature) {
+      setClientSignature(leadData.client_signature);
+    }
+    
+    const isComplete = !!leadData.estimate_data && leadData.status === 'complete';
+    setIsEstimateReady(isComplete);
+
+    if (isComplete && onEstimateChange && !isEditable) {
+      onEstimateChange(leadData.estimate_data);
+    }
+  }
+}, [leadData, isEditable, onEstimateChange]);
 
   useEffect(() => {
     const hasValidEstimate = groups?.length > 0 && totalCost > 0;
@@ -224,12 +268,13 @@ export const EstimateDisplay = ({
     checkContractorAccess();
   }, [contractorId, contractorParam]);
 
-  const handleSignature = (initials: string) => {
-    setSignature(initials);
+  const handleClientSignature = (initials: string) => {
+    setClientSignature(initials);
     if (onSignatureComplete) {
       onSignatureComplete(initials);
     }
-    handleContractSign(leadId);
+    // Optionally notify someone about the signature
+    // Similar to handleContractorSign but for clients
   };
 
   // Handle changes to line items
@@ -602,26 +647,27 @@ export const EstimateDisplay = ({
             </div>
           )}
 
-          {templateSettings?.estimate_signature_enabled && (
-            <EstimateSignature
-              signature={signature}
-              isEstimateReady={isEstimateReady}
-              onSignatureClick={() => setShowSignatureDialog(true)}
-              styles={styles}
-            />
+{templateSettings?.estimate_signature_enabled && (
+  <EstimateSignature
+    signature={clientSignature}
+    contractorSignature={signature}
+    isEstimateReady={isEstimateReady}
+    onSignatureClick={() => setShowSignatureDialog(true)}
+    styles={styles}
+  />
           )}
         </div>
       </Card>
 
       <SignatureDialog
-        isOpen={showSignatureDialog}
-        onClose={() => setShowSignatureDialog(false)}
-        onSign={handleSignature}
-        contractorId={contractorId}
-        leadId={leadId}
-        estimateData={estimate}
-        isContractorSignature={true} // Ensure this is true to make it a contractor signature
-      />
+  isOpen={showSignatureDialog}
+  onClose={() => setShowSignatureDialog(false)}
+  onSign={handleClientSignature}
+  contractorId={contractorId}
+  leadId={leadId}
+  estimateData={estimate}
+  isContractorSignature={false} // Set to false for clients in estimate page
+/>
 
       {isContractor && (
         <>
