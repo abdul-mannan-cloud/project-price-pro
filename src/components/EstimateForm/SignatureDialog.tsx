@@ -60,33 +60,78 @@ export const SignatureDialog = ({
         if (updateError) throw updateError;
       }
 
-      // If client is signing, notify contractor (only if it's a client signature)
-      if (!isContractorSignature && contractorId) {
-        const { data: contractor, error: contractorError } = await supabase
-          .from('contractors')
-          .select('contact_email,business_name')
-          .eq('id', contractorId)
-          .single();
+      // Try to send notifications, but don't block the signature process if they fail
+      if (isContractorSignature && contractorId) {
+        try {
+          // Get contractor details for notifications
+          const { data: contractor, error: contractorError } = await supabase
+            .from('contractors')
+            .select('contact_email,contact_phone,business_name')
+            .eq('id', contractorId)
+            .single();
 
-        if (contractorError) throw contractorError;
+          if (!contractorError && contractor) {
+            // Prepare basic data for notifications
+            const estimateUrl = `${window.location.origin}/estimate/${leadId}`;
+            const businessName = contractor?.business_name || 'Your Business';
+            const projectTitle = estimateData?.project_title || 'Project';
 
-        // Send email to contractor
-        const { error: emailError } = await supabase.functions.invoke('send-estimate-email', {
-          body: {
-            estimateId: leadId,
-            contractorEmail: contractor.contact_email,
-            estimateData,
-            estimateUrl: `${window.location.origin}/estimate/${leadId}`,
-            clientName: initials,
-            businessName: contractor.business_name,
+            // Skip lead query as it's failing, and use estimateData directly
+            // Try to send email notification to contractor
+            if (contractor.contact_email) {
+              try {
+                const { error: emailError } = await supabase.functions.invoke('send-customer-estimate-email', {
+                  body: {
+                    estimateId: leadId,
+                    contractorEmail: contractor.contact_email,
+                    contractorName: contractor.business_name || 'Contractor',
+                    contractorPhone: contractor.contact_phone || '',
+                    customerEmail: contractor.contact_email,
+                    customerName: contractor.business_name || 'Contractor',
+                    estimateData: estimateData || { totalCost: 0, project_title: 'Project' },
+                    estimateUrl: estimateUrl,
+                    businessName: businessName,
+                    signatureType: 'contractor',
+                    signerInitials: initials
+                  }
+                });
+
+                if (emailError) {
+                  console.error('Error sending email notification:', emailError);
+                }
+              } catch (emailError) {
+                console.error('Error calling email function:', emailError);
+              }
+            }
+
+            // Try to send SMS notification to contractor
+            if (contractor.contact_phone) {
+              try {
+                const smsMessage = `You have signed the estimate for ${projectTitle}. Signature: ${initials}. Date: ${new Date().toLocaleDateString()}.`;
+                
+                await supabase.functions.invoke('send-sms', {
+                  body: {
+                    phone: contractor.contact_phone,
+                    message: smsMessage,
+                    recipientType: 'contractor'
+                  }
+                });
+              } catch (smsError) {
+                console.error('Error calling SMS function:', smsError);
+              }
+            }
+          } else {
+            console.warn('Could not find contractor for notifications:', contractorError);
           }
-        });
-
-        if (emailError) throw emailError;
+        } catch (notificationError) {
+          console.error('Error sending notifications, but signature was recorded:', notificationError);
+        }
       }
 
+      // Call the callback to update UI
       onSign(initials);
       onClose();
+      
       toast({
         title: "Success",
         description: `${isContractorSignature ? "Contractor" : "Client"} signature submitted successfully`,
