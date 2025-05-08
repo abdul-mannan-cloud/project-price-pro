@@ -7,10 +7,12 @@ import {
   Mail, 
   X, 
   Edit, 
-  Link, 
+  Link as LinkIcon, 
   Trash2, 
   MoreHorizontal, 
-  Copy
+  Copy,
+  LockIcon,
+  UnlockIcon
 } from "lucide-react";
 import type { Lead } from "./LeadsTable";
 import { useState, useEffect } from "react";
@@ -41,6 +43,54 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// EstimateLockBanner Component
+const EstimateLockBanner = ({ isLocked, onUnlock, className = "" }) => {
+  if (!isLocked) return null;
+  
+  return (
+    <div className={`bg-amber-50 border-l-4 border-amber-500 p-4 mb-4 flex justify-between items-center ${className}`}>
+      <div className="flex items-center">
+        <LockIcon className="text-amber-500 mr-3 h-5 w-5" />
+        <div>
+          <p className="text-amber-800 font-medium">This estimate is locked</p>
+          <p className="text-amber-700 text-sm">The client has signed this estimate. You need to unlock it before making changes.</p>
+        </div>
+      </div>
+      <Button 
+        variant="outline" 
+        className="bg-white border-amber-500 text-amber-700 hover:bg-amber-50"
+        onClick={onUnlock}
+      >
+        <UnlockIcon className="mr-2 h-4 w-4" />
+        Unlock Estimate
+      </Button>
+    </div>
+  );
+};
+
+// UnlockConfirmDialog Component
+const UnlockConfirmDialog = ({ isOpen, onClose, onConfirm }) => {
+  return (
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Unlock Signed Estimate?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This estimate has been signed by the client. Unlocking it will allow you to make changes, 
+            but the client will need to sign it again. Are you sure you want to proceed?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>
+            Unlock Estimate
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 interface LeadDetailsDialogProps {
   lead: Lead | null;
   onClose: () => void;
@@ -58,6 +108,10 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  // New state for estimate locking
+  const [isEstimateLocked, setIsEstimateLocked] = useState(false);
+  const [showUnlockDialog, setShowUnlockDialog] = useState(false);
+  
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
@@ -156,12 +210,61 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
     }
   }, [fetchedLead]);
 
+  // Check if estimate is locked (client has signed)
+  useEffect(() => {
+    if (lead?.client_signature) {
+      setIsEstimateLocked(true);
+    } else {
+      setIsEstimateLocked(false);
+    }
+  }, [lead?.client_signature]);
+
   // Update email recipient when lead changes
   useEffect(() => {
     if (lead?.user_email) {
       setEmailRecipient(lead.user_email);
     }
   }, [lead?.user_email]);
+
+  // Function to handle unlocking the estimate
+  const handleUnlockEstimate = async () => {
+    if (!lead || !effectiveContractorId) return;
+    
+    try {
+      // Update the lead to remove client signature
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          client_signature: null,
+          client_signature_date: null
+        })
+        .eq('id', lead.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setIsEstimateLocked(false);
+      
+      // Close dialog
+      setShowUnlockDialog(false);
+      
+      // Refresh lead data
+      refetchLead();
+      
+      // Show toast
+      toast({
+        title: "Estimate unlocked",
+        description: "You can now edit this estimate. The client will need to sign it again.",
+      });
+    } catch (error) {
+      console.error('Error unlocking estimate:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unlock estimate. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSaveEstimate = async () => {
     if (!lead || !effectiveContractorId) {
@@ -447,15 +550,29 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
     return (
       <div className="flex justify-end items-center">
         <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse">
-          <Button 
-            className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10"
-            variant="outline"
-            onClick={() => setIsEditing(true)}
-            disabled={disabled}
-          >
-            <Edit className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
-            Edit
-          </Button>
+          {isEstimateLocked ? (
+            // If estimate is locked (client has signed), show locked button
+            <Button 
+              className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10"
+              variant="outline"
+              disabled={true}
+              title="Estimate is locked - client has signed"
+            >
+              <LockIcon className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+              Locked
+            </Button>
+          ) : (
+            // If estimate is not locked, show normal edit button
+            <Button 
+              className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10"
+              variant="outline"
+              onClick={() => setIsEditing(true)}
+              disabled={disabled}
+            >
+              <Edit className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+              Edit
+            </Button>
+          )}
           <Button 
             className="rounded-none shadow-none focus-visible:z-10"
             variant="outline"
@@ -485,6 +602,15 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
                 <Copy className="mr-2 h-4 w-4" />
                 Duplicate Lead
               </DropdownMenuItem>
+              {isEstimateLocked && (
+                <DropdownMenuItem
+                  onClick={() => setShowUnlockDialog(true)}
+                  className="cursor-pointer"
+                >
+                  <UnlockIcon className="mr-2 h-4 w-4" />
+                  Unlock Estimate
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={() => setShowDeleteDialog(true)}
@@ -569,6 +695,13 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
               <div className="max-w-6xl mx-auto pt-6">
                 {view === "estimate" && lead && (
                   <>
+                    {isEstimateLocked && (
+                      <EstimateLockBanner 
+                        isLocked={isEstimateLocked} 
+                        onUnlock={() => setShowUnlockDialog(true)} 
+                        className="mb-4" 
+                      />
+                    )}
                     {renderActionButtons()}
                     <div className="mt-4">
                       <EstimateDisplay 
@@ -615,7 +748,7 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
                     className="rounded-none shadow-none last:rounded-e-lg focus-visible:z-10 flex-1"
                     onClick={handleCopyLink}
                   >
-                    <Link className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+                    <LinkIcon className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
                     Copy Link
                   </Button>
                 </div>
@@ -675,6 +808,13 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Unlock Confirmation Dialog */}
+      <UnlockConfirmDialog 
+        isOpen={showUnlockDialog}
+        onClose={() => setShowUnlockDialog(false)}
+        onConfirm={handleUnlockEstimate}
+      />
     </>
   );
 };
