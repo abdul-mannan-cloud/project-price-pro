@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -19,6 +18,7 @@ interface SignatureDialogProps {
   contractorId?: string;
   leadId?: string;
   estimateData?: any;
+  isContractorSignature?: boolean; // Prop to determine signature type
 }
 
 export const SignatureDialog = ({ 
@@ -27,7 +27,8 @@ export const SignatureDialog = ({
   onSign,
   contractorId,
   leadId,
-  estimateData 
+  estimateData,
+  isContractorSignature = true // Default to contractor signature
 }: SignatureDialogProps) => {
   const [initials, setInitials] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,21 +40,28 @@ export const SignatureDialog = ({
 
     setIsSubmitting(true);
     try {
-      // Update the lead with the client signature
+      // Update the lead with the appropriate signature based on who is signing
       if (leadId) {
+        const updateData = isContractorSignature
+          ? {
+              contractor_signature: initials,
+              contractor_signature_date: new Date().toISOString()
+            }
+          : {
+              client_signature: initials,
+              client_signature_date: new Date().toISOString()
+            };
+
         const { error: updateError } = await supabase
           .from('leads')
-          .update({
-            client_signature: initials,
-            client_signature_date: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', leadId);
 
         if (updateError) throw updateError;
       }
 
-      // Get contractor email and send notification
-      if (contractorId) {
+      // If client is signing, notify contractor (only if it's a client signature)
+      if (!isContractorSignature && contractorId) {
         const { data: contractor, error: contractorError } = await supabase
           .from('contractors')
           .select('contact_email,business_name')
@@ -81,7 +89,7 @@ export const SignatureDialog = ({
       onClose();
       toast({
         title: "Success",
-        description: "Signature submitted successfully",
+        description: `${isContractorSignature ? "Contractor" : "Client"} signature submitted successfully`,
       });
     } catch (error) {
       console.error('Error signing estimate:', error);
@@ -99,7 +107,9 @@ export const SignatureDialog = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Digital Signature</DialogTitle>
+          <DialogTitle>
+            {isContractorSignature ? "Contractor Signature" : "Client Signature"}
+          </DialogTitle>
           <DialogDescription>
             By entering your initials below, you agree that this digital signature
             is as valid as a physical signature and you accept the terms of this estimate.

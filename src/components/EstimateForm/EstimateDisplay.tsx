@@ -179,7 +179,9 @@ export const EstimateDisplay = ({
     refetchInterval: !isEstimateReady ? 3000 : false,
     enabled: !!leadId
   });
+  
 
+  
   const { data: settings } = useQuery({
     queryKey: ["contractor-settings", contractorId],
     queryFn: async () => {
@@ -516,23 +518,23 @@ export const EstimateDisplay = ({
             <EstimateHeader contractor={contractor} styles={styles} />
 
             <div className={cn(styles.headerContent, "mt-2 sm:mt-0")}>
-  <EstimateActions
-    isContractor={isContractor}
-    companyName={contractor?.business_name || 'Estimate'}
-    onRefreshEstimate={async () => {
-      handleRefreshEstimate(leadId);
-    }}
-    onShowSettings={() => setShowSettings(true)}
-    onShowAIPreferences={() => setShowAIPreferences(true)}
-    styles={styles}
-    groups={editableGroups || []}
-    totalCost={editableTotalCost || 0}
-    contractor={contractor}
-    projectSummary={projectSummary}
-    leadId={leadId}
-    isEditable={isEditable} // Add this prop here
-  />
-</div>
+              <EstimateActions
+                isContractor={isContractor}
+                companyName={contractor?.business_name || 'Estimate'}
+                onRefreshEstimate={async () => {
+                  handleRefreshEstimate(leadId);
+                }}
+                onShowSettings={() => setShowSettings(true)}
+                onShowAIPreferences={() => setShowAIPreferences(true)}
+                styles={styles}
+                groups={editableGroups || []}
+                totalCost={editableTotalCost || 0}
+                contractor={contractor}
+                projectSummary={projectSummary}
+                leadId={leadId}
+                isEditable={isEditable} // Add this prop here
+              />
+            </div>
           </div>
 
           {estimate?.ai_generated_title && (
@@ -615,6 +617,10 @@ export const EstimateDisplay = ({
         isOpen={showSignatureDialog}
         onClose={() => setShowSignatureDialog(false)}
         onSign={handleSignature}
+        contractorId={contractorId}
+        leadId={leadId}
+        estimateData={estimate}
+        isContractorSignature={true} // Ensure this is true to make it a contractor signature
       />
 
       {isContractor && (
