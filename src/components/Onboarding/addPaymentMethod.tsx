@@ -13,17 +13,15 @@ import { Button } from '../ui/button'
 
 const stripePromise = loadStripe('pk_live_51R7hjJGwj3ICel7hmb3HTrIvr2S5nedArorTgkCOCXTR0r4OYKipT97wocqM1Hn7ROTpWpUo9MneLWhbawaLYaGZ00o1rpH1Ol')
 
-function PaymentForm({ customerName, clientSecret, setCurrentStep }: { customerName: string, clientSecret: string, setCurrentStep: React.Dispatch<React.SetStateAction<any>> }) {
+function PaymentForm({ customerName, clientSecret, setCurrentStep, handleSubmit }: { customerName: string, clientSecret: string, setCurrentStep: React.Dispatch<React.SetStateAction<any>>, handleSubmit: () => void }) {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-
-  console.log("CLIENT DETAILS:", customerName, clientSecret);
   
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
@@ -67,6 +65,8 @@ function PaymentForm({ customerName, clientSecret, setCurrentStep }: { customerN
     } else {
       setSuccess(true)
     }
+
+    handleSubmit();
   
     setLoading(false)
   }
@@ -89,58 +89,56 @@ function PaymentForm({ customerName, clientSecret, setCurrentStep }: { customerN
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-  <label className="block text-sm font-medium text-gray-700">Card Details</label>
+    <form onSubmit={handleFormSubmit} className="space-y-4">
+      <label className="block text-sm font-medium text-gray-700">Card Details</label>
+      <div className='flex flex-col rounded-md border border-gray-300'>
+        <div className="p-3 bg-white rounded-t-md border-b border-gray-300">
+          <CardNumberElement options={ELEMENT_OPTIONS} />
+        </div>
 
-  {/* Card Number */}
-  <div className="border border-gray-300 rounded-md p-3 bg-white">
-    <CardNumberElement options={ELEMENT_OPTIONS} />
-  </div>
+        <div className="flex">
+          <div className="flex-1 p-3 border-r border-gray-300">
+            <CardExpiryElement options={ELEMENT_OPTIONS} />
+          </div>
+          <div className="flex-1 p-3">
+            <CardCvcElement options={ELEMENT_OPTIONS} />
+          </div>
+        </div>
+      </div>
+      {error && <p className="text-red-500">{error}</p>}
+      {success && <p className="text-green-500">Payment method saved!</p>}
 
-  {/* Expiry + CVC in same row */}
-  <div className="flex gap-4">
-    <div className="flex-1 border border-gray-300 rounded-md p-3 bg-white">
-      <CardExpiryElement options={ELEMENT_OPTIONS} />
-    </div>
-    <div className="flex-1 border border-gray-300 rounded-md p-3 bg-white">
-      <CardCvcElement options={ELEMENT_OPTIONS} />
-    </div>
-  </div>
+      <div className="mt-6 text-xs text-center text-gray-500">
+        <p>Your payment information is securely processed by Stripe.</p>
+        <p>By adding a payment method, you agree to our Terms of Service and Privacy Policy.</p>
+      </div>
 
-  {error && <p className="text-red-500">{error}</p>}
-  {success && <p className="text-green-500">Payment method saved!</p>}
+      <div className="flex justify-between pt-6">
+        <Button
+          variant="ghost"
+          onClick={() => setCurrentStep(2)}
+          disabled={loading}
+          className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
+        >
+          Back
+        </Button>
+        <Button
+          type='submit'
+          disabled={!stripe || loading}
+          className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
+        >
+          {loading ? "Saving..." : "Confirm"}
+        </Button>
+      </div>
 
-  <div className="mt-6 text-xs text-center text-gray-500">
-    <p>Your payment information is securely processed by Stripe.</p>
-    <p>By adding a payment method, you agree to our Terms of Service and Privacy Policy.</p>
-  </div>
-
-  <div className="flex justify-between pt-6">
-    <Button
-      variant="ghost"
-      onClick={() => setCurrentStep(2)}
-      disabled={loading}
-      className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
-    >
-      Back
-    </Button>
-    <Button
-      type='submit'
-      disabled={!stripe || loading}
-      className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
-    >
-      {loading ? "Saving..." : "Confirm"}
-    </Button>
-  </div>
-
-</form>
+    </form>
   )
 }
 
-export default function AddPaymentMethod({ customerName, clientSecret, setCurrentStep }: { customerName: string, clientSecret: string, setCurrentStep: React.Dispatch<React.SetStateAction<any>> }) {
+export default function AddPaymentMethod({ customerName, clientSecret, setCurrentStep, handleSubmit }: { customerName: string, clientSecret: string, setCurrentStep: React.Dispatch<React.SetStateAction<any>>, handleSubmit: () => void }) {
   return (
     <Elements stripe={stripePromise}>
-      <PaymentForm customerName={customerName} clientSecret={clientSecret} setCurrentStep={setCurrentStep}/>
+      <PaymentForm customerName={customerName} clientSecret={clientSecret} setCurrentStep={setCurrentStep} handleSubmit={handleSubmit}/>
     </Elements>
   )
 }

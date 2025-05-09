@@ -11,7 +11,6 @@ import {Loader2} from "lucide-react";
 import { set } from "date-fns";
 import { cn } from "@/lib/utils";
 import PricingPlans from "@/components/PricingPlans";
-import PaymentMethodForm from "@/components/Onboarding/PaymentMethodForms";
 import AddPaymentMethod from "@/components/Onboarding/addPaymentMethod";
 
 type OnboardingStep = 0 | 1 | 2 | 3;
@@ -246,7 +245,7 @@ const Onboarding = () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-
+  
       if (!user) {
         toast({
           title: "Error",
@@ -255,98 +254,100 @@ const Onboarding = () => {
         });
         return;
       }
-
-      // First, try to get existing contractor
+  
       const { data: existingContractor, error: fetchError } = await supabase
-          .from("contractors")
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
+        .from("contractors")
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+  
       if (fetchError) throw fetchError;
 
+      console.log("FORM DATA STRIPE AND RESEND:", formData.stripe_customer_id, formData.resend_contact_key);
+      
+  
+      // Common contractor data
+      const contractorData: any = {
+        business_name: formData.businessName,
+        contact_email: formData.contactEmail,
+        contact_phone: formData.contactPhone,
+        business_address: existingContractor ? businessAddress : formData.address,
+        license_number: formData.licenseNumber,
+        branding_colors: {
+          primary: formData.primaryColor,
+          secondary: formData.secondaryColor,
+        },
+        tier: formData.tier,
+        stripe_customer_id: formData.stripe_customer_id,
+        resend_contact_key: formData.resend_contact_key,
+      };
+  
+      // Add `verified: true` if on PRICING step and tier is enterprise
+      if (currentStep === OnboardingSteps.PRICING && formData.tier === 'enterprise') {
+        contractorData.verified = true;
+      }
+  
       if (existingContractor) {
-        // Update existing contractor
         const { error: updateError } = await supabase
-            .from("contractors")
-            .update({
-              business_name: formData.businessName,
-              contact_email: formData.contactEmail,
-              contact_phone: formData.contactPhone,
-              business_address: businessAddress,
-              license_number: formData.licenseNumber,
-              branding_colors: {
-                primary: formData.primaryColor,
-                secondary: formData.secondaryColor,
-              },
-              tier: formData.tier,
-              stripe_customer_id: formData.stripe_customer_id,
-              resend_contact_key: formData.resend_contact_key,
-            })
-            .eq('id', existingContractor.id);
-
-        if (updateError) throw updateError;
-
-        // Update settings with same ID
+          .from("contractors")
+          .update(contractorData)
+          .eq('id', existingContractor.id);
+  
+        if (updateError)  { 
+          console.log("Update error:", updateError);
+          
+          throw updateError
+        };
+  
         const { error: settingsError } = await supabase
-            .from("contractor_settings")
-            .update({
-              minimum_project_cost: parseFloat(formData.minimumProjectCost),
-              markup_percentage: parseFloat(formData.markupPercentage),
-              tax_rate: parseFloat(formData.taxRate),
-            })
-            .eq('id', existingContractor.id);
-
+          .from("contractor_settings")
+          .update({
+            minimum_project_cost: parseFloat(formData.minimumProjectCost),
+            markup_percentage: parseFloat(formData.markupPercentage),
+            tax_rate: parseFloat(formData.taxRate),
+          })
+          .eq('id', existingContractor.id);
+  
         if (settingsError) throw settingsError;
+  
       } else {
-        // Generate a new UUID
         const newId = crypto.randomUUID();
-
-        // Create new contractor with specified ID
+  
         const { error: insertError } = await supabase
-            .from("contractors")
-            .insert({
-              id: newId,
-              user_id: user.id,
-              business_name: formData.businessName,
-              contact_email: formData.contactEmail,
-              contact_phone: formData.contactPhone,
-              business_address: formData.address,
-              license_number: formData.licenseNumber,
-              branding_colors: {
-                primary: formData.primaryColor,
-                secondary: formData.secondaryColor,
-              },
-              tier: formData.tier,
-              stripe_customer_id: formData.stripe_customer_id,
-              resend_contact_key: formData.resend_contact_key,
-            });
-
+          .from("contractors")
+          .insert({
+            id: newId,
+            user_id: user.id,
+            ...contractorData,
+          });
+  
         if (insertError) throw insertError;
-
-        // Create settings with same ID
+  
         const { error: settingsError } = await supabase
-            .from("contractor_settings")
-            .upsert({
-              id: newId,
-              minimum_project_cost: parseFloat(formData.minimumProjectCost),
-              markup_percentage: parseFloat(formData.markupPercentage),
-              tax_rate: parseFloat(formData.taxRate),
-            });
-
+          .from("contractor_settings")
+          .upsert({
+            id: newId,
+            minimum_project_cost: parseFloat(formData.minimumProjectCost),
+            markup_percentage: parseFloat(formData.markupPercentage),
+            tax_rate: parseFloat(formData.taxRate),
+          });
+  
         if (settingsError) throw settingsError;
       }
-
+  
       toast({
         title: "Information saved!",
         description: "Your business information has been saved successfully.",
       });
-
+      if (currentStep === OnboardingSteps.PRICING && formData.tier === 'enterprise') {
+        navigate("/dashboard");
+      }
       if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
         navigate("/dashboard");
       } else {
         setCurrentStep((prev) => (prev + 1) as OnboardingStep);
       }
+  
     } catch (error: any) {
       console.error('Onboarding error:', error);
       toast({
@@ -358,6 +359,7 @@ const Onboarding = () => {
       setLoading(false);
     }
   };
+  
 
     // useEffect(() => {
     //     const checkBusinessInfo = async () => {
@@ -407,41 +409,49 @@ const Onboarding = () => {
 
     const createContact = async () => {
       try {
-        const response = await supabase.functions.invoke('create-contact', {
-          body: {
-            email: "m.khizerr01@gmail.com",
-            firstName: "khizer",
-            lastName: "test",
-            audienceId: "78261eea-8f8b-4381-83c6-79fa7120f1cf",
-          },
-        });
-
-        // const response = await supabase.functions.invoke('send-sms', {
-        //   body: {
-        //     phone: "+19716128447",
-        //     message: "Hello, this is a test message.",
-        //   },
-        // });
-
-        if (response && response.data) {
-          setFormData((prev) => ({ ...prev, resend_contact_key: response.data.data.data.id }));
-        }
-  
-        const stripeResponse = await supabase.functions.invoke('create-stripe-customer', {
-          body: {
-            email: "m.khizerr01@gmail.com",
-            name: "khizer",
+        if (formData.tier === "pioneer") {
+          const response = await supabase.functions.invoke('create-contact', {
+            body: {
+              email: "m.khizerr01@gmail.com",
+              firstName: "khizer",
+              lastName: "test",
+              audienceId: "78261eea-8f8b-4381-83c6-79fa7120f1cf", 
+            },
+          });
+    
+          if (!response || !response.data) {
+            console.error("Failed to create contact");
+            return;
           }
-        });
-
-        if (stripeResponse.data && stripeResponse.data.clientSecret) {
-          setFormData((prev) => ({ ...prev, stripe_customer_id: stripeResponse.data.customer.id }));
+          
+          const contactId = response.data.data.data.id;
+          
+          const stripeResponse = await supabase.functions.invoke('create-stripe-customer', {
+            body: {
+              email: "m.khizerr01@gmail.com",
+              name: "khizer",
+            }
+          });
+    
+          if (!stripeResponse.data || !stripeResponse.data.clientSecret) {
+            console.error("Failed to retrieve client_secret:", stripeResponse.error);
+            return;
+          }
+          
+          const customerId = stripeResponse.data.customer.id;
+          
+          setFormData((prev) => ({
+            ...prev,
+            resend_contact_key: contactId,
+            stripe_customer_id: customerId
+          }));
+          
           setClientSecret(stripeResponse.data.clientSecret);
-        } else {
-          console.error("Failed to retrieve client_secret:", stripeResponse.error);
-        }
-
-        if (response && stripeResponse) {          
+          
+          console.log("Contact and customer created successfully:", contactId, customerId);
+          
+          handleSubmit();
+        } else if (formData.tier === "enterprise") {
           handleSubmit();
         }
       } catch (error) {
@@ -780,7 +790,7 @@ const Onboarding = () => {
               </div>
   
               <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8">
-                <AddPaymentMethod customerName={formData.businessName} clientSecret={clientSecret} setCurrentStep={setCurrentStep}/>
+                <AddPaymentMethod customerName={formData.businessName} clientSecret={clientSecret} setCurrentStep={setCurrentStep} handleSubmit={handleSubmit}/>
               </div>
             </div>
           );
