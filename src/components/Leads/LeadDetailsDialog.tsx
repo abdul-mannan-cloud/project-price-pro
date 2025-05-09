@@ -299,10 +299,10 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
         description: "You can now edit this estimate. The client will need to sign it again.",
       });
       
-      // Prompt for contractor signature after a small delay to allow UI to update
-      setTimeout(() => {
-        setShowContractorSignatureDialog(true);
-      }, 300);
+      // No longer automatically prompting for contractor signature
+      // Removed: setTimeout(() => {
+      //   setShowContractorSignatureDialog(true);
+      // }, 300);
     } catch (error) {
       console.error('Error unlocking estimate:', error);
       toast({
@@ -312,7 +312,6 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
       });
     }
   };
-
   const handleSaveEstimate = async () => {
     if (!lead || !effectiveContractorId) {
       toast({
