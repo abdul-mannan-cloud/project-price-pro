@@ -9,6 +9,8 @@ interface EstimateSignatureProps {
   styles: Record<string, string>;
   contractorSignature?: string | null;
   isLeadPage?: boolean;
+  onContractorSignatureClick?: () => void; // New prop for contractor signature click
+  canContractorSign?: boolean; // New prop to determine if contractor can sign
 }
 
 export const EstimateSignature = ({
@@ -17,7 +19,9 @@ export const EstimateSignature = ({
   onSignatureClick,
   styles,
   contractorSignature = null,
-  isLeadPage = false
+  isLeadPage = false,
+  onContractorSignatureClick, // New prop
+  canContractorSign = false // New prop with default value
 }: EstimateSignatureProps) => {
   const isMobile = useMediaQuery("(max-width: 640px)");
 
@@ -25,7 +29,8 @@ export const EstimateSignature = ({
   console.log("EstimateSignature props:", { 
     signature, 
     contractorSignature, 
-    isLeadPage 
+    isLeadPage,
+    canContractorSign
   });
 
   return (
@@ -101,7 +106,7 @@ export const EstimateSignature = ({
           </p>
         </div>
 
-        {/* Contractor Signature - Non-clickable */}
+        {/* Contractor Signature - Now clickable when canContractorSign is true */}
         <div className="space-y-2 sm:space-y-3">
           <p className={cn(
             "font-medium",
@@ -114,11 +119,17 @@ export const EstimateSignature = ({
               isMobile ? "h-24" : "h-32"
             )} />
           ) : (
-            <div className={cn(
-              styles.signatureBox,
-              "bg-gray-50",
-              isMobile ? "h-24" : "h-32"
-            )}>
+            <div 
+              className={cn(
+                styles.signatureBox,
+                // Make clickable if contractor can sign and there's no signature yet
+                !contractorSignature && canContractorSign && isLeadPage ? 
+                  "bg-yellow-50 hover:bg-yellow-100 cursor-pointer flex items-center justify-center" : 
+                  "bg-gray-50",
+                isMobile ? "h-24" : "h-32"
+              )}
+              onClick={() => !contractorSignature && canContractorSign && isLeadPage && onContractorSignatureClick && onContractorSignatureClick()}
+            >
               {contractorSignature ? (
                 <div className="p-2 sm:p-4">
                   <p className={cn(
@@ -138,6 +149,9 @@ export const EstimateSignature = ({
                     })}
                   </p>
                 </div>
+              ) : canContractorSign && isLeadPage ? (
+                // Show sign button if contractor can sign
+                <Button variant="ghost" size={isMobile ? "sm" : "default"}>Sign Here</Button>
               ) : (
                 // Empty state for no contractor signature
                 <div className="p-2 sm:p-4 text-gray-400 flex items-center justify-center h-full">
