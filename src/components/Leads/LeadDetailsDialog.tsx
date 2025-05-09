@@ -1,3 +1,5 @@
+// Final fix implementation for LeadDetailsDialog.tsx
+
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
@@ -147,11 +149,13 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
       
       const { data, error } = await supabase
         .from('leads')
-        .select('*')
+        .select('*, client_signature, client_signature_date, contractor_signature, contractor_signature_date')
         .eq('id', leadIdFromUrl)
         .single();
         
       if (error) throw error;
+      
+      console.log("Fetched lead with signatures:", data);
       return data as Lead;
     },
     enabled: !!leadIdFromUrl,
@@ -669,7 +673,7 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
             {isMobile ? (
               <div className="sticky top-0 z-50 bg-white border-b">
                 <button
-                  onClick={handleCloseDialog}
+                  onClick={handleCloseDialog}onClick={handleCloseDialog}
                   className="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
                 >
                   <X className="h-5 w-5 text-gray-500" />
@@ -693,31 +697,34 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
 
             <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
               <div className="max-w-6xl mx-auto pt-6">
-                {view === "estimate" && lead && (
-                  <>
-                    {isEstimateLocked && (
-                      <EstimateLockBanner 
-                        isLocked={isEstimateLocked} 
-                        onUnlock={() => setShowUnlockDialog(true)} 
-                        className="mb-4" 
-                      />
-                    )}
-                    {renderActionButtons()}
-                    <div className="mt-4">
-                      <EstimateDisplay 
-                        groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
-                        totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
-                        projectSummary={lead.project_description}
-                        isEditable={isEditing}
-                        onEstimateChange={handleEstimateChange}
-                        contractor={contractor}
-                        contractorParam={contractor?.id}
-                        handleRefreshEstimate={() => refetchLead()}
-                        leadId={lead.id}
-                        handleContractSign={() => {}}
-                      />
-                    </div>
-                  </>
+              {view === "estimate" && lead && (
+  <>
+    {isEstimateLocked && (
+      <EstimateLockBanner 
+        isLocked={isEstimateLocked} 
+        onUnlock={() => setShowUnlockDialog(true)} 
+        className="mb-4" 
+      />
+    )}
+    {renderActionButtons()}
+    <div className="mt-4">
+      <EstimateDisplay 
+        groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
+        totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
+        projectSummary={lead.project_description}
+        isEditable={isEditing}
+        onEstimateChange={handleEstimateChange}
+        contractor={contractor}
+        contractorParam={contractor?.id}
+        handleRefreshEstimate={() => refetchLead()}
+        leadId={lead.id}
+        handleContractSign={() => {}}
+        isLeadPage={true} // Explicitly set this to true for the lead details page
+        lead={lead} 
+      />
+    </div>
+  </>
+                  
                 )}
                 {view === "questions" && (
                   <LeadQuestionsView lead={lead} refetchLead={refetchLead} />
