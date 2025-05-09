@@ -90,6 +90,7 @@ interface EstimateDisplayProps {
   handleContractSign: (leadId: string) => void;
   isLeadPage?: boolean;
   lead?: any; // Add lead prop with optional type
+  isEstimateLocked?: boolean; // New prop to determine if estimate is locked
 }
 
 export const EstimateDisplay = ({
@@ -109,7 +110,8 @@ export const EstimateDisplay = ({
   contractorParam,
   handleContractSign,
   isLeadPage = false,
-  lead = null // Default to null to avoid undefined errors
+  lead = null, // Default to null to avoid undefined errors
+  isEstimateLocked = false // Default value
 }: EstimateDisplayProps) => {
   const [editableGroups, setEditableGroups] = useState<ItemGroup[]>([]);
   const [editableTotalCost, setEditableTotalCost] = useState(totalCost);
@@ -701,6 +703,16 @@ export const EstimateDisplay = ({
               onSignatureClick={() => setShowSignatureDialog(true)}
               styles={styles}
               isLeadPage={isLeadPage || false}
+              onContractorSignatureClick={
+                isLeadPage && handleContractSign ? 
+                () => handleContractSign(leadId) : 
+                undefined
+              }
+              canContractorSign={
+                isLeadPage && // Only in the lead page
+                !isEstimateLocked && // Only when not locked
+                isContractor // Only if it's the contractor
+              }
             />
           )}
         </div>

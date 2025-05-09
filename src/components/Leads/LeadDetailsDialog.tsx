@@ -1,5 +1,3 @@
-// Final fix implementation for LeadDetailsDialog.tsx
-
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
@@ -44,6 +42,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SignatureDialog } from "@/components/EstimateForm/SignatureDialog";
 
 // EstimateLockBanner Component
 const EstimateLockBanner = ({ isLocked, onUnlock, className = "" }) => {
@@ -110,9 +109,11 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
-  // New state for estimate locking
+  // State for estimate locking
   const [isEstimateLocked, setIsEstimateLocked] = useState(false);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
+  // New state for contractor signature dialog
+  const [showContractorSignatureDialog, setShowContractorSignatureDialog] = useState(false);
   
   const isMobile = useIsMobile();
   const location = useLocation();
@@ -230,6 +231,43 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
     }
   }, [lead?.user_email]);
 
+  // Function to handle contractor signature
+  const handleContractorSignature = async (signature: string) => {
+    if (!lead || !effectiveContractorId) return;
+    
+    try {
+      // Update the lead with the contractor signature
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          contractor_signature: signature,
+          contractor_signature_date: new Date().toISOString()
+        })
+        .eq('id', lead.id);
+      
+      if (error) throw error;
+      
+      // Refresh lead data
+      refetchLead();
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: "Your signature has been added to the estimate.",
+      });
+      
+      // Close the signature dialog
+      setShowContractorSignatureDialog(false);
+    } catch (error) {
+      console.error('Error adding contractor signature:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add signature. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Function to handle unlocking the estimate
   const handleUnlockEstimate = async () => {
     if (!lead || !effectiveContractorId) return;
@@ -260,6 +298,11 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
         title: "Estimate unlocked",
         description: "You can now edit this estimate. The client will need to sign it again.",
       });
+      
+      // Prompt for contractor signature after a small delay to allow UI to update
+      setTimeout(() => {
+        setShowContractorSignatureDialog(true);
+      }, 300);
     } catch (error) {
       console.error('Error unlocking estimate:', error);
       toast({
@@ -673,11 +716,11 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
             {isMobile ? (
               <div className="sticky top-0 z-50 bg-white border-b">
                 <button
-                  onClick={handleCloseDialog}onClick={handleCloseDialog}
+                  onClick={handleCloseDialog}
                   className="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
                 >
                   <X className="h-5 w-5 text-gray-500" />
-                </button>
+                  </button>
                 <div className="h-14" />
               </div>
             ) : (
@@ -697,34 +740,34 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
 
             <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
               <div className="max-w-6xl mx-auto pt-6">
-              {view === "estimate" && lead && (
-  <>
-    {isEstimateLocked && (
-      <EstimateLockBanner 
-        isLocked={isEstimateLocked} 
-        onUnlock={() => setShowUnlockDialog(true)} 
-        className="mb-4" 
-      />
-    )}
-    {renderActionButtons()}
-    <div className="mt-4">
-      <EstimateDisplay 
-        groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
-        totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
-        projectSummary={lead.project_description}
-        isEditable={isEditing}
-        onEstimateChange={handleEstimateChange}
-        contractor={contractor}
-        contractorParam={contractor?.id}
-        handleRefreshEstimate={() => refetchLead()}
-        leadId={lead.id}
-        handleContractSign={() => {}}
-        isLeadPage={true} // Explicitly set this to true for the lead details page
-        lead={lead} 
-      />
-    </div>
-  </>
-                  
+                {view === "estimate" && lead && (
+                  <>
+                    {isEstimateLocked && (
+                      <EstimateLockBanner 
+                        isLocked={isEstimateLocked} 
+                        onUnlock={() => setShowUnlockDialog(true)} 
+                        className="mb-4" 
+                      />
+                    )}
+                    {renderActionButtons()}
+                    <div className="mt-4">
+                      <EstimateDisplay 
+                        groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
+                        totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
+                        projectSummary={lead.project_description}
+                        isEditable={isEditing}
+                        onEstimateChange={handleEstimateChange}
+                        contractor={contractor}
+                        contractorParam={contractor?.id}
+                        handleRefreshEstimate={() => refetchLead()}
+                        leadId={lead.id}
+                        handleContractSign={() => setShowContractorSignatureDialog(true)}
+                        isLeadPage={true} // Explicitly set this to true for the lead details page
+                        lead={lead} 
+                        isEstimateLocked={isEstimateLocked}
+                      />
+                    </div>
+                  </>
                 )}
                 {view === "questions" && (
                   <LeadQuestionsView lead={lead} refetchLead={refetchLead} />
@@ -821,6 +864,17 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
         isOpen={showUnlockDialog}
         onClose={() => setShowUnlockDialog(false)}
         onConfirm={handleUnlockEstimate}
+      />
+
+      {/* Contractor Signature Dialog */}
+      <SignatureDialog
+        isOpen={showContractorSignatureDialog}
+        onClose={() => setShowContractorSignatureDialog(false)}
+        onSign={handleContractorSignature}
+        contractorId={effectiveContractorId}
+        leadId={lead?.id}
+        estimateData={lead?.estimate_data}
+        isContractorSignature={true} // Important: set to true for contractor signature
       />
     </>
   );
