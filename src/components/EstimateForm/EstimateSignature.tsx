@@ -7,7 +7,8 @@ interface EstimateSignatureProps {
   isEstimateReady: boolean;
   onSignatureClick: () => void;
   styles: Record<string, string>;
-  contractorSignature?: string | null; // Added to track contractor signature
+  contractorSignature?: string | null;
+  isLeadPage?: boolean;
 }
 
 export const EstimateSignature = ({
@@ -15,9 +16,17 @@ export const EstimateSignature = ({
   isEstimateReady,
   onSignatureClick,
   styles,
-  contractorSignature = null // Default to null if not provided
+  contractorSignature = null,
+  isLeadPage = false
 }: EstimateSignatureProps) => {
   const isMobile = useMediaQuery("(max-width: 640px)");
+
+  // For debugging
+  console.log("EstimateSignature props:", { 
+    signature, 
+    contractorSignature, 
+    isLeadPage 
+  });
 
   return (
     <div className={cn(
@@ -33,7 +42,7 @@ export const EstimateSignature = ({
         "grid gap-4 sm:gap-6",
         isMobile ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"
       )}>
-        {/* Client Signature - Now clickable */}
+        {/* Client Signature - Only clickable in estimate page, and only if not signed yet */}
         <div className="space-y-2 sm:space-y-3">
           <p className={cn(
             "font-medium",
@@ -49,12 +58,13 @@ export const EstimateSignature = ({
             <div
               className={cn(
                 styles.signatureBox,
-                !signature ?
+                // Only make clickable if not signed and not on lead page
+                !signature && !isLeadPage ? 
                   "bg-yellow-50 hover:bg-yellow-100 cursor-pointer flex items-center justify-center" :
                   "bg-white",
                 isMobile ? "h-24" : "h-32"
               )}
-              onClick={() => !signature && onSignatureClick()}
+              onClick={() => !signature && !isLeadPage && onSignatureClick()}
             >
               {signature ? (
                 <div className="p-2 sm:p-4">
@@ -75,15 +85,23 @@ export const EstimateSignature = ({
                     })}
                   </p>
                 </div>
-              ) : (
+              ) : !isLeadPage ? ( 
+                // Only show "Sign Here" button if not on lead page
                 <Button variant="ghost" size={isMobile ? "sm" : "default"}>Sign Here</Button>
+              ) : (
+                // For lead page with no signature, show an empty state or message
+                <div className="p-2 sm:p-4 text-gray-400 flex items-center justify-center h-full">
+                  <p className="text-sm">No signature</p>
+                </div>
               )}
             </div>
           )}
-          <p className={isMobile ? "text-xs" : "text-sm"}>Sign above to approve this estimate</p>
+          <p className={isMobile ? "text-xs" : "text-sm"}>
+            {isLeadPage ? "Client approval" : "Sign above to approve this estimate"}
+          </p>
         </div>
 
-        {/* Contractor Signature - Now non-clickable */}
+        {/* Contractor Signature - Non-clickable */}
         <div className="space-y-2 sm:space-y-3">
           <p className={cn(
             "font-medium",
@@ -101,7 +119,7 @@ export const EstimateSignature = ({
               "bg-gray-50",
               isMobile ? "h-24" : "h-32"
             )}>
-              {contractorSignature && (
+              {contractorSignature ? (
                 <div className="p-2 sm:p-4">
                   <p className={cn(
                     styles.signatureText,
@@ -119,6 +137,11 @@ export const EstimateSignature = ({
                       year: 'numeric'
                     })}
                   </p>
+                </div>
+              ) : (
+                // Empty state for no contractor signature
+                <div className="p-2 sm:p-4 text-gray-400 flex items-center justify-center h-full">
+                  <p className="text-sm">No signature</p>
                 </div>
               )}
             </div>

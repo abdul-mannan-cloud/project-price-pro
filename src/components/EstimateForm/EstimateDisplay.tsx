@@ -88,6 +88,8 @@ interface EstimateDisplayProps {
   leadId: string;
   contractorParam?: string;
   handleContractSign: (leadId: string) => void;
+  isLeadPage?: boolean;
+  lead?: any; // Add lead prop with optional type
 }
 
 export const EstimateDisplay = ({
@@ -105,7 +107,9 @@ export const EstimateDisplay = ({
   handleRefreshEstimate,
   leadId,
   contractorParam,
-  handleContractSign
+  handleContractSign,
+  isLeadPage = false,
+  lead = null // Default to null to avoid undefined errors
 }: EstimateDisplayProps) => {
   const [editableGroups, setEditableGroups] = useState<ItemGroup[]>([]);
   const [editableTotalCost, setEditableTotalCost] = useState(totalCost);
@@ -150,12 +154,19 @@ export const EstimateDisplay = ({
   }, [contractorId]);
 
   const getContractorId = async () => {
-    const lead = await supabase
-      .from('leads')
-      .select('contractor_id')
-      .eq('id', leadId)
-      .single();
-    setContractorId(lead.data.contractor_id);
+    try {
+      const lead = await supabase
+        .from('leads')
+        .select('contractor_id')
+        .eq('id', leadId)
+        .single();
+      
+      if (lead.data && lead.data.contractor_id) {
+        setContractorId(lead.data.contractor_id);
+      }
+    } catch (error) {
+      console.error('Error fetching contractor ID:', error);
+    }
   };
 
   const { data: leadData } = useQuery({
@@ -165,7 +176,7 @@ export const EstimateDisplay = ({
 
       const { data, error } = await supabase
         .from('leads')
-        .select('estimate_data, status, contractor_signature, contractor_signature_date')
+        .select('estimate_data, status, contractor_signature, contractor_signature_date, client_signature, client_signature_date')
         .eq('id', leadId)
         .maybeSingle();
 
@@ -185,38 +196,43 @@ export const EstimateDisplay = ({
     if (leadData?.contractor_signature) {
       setSignature(leadData.contractor_signature);
     }
+    
+    if (leadData?.client_signature) {
+      setClientSignature(leadData.client_signature);
+    }
   }, [leadData]);
 
   // Robust handleContractorSign function for EstimateDisplay.tsx
-
-const handleContractorSign = async (leadId: string) => {
-  if (!leadId || !contractorId) {
-    console.log('Missing required IDs for signature:', { leadId, contractorId });
-    return;
-  }
-  
-  try {
-    // Skip fetching lead data as it's causing issues
-    // Just record that the signature was applied
+  const handleContractorSignature = async (leadId: string) => {
+    if (!leadId || !contractorId) {
+      console.log('Missing required IDs for signature:', { leadId, contractorId });
+      return;
+    }
     
-    toast({
-      title: "Success",
-      description: "Contractor signature recorded successfully",
-    });
-    
-  } catch (error) {
-    console.error('Error recording contractor signature:', error);
-    toast({
-      title: "Error",
-      description: "Failed to record signature. Please try again.",
-      variant: "destructive",
-    });
-  }
-};
+    try {
+      // Skip fetching lead data as it's causing issues
+      // Just record that the signature was applied
+      
+      toast({
+        title: "Success",
+        description: "Contractor signature recorded successfully",
+      });
+      
+    } catch (error) {
+      console.error('Error recording contractor signature:', error);
+      toast({
+        title: "Error",
+        description: "Failed to record signature. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const { data: settings } = useQuery({
     queryKey: ["contractor-settings", contractorId],
     queryFn: async () => {
+      if (!contractorId) throw new Error("No contractor ID");
+      
       const { data, error } = await supabase
         .from("contractor_settings")
         .select("*")
@@ -229,28 +245,44 @@ const handleContractorSign = async (leadId: string) => {
     enabled: !!contractorId
   });
 
- 
-// 2. Update the effect that fetches lead data to also get client signature
-useEffect(() => {
-  if (leadData) {
-    // Get contractor signature if any
-    if (leadData.contractor_signature) {
-      setSignature(leadData.contractor_signature);
-    }
-    
-    // Get client signature if any
-    if (leadData.client_signature) {
-      setClientSignature(leadData.client_signature);
-    }
-    
-    const isComplete = !!leadData.estimate_data && leadData.status === 'complete';
-    setIsEstimateReady(isComplete);
+  // Update the effect to handle the signatures correctly with null checks
+  useEffect(() => {
+    if (leadData) {
+      // Get contractor signature if any
+      if (leadData.contractor_signature) {
+        setSignature(leadData.contractor_signature);
+      }
+      
+      // Get client signature if any
+      if (leadData.client_signature) {
+        setClientSignature(leadData.client_signature);
+      }
+      
+      const isComplete = !!leadData.estimate_data && leadData.status === 'complete';
+      setIsEstimateReady(isComplete);
 
-    if (isComplete && onEstimateChange && !isEditable) {
-      onEstimateChange(leadData.estimate_data);
+      if (isComplete && onEstimateChange && !isEditable) {
+        onEstimateChange(leadData.estimate_data);
+      }
     }
-  }
-}, [leadData, isEditable, onEstimateChange]);
+  }, [leadData, isEditable, onEstimateChange]);
+
+  // Safely check for signatures from estimate or lead
+  useEffect(() => {
+    // Initialize client signature from the estimate or lead prop if available
+    if (estimate?.client_signature && !clientSignature) {
+      setClientSignature(estimate.client_signature);
+    } else if (lead?.client_signature && !clientSignature) {
+      setClientSignature(lead.client_signature);
+    }
+    
+    // Initialize contractor signature similarly
+    if (estimate?.contractor_signature && !signature) {
+      setSignature(estimate.contractor_signature);
+    } else if (lead?.contractor_signature && !signature) {
+      setSignature(lead.contractor_signature);
+    }
+  }, [estimate, lead, clientSignature, signature]);
 
   useEffect(() => {
     const hasValidEstimate = groups?.length > 0 && totalCost > 0;
@@ -259,13 +291,27 @@ useEffect(() => {
 
   useEffect(() => {
     const checkContractorAccess = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: contractor } = await supabase.from('contractors').select('id').eq('user_id', user.id).maybeSingle();
-      if (user && contractor && contractor.id === contractorParam) {
-        setIsContractor(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        const { data: contractor } = await supabase
+          .from('contractors')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        if (contractor && contractor.id === contractorParam) {
+          setIsContractor(true);
+        }
+      } catch (error) {
+        console.error('Error checking contractor access:', error);
       }
     };
-    checkContractorAccess();
+    
+    if (contractorParam) {
+      checkContractorAccess();
+    }
   }, [contractorId, contractorParam]);
 
   const handleClientSignature = (initials: string) => {
@@ -577,7 +623,7 @@ useEffect(() => {
                 contractor={contractor}
                 projectSummary={projectSummary}
                 leadId={leadId}
-                isEditable={isEditable} // Add this prop here
+                isEditable={isEditable}
               />
             </div>
           </div>
@@ -647,27 +693,28 @@ useEffect(() => {
             </div>
           )}
 
-{templateSettings?.estimate_signature_enabled && (
-  <EstimateSignature
-    signature={clientSignature}
-    contractorSignature={signature}
-    isEstimateReady={isEstimateReady}
-    onSignatureClick={() => setShowSignatureDialog(true)}
-    styles={styles}
-  />
+          {templateSettings?.estimate_signature_enabled && (
+            <EstimateSignature
+              signature={clientSignature || estimate?.client_signature || (lead ? lead.client_signature : null)}
+              contractorSignature={signature || estimate?.contractor_signature || (lead ? lead.contractor_signature : null)}
+              isEstimateReady={isEstimateReady}
+              onSignatureClick={() => setShowSignatureDialog(true)}
+              styles={styles}
+              isLeadPage={isLeadPage || false}
+            />
           )}
         </div>
       </Card>
 
       <SignatureDialog
-  isOpen={showSignatureDialog}
-  onClose={() => setShowSignatureDialog(false)}
-  onSign={handleClientSignature}
-  contractorId={contractorId}
-  leadId={leadId}
-  estimateData={estimate}
-  isContractorSignature={false} // Set to false for clients in estimate page
-/>
+        isOpen={showSignatureDialog}
+        onClose={() => setShowSignatureDialog(false)}
+        onSign={handleClientSignature}
+        contractorId={contractorId}
+        leadId={leadId}
+        estimateData={estimate}
+        isContractorSignature={false} // Set to false for clients in estimate page
+      />
 
       {isContractor && (
         <>
