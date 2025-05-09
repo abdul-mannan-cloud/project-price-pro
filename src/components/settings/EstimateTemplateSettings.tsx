@@ -38,7 +38,7 @@ const templates = [
   }
 ];
 
-export const EstimateTemplateSettings = ({contractorId}) => {
+export const EstimateTemplateSettings = ({contractor}) => {
   const queryClient = useQueryClient();
   const [clientMessage, setClientMessage] = useState("");
   const [footerText, setFooterText] = useState("");
@@ -46,18 +46,18 @@ export const EstimateTemplateSettings = ({contractorId}) => {
   const [hasFooterTextChanges, setHasFooterTextChanges] = useState(false);
 
   const { data: settings, isLoading } = useQuery({
-    queryKey: ["contractor-settings", contractorId],
+    queryKey: ["contractor-settings", contractor?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("contractor_settings")
         .select("*")
-        .eq("id", contractorId)
+        .eq("id", contractor?.id)
         .single();
 
       if (error) throw error;
       return data;
     },
-    enabled: !!contractorId
+    enabled: !!contractor?.id
   });
 
 
@@ -73,7 +73,7 @@ export const EstimateTemplateSettings = ({contractorId}) => {
       const { error } = await supabase
         .from("contractor_settings")
         .update(updates)
-        .eq("id", contractorId);
+        .eq("id", contractor?.id);
 
       if (error) throw error;
     },
@@ -217,11 +217,13 @@ export const EstimateTemplateSettings = ({contractorId}) => {
                 </span>
               </Label>
               <Switch
+                disabled={contractor?.tier !== "enterprise"}
                 id="signature"
                 checked={settings?.estimate_signature_enabled || false}
                 onCheckedChange={(checked) =>
                   updateSettings.mutate({ estimate_signature_enabled: checked })
                 }
+                className="disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
 
@@ -241,10 +243,11 @@ export const EstimateTemplateSettings = ({contractorId}) => {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className={`space-y-2 ${contractor?.tier !== "enterprise" ? "opacity-50 cursor-not-allowed" : ""}`}>
               <Label>Client Message</Label>
               <div className="space-y-2">
                 <Textarea
+                  disabled={contractor?.tier !== "enterprise"}
                   placeholder="Enter a message to display on all estimates..."
                   value={clientMessage}
                   onChange={(e) => handleClientMessageChange(e.target.value)}
@@ -262,10 +265,11 @@ export const EstimateTemplateSettings = ({contractorId}) => {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className={`space-y-2 ${contractor?.tier !== "enterprise" ? "opacity-50 cursor-not-allowed" : ""}`}>
               <Label>Footer Text</Label>
               <div className="space-y-2">
                 <Textarea
+                  disabled={contractor?.tier !== "enterprise"}
                   placeholder="Enter footer text (terms, conditions, etc.)..."
                   value={footerText}
                   onChange={(e) => handleFooterTextChange(e.target.value)}
