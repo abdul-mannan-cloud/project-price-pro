@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ProgressSteps } from "@/components/ui/progress-steps";
 import { ColorPicker } from "@/components/ui/color-picker";
-import {Loader2} from "lucide-react";
+import {Loader2, Verified} from "lucide-react";
 import { set } from "date-fns";
 import { cn } from "@/lib/utils";
 import PricingPlans from "@/components/PricingPlans";
@@ -62,7 +62,8 @@ const Onboarding = () => {
     taxRate: "8.5",
     stripe_customer_id: null,
     resend_contact_key: null,
-    tier: null
+    tier: null,
+    verified: false,
   });
 
     const [businessAddress, setBusinessAddress] = useState("");
@@ -188,7 +189,7 @@ const Onboarding = () => {
                   formData.contactPhone = existingContractor.contact_phone;
                   formData.address = existingContractor.business_address;
                   formData.licenseNumber = existingContractor.license_number;
-                  setCurrentStep(OnboardingSteps.PAYMENT_METHOD);
+                  setCurrentStep(OnboardingSteps.PRICING);
                 } else if (existingContractor.business_name 
                     && existingContractor.contact_email  
                     && existingContractor.contact_phone ) {
@@ -261,12 +262,8 @@ const Onboarding = () => {
         .eq('user_id', user.id)
         .maybeSingle();
   
-      if (fetchError) throw fetchError;
-
-      console.log("FORM DATA STRIPE AND RESEND:", formData.stripe_customer_id, formData.resend_contact_key);
-      
+      if (fetchError) throw fetchError;      
   
-      // Common contractor data
       const contractorData: any = {
         business_name: formData.businessName,
         contact_email: formData.contactEmail,
@@ -282,9 +279,8 @@ const Onboarding = () => {
         resend_contact_key: formData.resend_contact_key,
       };
   
-      // Add `verified: true` if on PRICING step and tier is enterprise
       if (currentStep === OnboardingSteps.PRICING && formData.tier === 'enterprise') {
-        contractorData.verified = true;
+        contractorData.verified = false;
       }
   
       if (existingContractor) {
@@ -360,56 +356,12 @@ const Onboarding = () => {
     }
   };
   
-
-    // useEffect(() => {
-    //     const checkBusinessInfo = async () => {
-    //         try {
-    //             const { data: { user } } = await supabase.auth.getUser();
-    //             if (!user) {
-    //                 toast({
-    //                     title: "Error",
-    //                     description: "No authenticated user found. Please log in again.",
-    //                     variant: "destructive",
-    //                 });
-    //                 navigate("/login");
-    //                 return;
-    //             }
-
-    //             // Check if the contractor exists
-    //             const { data: existingContractor, error } = await supabase
-    //                 .from("contractors")
-    //                 .select("id")
-    //                 .eq("user_id", user.id)
-    //                 .maybeSingle();
-
-    //             if (error) throw error;
-
-    //             // If the business info exists, redirect to dashboard
-    //             if (existingContractor) {
-    //                 // navigate("/dashboard");
-    //                 return;
-    //             }
-
-    //             setLoading(false); // No business info found, allow onboarding to continue
-    //         } catch (error: any) {
-    //             console.error("Error checking business info:", error);
-    //             toast({
-    //                 title: "Error",
-    //                 description: "Something went wrong while checking business information.",
-    //                 variant: "destructive",
-    //             });
-    //             setLoading(false);
-    //         }
-    //     };
-
-    //     checkBusinessInfo();
-    // }, [navigate, toast]);
-
     const [clientSecret, setClientSecret] = useState<string | null>(null);
 
     const createContact = async () => {
       try {
         if (formData.tier === "pioneer") {
+          setLoading(true);
           const response = await supabase.functions.invoke('create-contact', {
             body: {
               email: "m.khizerr01@gmail.com",
@@ -790,7 +742,7 @@ const Onboarding = () => {
               </div>
   
               <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8">
-                <AddPaymentMethod customerName={formData.businessName} clientSecret={clientSecret} setCurrentStep={setCurrentStep} handleSubmit={handleSubmit}/>
+                <AddPaymentMethod customerName={formData.businessName} customerId={formData.stripe_customer_id} clientSecret={clientSecret} setCurrentStep={setCurrentStep} handleSubmit={handleSubmit}/>
               </div>
             </div>
           );

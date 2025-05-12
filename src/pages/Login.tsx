@@ -218,7 +218,7 @@ const Login = () => {
         description: "You have successfully signed in.",
       });
 
-      if (contractor && contractor?.verified) {
+      if (contractor &&  (contractor.tier == "enterprise" || contractor?.verified)) {
         navigate("/dashboard");
       } else {
         navigate("/onboarding");

@@ -609,9 +609,11 @@ const Settings = () => {
       case "team":
         return <TeammateSettings />;
       case "subscription":
-        return <SubscriptionSettings />;
+        {
+          return <SubscriptionSettings contractor={contractor} />
+        }
       case "usage":
-        return <UsageSettings />;
+        return <UsageSettings contractor={contractor} />;
       case "branding":
         return (
             <BrandingSettings
@@ -851,7 +853,7 @@ const Settings = () => {
                 </SettingsDialog>
             ) : (
                 <div className="flex-1 bg-background rounded-lg border p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
-                  {renderContent()}
+                  {contractor && renderContent()}
                 </div>
             )}
           </div>

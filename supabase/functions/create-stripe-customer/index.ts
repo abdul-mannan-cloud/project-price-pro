@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.203.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@12.3.0?target=deno";
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"));
+const stripe = new Stripe(Deno.env.get("STRIPE_TEST_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
