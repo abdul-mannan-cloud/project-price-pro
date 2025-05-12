@@ -91,6 +91,8 @@ interface EstimateDisplayProps {
   isLeadPage?: boolean;
   lead?: any; // Add lead prop with optional type
   isEstimateLocked?: boolean; // New prop to determine if estimate is locked
+  onCancel?: () => void;
+  onArchive?: () => void;
 }
 
 export const EstimateDisplay = ({
@@ -111,7 +113,9 @@ export const EstimateDisplay = ({
   handleContractSign,
   isLeadPage = false,
   lead = null, // Default to null to avoid undefined errors
-  isEstimateLocked = false // Default value
+  isEstimateLocked = false, // Default value,
+  onCancel,
+  onArchive
 }: EstimateDisplayProps) => {
   const [editableGroups, setEditableGroups] = useState<ItemGroup[]>([]);
   const [editableTotalCost, setEditableTotalCost] = useState(totalCost);
@@ -685,6 +689,22 @@ export const EstimateDisplay = ({
               styles={styles}
               taxRate={settings?.tax_rate ?? 0}
             />
+          )}
+
+          {/* Cancel / Archive buttons */}
+          {!isEditable && (onCancel || onArchive) && (
+            <div className="mt-6 flex justify-end gap-2">
+              {onCancel && (
+                <Button variant="destructive" size="sm" onClick={onCancel}>
+                  Cancel
+                </Button>
+              )}
+              {onArchive && (
+                <Button variant="outline" size="sm" onClick={onArchive}>
+                  Archive
+                </Button>
+              )}
+            </div>
           )}
 
           {templateSettings?.estimate_footer_text && (
