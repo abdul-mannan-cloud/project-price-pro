@@ -247,7 +247,7 @@ serve(async (req: Request): Promise<Response> => {
 
     const subject = isTestEstimate
         ? `[TEST] New Estimate Preview Generated`
-        : `New ${formatCurrency(estimate.totalCost)}$ Opportunity from ${customerInfo.fullName}`;
+        : `New ${formatCurrency(estimate.totalCost)} Opportunity from ${customerInfo.fullName}`;
 
     const customerDetails = isTestEstimate
         ? `<p style="color: #666;"><strong>Note:</strong> This is a test estimate preview.</p>`
