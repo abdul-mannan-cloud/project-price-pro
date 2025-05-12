@@ -25,7 +25,8 @@ export interface LineItem {
   description?: string;
   quantity: number;
   unit?: string;
-  unitAmount: number;
+  costType: string;
+  unitAmount: string;
   totalPrice: number;
 }
 
