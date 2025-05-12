@@ -1,93 +1,94 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 interface SignatureDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSign: (initials: string) => void;
-  contractorId?: string;
+  onSign: (signature: string) => void;
+  contractorId?: string | null;
   leadId?: string;
   estimateData?: any;
+  isContractorSignature?: boolean; // New prop to determine if this is for a contractor or client
 }
 
-export const SignatureDialog = ({ 
-  isOpen, 
-  onClose, 
+export const SignatureDialog = ({
+  isOpen,
+  onClose,
   onSign,
   contractorId,
   leadId,
-  estimateData 
+  estimateData,
+  isContractorSignature = false // Default to client signature
 }: SignatureDialogProps) => {
-  const [initials, setInitials] = useState("");
+  const [signature, setSignature] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!initials.trim()) return;
-
-    setIsSubmitting(true);
-    try {
-      // Update the lead with the client signature
-      if (leadId) {
-        const { error: updateError } = await supabase
-          .from('leads')
-          .update({
-            client_signature: initials,
-            client_signature_date: new Date().toISOString()
-          })
-          .eq('id', leadId);
-
-        if (updateError) throw updateError;
-      }
-
-      // Get contractor email and send notification
-      if (contractorId) {
-        const { data: contractor, error: contractorError } = await supabase
-          .from('contractors')
-          .select('contact_email,business_name')
-          .eq('id', contractorId)
-          .single();
-
-        if (contractorError) throw contractorError;
-
-        // Send email to contractor
-        const { error: emailError } = await supabase.functions.invoke('send-estimate-email', {
-          body: {
-            estimateId: leadId,
-            contractorEmail: contractor.contact_email,
-            estimateData,
-            estimateUrl: `${window.location.origin}/estimate/${leadId}`,
-            clientName: initials,
-            businessName: contractor.business_name,
-          }
-        });
-
-        if (emailError) throw emailError;
-      }
-
-      onSign(initials);
-      onClose();
-      toast({
-        title: "Success",
-        description: "Signature submitted successfully",
-      });
-    } catch (error) {
-      console.error('Error signing estimate:', error);
+    
+    if (!signature.trim()) {
       toast({
         title: "Error",
-        description: "Failed to submit signature. Please try again.",
+        description: "Please enter your signature.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // If lead ID and contractor ID are provided, update the lead
+      if (leadId && contractorId) {
+        // Determine which signature field to update based on isContractorSignature prop
+        const updatePayload = isContractorSignature
+          ? {
+              contractor_signature: signature,
+              contractor_signature_date: new Date().toISOString()
+            }
+          : {
+              client_signature: signature,
+              client_signature_date: new Date().toISOString()
+            };
+          
+        const { error } = await supabase
+          .from("leads")
+          .update(updatePayload)
+          .eq("id", leadId);
+          
+        if (error) throw error;
+        
+        // Show success message
+        toast({
+          title: "Success",
+          description: isContractorSignature 
+            ? "Contractor signature added successfully."
+            : "Client signature added successfully.",
+        });
+      }
+      
+      // Call onSign callback with signature
+      onSign(signature);
+      
+      // Close dialog and reset state
+      setSignature("");
+      onClose();
+    } catch (error) {
+      console.error("Error saving signature:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save signature. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -99,26 +100,37 @@ export const SignatureDialog = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Digital Signature</DialogTitle>
+          <DialogTitle>
+            {isContractorSignature ? "Add Contractor Signature" : "Add Signature"}
+          </DialogTitle>
           <DialogDescription>
-            By entering your initials below, you agree that this digital signature
-            is as valid as a physical signature and you accept the terms of this estimate.
+            {isContractorSignature 
+              ? "Please type your name to sign this estimate as the contractor."
+              : "Please type your name to sign this estimate."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            placeholder="Enter your initials"
-            value={initials}
-            onChange={(e) => setInitials(e.target.value)}
-            className="w-full"
-            disabled={isSubmitting}
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose} type="button">Cancel</Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Signing..." : "Sign Estimate"}
-            </Button>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Input
+                id="signature"
+                placeholder="Type your full name"
+                value={signature}
+                onChange={(e) => setSignature(e.target.value)}
+                autoComplete="name"
+                disabled={isSubmitting}
+                required
+              />
+            </div>
           </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting || !signature.trim()}>
+              {isSubmitting ? "Signing..." : "Sign"}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
