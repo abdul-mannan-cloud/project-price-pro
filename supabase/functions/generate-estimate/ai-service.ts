@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 
 export const formatAnswersForContext = (answers: Record<string, any>) => {
@@ -26,80 +26,104 @@ export const generateEstimate = async (
 ) => {
 
     console.log('description testing ', description + ' ' + category)
-    const similarTasks = await findSimilarTasks(`${category} : ${description}`, 3);
+    const similarTasks = await findSimilarTasks(`${category} : ${description}`, 10);
     console.log('similar tasks ', similarTasks)
 
     try {
         const messages = [
             {
                 role: "system",
-                content: `You are a professional contractor estimator. Generate detailed estimates based on project descriptions and answers to questions.
+                content: `
+                You are a professional contractor estimator. Generate detailed estimates based on project descriptions and answers to questions.
 
-You will be provided with a list of Questions and Answers regarding what changes client wants in their project. One or multiple pictures of the current state of the project may also be provided.
+                    You will be provided with a list of Questions and Answers regarding what changes the client wants in their project.
+                One or multiple pictures of the current state may also be provided.
 
-Your task is to generate a detailed estimate based on the provided information. Divide the estimate into groups and subgroups, and provide a total cost for the project.
+                    Your task is to generate a detailed estimate with the following intelligent features:
 
-UNITS SPECIFICATION:
-For each line item in the estimate, you MUST include the appropriate unit of measurement in parentheses after the title. Use only the following units:
-${similarTasks}
+                    1. COST TYPE DETECTION:
+                    - If only labor costs are required, clearly mark as 'LABOR ONLY' and only include labor costs.
+                    - If only material costs are required, clearly mark as 'MATERIAL ONLY' and only include material costs.
+                    - If both are required, mark as 'MATERIAL+LABOR' and include separate line items for both.
+                    - The cost should be addition of labor and material costs in case of Material+Labor.
+        
+                    2. UNIT HANDLING:
+                    - If a units list is provided, use only those specified units in parentheses after each title.
+                    - If no units list is provided, determine the most appropriate unit for each item yourself.
+                    - Common units include: SF (square feet), LF (linear feet), EA (each), SY (square yards), CY (cubic yards), HRS (hours).
+                    - For Labor, use HRS (hours) as the unit.
+                    - Below are units gotten from the similarty Search: ${similarTasks}
+            
+                    3. ESTIMATE STRUCTURE:  
+                        - Divide into logical groups and subgroups.
+                    - For each item include:
+                        * Title with unit (e.g., 'Flooring Installation (SF)')
+                        * Detailed description
+                        * Quantity
+                        * Unit amount
+                        * Total price
+                        * Cost type (Labor/Material/Both)
+                    - Include subtotals for each subgroup.
+            
+                    4. FINANCIAL CALCULATIONS:
+                        - Apply the markup_percentage from contractor settings to subtotals.
+                        - Apply the tax_rate from contractor settings to the total.
+                        - Ensure total cost exceeds minimum_project_cost.
+                        - Respect maximum price limits if specified.
+            
+                    5. OUTPUT FORMAT:
+                        - Always respond with valid JSON in this structure:
+            
+                    {
+                        "projectType": "LABOR ONLY|MATERIAL ONLY|MATERIAL+LABOR",
+                        "groups": [
+                        {
+                            "name": "string",
+                            "description": "string",
+                            "subgroups": [
+                                {
+                                    "name": "string",
+                                    "items": [
+                                        {
+                                            "title": "string (UNIT)",
+                                            "description": "string",
+                                            "quantity": number,
+                                            "unitAmount": number,
+                                            "totalPrice": number,
+                                            "costType": "Labor|Material|Labor+Material",
+                                        }
+                                    ],
+                                    "subtotal": number
+                                }
+                            ]
+                        }
+                    ],
+                        "totalCost": number,
+                        "notes": "string"
+                    }
+            
+                    6. SPECIAL INSTRUCTIONS:
+                        - Always prioritize AI Instructions provided.
+                    - Maintain accurate regional pricing.
+                    - Clearly indicate when you've determined units yourself.
+                    - Include any important assumptions in notes.
+                    - Flag any potential scope issues.
+            
+                    7. MOST IMPORTANT RULES:
+                        1. Never go below minimum_project_cost.
+                    2. Always apply markup and tax correctly.
+                    3. Be transparent about cost types (Labor/Material/Both).
+                    4. Choose sensible units if none provided.
+                    5. If Both Material and Labor are required, include both in the estimate.
+                    6. Maintain JSON structure integrity.
+        `
 
-For example, format titles like:
-- "Flooring Installation (SF)"
-- "Cabinet Installation (EA)"
-- "Wall Demolition (SY)"
-
-For each item in the estimate, provide:
-- Title with appropriate unit: e.g., "Granite Countertops (LF)"
-- Description: Detailed explanation of work
-- Quantity: The number of units required
-- Unit Amount: Price per unit
-- Total Price: Quantity × Unit Amount
-
-Keep these instructions in mind:
-- Cost should be accurate according to the area from Address
-- AI Instructions provided should be kept in priority
-- Keep AI Rates in mind while calculating cost and calculate according to them
-- Check for any AI preferences in the contractor settings which may include instructions about price limitations
-
-MOST IMPORTANT INSTRUCTIONS (These take priority over all other instructions):
-1. In contractor settings, find the markup_percentage and apply it to the total cost of the estimate
-2. In contractor settings, find the tax_rate and apply it to the total cost
-3. In contractor settings, find the minimum_project_cost value - THE TOTAL COST MUST ALWAYS BE HIGHER THAN THIS VALUE
-4. If AI preference instructions indicate a maximum price limit, try to stay within that limit by adjusting the scope as needed, but never go below the minimum_project_cost
-
-ALWAYS respond with valid JSON in the following format:
-{
-  "groups": [
-    {
-      "name": "string",
-      "description": "string",
-      "subgroups": [
-        {
-          "name": "string",
-          "items": [
-            {
-              "title": "string", // MUST include unit in parentheses, e.g., "Flooring (SF)"
-              "description": "string",
-              "quantity": number,
-              "unitAmount": number,
-              "totalPrice": number
-            }
-          ],
-          "subtotal": number
-        }
-      ]
-    }
-  ],
-  "totalCost": number,
-  "notes": "string"
-}`
             },
             {
                 role: "user",
                 content: context
             }
         ];
-
 
 
         if (imageUrl) {
@@ -190,13 +214,14 @@ async function findSimilarTasks(query: string, limit = 10) {
         })
     });
 
-    const { data } = await response.json();
+    const {data} = await response.json();
 
     // Query Supabase
-    const { data: similarTasks } = await supabase.rpc('match_tasks', {
+    const {data: similarTasks} = await supabase.rpc('match_tasks', {
         query_embedding: data[0].embedding,
-        match_threshold: 0.7,
-        match_count: limit
+        match_threshold: 0.5,
+        match_count: limit,
+        query_text: query
     });
 
     console.log('rpc response', similarTasks);
