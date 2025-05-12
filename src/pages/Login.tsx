@@ -171,7 +171,7 @@ const Login = () => {
 
       if (contractorError) throw contractorError;
 
-      if (contractor) {
+      if (contractor && contractor.verified) {
         navigate("/dashboard");
       } else {
         navigate("/onboarding");
@@ -219,7 +219,7 @@ const Login = () => {
         description: "You have successfully signed in.",
       });
 
-      if (contractor) {
+      if (contractor &&  (contractor.tier == "enterprise" || contractor?.verified)) {
         navigate("/dashboard");
       } else {
         navigate("/onboarding");
