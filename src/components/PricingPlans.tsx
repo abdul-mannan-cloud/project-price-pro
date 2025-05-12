@@ -27,7 +27,7 @@ const PricingPlans = ({ formData, setFormData }) => {
         "Personalized onboarding & marketing support",
         "24/7 priority support",
       ],
-      buttonText: "Select Plan",
+      buttonText: "Contact Sales",
     }
   ];
 
@@ -39,36 +39,38 @@ const PricingPlans = ({ formData, setFormData }) => {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
       {plans.map((plan) => (
         <div 
-          key={plan.key}
-          className={`flex flex-col rounded-lg p-4 md:p-8 border border-gray-200 ${
-            formData.tier === plan.key ? "ring-2 ring-blue-500" : ""
-          }`}
-        >
-          <div className="mb-4 md:mb-6">
-            <h3 className="text-lg md:text-xl font-bold">{plan.title}</h3>
-          </div>
-          
-          <div className="flex-grow">
-            <ul className="space-y-2 md:space-y-4 text-sm md:text-base">
-              {plan.features.map((feature, index) => (
-                <li key={index} className="flex items-start">
-                  <span className="text-green-500 mr-2 flex-shrink-0">✓</span>
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          <button
-            onClick={() => handleSelectPlan(plan.key)}
-            className="mt-6 md:mt-8 w-full py-2 md:py-3 px-4 rounded-md text-center font-medium
-              bg-white text-black border border-gray-300 
-              hover:bg-primary hover:text-white hover:border-primary
-              transition-colors duration-200"
-          >
-            {plan.buttonText}
-          </button>
+        key={plan.key}
+        className={`flex flex-col rounded-lg p-4 md:p-8 border border-gray-200
+          ${formData.tier === plan.key ? "ring-2 ring-blue-500" : ""}
+          `}
+      >
+        <div className="mb-4 md:mb-6">
+          <h3 className="text-lg md:text-2xl font-bold">{plan.title}</h3>
         </div>
+
+        <div className="min-w-[100%] border-b border-gray-200 mb-8"></div>
+        
+        <div className="flex-grow">
+          <ul className="space-y-2 md:space-y-4 text-sm md:text-base">
+            {plan.features.map((feature, index) => (
+              <li key={index} className="flex items-start">
+                <span className="mr-5 flex-shrink-0">✓</span>
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        
+        <button
+          onClick={() => handleSelectPlan(plan.key)}
+          className="mt-6 md:mt-8 w-full py-2 md:py-3 px-4 rounded-md text-center font-medium
+            bg-white text-black border border-gray-300 
+            hover:bg-primary hover:text-white hover:border-primary
+            transition-colors duration-200"
+        >
+          {plan.buttonText}
+        </button>
+      </div>
       ))}
     </div>
   );

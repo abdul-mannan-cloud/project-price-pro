@@ -30,19 +30,26 @@ serve(async (req) => {
       );
     }
 
+    // Get customer details
+    const customer = await stripe.customers.retrieve(customer_id);
+
+    // Get payment methods
     const paymentMethods = await stripe.paymentMethods.list({
       customer: customer_id,
       type: "card",
     });
 
-    return new Response(JSON.stringify({ paymentMethods }), {
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-      status: 200,
-    });
-  } catch (error) {
-    console.error("Error fetching payment methods:", error);
     return new Response(
-      JSON.stringify({ error: "Unable to retrieve payment methods" }),
+      JSON.stringify({ customer, paymentMethods }),
+      {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching customer/payment methods:", error);
+    return new Response(
+      JSON.stringify({ error: "Unable to retrieve customer or payment methods" }),
       {
         headers: { "Content-Type": "application/json", ...corsHeaders },
         status: 500,
