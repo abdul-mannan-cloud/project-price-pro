@@ -92,12 +92,12 @@ interface LeadsTableProps {
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
+  "in-progress": "bg-blue-100 text-blue-800",
+  approved: "bg-purple-100 text-purple-800",   // NEW
   completed: "bg-green-100 text-green-800",
   complete: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
-  "in-progress": "bg-blue-100 text-blue-800"
 } as const;
-
 export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExport }: LeadsTableProps) => {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -305,7 +305,7 @@ export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExp
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Status</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {['pending', 'in-progress', 'completed', 'cancelled'].map((status) => (
+             {['pending','in-progress','approved','completed', 'cancelled','archived'].map((status) => (
                 <DropdownMenuCheckboxItem
                   key={status}
                   checked={filters.status.includes(status)}
