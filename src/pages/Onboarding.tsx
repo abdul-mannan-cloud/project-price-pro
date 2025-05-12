@@ -282,6 +282,10 @@ const Onboarding = () => {
       if (currentStep === OnboardingSteps.PRICING && formData.tier === 'enterprise') {
         contractorData.verified = false;
       }
+
+      if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
+        contractorData.verified = true;
+      }
   
       if (existingContractor) {
         const { error: updateError } = await supabase
