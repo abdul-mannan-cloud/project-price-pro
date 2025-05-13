@@ -73,55 +73,6 @@ export const UsageSettings = ({ contractor }) => {
     fetchInvoices();
   }, [contractor]);
 
-  const handleGenerateInvoice = async () => {
-    try {
-      toast.loading("Generating invoice...");
-      
-      const { data, error } = await supabase.functions.invoke('generate-invoice', {
-        body: {
-          leadId: "lead-12345",
-          customerId: contractor?.stripe_customer_id,
-          description: 'New lead service fee',
-          // Optional additional line items
-          items: [
-            { amount: Math.round(1713 * 0.4), description: 'Estimate Value' },
-            { amount: 200, description: 'SMS Fee' },
-            { amount: 2000, description: 'AI Gas Fee' }
-          ],
-          metadata: {
-            plan: 'standard',
-            source: 'website'
-          }
-        }
-      });
-      
-      if (error) {
-        throw new Error(error.message || "Failed to generate invoice");
-      }
-
-      toast.dismiss();
-      toast.success('Invoice generated successfully');
-      
-      // Refresh invoices list
-      const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
-        body: {
-          customerId: contractor?.stripe_customer_id,
-          limit: 10,
-          offset: 0
-        }
-      });
-      
-      if (refreshData?.success) {
-        setInvoices(refreshData.invoices || []);
-      }
-      
-    } catch (error) {
-      toast.dismiss();
-      toast.error(error.message || "Error generating invoice");
-      console.error('Error generating invoice:', error);
-    }
-  };
-
   // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -148,6 +99,7 @@ export const UsageSettings = ({ contractor }) => {
     });
     
     setClientSecret(data.client_secret);
+    setShow(true);
   }
 
   useEffect(() => {
@@ -155,6 +107,10 @@ export const UsageSettings = ({ contractor }) => {
       setShow(true);
     }
   }, [clientSecret]);
+
+  const handleCancel = () => {
+    setShow(false);
+  }
 
   return (
     <div className="space-y-6">
@@ -182,7 +138,7 @@ export const UsageSettings = ({ contractor }) => {
           show && (
             <div className="p-4 bg-gray-50 rounded-md">
               <h2 className="text-lg font-semibold">Add Payment Method</h2>
-                <AddPaymentMethod customerName={contractor.businessName} customerId={contractor.stripe_customer_id} clientSecret={clientSecret} setCurrentStep={() => {}} handleSubmit={() => {}}/>
+                <AddPaymentMethod customerName={contractor.businessName} customerId={contractor.stripe_customer_id} clientSecret={clientSecret} setCurrentStep={() => {}} handleSubmit={() => {}} handleBack={handleCancel}/>
             </div>
           )
         }

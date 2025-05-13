@@ -483,6 +483,10 @@ const Onboarding = () => {
     updateGlobalColors(formData.primaryColor, newColor);
   };
 
+  const handleBackClick = () => {
+    setCurrentStep(2);
+  }
+
   const renderStep = () => {
     switch (currentStep) {
       case OnboardingSteps.BUSINESS_INFO:
@@ -709,7 +713,7 @@ const Onboarding = () => {
                 </p>
               </div>
             <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-6">
-              <PricingPlans formData={formData} setFormData={setFormData} />
+              <PricingPlans formData={formData} setFormData={setFormData} selectPlan = {createContact} />
               <div className="flex justify-between pt-6">
               <Button
                 variant="ghost"
@@ -719,13 +723,13 @@ const Onboarding = () => {
               >
                 Back
               </Button>
-              <Button
+              {/* <Button
                 onClick={createContact}
                 // disabled={loading}
                 className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
               >
                 {loading ? "Saving..." : "Next"}
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
@@ -746,7 +750,7 @@ const Onboarding = () => {
               </div>
   
               <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8">
-                <AddPaymentMethod customerName={formData.businessName} customerId={formData.stripe_customer_id} clientSecret={clientSecret} setCurrentStep={setCurrentStep} handleSubmit={handleSubmit}/>
+                <AddPaymentMethod customerName={formData.businessName} customerId={formData.stripe_customer_id} clientSecret={clientSecret} setCurrentStep={setCurrentStep} handleSubmit={handleSubmit} handleBack={handleBackClick}/>
               </div>
             </div>
           );
@@ -768,20 +772,6 @@ const Onboarding = () => {
       <div className="container max-w-2xl mx-auto">
         <div className="md:block hidden">
           <ProgressSteps steps={steps} currentStep={currentStep} />
-        </div>
-        <div className="md:hidden block">
-          <div
-            className="flex items-center gap-2 justify-center align-middle"
-          >
-            {/* <div
-              className={cn(
-                "h-8 w-8 rounded-full transition-colors text-white flex items-center justify-center bg-primary",
-              )}
-            >
-              {currentStep}
-            </div> */}
-            <span className={cn("font-medium text-primary")}>{steps[currentStep].label}</span>
-          </div>
         </div>
         {renderStep()}
       </div>
