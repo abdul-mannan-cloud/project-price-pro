@@ -313,6 +313,43 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     }
   };
 
+    const handleGenerateInvoice = async (contractor, estimateData) => {
+      try {        
+        const { data, error } = await supabase.functions.invoke('generate-invoice', {
+          body: {
+            customerId: contractor?.stripe_customer_id,
+            description: 'New lead service fee',
+            items: [
+              { amount: Math.round(estimateData.totalCost * 0.1 + 20 + 200), description: 'Service charges' },
+            ],
+            metadata: {
+              plan: 'standard',
+              source: 'website'
+            }
+          }
+        });
+        
+        if (error) {
+          throw new Error(error.message || "Failed to generate invoice");
+        }
+  
+        const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
+          body: {
+            customerId: contractor?.stripe_customer_id,
+            limit: 10,
+            offset: 0
+          }
+        });
+        
+        // if (refreshData?.success) {
+        //   setInvoices(refreshData.invoices || []);
+        // }
+        
+      } catch (error) {
+        console.error('Error generating invoice:', error);
+      }
+    };
+
   const checkEstimateStatus = async (leadId: string, skip: boolean = false, pdfBase64?: string): Promise<boolean> => {
     const { data: lead, error } = await supabase
         .from('leads')
@@ -330,19 +367,22 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       throw new Error(lead.error_message || 'Failed to generate estimate');
     }
 
-
     if (lead.status === 'complete' && lead.estimate_data) {
       setEstimate(lead.estimate_data);
 
+      console.log("THIS IS THE LEAD DATA", lead);
+
       const { data: emailData, error: emailFetchError } = await supabase
           .from('contractors')
-          .select('contact_email,contact_phone,business_name')
+          .select('contact_email,contact_phone,business_name, stripe_customer_id')
           .eq('id', config.contractorId)
           .single();
 
       if (emailFetchError) {
         throw emailFetchError;
       }
+
+      handleGenerateInvoice(emailData, lead.estimate_data);
 
       // Send email notification to contractor
       const { error: emailError1 } = await supabase.functions.invoke('send-contractor-notification', {
@@ -608,6 +648,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     handleRefreshEstimate,
     changeProgress,
     handleExportPDF,
-    handleContractSign
+    handleContractSign,
+    handleGenerateInvoice
   };
 };

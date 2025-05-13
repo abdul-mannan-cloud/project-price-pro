@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { s } from "node_modules/framer-motion/dist/types.d-DDSxwf0n";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-const PricingPlans = ({ formData, setFormData }) => {
+const PricingPlans = ({ formData, setFormData, selectPlan }) => {
+  const navigate = useNavigate();
   const plans = [
     {
       key: "pioneer",
@@ -12,6 +15,8 @@ const PricingPlans = ({ formData, setFormData }) => {
         "Capture client signature",
         "Personalized ai pricing & rules",
         "24/7 email support",
+        "0.1-0.3 subtotal volume",
+        "1000$ in cash credits"
       ],
       buttonText: "Select Plan",
     },
@@ -26,6 +31,7 @@ const PricingPlans = ({ formData, setFormData }) => {
         "Custom integrations",
         "Personalized onboarding & marketing support",
         "24/7 priority support",
+        "Unlimited usage"
       ],
       buttonText: "Contact Sales",
     }
@@ -34,6 +40,10 @@ const PricingPlans = ({ formData, setFormData }) => {
   const handleSelectPlan = (planKey) => {
     setFormData({ ...formData, tier: planKey });
   };
+
+  useEffect(() => {
+      selectPlan();
+  },[formData.tier]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">

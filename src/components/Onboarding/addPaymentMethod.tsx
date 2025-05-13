@@ -15,7 +15,7 @@ import { useLocation } from 'react-router-dom' // Import from react-router-dom
 
 const stripePromise = loadStripe('pk_test_51R7hjJGwj3ICel7hM1235wRDn3lEBEvmYkURzopLYmPpyQa91vdv6HTHffkG5EZFlJBD8v2ruWEhDCknbG8XJn3B00jVdJp7dy')
 
-function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, handleSubmit }: { customerName: string, customerId: string, clientSecret: string, setCurrentStep: React.Dispatch<React.SetStateAction<any>>, handleSubmit: () => void }) {
+function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, handleSubmit, handleBack }: { customerName: string, customerId: string, clientSecret: string, setCurrentStep: React.Dispatch<React.SetStateAction<any>>, handleSubmit: () => void, handleBack: () => void }) {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
@@ -28,13 +28,10 @@ function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, h
     cardCvc: false
   })
   
-  // Get current location using React Router
   const location = useLocation()
   
-  // Check if we're on the settings page
   const isSettingsPage = location.pathname.includes('/settings')
   
-  // Calculate if the form is ready to submit
   const isFormComplete = cardComplete.cardNumber && cardComplete.cardExpiry && cardComplete.cardCvc
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -60,7 +57,6 @@ function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, h
     }
   
     try {
-      // 1. Create payment method from card elements
       const paymentMethodResult = await stripe.createPaymentMethod({
         type: 'card',
         card: cardNumberElement,
@@ -73,7 +69,6 @@ function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, h
         throw new Error(paymentMethodResult.error.message || 'Failed to create payment method')
       }
     
-      // 2. Confirm card setup using payment method
       const confirmResult = await stripe.confirmCardSetup(clientSecret, {
         payment_method: paymentMethodResult.paymentMethod.id,
       })
@@ -82,7 +77,6 @@ function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, h
         throw new Error(confirmResult.error.message || 'Failed to confirm card setup')
       }
     
-      // 3. Attach payment method to customer
       const { data, error: attachError } = await supabase.functions.invoke('attach-payment-method', {
         body: {
           customerId: customerId,
@@ -94,10 +88,8 @@ function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, h
         throw new Error(attachError.message || 'Failed to attach payment method to customer')
       }
       
-      // Everything succeeded
       setSuccess(true)
       
-      // Call the parent's handleSubmit after a short delay to show the success message
       setTimeout(() => {
         handleSubmit();
       }, 1000);
@@ -110,7 +102,6 @@ function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, h
     }
   }
   
-  // Track the completion status of each card element
   const handleCardChange = (event: any, elementType: 'cardNumber' | 'cardExpiry' | 'cardCvc') => {
     setCardComplete(prev => ({
       ...prev,
@@ -169,17 +160,15 @@ function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, h
         <p>By adding a payment method, you agree to our Terms of Service and Privacy Policy.</p>
       </div>
 
-      <div className={`flex ${isSettingsPage ? 'justify-end' : 'justify-between'} pt-6`}>
-        {!isSettingsPage && (
+      <div className={`flex ${isSettingsPage ? 'justify-between' : 'justify-between'} pt-6`}>
           <Button
             variant="ghost"
-            onClick={() => setCurrentStep(2)}
+            onClick={() => handleBack()}
             disabled={loading || isProcessing}
             className="text-[17px] font-medium text-muted-foreground hover:text-foreground"
           >
-            Back
+            {isSettingsPage ? 'Cancel' : 'Back'}
           </Button>
-        )}
         <Button
           type='submit'
           disabled={!stripe || loading || isProcessing || !isFormComplete || success}
@@ -193,10 +182,10 @@ function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, h
   )
 }
 
-export default function AddPaymentMethod({ customerName, customerId, clientSecret, setCurrentStep, handleSubmit }: { customerName: string, customerId: string, clientSecret: string, setCurrentStep: React.Dispatch<React.SetStateAction<any>>, handleSubmit: () => void }) {
+export default function AddPaymentMethod({ customerName, customerId, clientSecret, setCurrentStep, handleSubmit, handleBack }: { customerName: string, customerId: string, clientSecret: string, setCurrentStep: React.Dispatch<React.SetStateAction<any>>, handleSubmit: () => void, handleBack: () => void }) {
   return (
     <Elements stripe={stripePromise}>
-      <PaymentForm customerName={customerName} customerId={customerId} clientSecret={clientSecret} setCurrentStep={setCurrentStep} handleSubmit={handleSubmit}/>
+      <PaymentForm customerName={customerName} customerId={customerId} clientSecret={clientSecret} setCurrentStep={setCurrentStep} handleSubmit={handleSubmit} handleBack={handleBack}/>
     </Elements>
   )
 }

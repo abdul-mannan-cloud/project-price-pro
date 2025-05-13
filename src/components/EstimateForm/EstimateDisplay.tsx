@@ -317,11 +317,49 @@ export const EstimateDisplay = ({
     }
   }, [contractorId, contractorParam]);
 
+  const handleGenerateInvoice = async (contractor, estimateData) => {
+        try {        
+          const { data, error } = await supabase.functions.invoke('generate-invoice', {
+            body: {
+              customerId: contractor?.stripe_customer_id,
+              description: 'New lead service fee',
+              items: [
+                { amount: Math.round(estimateData.totalCost * 0.3 + 20 + 200), description: 'Service charges' },
+              ],
+              metadata: {
+                plan: 'standard',
+                source: 'website'
+              }
+            }
+          });
+          
+          if (error) {
+            throw new Error(error.message || "Failed to generate invoice");
+          }
+    
+          const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
+            body: {
+              customerId: contractor?.stripe_customer_id,
+              limit: 10,
+              offset: 0
+            }
+          });
+          
+          // if (refreshData?.success) {
+          //   setInvoices(refreshData.invoices || []);
+          // }
+          
+        } catch (error) {
+          console.error('Error generating invoice:', error);
+        }
+      };
+
   const handleClientSignature = (initials: string) => {
     setClientSignature(initials);
     if (onSignatureComplete) {
       onSignatureComplete(initials);
-    }
+    }    
+    handleGenerateInvoice(contractor, estimate);
     // Optionally notify someone about the signature
     // Similar to handleContractorSign but for clients
   };
@@ -727,6 +765,7 @@ export const EstimateDisplay = ({
         leadId={leadId}
         estimateData={estimate}
         isContractorSignature={false} // Set to false for clients in estimate page
+
       />
 
       {isContractor && (

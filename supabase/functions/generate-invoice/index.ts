@@ -19,7 +19,6 @@ serve(async (req) => {
 
   try {
     const { 
-      leadId,
       customerId, 
       amount, 
       description,
@@ -32,10 +31,6 @@ serve(async (req) => {
 
     if (!amount && items.length === 0) {
       throw new Error("Either amount or items are required");
-    }
-
-    if (!leadId) {
-      throw new Error("Lead ID is required");
     }
 
     let invoiceItems: Stripe.InvoiceItem[] = [];
@@ -64,7 +59,7 @@ serve(async (req) => {
         customer: customerId,
         auto_advance: false, 
         collection_method: "charge_automatically",
-        description: description || `Invoice for lead: ${leadId}`,
+        description: description,
     });
     
     if (items.length > 0) {

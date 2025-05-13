@@ -64,6 +64,8 @@ export const SubscriptionSettings = ({contractor}) => {
         "Capture client signature",
         "Personalized ai pricing & rules",
         "24/7 email support",
+        "0.1-0.3 subtotal volume",
+        "1000$ in cash credits"
       ],
       buttonText: "Get Started →",
     },
@@ -78,6 +80,7 @@ export const SubscriptionSettings = ({contractor}) => {
         "Custom integrations",
         "Personalized onboarding & marketing support",
         "24/7 priority support",
+        "Unlimited usage"
       ],
       buttonText: "Contact Sales →",
     }
