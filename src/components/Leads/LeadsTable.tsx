@@ -76,6 +76,10 @@ export interface Lead {
   project_images?: string[];
   error_message?: string;
   error_timestamp?: string;
+  client_signature?: string | null;
+  client_signature_date?: string | null;
+  contractor_signature?: string | null;
+  contractor_signature_date?: string | null;
 }
 
 interface LeadsTableProps {
