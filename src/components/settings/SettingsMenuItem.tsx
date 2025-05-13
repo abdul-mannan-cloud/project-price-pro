@@ -8,6 +8,7 @@ interface SettingsMenuItemProps {
   description: string;
   onClick: () => void;
   isActive?: boolean;
+  access: boolean
 }
 
 export const SettingsMenuItem = ({ 
@@ -15,14 +16,16 @@ export const SettingsMenuItem = ({
   title, 
   description,
   onClick,
-  isActive = false 
+  isActive = false,
+  access
 }: SettingsMenuItemProps) => {
   const isMobile = useIsMobile();
 
   return (
     <button
+      disabled={!access}
       onClick={onClick}
-      className={`w-full p-4 flex items-center justify-between space-x-4 rounded-lg transition-colors relative
+      className={`w-full p-4 flex items-center justify-between space-x-4 rounded-lg transition-colors relative disabled:opacity-50 disabled:cursor-not-allowed
         ${isActive 
           ? 'bg-primary text-white after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 after:bg-primary' 
           : 'hover:bg-primary hover:text-white'}`}
