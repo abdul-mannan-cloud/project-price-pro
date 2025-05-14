@@ -31,7 +31,25 @@ const Login = () => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/dashboard");
+        // Get contractor data to check verification status and tier
+        const { data: contractor } = await supabase
+          .from("contractors")
+          .select("verified, tier")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+
+        // Route based on verification status and tier
+        if (contractor) {
+          if (contractor.verified) {
+            navigate("/dashboard");
+          } else if (contractor.tier === "enterprise") {
+            navigate("/verification");
+          } else {
+            navigate("/onboarding");
+          }
+        } else {
+          navigate("/onboarding");
+        }
       }
     };
     checkUser();
@@ -163,16 +181,24 @@ const Login = () => {
         throw new Error("Failed to get session after login");
       }
 
+      // Get contractor data to check verification status and tier
       const { data: contractor, error: contractorError } = await supabase
-          .from("contractors")
-          .select("*")
-          .eq("id", session.user.id)
-          .maybeSingle();
+        .from("contractors")
+        .select("verified, tier")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
 
       if (contractorError) throw contractorError;
 
-      if (contractor && contractor.verified) {
-        navigate("/dashboard");
+      // Route based on verification status and tier
+      if (contractor) {
+        if (contractor.verified) {
+          navigate("/dashboard");
+        } else if (contractor.tier === "enterprise") {
+          navigate("/verification");
+        } else {
+          navigate("/onboarding");
+        }
       } else {
         navigate("/onboarding");
       }
@@ -206,11 +232,12 @@ const Login = () => {
         throw new Error("Failed to get session after login");
       }
 
+      // Get contractor data to check verification status and tier
       const { data: contractor, error: contractorError } = await supabase
-          .from("contractors")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
+        .from("contractors")
+        .select("verified, tier")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
 
       if (contractorError) throw contractorError;
 
@@ -219,8 +246,15 @@ const Login = () => {
         description: "You have successfully signed in.",
       });
 
-      if (contractor &&  (contractor.tier == "enterprise" || contractor?.verified)) {
-        navigate("/dashboard");
+      // Route based on verification status and tier
+      if (contractor) {
+        if (contractor.verified) {
+          navigate("/dashboard");
+        } else if (contractor.tier === "enterprise") {
+          navigate("/verification");
+        } else {
+          navigate("/onboarding");
+        }
       } else {
         navigate("/onboarding");
       }
