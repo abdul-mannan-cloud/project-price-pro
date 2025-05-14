@@ -42,6 +42,13 @@ const Verification = () => {
     navigate("/login");
   };
 
+  const handleSwitchToPioneer = () => {
+    // Logic to switch to Pioneer plan
+    // This could involve updating the user's tier in the database
+    // and redirecting them to the appropriate page.
+    navigate("/onboarding");
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md shadow-md">
@@ -67,7 +74,14 @@ const Verification = () => {
             </p>
           </div>
 
-          <div className="pt-4 border-t border-gray-200">
+          <div className="pt-4 border-t border-gray-200 flex flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={handleSwitchToPioneer}
+            >
+              Switch to Pioneer
+            </Button>
             <Button 
               variant="outline" 
               className="w-full" 
