@@ -364,6 +364,8 @@ const Onboarding = () => {
 
     const createContact = async () => {
       try {
+        console.log();
+        
         if (formData.tier === "pioneer") {
           setLoading(true);
           const response = await supabase.functions.invoke('create-contact', {
@@ -491,7 +493,7 @@ const Onboarding = () => {
     switch (currentStep) {
       case OnboardingSteps.BUSINESS_INFO:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 flex flex-col items-center w-full">
             <div className="text-center space-y-2">
               <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
                 Business Information
@@ -501,7 +503,7 @@ const Onboarding = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-4">
+            <div className="bg-white rounded-2xl min-w-full md:min-w-[80%] border border-[#d2d2d7] shadow-sm p-8 space-y-4">
               <div className="space-y-4">
                 <Input
                   id="businessName"
@@ -643,7 +645,7 @@ const Onboarding = () => {
 
       case OnboardingSteps.BRANDING:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 flex flex-col items-center w-full">
             <div className="text-center space-y-2">
               <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
                 Branding
@@ -653,7 +655,7 @@ const Onboarding = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-6">
+            <div className="bg-white rounded-2xl min-w-full md:min-w-[80%] border border-[#d2d2d7] shadow-sm p-8 space-y-6">
               <div className="space-y-6">
                 <div className="relative">
                   <label className="text-sm font-medium text-muted-foreground mb-2 block">
@@ -703,7 +705,7 @@ const Onboarding = () => {
 
       case OnboardingSteps.PRICING:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 flex flex-col items-center w-full">
               <div className="text-center space-y-2">
                 <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
                   Pricing Plans
@@ -736,7 +738,7 @@ const Onboarding = () => {
         );
         case OnboardingSteps.PAYMENT_METHOD:
           return (
-            <div className="space-y-6">
+            <div className="space-y-6 flex flex-col items-center w-full">
               <div className="text-center space-y-2">
                 <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
                   Payment Method
@@ -744,12 +746,12 @@ const Onboarding = () => {
                 <p className="text-[15px] text-[#86868b]">
                   Add a payment method to complete your account setup.
                 </p>
-                <p className="text-[15px] text-primary font-medium">
+                {/* <p className="text-[15px] text-primary font-medium">
                   Your card will not be charged now. You'll receive $1,000 in estimate credits to get started.
-                </p>
+                </p> */}
               </div>
   
-              <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8">
+              <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 min-w-full md:min-w-[80%]">
                 <AddPaymentMethod customerName={formData.businessName} customerId={formData.stripe_customer_id} clientSecret={clientSecret} setCurrentStep={setCurrentStep} handleSubmit={handleSubmit} handleBack={handleBackClick}/>
               </div>
             </div>
@@ -769,7 +771,7 @@ const Onboarding = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] py-12">
-      <div className="container max-w-2xl mx-auto">
+      <div className="container max-w-4xl w-2xl mx-auto">
         <div className="md:block hidden">
           <ProgressSteps steps={steps} currentStep={currentStep} />
         </div>
