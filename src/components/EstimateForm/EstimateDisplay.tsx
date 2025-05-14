@@ -324,7 +324,7 @@ export const EstimateDisplay = ({
               customerId: contractor?.stripe_customer_id,
               description: 'New lead service fee',
               items: [
-                { amount: Math.round(estimateData.totalCost * 0.3 + 20 + 200), description: 'Service charges' },
+                { amount: Math.round((estimateData.totalCost*100) * 0.03 + 20 + 200), description: 'Service charges' },
               ],
               metadata: {
                 plan: 'standard',
