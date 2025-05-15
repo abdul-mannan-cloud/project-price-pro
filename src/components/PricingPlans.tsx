@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const PricingPlans = ({ formData, setFormData, selectPlan }) => {
+const PricingPlans = ({ formData, setFormData, selectPlan, loading }) => {
   const navigate = useNavigate();
   // Add the manual selection flag
   const [manualSelection, setManualSelection] = useState(false);
@@ -98,11 +98,12 @@ const PricingPlans = ({ formData, setFormData, selectPlan }) => {
           
           <button
             onClick={() => handleSelectPlan(plan.key)}
+            disabled={loading}
             className={`mt-6 md:mt-8 w-full py-2 md:py-3 px-4 rounded-md text-center font-semibold 
-              hover:bg-primary hover:text-white hover:border-primary
+              hover:bg-primary hover:text-white hover:border-primary disabled:opacity-50
               transition-colors duration-200 ${plan.key === "pioneer" ? "bg-gray-100" : "bg-white"}`}
           >
-            {plan.buttonText}
+            {loading ? 'Processing...' : plan.buttonText}
           </button>
         </div>
       ))}

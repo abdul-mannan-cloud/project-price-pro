@@ -1,6 +1,9 @@
 // import { PricingCard } from "@/components/ui/pricing-card";
 // import { useToast } from "@/hooks/use-toast";
 
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+
 // export const SubscriptionSettings = () => {
 //   const { toast } = useToast();
 
@@ -86,7 +89,38 @@ export const SubscriptionSettings = ({contractor}) => {
     }
   ];
 
-  console.log(contractor);
+  const navigate = useNavigate();
+
+  const handleOnClick = async (planKey) => {
+    console.log("WORKING ON IT");
+    
+    if (planKey === "enterprise") {
+      const { error: updateError } = await supabase
+        .from("contractors")
+        .update(
+          { tier: planKey, verified: false }
+        )
+        .eq('id', contractor.id);
+
+      if (updateError)  { 
+        console.log("Update error:", updateError);
+      } else {
+        navigate("/verification");
+      }
+    } else {
+      const { error: updateError } = await supabase
+        .from("contractors")
+        .update(
+          { tier: planKey, verified: false }
+        )
+        .eq('id', contractor.id);
+
+      if (updateError)  { 
+        console.log("Update error:", updateError);
+      }
+    }
+    console.log(`Selected plan: ${planKey}`);
+  }
   
 
   return (
@@ -121,6 +155,7 @@ export const SubscriptionSettings = ({contractor}) => {
             </div>
             
             <button
+              onClick={() => handleOnClick(plan.key)}
               disabled={contractor?.tier === plan.key}
               className="mt-6 md:mt-8 w-full py-2 md:py-3 px-4 rounded-md text-center font-medium
                 bg-white text-black border border-gray-300 
