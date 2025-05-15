@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import LeadHistory from "./LeadHistory"; 
 import {
   AlertDialog,
   AlertDialogAction,
@@ -100,7 +101,7 @@ interface LeadDetailsDialogProps {
 }
 
 export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContractorId }: LeadDetailsDialogProps) => {
-  const [view, setView] = useState<"estimate" | "questions">("estimate");
+    const [view, setView] = useState<"estimate" | "questions" | "history">("estimate");
   const [isEditing, setIsEditing] = useState(false);
   const [editedEstimate, setEditedEstimate] = useState<any>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
@@ -126,6 +127,7 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   
   // State to hold the lead data
   const [lead, setLead] = useState<Lead | null>(initialLead);
+  
 
   // Get current user data if no URL contractor ID
   const { data: currentUser, isLoading: isLoadingUser } = useQuery({
@@ -138,6 +140,8 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
     },
     enabled: !urlContractorId // Only fetch if no URL contractor ID
   });
+
+
 
   // Determine the actual contractor ID to use
   const effectiveContractorId = urlContractorId || currentUser?.id;
@@ -781,6 +785,8 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
                 <LeadViewToggle view={view} onViewChange={setView} />
               </div>
             </div>
+            {view === "history" && <LeadHistory leadId={lead.id} />}
+
 
             <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
               <div className="max-w-6xl mx-auto pt-6">

@@ -21,6 +21,7 @@ import {ContractorProvider} from "@/hooks/useContractor.tsx";
 import Spinner from "./components/ui/spinner";
 import TermsOfService from "@/pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import PricingPage from "@/pages/PricingPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -152,6 +153,7 @@ function App() {
           <Route path="/team-onboarding" element={<TeamOnboarding />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/pricing" element={<PricingPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />
