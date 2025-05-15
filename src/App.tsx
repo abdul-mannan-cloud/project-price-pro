@@ -149,13 +149,13 @@ function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/verification" element={<Verification />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/estimate/:contractorId?" element={<Estimate />} />
           
           {/* Protected routes that require verification */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/leads" element={<Leads />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/estimate/:contractorId?" element={<Estimate />} />
             <Route path="/team-onboarding" element={<TeamOnboarding />} />
           </Route>
           
