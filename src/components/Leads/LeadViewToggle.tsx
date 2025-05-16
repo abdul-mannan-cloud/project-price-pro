@@ -40,7 +40,7 @@ export const LeadViewToggle = ({ view, onViewChange }: LeadViewToggleProps) => {
             className="relative flex-1 flex-col px-4 py-2 after:absolute after:inset-x-0 after:bottom-[-2px] after:h-[3px] data-[state=active]:after:bg-primary"
           >
             <History      className="mb-1.5 h-4 w-4" />
-            History
+            Logs
           </TabsTrigger>
         </TabsList>
       </Tabs>

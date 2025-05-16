@@ -602,7 +602,7 @@ cleanupIncompleteLeads();
 
       {/* Mobile Lead Dialog */}
       <Dialog open={!!selectedMobileLead} onOpenChange={() => setSelectedMobileLead(null)}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="w-[90vw] max-w-sm mx-auto p-4">
           {selectedMobileLead && (
             <div className="space-y-4">
               <div className="flex flex-row gap-20 justify-between">
@@ -681,7 +681,7 @@ cleanupIncompleteLeads();
 
       {/* Export Dialog */}
       <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="w-[90vw] max-w-sm mx-auto p-4">
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Export Options</h2>
             <div className="space-y-4">
