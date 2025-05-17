@@ -180,7 +180,7 @@ const Onboarding = () => {
 
                 if (error) throw error;
 
-                if (existingContractor.verfied) {
+                if (existingContractor.verified == true) {
                   navigate("/dashboard");
                 } else if (existingContractor.tier) {
                   formData.tier = existingContractor.tier;
@@ -371,9 +371,7 @@ const Onboarding = () => {
         setLoading(true);
         
         if (formData.tier === "pioneer") {
-          // Check if the contractor already has a stripe_customer_id
           if (formData.stripe_customer_id) {
-            // If they already have a stripe_customer_id, just get the client secret
             const { data, error } = await supabase.functions.invoke('get-client-secret', {
               body: { customerId: formData.stripe_customer_id },
             });
@@ -384,14 +382,11 @@ const Onboarding = () => {
               return;
             }
     
-            // Set the client secret
             setClientSecret(data.client_secret);
             console.log("Using existing customer ID, retrieved client secret");
             
-            // Proceed with form submission
             handleSubmit();
           } else {
-            // Create new contact and stripe customer if they don't exist
             const response = await supabase.functions.invoke('create-contact', {
               body: {
                 email: "m.khizerr01@gmail.com",
@@ -658,7 +653,6 @@ const Onboarding = () => {
                   </Button>
                   <Button
                     onClick={handleSubmit}
-                    // disabled={!isBusinessInfoValid() || loading}
                     className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
                   >
                     {loading ? "Saving..." : "Next"}
@@ -718,7 +712,6 @@ const Onboarding = () => {
                   </Button>
                   <Button
                     onClick={handleSubmit}
-                    // disabled={loading}
                     className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
                   >
                     {loading ? "Saving..." : "Next"}
@@ -751,13 +744,6 @@ const Onboarding = () => {
               >
                 Back
               </Button>
-              {/* <Button
-                onClick={createContact}
-                // disabled={loading}
-                className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
-              >
-                {loading ? "Saving..." : "Next"}
-              </Button> */}
             </div>
           </div>
         </div>
@@ -767,14 +753,11 @@ const Onboarding = () => {
             <div className="space-y-6 flex flex-col items-center w-full">
               <div className="text-center space-y-2">
                 <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
-                  Payment Method
+                  Access
                 </h1>
                 <p className="text-[15px] text-[#86868b]">
-                  Add a payment method to complete your account setup.
+                  No charges will be made at this time. Adding a card helps us verify your account and prevent fraud.
                 </p>
-                {/* <p className="text-[15px] text-primary font-medium">
-                  Your card will not be charged now. You'll receive $1,000 in estimate credits to get started.
-                </p> */}
               </div>
   
               <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 min-w-full md:min-w-[80%]">
@@ -792,7 +775,7 @@ const Onboarding = () => {
     { label: "Business Info", value: OnboardingSteps.BUSINESS_INFO },
     { label: "Branding", value: OnboardingSteps.BRANDING },
     { label: "Pricing", value: OnboardingSteps.PRICING },
-    { label: "Payment", value: OnboardingSteps.PAYMENT_METHOD },
+    { label: "Access", value: OnboardingSteps.PAYMENT_METHOD },
   ]
 
   return (
