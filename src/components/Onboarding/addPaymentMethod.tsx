@@ -156,8 +156,7 @@ function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, h
       {success && <p className="text-green-500">Payment method saved successfully!</p>}
 
       <div className="mt-6 text-xs text-center text-gray-500">
-        <p>Your payment information is securely processed by Stripe.</p>
-        <p>By adding a payment method, you agree to our Terms of Service and Privacy Policy.</p>
+        <p>All payment details are encrypted and securely processed vie Stripe — we never store your card information.</p>
       </div>
 
       <div className={`flex ${isSettingsPage ? 'justify-between' : 'justify-between'} pt-6`}>
