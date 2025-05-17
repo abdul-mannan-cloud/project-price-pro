@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import OtpInput from "@/components/OtpInput";
@@ -25,7 +25,18 @@ const Login = () => {
   const [otpVerified, setOtpVerified] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  // Set initial state based on URL path
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes("/signup")) {
+      setIsSignUp(true);
+    } else if (path.includes("/login")) {
+      setIsSignUp(false);
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -479,6 +490,27 @@ const Login = () => {
     }
   };
 
+  // Function to switch to signup and update URL
+  const switchToSignUp = () => {
+    setIsSignUp(true);
+    setEmail("");
+    setPassword("");
+    setOtp("");
+    setOtpSent(false);
+    navigate("/signup", { replace: true });
+  };
+
+  // Function to switch to login and update URL
+  const switchToLogin = () => {
+    setIsSignUp(false);
+    setEmail("");
+    setPassword("");
+    setFirstName("");
+    setLastName("");
+    setActiveTab("magic-link");
+    navigate("/login", { replace: true });
+  };
+
   return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <Card className="w-full max-w-md shadow-md">
@@ -652,14 +684,7 @@ const Login = () => {
                   <div className="mt-4 text-center">
                     <button
                         type="button"
-                        onClick={() => {
-                          setIsSignUp(false);
-                          setEmail("");
-                          setPassword("");
-                          setFirstName("");
-                          setLastName("");
-                          setActiveTab("magic-link");
-                        }}
+                        onClick={switchToLogin}
                         className="text-blue-600 hover:text-blue-800 transition-colors"
                     >
                       Already have an account? Sign in
@@ -786,13 +811,7 @@ const Login = () => {
                 <div className="mt-6 text-center">
                   <button
                       type="button"
-                      onClick={() => {
-                        setIsSignUp(true);
-                        setEmail("");
-                        setPassword("");
-                        setOtp("");
-                        setOtpSent(false);
-                      }}
+                      onClick={switchToSignUp}
                       className="text-blue-600 hover:text-blue-800 transition-colors"
                   >
                     Don't have an account? Sign up
