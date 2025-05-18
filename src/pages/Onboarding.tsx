@@ -430,6 +430,16 @@ const Onboarding = () => {
             handleSubmit();
           }
         } else if (formData.tier === "enterprise") {
+          const {error} = await supabase.functions.invoke("enterprise-plan-notification", {
+            body: {
+              customerInfo: {
+                fullName: formData.fullName || formData.businessName,
+                email: formData.contactEmail, 
+                phone: formData.contactPhone,
+                address: formData.address, 
+              }
+            }
+          });
           handleSubmit();
         }
       } catch (error) {

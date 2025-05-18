@@ -103,7 +103,7 @@ const PricingPlans = ({ formData, setFormData, selectPlan, loading }) => {
               hover:bg-primary hover:text-white hover:border-primary disabled:opacity-50
               transition-colors duration-200 ${plan.key === "pioneer" ? "bg-gray-100" : "bg-white"}`}
           >
-            {loading ? 'Processing...' : plan.buttonText}
+            {loading && formData.tier == plan.key ? 'Processing...' : plan.buttonText}
           </button>
         </div>
       ))}
