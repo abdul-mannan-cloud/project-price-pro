@@ -114,7 +114,7 @@ export const QuestionCard = ({
         } else {
             // Reset values when question changes
             setNextButtonDisable(true);
-
+            setMeasurementValue("");
             setTextInputValue("");
             setNumberInputValue("");
             setOptionInputValues({});
