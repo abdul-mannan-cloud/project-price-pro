@@ -105,6 +105,16 @@ export const SubscriptionSettings = ({contractor}) => {
       if (updateError)  { 
         console.log("Update error:", updateError);
       } else {
+        const {error} = await supabase.functions.invoke("enterprise-plan-notification", {
+          body: {
+            customerInfo: {
+              fullName: contractor.full_name || contractor.business_name,
+              email: contractor.contact_email, 
+              phone: contractor.contact_phone,
+              address: contractor.business_address, 
+            }
+          }
+        });
         navigate("/verification");
       }
     } else {
