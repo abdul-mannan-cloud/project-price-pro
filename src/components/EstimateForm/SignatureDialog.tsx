@@ -52,22 +52,23 @@ export const SignatureDialog = ({
       // If lead ID and contractor ID are provided, update the lead
       if (leadId && contractorId) {
         // Determine which signature field to update based on isContractorSignature prop
-        const updatePayload = isContractorSignature
-          ? {
-              contractor_signature: signature,
-              contractor_signature_date: new Date().toISOString()
-            }
-          : {
-              client_signature: signature,
-              client_signature_date: new Date().toISOString()
-            };
+       const updatePayload = isContractorSignature
+  ? {
+      contractor_signature: signature,
+      contractor_signature_date: new Date().toISOString(),
+      status: "approved"          // NEW – contractor signs → approved
+    }
+  : {
+      client_signature: signature,
+      client_signature_date: new Date().toISOString(),
+      status: "in-progress"       // NEW – client signs    → in‑progress
+    };
+       const { error: dbError } = await supabase
+           .from("leads")
+           .update(updatePayload)
+           .eq("id", leadId);
           
-        const { error } = await supabase
-          .from("leads")
-          .update(updatePayload)
-          .eq("id", leadId);
-          
-        if (error) throw error;
+         if (dbError) throw dbError;
         
         // Show success message
         toast({
