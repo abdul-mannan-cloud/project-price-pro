@@ -374,7 +374,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
       const { data: emailData, error: emailFetchError } = await supabase
           .from('contractors')
-          .select('contact_email,contact_phone,business_name, stripe_customer_id')
+          .select('contact_email,contact_phone,business_name, stripe_customer_id, tier, cash_credits')
           .eq('id', config.contractorId)
           .single();
 
@@ -382,7 +382,23 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         throw emailFetchError;
       }
 
-      handleGenerateInvoice(emailData, lead.estimate_data);
+      if (emailData.tier === 'pioneer') {
+        const totalFee = lead.estimate_data.totalCost * 0.03 + 0.2 + 2;
+  
+        if (emailData.cash_credits >= totalFee) {
+          const { error } = await supabase
+            .from('contractors')
+            .update({ cash_credits: emailData.cash_credits - totalFee })
+            .eq('id', config.contractorId);
+  
+            if (error) {
+              console.error('Failed to update cash credits:', error.message);
+              return;
+            }
+        } else {
+            handleGenerateInvoice(emailData, lead.estimate_data);
+        }
+      }
 
       // Send email notification to contractor
       const { error: emailError1 } = await supabase.functions.invoke('send-contractor-notification', {

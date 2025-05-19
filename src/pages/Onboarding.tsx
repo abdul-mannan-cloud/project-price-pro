@@ -286,6 +286,7 @@ const Onboarding = () => {
 
       if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
         contractorData.verified = true;
+        contractorData.cash_credits = 1000
       }
   
       if (existingContractor) {
@@ -296,7 +297,6 @@ const Onboarding = () => {
   
         if (updateError)  { 
           console.log("Update error:", updateError);
-          
           throw updateError
         };
   
