@@ -354,14 +354,28 @@ export const EstimateDisplay = ({
         }
       };
 
-  const handleClientSignature = (initials: string) => {
+  const handleClientSignature = async (initials: string) => {
     setClientSignature(initials);
     if (onSignatureComplete) {
       onSignatureComplete(initials);
-    }    
-    handleGenerateInvoice(contractor, estimate);
-    // Optionally notify someone about the signature
-    // Similar to handleContractorSign but for clients
+    }
+    if (contractor.tier === 'pioneer') {
+      const totalFee = estimate.totalCost * 0.03 + 0.2 + 2;
+
+      if (contractor.cash_credits >= totalFee) {
+        const { error } = await supabase
+          .from('contractors')
+          .update({ cash_credits: contractor.cash_credits - totalFee })
+          .eq('id', contractor.id);
+
+          if (error) {
+            console.error('Failed to update cash credits:', error.message);
+            return;
+          }
+      } else {
+          handleGenerateInvoice(contractor, estimate);
+      }
+    }
   };
 
   // Handle changes to line items

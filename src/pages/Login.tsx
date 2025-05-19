@@ -3,7 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import OtpInput from "@/components/OtpInput";
@@ -25,7 +26,19 @@ const Login = () => {
   const [otpVerified, setOtpVerified] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Set initial state based on URL path
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes("/signup")) {
+      setIsSignUp(true);
+    } else if (path.includes("/login")) {
+      setIsSignUp(false);
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -68,6 +81,47 @@ const Login = () => {
 
   const startResendTimer = () => {
     setResendTimer(60); // 60 seconds timer
+  };
+
+  // Helper function to handle successful login navigation
+  const handleSuccessfulAuth = async () => {
+    try {
+      // Invalidate relevant queries to force refetch
+      await queryClient.invalidateQueries({ queryKey: ["session"] });
+      await queryClient.invalidateQueries({ queryKey: ["contractor-verification"] });
+      
+      // Get fresh session data
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Failed to get session after login");
+      }
+
+      // Get contractor data to check verification status and tier
+      const { data: contractor, error: contractorError } = await supabase
+        .from("contractors")
+        .select("verified, tier")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      if (contractorError) throw contractorError;
+
+      // Route based on verification status and tier
+      if (contractor) {
+        if (contractor.verified) {
+          navigate("/dashboard", { replace: true });
+        } else if (contractor.tier === "enterprise") {
+          navigate("/verification", { replace: true });
+        } else {
+          navigate("/onboarding", { replace: true });
+        }
+      } else {
+        navigate("/onboarding", { replace: true });
+      }
+    } catch (error) {
+      console.error("Error handling successful auth:", error);
+      // Fallback navigation
+      navigate("/dashboard", { replace: true });
+    }
   };
 
   const validateEmail = () => {
@@ -176,32 +230,8 @@ const Login = () => {
         description: "You have successfully signed in.",
       });
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Failed to get session after login");
-      }
-
-      // Get contractor data to check verification status and tier
-      const { data: contractor, error: contractorError } = await supabase
-        .from("contractors")
-        .select("verified, tier")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-
-      if (contractorError) throw contractorError;
-
-      // Route based on verification status and tier
-      if (contractor) {
-        if (contractor.verified) {
-          navigate("/dashboard");
-        } else if (contractor.tier === "enterprise") {
-          navigate("/verification");
-        } else {
-          navigate("/onboarding");
-        }
-      } else {
-        navigate("/onboarding");
-      }
+      // Handle successful authentication
+      await handleSuccessfulAuth();
     } catch (error) {
       console.error("OTP verification error:", error);
       toast({
@@ -227,37 +257,13 @@ const Login = () => {
 
       if (error) throw error;
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Failed to get session after login");
-      }
-
-      // Get contractor data to check verification status and tier
-      const { data: contractor, error: contractorError } = await supabase
-        .from("contractors")
-        .select("verified, tier")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-
-      if (contractorError) throw contractorError;
-
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
 
-      // Route based on verification status and tier
-      if (contractor) {
-        if (contractor.verified) {
-          navigate("/dashboard");
-        } else if (contractor.tier === "enterprise") {
-          navigate("/verification");
-        } else {
-          navigate("/onboarding");
-        }
-      } else {
-        navigate("/onboarding");
-      }
+      // Handle successful authentication
+      await handleSuccessfulAuth();
     } catch (error) {
       console.error("Password login error:", error);
       toast({
@@ -305,7 +311,10 @@ const Login = () => {
         title: "Account created successfully!",
         description: "Please check your email to verify your account.",
       });
-      navigate("/onboarding");
+      
+      // Invalidate queries and navigate
+      await queryClient.invalidateQueries({ queryKey: ["session"] });
+      navigate("/onboarding", { replace: true });
     } catch (error) {
       console.error("Sign up error:", error);
       toast({
@@ -477,6 +486,27 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Function to switch to signup and update URL
+  const switchToSignUp = () => {
+    setIsSignUp(true);
+    setEmail("");
+    setPassword("");
+    setOtp("");
+    setOtpSent(false);
+    navigate("/signup", { replace: true });
+  };
+
+  // Function to switch to login and update URL
+  const switchToLogin = () => {
+    setIsSignUp(false);
+    setEmail("");
+    setPassword("");
+    setFirstName("");
+    setLastName("");
+    setActiveTab("magic-link");
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -652,14 +682,7 @@ const Login = () => {
                   <div className="mt-4 text-center">
                     <button
                         type="button"
-                        onClick={() => {
-                          setIsSignUp(false);
-                          setEmail("");
-                          setPassword("");
-                          setFirstName("");
-                          setLastName("");
-                          setActiveTab("magic-link");
-                        }}
+                        onClick={switchToLogin}
                         className="text-blue-600 hover:text-blue-800 transition-colors"
                     >
                       Already have an account? Sign in
@@ -786,13 +809,7 @@ const Login = () => {
                 <div className="mt-6 text-center">
                   <button
                       type="button"
-                      onClick={() => {
-                        setIsSignUp(true);
-                        setEmail("");
-                        setPassword("");
-                        setOtp("");
-                        setOtpSent(false);
-                      }}
+                      onClick={switchToSignUp}
                       className="text-blue-600 hover:text-blue-800 transition-colors"
                   >
                     Don't have an account? Sign up

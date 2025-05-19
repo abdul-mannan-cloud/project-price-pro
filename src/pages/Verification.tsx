@@ -51,26 +51,27 @@ const Verification = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md shadow-md">
+      <Card className="w-full max-w-xl shadow-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <IconAlertTriangle size={48} className="text-amber-500" />
           </div>
-          <CardTitle className="text-2xl font-bold">Account Verification Required</CardTitle>
+          <CardTitle className="text-2xl font-bold">Hang Tight — We're On It!</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="text-center text-gray-700">
             <p className="mb-4">
-              Your enterprise account is pending verification by our team.
+              We got your request for the Unlimited Enterprise plan, and an Estimatrix team member has been notified. We’ll be in touch within 1–2 business days to get everything set up for you.
             </p>
             <p className="mb-4">
-              You'll gain access to all features once your account has been verified. This usually takes 1-2 business days.
+              In the meantime, why not jump in with the Pioneer Plan and enjoy $1,000 in free credits while you wait? It's on us!
             </p>
             <p>
-              If you have any questions, please contact our support team at{" "}
-              <a href="mailto:support@example.com" className="text-blue-600 hover:underline">
-                support@example.com
+              Got questions? Just give us a shout at{" "}
+              <a href="support@estimatrix.io" className="text-blue-600 hover:underline">
+                support@estimatrix.io 
               </a>
+               {" "}— we’ve got your back.
             </p>
           </div>
 
