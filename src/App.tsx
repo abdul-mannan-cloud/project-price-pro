@@ -1,4 +1,3 @@
-
 import {BrowserRouter, Routes, Route, Navigate, useParams} from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -15,12 +14,14 @@ import PublicEstimate from "@/pages/PublicEstimate";
 import NotFound from "@/pages/NotFound";
 import Onboarding from "@/pages/Onboarding";
 import TeamOnboarding from "@/pages/TeamOnboarding";
+import Verification from "@/pages/Verification"; // Import the new Verification page
 import "./App.css";
 import {IconTrafficCone} from "@tabler/icons-react";
 import {ContractorProvider} from "@/hooks/useContractor.tsx";
 import Spinner from "./components/ui/spinner";
 import TermsOfService from "@/pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import ProtectedRoute from "./components/ProtectedRoute";
 import PricingPage from "@/pages/PricingPage";
 import Industry from "@/pages/Industry"
 import Blog from "@/pages/Blog";
@@ -130,7 +131,6 @@ function App() {
 
   if (!isAuthInitialized) return ( 
     <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-      {/* <div className="text-lg">Loading...</div> */}
       <Spinner />
     </div>
   )
@@ -141,19 +141,26 @@ function App() {
       <GlobalBrandingLoader />
       <BrowserRouter>
         <Routes>
+          {/* Public routes that don't require verification */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/estimate/:contractorId?" element={<Estimate />} />
           <Route path="/e/:id" element={<PublicEstimate />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/team-onboarding" element={<TeamOnboarding />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/verification" element={<Verification />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/estimate/:contractorId?" element={<Estimate />} />
+          
+          {/* Protected routes that require verification */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/leads" element={<Leads />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/team-onboarding" element={<TeamOnboarding />} />
+          </Route>
+          
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/industry" element={<Industry />} />
            <Route path="/blog" element={<Blog />} />

@@ -103,7 +103,7 @@ export const EstimateTable = ({
                 <table className={styles.table}>
                   <thead>
                   <tr>
-                    <th className={cn(styles.tableHeader, "w-[45%]")}>Item</th>
+                      <th className={cn(styles.tableHeader, "w-[38%]")}>Item</th>
                     <th className={cn(styles.tableHeader, "w-[35%]")}>Description</th>
                     <th className={cn(styles.tableHeader, "w-[7%] text-right")}>Qty</th>
                     <th className={cn(styles.tableHeader, "w-[7%] text-right")}>Price</th>
@@ -132,7 +132,7 @@ export const EstimateTable = ({
                                 {isLoading ? (
                                     <div className="h-4 bg-gray-200 rounded w-1/2" />
                                 ) : (
-                                    item.description
+                                    item.description + (item.costType ? ` (${item.costType})` : "")
                                 )}
                               </td>
                               <td className={cn(styles.tableCell, "w-[7%] text-right")}>
