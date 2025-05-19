@@ -127,6 +127,8 @@ export const SubscriptionSettings = ({contractor}) => {
 
       if (updateError)  { 
         console.log("Update error:", updateError);
+      } else {
+        navigate('/onboarding')
       }
     }
     console.log(`Selected plan: ${planKey}`);
