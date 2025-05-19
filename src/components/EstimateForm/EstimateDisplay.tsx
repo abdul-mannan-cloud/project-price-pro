@@ -29,7 +29,8 @@ export interface LineItem {
   description?: string;
   quantity: number;
   unit?: string;
-  unitAmount: number;
+  costType: string;
+  unitAmount: string;
   totalPrice: number;
 }
 
@@ -320,13 +321,65 @@ export const EstimateDisplay = ({
     }
   }, [contractorId, contractorParam]);
 
-  const handleClientSignature = (initials: string) => {
+  const handleGenerateInvoice = async (contractor, estimateData) => {
+        try {        
+          const { data, error } = await supabase.functions.invoke('generate-invoice', {
+            body: {
+              customerId: contractor?.stripe_customer_id,
+              description: 'New lead service fee',
+              items: [
+                { amount: Math.round((estimateData.totalCost*100) * 0.03 + 20 + 200), description: 'Service charges' },
+              ],
+              metadata: {
+                plan: 'standard',
+                source: 'website'
+              }
+            }
+          });
+          
+          if (error) {
+            throw new Error(error.message || "Failed to generate invoice");
+          }
+    
+          const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
+            body: {
+              customerId: contractor?.stripe_customer_id,
+              limit: 10,
+              offset: 0
+            }
+          });
+          
+          // if (refreshData?.success) {
+          //   setInvoices(refreshData.invoices || []);
+          // }
+          
+        } catch (error) {
+          console.error('Error generating invoice:', error);
+        }
+      };
+
+  const handleClientSignature = async (initials: string) => {
     setClientSignature(initials);
     if (onSignatureComplete) {
       onSignatureComplete(initials);
     }
-    // Optionally notify someone about the signature
-    // Similar to handleContractorSign but for clients
+    if (contractor.tier === 'pioneer') {
+      const totalFee = estimate.totalCost * 0.03 + 0.2 + 2;
+
+      if (contractor.cash_credits >= totalFee) {
+        const { error } = await supabase
+          .from('contractors')
+          .update({ cash_credits: contractor.cash_credits - totalFee })
+          .eq('id', contractor.id);
+
+          if (error) {
+            console.error('Failed to update cash credits:', error.message);
+            return;
+          }
+      } else {
+          handleGenerateInvoice(contractor, estimate);
+      }
+    }
   };
 
   // Handle changes to line items
@@ -860,6 +913,7 @@ const displayGroups = groups.map(g => ({
         leadId={leadId}
         estimateData={estimate}
         isContractorSignature={false} // Set to false for clients in estimate page
+
       />
 
       {isContractor && (

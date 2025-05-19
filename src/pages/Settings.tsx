@@ -40,6 +40,7 @@ import {
 import { AIRateForm } from "@/components/settings/AIRateForm";
 import { EstimateTemplateSettings } from "@/components/settings/EstimateTemplateSettings";
 import Spinner from "@/components/ui/spinner";
+import { UsageSettings } from "@/components/settings/UsageSettings";
 
 // Google Maps API key (Note: You should secure this in production)
 const GOOGLE_API_KEY = "AIzaSyBuZj-RWOoAc24CaC2h4SY9LvD-WzQPtJs";
@@ -503,6 +504,7 @@ const Settings = () => {
       case "business": return t("Business Information");
       case "team": return t("Team Members");
       case "subscription": return t("Subscription");
+      case "usage": return "Usage";
       case "branding": return t("Branding");
       case "estimate": return t("Estimate Settings");
       case "ai": return t("AI Preferences");
@@ -607,7 +609,11 @@ const Settings = () => {
       case "team":
         return <TeammateSettings />;
       case "subscription":
-        return <SubscriptionSettings />;
+        {
+          return <SubscriptionSettings contractor={contractor} />
+        }
+      case "usage":
+        return <UsageSettings contractor={contractor} />;
       case "branding":
         return (
             <BrandingSettings
@@ -672,7 +678,9 @@ const Settings = () => {
               {/*</form>*/}
 
               <div className="pt-6 ">
-                <EstimateTemplateSettings contractorId={contractor.id}/>
+                {
+                  contractor && <EstimateTemplateSettings contractor={contractor} />
+                }
               </div>
             </div>
         );
@@ -717,13 +725,14 @@ const Settings = () => {
           </div>
 
           <div className="flex gap-6">
-            <div className="w-80 space-y-2 flex-shrink-0">
+            <div className="w-80 space-y-2 flex-shrink-0 max-h-[80vh] overflow-y-auto scrollbar-hide">
               <SettingsMenuItem
                   icon={<Building2 className="h-5 w-5" />}
                   title={t("Business Information")}
                   description={t("Update your business details and contact information")}
                   onClick={() => handleSectionChange("business")}
                   isActive={activeSection === "business"}
+                  access={true}
               />
               <SettingsMenuItem
                   icon={<Users className="h-5 w-5" />}
@@ -731,6 +740,7 @@ const Settings = () => {
                   description={t("Manage your team members and their access")}
                   onClick={() => handleSectionChange("team")}
                   isActive={activeSection === "team"}
+                  access={true}
               />
               <SettingsMenuItem
                   icon={<CreditCard className="h-5 w-5" />}
@@ -738,13 +748,25 @@ const Settings = () => {
                   description={t("Manage your subscription and billing")}
                   onClick={() => handleSectionChange("subscription")}
                   isActive={activeSection === "subscription"}
+                  access={true}
               />
+              {contractor?.tier === "pioneer" &&
+                <SettingsMenuItem
+                  icon={<CreditCard className="h-5 w-5" />}
+                  title={"Usage"}
+                  description={t("Manage Usage")}
+                  onClick={() => handleSectionChange("usage")}
+                  isActive={activeSection === "usage"}
+                  access={true}
+              />
+              }
               <SettingsMenuItem
                   icon={<Palette className="h-5 w-5" />}
                   title={t("Branding")}
                   description={t("Customize your brand colors and appearance")}
                   onClick={() => handleSectionChange("branding")}
                   isActive={activeSection === "branding"}
+                  access={true}
               />
               <SettingsMenuItem
                   icon={<Calculator className="h-5 w-5" />}
@@ -752,6 +774,7 @@ const Settings = () => {
                   description={t("Configure your pricing and cost calculations")}
                   onClick={() => handleSectionChange("estimate")}
                   isActive={activeSection === "estimate"}
+                  access={true}
               />
               <SettingsMenuItem
                   icon={<Bot className="h-5 w-5" />}
@@ -759,6 +782,7 @@ const Settings = () => {
                   description={t("Configure how AI generates estimates and manages rates")}
                   onClick={() => handleSectionChange("ai")}
                   isActive={activeSection === "ai"}
+                  access={true}
               />
               <SettingsMenuItem
                   icon={<Grid className="h-5 w-5" />}
@@ -766,6 +790,23 @@ const Settings = () => {
                   description={t("Select which services you offer and customize your estimate workflow")}
                   onClick={() => handleSectionChange("categories")}
                   isActive={activeSection === "categories"}
+                  access={true}
+              />
+              <SettingsMenuItem
+                icon={<Grid className="h-5 w-5" />}
+                title={t("Domain")}
+                description={t("Select which services you offer and customize your estimate workflow")}
+                onClick={() => handleSectionChange("domain")}
+                isActive={activeSection === "domain"}
+                access={contractor?.tier === "enterprise"}
+              />
+              <SettingsMenuItem
+                icon={<Grid className="h-5 w-5" />}
+                title={t("API Keys")}
+                description={t("Select which services you offer and customize your estimate workflow")}
+                onClick={() => handleSectionChange("api keys")}
+                isActive={activeSection === "api keys"}
+                access={contractor?.tier === "enterprise"}
               />
               <SettingsMenuItem
                   icon={<Webhook className="h-5 w-5" />}
@@ -773,6 +814,7 @@ const Settings = () => {
                   description={t("Configure external integrations and automation")}
                   onClick={() => handleSectionChange("webhooks")}
                   isActive={activeSection === "webhooks"}
+                  access={true}
               />
               <SettingsMenuItem
                   icon={<Globe2 className="h-5 w-5" />}
@@ -780,6 +822,7 @@ const Settings = () => {
                   description={t("Configure your language preferences and translations")}
                   onClick={() => handleSectionChange("translation")}
                   isActive={activeSection === "translation"}
+                  access={true}
               />
               {isAdmin && (
                   <SettingsMenuItem
@@ -788,6 +831,7 @@ const Settings = () => {
                       description={t("Access administrative functions and data")}
                       onClick={() => handleSectionChange("admin")}
                       isActive={activeSection === "admin"}
+                      access={true}
                   />
               )}
               <SettingsMenuItem
@@ -795,6 +839,7 @@ const Settings = () => {
                   title={t("Log Out")}
                   description={t("Sign out of your account")}
                   onClick={handleLogout}
+                  access={true}
               />
             </div>
 
@@ -808,7 +853,7 @@ const Settings = () => {
                 </SettingsDialog>
             ) : (
                 <div className="flex-1 bg-background rounded-lg border p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
-                  {renderContent()}
+                  {contractor && renderContent()}
                 </div>
             )}
           </div>
