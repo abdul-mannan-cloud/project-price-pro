@@ -1,6 +1,9 @@
 // import { PricingCard } from "@/components/ui/pricing-card";
 // import { useToast } from "@/hooks/use-toast";
 
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+
 // export const SubscriptionSettings = () => {
 //   const { toast } = useToast();
 
@@ -53,10 +56,11 @@
 // };
 
 export const SubscriptionSettings = ({contractor}) => {
-  const plans = [
+    const plans = [
     {
       key: "pioneer",
       title: "Pioneer",
+      pricing: ".01 - .03",
       features: [
         "Up to 2 team members",
         "Unlimited leads",
@@ -64,14 +68,13 @@ export const SubscriptionSettings = ({contractor}) => {
         "Capture client signature",
         "Personalized ai pricing & rules",
         "24/7 email support",
-        "0.1-0.3 subtotal volume",
-        "1000$ in cash credits"
       ],
-      buttonText: "Get Started →",
+      buttonText: "Select Plan",
     },
     {
       key: "enterprise",
       title: "Enterprise",
+      pricing: "",
       features: [
         "Everything in PIONEER +",
         "Use your own domain",
@@ -80,13 +83,56 @@ export const SubscriptionSettings = ({contractor}) => {
         "Custom integrations",
         "Personalized onboarding & marketing support",
         "24/7 priority support",
-        "Unlimited usage"
       ],
-      buttonText: "Contact Sales →",
+      buttonText: "Schedule a call",
     }
   ];
 
-  console.log(contractor);
+
+  const navigate = useNavigate();
+
+  const handleOnClick = async (planKey) => {
+    console.log("WORKING ON IT");
+    
+    if (planKey === "enterprise") {
+      const { error: updateError } = await supabase
+        .from("contractors")
+        .update(
+          { tier: planKey, verified: false }
+        )
+        .eq('id', contractor.id);
+
+      if (updateError)  { 
+        console.log("Update error:", updateError);
+      } else {
+        const {error} = await supabase.functions.invoke("enterprise-plan-notification", {
+          body: {
+            customerInfo: {
+              fullName: contractor.full_name || contractor.business_name,
+              email: contractor.contact_email, 
+              phone: contractor.contact_phone,
+              address: contractor.business_address, 
+            }
+          }
+        });
+        navigate("/verification");
+      }
+    } else {
+      const { error: updateError } = await supabase
+        .from("contractors")
+        .update(
+          { tier: planKey, verified: false }
+        )
+        .eq('id', contractor.id);
+
+      if (updateError)  { 
+        console.log("Update error:", updateError);
+      } else {
+        navigate('/onboarding')
+      }
+    }
+    console.log(`Selected plan: ${planKey}`);
+  }
   
 
   return (
@@ -99,16 +145,34 @@ export const SubscriptionSettings = ({contractor}) => {
         {plans.map((plan) => (
           <div 
             key={plan.key}
-            className={`flex flex-col rounded-lg p-4 md:p-8 border border-gray-200 ${
-              contractor?.tier === plan.key ? "opacity-50" : "opacity-100"
-            }`}
+            className={`flex flex-col rounded-lg p-4 md:p-8 border border-gray-200 
+              ${contractor?.tier === plan.key ? "opacity-50" : "opacity-100"}
+              ${plan.key === "pioneer" ? "bg-white" : "bg-gray-100"}
+              `}
           >
-            <div className="mb-4 md:mb-6">
-              <h3 className="text-lg md:text-2xl font-bold">{plan.title}</h3>
+            <div className="mb-4 md:mb-6 flex flex-col gap-5">
+              <div className="flex gap-3 items-center">
+                <h3 className="text-lg md:text-2xl font-bold">{plan.title}</h3>
+                
+                { plan.key === "enterprise" &&
+                  <div className={`bg-white text-green-400 rounded-full py-1 px-3 text-[10px] md:text-sm font-semibold`}>
+                      <span>Unlimited</span>
+                  </div>
+                }
+              </div>
+              <div>
+                <p className="text-black text-4xl font-bold">{plan.pricing}</p>
+                {
+                  plan.key === "pioneer" ?
+                  <p>Subtotal Volume</p>
+                  :
+                  <p>Talk to Sales</p>
+                }
+              </div>
             </div>
 
             <div className="min-w-[100%] border-b border-gray-200 mb-8"></div>
-            
+          
             <div className="flex-grow">
               <ul className="space-y-2 md:space-y-4 text-sm md:text-base">
                 {plan.features.map((feature, index) => (
@@ -121,6 +185,7 @@ export const SubscriptionSettings = ({contractor}) => {
             </div>
             
             <button
+              onClick={() => handleOnClick(plan.key)}
               disabled={contractor?.tier === plan.key}
               className="mt-6 md:mt-8 w-full py-2 md:py-3 px-4 rounded-md text-center font-medium
                 bg-white text-black border border-gray-300 

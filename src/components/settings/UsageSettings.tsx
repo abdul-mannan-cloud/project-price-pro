@@ -115,17 +115,15 @@ export const UsageSettings = ({ contractor }) => {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Usage</h1>
-      
-      {/* Payment Methods Section */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <p className="text-sm font-medium text-muted-foreground">Cash Credits</p>
+          <span className="font-semibold">${contractor?.cash_credits}</span> 
+        </div>
+      </div>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <p className="text-sm font-medium text-muted-foreground">Payment Methods</p>
-          {/* <button 
-            onClick={handleGenerateInvoice} 
-            className="text-sm text-primary hover:underline"
-          >
-            Generate Invoice
-          </button> */}
           <button
             onClick={() => handleAddPaymentMethod()}
             className="text-sm text-primary hover:underline"
@@ -162,7 +160,6 @@ export const UsageSettings = ({ contractor }) => {
         </div>
       </div>
       
-      {/* Invoices Section */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <p className="text-sm font-medium text-muted-foreground">Invoices</p>

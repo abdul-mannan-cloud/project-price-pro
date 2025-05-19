@@ -180,10 +180,11 @@ const Onboarding = () => {
 
                 if (error) throw error;
 
-                if (existingContractor.verfied) {
+                if (existingContractor.verified == true) {
                   navigate("/dashboard");
                 } else if (existingContractor.tier) {
                   formData.tier = existingContractor.tier;
+                  formData.stripe_customer_id = existingContractor.stripe_customer_id;
                   formData.businessName = existingContractor.business_name;
                   formData.contactEmail = existingContractor.contact_email;
                   formData.contactPhone = existingContractor.contact_phone;
@@ -285,6 +286,7 @@ const Onboarding = () => {
 
       if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
         contractorData.verified = true;
+        contractorData.cash_credits = 1000
       }
   
       if (existingContractor) {
@@ -295,7 +297,6 @@ const Onboarding = () => {
   
         if (updateError)  { 
           console.log("Update error:", updateError);
-          
           throw updateError
         };
   
@@ -340,6 +341,8 @@ const Onboarding = () => {
         description: "Your business information has been saved successfully.",
       });
       if (currentStep === OnboardingSteps.PRICING && formData.tier === 'enterprise') {
+        console.log("NAVIGATION TO DASHBOARD ENTERPRISE");
+        
         navigate("/dashboard");
       }
       if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
@@ -365,55 +368,83 @@ const Onboarding = () => {
     const createContact = async () => {
       try {
         console.log();
+        setLoading(true);
         
         if (formData.tier === "pioneer") {
-          setLoading(true);
-          const response = await supabase.functions.invoke('create-contact', {
-            body: {
-              email: "m.khizerr01@gmail.com",
-              firstName: "khizer",
-              lastName: "test",
-              audienceId: "78261eea-8f8b-4381-83c6-79fa7120f1cf", 
-            },
-          });
+          if (formData.stripe_customer_id) {
+            const { data, error } = await supabase.functions.invoke('get-client-secret', {
+              body: { customerId: formData.stripe_customer_id },
+            });
+            
     
-          if (!response || !response.data) {
-            console.error("Failed to create contact");
-            return;
+            if (error) {
+              console.error("Failed to retrieve client_secret:", error.message);
+              return;
+            }
+    
+            setClientSecret(data.client_secret);
+            console.log("Using existing customer ID, retrieved client secret");
+            
+            handleSubmit();
+          } else {
+            const response = await supabase.functions.invoke('create-contact', {
+              body: {
+                email: "m.khizerr01@gmail.com",
+                firstName: "khizer",
+                lastName: "test",
+                audienceId: "78261eea-8f8b-4381-83c6-79fa7120f1cf", 
+              },
+            });
+      
+            if (!response || !response.data) {
+              console.error("Failed to create contact");
+              return;
+            }
+            
+            const contactId = response.data.data.data.id;
+            
+            const stripeResponse = await supabase.functions.invoke('create-stripe-customer', {
+              body: {
+                email: "m.khizerr01@gmail.com",
+                name: "khizer",
+              }
+            });
+      
+            if (!stripeResponse.data || !stripeResponse.data.clientSecret) {
+              console.error("Failed to retrieve client_secret:", stripeResponse.error);
+              return;
+            }
+            
+            const customerId = stripeResponse.data.customer.id;
+            
+            setFormData((prev) => ({
+              ...prev,
+              resend_contact_key: contactId,
+              stripe_customer_id: customerId
+            }));
+            
+            setClientSecret(stripeResponse.data.clientSecret);
+            
+            console.log("Contact and customer created successfully:", contactId, customerId);
+            
+            handleSubmit();
           }
-          
-          const contactId = response.data.data.data.id;
-          
-          const stripeResponse = await supabase.functions.invoke('create-stripe-customer', {
+        } else if (formData.tier === "enterprise") {
+          const {error} = await supabase.functions.invoke("enterprise-plan-notification", {
             body: {
-              email: "m.khizerr01@gmail.com",
-              name: "khizer",
+              customerInfo: {
+                fullName: formData.fullName || formData.businessName,
+                email: formData.contactEmail, 
+                phone: formData.contactPhone,
+                address: formData.address, 
+              }
             }
           });
-    
-          if (!stripeResponse.data || !stripeResponse.data.clientSecret) {
-            console.error("Failed to retrieve client_secret:", stripeResponse.error);
-            return;
-          }
-          
-          const customerId = stripeResponse.data.customer.id;
-          
-          setFormData((prev) => ({
-            ...prev,
-            resend_contact_key: contactId,
-            stripe_customer_id: customerId
-          }));
-          
-          setClientSecret(stripeResponse.data.clientSecret);
-          
-          console.log("Contact and customer created successfully:", contactId, customerId);
-          
-          handleSubmit();
-        } else if (formData.tier === "enterprise") {
           handleSubmit();
         }
       } catch (error) {
         console.error("Failed to create contact:", error);
+        setLoading(false);
       }
     };
 
@@ -632,7 +663,6 @@ const Onboarding = () => {
                   </Button>
                   <Button
                     onClick={handleSubmit}
-                    // disabled={!isBusinessInfoValid() || loading}
                     className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
                   >
                     {loading ? "Saving..." : "Next"}
@@ -692,7 +722,6 @@ const Onboarding = () => {
                   </Button>
                   <Button
                     onClick={handleSubmit}
-                    // disabled={loading}
                     className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
                   >
                     {loading ? "Saving..." : "Next"}
@@ -715,7 +744,7 @@ const Onboarding = () => {
                 </p>
               </div>
             <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-6">
-              <PricingPlans formData={formData} setFormData={setFormData} selectPlan = {createContact} />
+              <PricingPlans formData={formData} setFormData={setFormData} selectPlan = {createContact} loading={loading} />
               <div className="flex justify-between pt-6">
               <Button
                 variant="ghost"
@@ -725,13 +754,6 @@ const Onboarding = () => {
               >
                 Back
               </Button>
-              {/* <Button
-                onClick={createContact}
-                // disabled={loading}
-                className="h-[44px] px-6 text-[17px] font-medium text-white hover:bg-primary-600 rounded-full"
-              >
-                {loading ? "Saving..." : "Next"}
-              </Button> */}
             </div>
           </div>
         </div>
@@ -741,14 +763,11 @@ const Onboarding = () => {
             <div className="space-y-6 flex flex-col items-center w-full">
               <div className="text-center space-y-2">
                 <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
-                  Payment Method
+                  Access
                 </h1>
                 <p className="text-[15px] text-[#86868b]">
-                  Add a payment method to complete your account setup.
+                  No charges will be made at this time. Adding a card helps us verify your account and prevent fraud.
                 </p>
-                {/* <p className="text-[15px] text-primary font-medium">
-                  Your card will not be charged now. You'll receive $1,000 in estimate credits to get started.
-                </p> */}
               </div>
   
               <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 min-w-full md:min-w-[80%]">
@@ -766,7 +785,7 @@ const Onboarding = () => {
     { label: "Business Info", value: OnboardingSteps.BUSINESS_INFO },
     { label: "Branding", value: OnboardingSteps.BRANDING },
     { label: "Pricing", value: OnboardingSteps.PRICING },
-    { label: "Payment", value: OnboardingSteps.PAYMENT_METHOD },
+    { label: "Access", value: OnboardingSteps.PAYMENT_METHOD },
   ]
 
   return (
