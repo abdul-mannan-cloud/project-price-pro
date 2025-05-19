@@ -92,6 +92,8 @@ interface EstimateDisplayProps {
   isLeadPage?: boolean;
   lead?: any; // Add lead prop with optional type
   isEstimateLocked?: boolean; // New prop to determine if estimate is locked
+  onCancel?: () => void;
+  onArchive?: () => void;
 }
 
 export const EstimateDisplay = ({
@@ -112,7 +114,9 @@ export const EstimateDisplay = ({
   handleContractSign,
   isLeadPage = false,
   lead = null, // Default to null to avoid undefined errors
-  isEstimateLocked = false // Default value
+  isEstimateLocked = false, // Default value,
+  onCancel,
+  onArchive
 }: EstimateDisplayProps) => {
   const [editableGroups, setEditableGroups] = useState<ItemGroup[]>([]);
   const [editableTotalCost, setEditableTotalCost] = useState(totalCost);
@@ -261,7 +265,7 @@ export const EstimateDisplay = ({
         setClientSignature(leadData.client_signature);
       }
       
-      const isComplete = !!leadData.estimate_data && leadData.status === 'complete';
+      const isComplete  = !!leadData?.estimate_data && leadData.estimate_data.totalCost > 0;
       setIsEstimateReady(isComplete);
 
       if (isComplete && onEstimateChange && !isEditable) {
@@ -459,7 +463,39 @@ export const EstimateDisplay = ({
     // Update state
     setEditableGroups(newGroups);
   };
-  
+  // === NEW – create / delete whole sub‑groups ===============================
+// 👇 ADD THIS BLOCK just after handleDeleteLineItem
+const handleAddGroup = () => {
+  const newGroups: ItemGroup[] = JSON.parse(JSON.stringify(editableGroups));
+
+  newGroups.push({
+    name: "",                // ← leave blank so nothing shows
+    description: "",
+    subgroups: [
+      {
+        name: "Default",
+        items: [
+          {
+            title: "New Item",
+            description: "",
+            quantity: 1,
+            unitAmount: 0,
+            totalPrice: 0,
+          },
+        ],
+        subtotal: 0,
+      },
+    ],
+    subtotal: 0,
+  });
+
+  recalculateEstimateTotals(newGroups);
+  setEditableGroups(newGroups);
+};
+
+
+// ==========================================================================
+
   // Recalculate all subtotals and total cost
   const recalculateEstimateTotals = (groups: ItemGroup[]) => {
     let totalCost = 0;
@@ -504,146 +540,226 @@ export const EstimateDisplay = ({
     return <EstimateSkeleton />;
   }
 
-  // Render editable estimate table when in edit mode
-  const renderEditableEstimateTable = () => {
-    return (
-      <div className="space-y-6">
-        {editableGroups.map((group, groupIndex) => (
-          <div key={`group-${groupIndex}`} className={styles.section}>
-            <h3 className={styles.groupTitle}>{group.name}</h3>
-            {group.description && (
-              <p className="text-sm text-gray-600 mb-4">{group.description}</p>
+  // ─────────────────────────────────────────────────────────────
+// Paste this whole function inside EstimateDisplay.tsx
+// (replace the previous renderEditableEstimateTable definition)
+// ─────────────────────────────────────────────────────────────
+// REPLACE the existing renderEditableEstimateTable with this one
+// ─────────────────────────────────────────────────────────────
+const renderEditableEstimateTable = () => (
+  <div className="space-y-6">
+    {editableGroups.map((group, groupIndex) => (
+      <div key={`group-${groupIndex}`} className={styles.section}>
+        {/* ── GROUP NAME (border-less input, hides when empty) ── */}
+        {isEditable ? (
+          <Input
+            value={group.name}
+            placeholder="Section name…"
+            onChange={(e) => {
+              const newGroups = JSON.parse(JSON.stringify(editableGroups));
+              newGroups[groupIndex].name = e.target.value;
+              setEditableGroups(newGroups);
+            }}
+            className={cn(
+              styles.groupTitle,
+              "mb-2 bg-transparent border-0 focus:ring-0 focus:border-0"
             )}
+          />
+        ) : (
+          !group.hideTitle && group.name?.trim() && (
+            <h3 className={styles.groupTitle}>{group.name}</h3>
+          )
+        )}
 
-            <div className="space-y-6">
-              {group.subgroups?.map((subgroup, subgroupIndex) => (
-                <div key={`subgroup-${groupIndex}-${subgroupIndex}`} className="space-y-3 border p-4 rounded-md">
-                  <div className="flex justify-between items-center">
-                    <h5 className="text-sm font-medium text-muted-foreground">{subgroup.name}</h5>
-                    <Button 
-                      type="button" 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleAddLineItem(groupIndex, subgroupIndex)}
-                      className="h-8 px-2"
+        {group.description && (
+          <p className="text-sm text-gray-600 mb-4">{group.description}</p>
+        )}
+
+        {/* ── SUB-GROUPS & ITEMS ─────────────────────────────── */}
+        <div className="space-y-6">
+          {group.subgroups.map((subgroup, subgroupIndex) => (
+            <div
+              key={`subgroup-${groupIndex}-${subgroupIndex}`}
+              className="space-y-3 border p-4 rounded-md"
+            >
+              {/* sub-group header (editable) */}
+              <div className="flex justify-between items-center">
+                {isEditable ? (
+                  <Input
+                    value={subgroup.name}
+                    placeholder="Sub-section name…"
+                    onChange={(e) => {
+                      const newGroups = JSON.parse(JSON.stringify(editableGroups));
+                      newGroups[groupIndex].subgroups[subgroupIndex].name =
+                        e.target.value;
+                      setEditableGroups(newGroups);
+                    }}
+                    className="h-8 w-40 bg-transparent border-0 focus:ring-0 focus:border-0"
+                  />
+                ) : (
+                  subgroup.name?.trim() && (
+                    <h5 className="text-sm font-medium text-muted-foreground">
+                      {subgroup.name}
+                    </h5>
+                  )
+                )}
+
+                {/* add-item button */}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleAddLineItem(groupIndex, subgroupIndex)}
+                  className="h-8 px-2"
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add Item
+                </Button>
+              </div>
+
+              {/* each line-item */}
+              {subgroup.items.map((item, itemIndex) => (
+                <div
+                  key={`item-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                  className="grid grid-cols-12 gap-2 border-b pb-3"
+                >
+                  {/* title */}
+                  <div className="col-span-12 sm:col-span-5">
+                    <Label
+                      htmlFor={`item-title-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                      className="text-xs"
                     >
-                      <Plus className="h-4 w-4 mr-1" /> Add Item
-                    </Button>
+                      Title
+                    </Label>
+                    <Input
+                      id={`item-title-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                      value={item.title}
+                      onChange={(e) =>
+                        handleLineItemChange(
+                          groupIndex,
+                          subgroupIndex,
+                          itemIndex,
+                          "title",
+                          e.target.value
+                        )
+                      }
+                      className="h-8"
+                    />
                   </div>
-                  
-                  {subgroup.items?.map((item, itemIndex) => (
-                    <div 
-                      key={`item-${groupIndex}-${subgroupIndex}-${itemIndex}`} 
-                      className="grid grid-cols-12 gap-2 border-b pb-3"
+
+                  {/* quantity */}
+                  <div className="col-span-4 sm:col-span-2">
+                    <Label
+                      htmlFor={`item-qty-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                      className="text-xs"
                     >
-                      <div className="col-span-12 sm:col-span-5">
-                        <Label 
-                          htmlFor={`item-title-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                          className="text-xs"
-                        >
-                          Title
-                        </Label>
-                        <Input
-                          id={`item-title-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                          value={item.title}
-                          onChange={(e) => handleLineItemChange(
-                            groupIndex, 
-                            subgroupIndex, 
-                            itemIndex, 
-                            'title', 
-                            e.target.value
-                          )}
-                          className="h-8"
-                        />
-                      </div>
-                      
-                      <div className="col-span-4 sm:col-span-2">
-                        <Label 
-                          htmlFor={`item-qty-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                          className="text-xs"
-                        >
-                          Quantity
-                        </Label>
-                        <Input
-                          id={`item-qty-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => handleLineItemChange(
-                            groupIndex, 
-                            subgroupIndex, 
-                            itemIndex, 
-                            'quantity', 
-                            e.target.value
-                          )}
-                          className="h-8"
-                        />
-                      </div>
-                      
-                      <div className="col-span-4 sm:col-span-2">
-                        <Label 
-                          htmlFor={`item-price-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                          className="text-xs"
-                        >
-                          Unit Price
-                        </Label>
-                        <Input
-                          id={`item-price-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.unitAmount}
-                          onChange={(e) => handleLineItemChange(
-                            groupIndex, 
-                            subgroupIndex, 
-                            itemIndex, 
-                            'unitAmount', 
-                            e.target.value
-                          )}
-                          className="h-8"
-                        />
-                      </div>
-                      
-                      <div className="col-span-3 sm:col-span-2">
-                        <Label className="text-xs">Total</Label>
-                        <div className="h-8 flex items-center text-sm">
-                          ${item.totalPrice.toFixed(2)}
-                        </div>
-                      </div>
-                      
-                      <div className="col-span-1 sm:col-span-1 flex items-end justify-end">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteLineItem(groupIndex, subgroupIndex, itemIndex)}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive/90"
-                        >
-                          <MinusCircle className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      Quantity
+                    </Label>
+                    <Input
+                      id={`item-qty-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        handleLineItemChange(
+                          groupIndex,
+                          subgroupIndex,
+                          itemIndex,
+                          "quantity",
+                          e.target.value
+                        )
+                      }
+                      className="h-8"
+                    />
+                  </div>
+
+                  {/* unit price */}
+                  <div className="col-span-4 sm:col-span-2">
+                    <Label
+                      htmlFor={`item-price-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                      className="text-xs"
+                    >
+                      Unit Price
+                    </Label>
+                    <Input
+                      id={`item-price-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={item.unitAmount}
+                      onChange={(e) =>
+                        handleLineItemChange(
+                          groupIndex,
+                          subgroupIndex,
+                          itemIndex,
+                          "unitAmount",
+                          e.target.value
+                        )
+                      }
+                      className="h-8"
+                    />
+                  </div>
+
+                  {/* total */}
+                  <div className="col-span-3 sm:col-span-2">
+                    <Label className="text-xs">Total</Label>
+                    <div className="h-8 flex items-center text-sm">
+                      ${item.totalPrice.toFixed(2)}
                     </div>
-                  ))}
-                  
-                  <div className="text-right text-sm">
-                    Subtotal: ${subgroup.subtotal.toFixed(2)}
+                  </div>
+
+                  {/* delete item */}
+                  <div className="col-span-1 sm:col-span-1 flex items-end justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        handleDeleteLineItem(groupIndex, subgroupIndex, itemIndex)
+                      }
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive/90"
+                    >
+                      <MinusCircle className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
-            </div>
-            
-            <div className="text-right font-medium mt-2">
-              Group Total: ${group.subtotal?.toFixed(2) || "0.00"}
-            </div>
-          </div>
-        ))}
 
-        <div className="text-right text-lg font-bold mt-4">
-          Total Estimate: ${editableTotalCost.toFixed(2)}
+              <div className="text-right text-sm">
+                Subtotal: ${subgroup.subtotal.toFixed(2)}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-right font-medium mt-2">
+          Group Total: ${group.subtotal?.toFixed(2) || "0.00"}
         </div>
       </div>
-    );
-  };
+    ))}
+
+    {/* add-section button */}
+    <div className="flex justify-end">
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={handleAddGroup}
+        className="h-8 px-2 mt-4"
+      >
+        <Plus className="h-4 w-4 mr-1" /> Add Section
+      </Button>
+    </div>
+
+    <div className="text-right text-lg font-bold mt-4">
+      Total Estimate: ${editableTotalCost.toFixed(2)}
+    </div>
+  </div>
+);
+
+const displayGroups = groups.map(g => ({
+  ...g,
+  hideTitle: !g.name?.trim(),   // <- flag empty titles
+}));
 
   return (
     <>
@@ -715,13 +831,14 @@ export const EstimateDisplay = ({
               </div>
             </div>
           )}
+          
 
           <div className="overflow-x-auto">
             {isEditable ? (
               renderEditableEstimateTable()
             ) : (
               <EstimateTable
-                groups={groups}
+                groups={displayGroups} 
                 isLoading={isLoading}
                 styles={styles}
                 hideSubtotals={templateSettings.estimate_hide_subtotals || false}
@@ -729,6 +846,7 @@ export const EstimateDisplay = ({
               />
             )}
           </div>
+          
 
           {!isEditable && (
             <EstimateTotals
@@ -738,6 +856,22 @@ export const EstimateDisplay = ({
               styles={styles}
               taxRate={settings?.tax_rate ?? 0}
             />
+          )}
+
+          {/* Cancel / Archive buttons */}
+          {!isEditable && (onCancel || onArchive) && (
+            <div className="mt-6 flex justify-end gap-2">
+              {onCancel && (
+                <Button variant="destructive" size="sm" onClick={onCancel}>
+                  Cancel
+                </Button>
+              )}
+              {onArchive && (
+                <Button variant="outline" size="sm" onClick={onArchive}>
+                  Archive
+                </Button>
+              )}
+            </div>
           )}
 
           {templateSettings?.estimate_footer_text && (

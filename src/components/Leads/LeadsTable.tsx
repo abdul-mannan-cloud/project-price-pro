@@ -92,12 +92,12 @@ interface LeadsTableProps {
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
+  "in-progress": "bg-blue-100 text-blue-800",
+  approved: "bg-purple-100 text-purple-800",   // NEW
   completed: "bg-green-100 text-green-800",
   complete: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
-  "in-progress": "bg-blue-100 text-blue-800"
 } as const;
-
 export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExport }: LeadsTableProps) => {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -113,52 +113,78 @@ export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExp
 
   useEffect(() => {
     const cleanupIncompleteLeads = async () => {
-      try {
-        if (leads.length === 0 || !leads[0]?.contractor_id) {
-          console.log('No contractor ID available, skipping cleanup');
-          return;
-        }
-        
-        const contractorId = leads[0].contractor_id;
-        
-        const { data: incompleteLeads, error: fetchError } = await supabase
-          .from('leads')
-          .select('id')
-          .eq('contractor_id', contractorId)
-          .or('user_email.is.null,user_email.eq.')
-          .or('user_phone.is.null,user_phone.eq.')
-          
-        if (fetchError) {
-          console.error('Error fetching incomplete leads:', fetchError);
-          return;
-        }
-        
-        if (!incompleteLeads || incompleteLeads.length === 0) {
-          console.log('No incomplete leads found');
-          return;
-        }
-        
-        const leadIdsToDelete = incompleteLeads.map(lead => lead.id);
-        
-        console.log(`Deleting ${leadIdsToDelete.length} incomplete leads`);
-        
-        const { error: deleteError } = await supabase
-          .from('leads')
-          .delete()
-          .in('id', leadIdsToDelete);
-          
-        if (deleteError) {
-          console.error('Error deleting incomplete leads:', deleteError);
-          return;
-        }
-        
-        console.log(`Successfully deleted ${leadIdsToDelete.length} incomplete leads`);
-      } catch (error) {
-        console.error('Unexpected error during leads cleanup:', error);
-      }
-    };
+  try {
+    // ── guard ────────────────────────────────────────────────
+    if (leads.length === 0 || !leads[0]?.contractor_id) {
+      console.log("No contractor ID available, skipping cleanup");
+      return;
+    }
+    const contractorId = leads[0].contractor_id;
 
-    cleanupIncompleteLeads();
+    // ── 1. delete truly incomplete leads (no email / phone) ─
+    const { data: incompleteLeads, error: fetchError } = await supabase
+      .from("leads")
+      .select("id")
+      .eq("contractor_id", contractorId)
+      .or("user_email.is.null,user_email.eq.")
+      .or("user_phone.is.null,user_phone.eq.");
+
+    if (fetchError) {
+      console.error("Error fetching incomplete leads:", fetchError);
+      return;
+    }
+
+    if (incompleteLeads && incompleteLeads.length) {
+      const leadIdsToDelete = incompleteLeads.map((l) => l.id);
+      console.log(`Deleting ${leadIdsToDelete.length} incomplete leads`);
+
+      const { error: deleteError } = await supabase
+        .from("leads")
+        .delete()
+        .in("id", leadIdsToDelete);
+
+      if (deleteError) {
+        console.error("Error deleting incomplete leads:", deleteError);
+        return;
+      }
+      console.log(
+        `Successfully deleted ${leadIdsToDelete.length} incomplete leads`
+      );
+    } else {
+      console.log("No incomplete leads found");
+    }
+
+    // ── 2. auto‑cancel stale leads (older than 7 days, no contractor sig) ─
+    const sevenDaysAgoISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+
+
+    const { data: autoCancelled, error: autoCancelError } = await supabase
+      .from("leads")
+      .update({ status: "cancelled" })
+      .eq("contractor_id", contractorId)
+      .is("contractor_signature", null) // contractor hasn't signed
+      .lt("created_at", sevenDaysAgoISO) // older than 7 days
+      .not("status", "in", "(cancelled,archived,completed)") // still active
+      .select("id");
+
+    if (autoCancelError) {
+      console.error("Error auto‑cancelling stale leads:", autoCancelError);
+    } else if (autoCancelled && autoCancelled.length) {
+      console.log(`Auto‑cancelled ${autoCancelled.length} stale leads`);
+      toast({
+        title: "Leads auto‑cancelled",
+        description: `${autoCancelled.length} lead${
+          autoCancelled.length > 1 ? "s were" : " was"
+        } cancelled (no contractor signature within 7 days).`,
+      });
+    }
+  } catch (error) {
+    console.error("Unexpected error during leads cleanup:", error);
+  }
+};
+
+cleanupIncompleteLeads(); 
   }, []);
 
   const handleSort = (field: SortField) => {
@@ -305,7 +331,7 @@ export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExp
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Status</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {['pending', 'in-progress', 'completed', 'cancelled'].map((status) => (
+             {['pending','in-progress','approved','completed', 'cancelled','archived'].map((status) => (
                 <DropdownMenuCheckboxItem
                   key={status}
                   checked={filters.status.includes(status)}
@@ -576,7 +602,7 @@ export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExp
 
       {/* Mobile Lead Dialog */}
       <Dialog open={!!selectedMobileLead} onOpenChange={() => setSelectedMobileLead(null)}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="w-[90vw] max-w-sm mx-auto p-4">
           {selectedMobileLead && (
             <div className="space-y-4">
               <div className="flex flex-row gap-20 justify-between">
@@ -655,7 +681,7 @@ export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExp
 
       {/* Export Dialog */}
       <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="w-[90vw] max-w-sm mx-auto p-4">
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">Export Options</h2>
             <div className="space-y-4">

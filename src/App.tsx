@@ -22,7 +22,9 @@ import Spinner from "./components/ui/spinner";
 import TermsOfService from "@/pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import PricingPage from "@/pages/PricingPage";
+import Industry from "@/pages/Industry"
+import Blog from "@/pages/Blog";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -159,6 +161,9 @@ function App() {
             <Route path="/team-onboarding" element={<TeamOnboarding />} />
           </Route>
           
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/industry" element={<Industry />} />
+           <Route path="/blog" element={<Blog />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />

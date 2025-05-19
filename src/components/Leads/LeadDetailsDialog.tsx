@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import LeadHistory from "./LeadHistory"; 
 import {
   AlertDialog,
   AlertDialogAction,
@@ -100,7 +101,7 @@ interface LeadDetailsDialogProps {
 }
 
 export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContractorId }: LeadDetailsDialogProps) => {
-  const [view, setView] = useState<"estimate" | "questions">("estimate");
+    const [view, setView] = useState<"estimate" | "questions" | "history">("estimate");
   const [isEditing, setIsEditing] = useState(false);
   const [editedEstimate, setEditedEstimate] = useState<any>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
@@ -114,7 +115,7 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   // New state for contractor signature dialog
   const [showContractorSignatureDialog, setShowContractorSignatureDialog] = useState(false);
-  
+  const [isCancelling, setIsCancelling] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
@@ -126,6 +127,7 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   
   // State to hold the lead data
   const [lead, setLead] = useState<Lead | null>(initialLead);
+  
 
   // Get current user data if no URL contractor ID
   const { data: currentUser, isLoading: isLoadingUser } = useQuery({
@@ -138,6 +140,8 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
     },
     enabled: !urlContractorId // Only fetch if no URL contractor ID
   });
+
+
 
   // Determine the actual contractor ID to use
   const effectiveContractorId = urlContractorId || currentUser?.id;
@@ -168,13 +172,12 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
     queryFn: async () => {
       if (!effectiveContractorId) throw new Error('No contractor ID available');
 
-      const { data, error } = await supabase
+      const { data, error: dbError } = await supabase
         .from('contractors')
         .select('*')
         .eq('id', effectiveContractorId)
-        .single();
-
-      if (error) throw error;
+        .maybeSingle(); 
+      if (dbError) throw dbError;
       if (!data) throw new Error('No contractor found');
       return data;
     },
@@ -237,15 +240,15 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
     
     try {
       // Update the lead with the contractor signature
-      const { error } = await supabase
-        .from('leads')
-        .update({
-          contractor_signature: signature,
-          contractor_signature_date: new Date().toISOString()
-        })
-        .eq('id', lead.id);
-      
-      if (error) throw error;
+      const { error: dbError } = await supabase
+         .from("leads")
+         .update({
+           contractor_signature: signature,
+           contractor_signature_date: new Date().toISOString(),
+           status: "approved"
+         })
+         .eq("id", lead.id);
+      if (dbError) throw dbError;
       
       // Refresh lead data
       refetchLead();
@@ -268,13 +271,55 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
     }
   };
 
+  const handleCancelLead = async () => {
+    if (!lead) return;
+    setIsCancelling(true);
+    try {
+      const { error: dbError } = await supabase
+        .from("leads")
+        .update({ status: "cancelled" })
+        .eq("id", lead.id);
+
+      if (dbError) throw dbError;
+
+      toast({ title: "Lead cancelled", description: "Status set to \"cancelled\"." });
+      queryClient.invalidateQueries(["lead", lead.id]);
+      queryClient.invalidateQueries(["leads"]);
+    } catch (err) {
+      toast({ title: "Error", description: "Could not cancel lead.", variant: "destructive" });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleArchiveLead = async () => {
+    if (!lead) return;
+    setIsCancelling(true);          // reuse same spinner flag
+    try {
+      const { error: dbError } = await supabase
+        .from("leads")
+        .update({ status: "archived" })
+        .eq("id", lead.id);
+
+      if (dbError) throw dbError;
+
+      toast({ title: "Lead archived", description: "Status set to \"archived\"." });
+      queryClient.invalidateQueries(["lead", lead.id]);
+      queryClient.invalidateQueries(["leads"]);
+    } catch (err) {
+      toast({ title: "Error", description: "Could not archive lead.", variant: "destructive" });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   // Function to handle unlocking the estimate
   const handleUnlockEstimate = async () => {
     if (!lead || !effectiveContractorId) return;
     
     try {
       // Update the lead to remove client signature
-      const { error } = await supabase
+     const { error: dbError } = await supabase
         .from('leads')
         .update({
           client_signature: null,
@@ -282,7 +327,7 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
         })
         .eq('id', lead.id);
       
-      if (error) throw error;
+      if (dbError) throw dbError;
       
       // Update local state
       setIsEstimateLocked(false);
@@ -298,11 +343,6 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
         title: "Estimate unlocked",
         description: "You can now edit this estimate. The client will need to sign it again.",
       });
-      
-      // No longer automatically prompting for contractor signature
-      // Removed: setTimeout(() => {
-      //   setShowContractorSignatureDialog(true);
-      // }, 300);
     } catch (error) {
       console.error('Error unlocking estimate:', error);
       toast({
@@ -312,6 +352,7 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
       });
     }
   };
+
   const handleSaveEstimate = async () => {
     if (!lead || !effectiveContractorId) {
       toast({
@@ -339,14 +380,14 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
       console.log("Saving with payload:", updatePayload);
 
       // Update the lead without trying to select in the same query
-      const { error } = await supabase
+      const { error: dbError } = await supabase
         .from('leads')
         .update(updatePayload)
         .eq('id', lead.id);
 
-      if (error) {
-        console.error('Update error:', error);
-        throw error;
+      if (dbError) {
+        console.error('Update error:', dbError);
+        throw dbError;
       }
 
       // Manually fetch the updated lead
@@ -398,12 +439,12 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
     
     try {
       // Delete lead from database
-      const { error } = await supabase
+      const { error: dbError } = await supabase
         .from('leads')
         .delete()
         .eq('id', lead.id);
       
-      if (error) throw error;
+      if (dbError) throw dbError;
       
       // Show success toast
       toast({
@@ -658,6 +699,14 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleArchiveLead}
+                disabled={isCancelling}
+                className="cursor-pointer"
+              >
+                <Copy className="mr-2 h-4 w-4 rotate-90" />
+                Archive Lead
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => setShowDeleteDialog(true)}
                 className="text-destructive cursor-pointer focus:text-destructive"
@@ -736,6 +785,8 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
                 <LeadViewToggle view={view} onViewChange={setView} />
               </div>
             </div>
+            {view === "history" && <LeadHistory leadId={lead.id} />}
+
 
             <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
               <div className="max-w-6xl mx-auto pt-6">
@@ -764,6 +815,8 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
                         isLeadPage={true} // Explicitly set this to true for the lead details page
                         lead={lead} 
                         isEstimateLocked={isEstimateLocked}
+                        onCancel={handleCancelLead}
+                        onArchive={handleArchiveLead}
                       />
                     </div>
                   </>
@@ -792,15 +845,8 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
                     <MessageSquare className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
                     Text
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    className="rounded-none shadow-none last:rounded-e-lg focus-visible:z-10 flex-1"
-                    onClick={handleCopyLink}
-                  >
-                    <LinkIcon className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
-                    Copy Link
-                  </Button>
-                </div>
+                  
+                    </div>
               </div>
             </div>
           </div>
