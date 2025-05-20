@@ -147,24 +147,89 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   const effectiveContractorId = urlContractorId || currentUser?.id;
 
   // Fetch lead data if we have a leadId in the URL
-  const { data: fetchedLead, isLoading: isLoadingLead, refetch: refetchLead } = useQuery({
-    queryKey: ['lead', leadIdFromUrl],
-    queryFn: async () => {
-      if (!leadIdFromUrl) return null;
-      
-      const { data, error } = await supabase
+  const {
+  data: fetchedLead,
+  isLoading: isLoadingLead,
+  refetch: refetchLead,
+} = useQuery({
+  queryKey: ['lead', leadIdFromUrl],
+  queryFn: async () => {
+    if (!leadIdFromUrl) return null;
+
+    /* — 1. first fetch — */
+    const { data: leadRow, error } = await supabase
+      .from('leads')
+      .select(
+        '*, client_signature, client_signature_date, contractor_signature, contractor_signature_date, estimate_data'
+      )
+      .eq('id', leadIdFromUrl)
+      .single();
+
+    if (error) throw error;
+
+    /* — 2. poll until estimate_data is ready (max 30 s) — */
+    let tries = 0;
+    while (
+      (!leadRow.estimate_data ||
+        !Array.isArray(leadRow.estimate_data.groups) ||
+        leadRow.estimate_data.groups.length === 0) &&
+      tries < 30
+    ) {
+      await new Promise((r) => setTimeout(r, 1000)); // 1-second delay
+      const { data: fresh, error: freshErr } = await supabase
         .from('leads')
-        .select('*, client_signature, client_signature_date, contractor_signature, contractor_signature_date')
+        .select('estimate_data')
         .eq('id', leadIdFromUrl)
         .single();
-        
-      if (error) throw error;
-      
-      console.log("Fetched lead with signatures:", data);
-      return data as Lead;
-    },
-    enabled: !!leadIdFromUrl,
-  });
+      if (freshErr) throw freshErr;
+      if (fresh?.estimate_data) leadRow.estimate_data = fresh.estimate_data;
+      tries++;
+    }
+
+    /* — 3. hydrate missing client signature from lead_signatures — */
+  if (
+  leadRow.client_signature == null ||               // NULL
+  leadRow.client_signature.trim() === ''            // empty string
+) {
+  const { data: sigRow, error: sigErr } = await supabase
+    .from('lead_signatures')
+    .select('signature, signed_at')
+    .eq('lead_id', leadIdFromUrl)
+    .eq('signer', 'client')
+    .maybeSingle();
+
+  if (sigErr) throw sigErr;
+  if (sigRow) {
+    leadRow.client_signature      = sigRow.signature;
+    leadRow.client_signature_date = sigRow.signed_at;
+  }
+}
+
+    /* — 4. hydrate missing contractor signature (optional) — */
+    if (
+  leadRow.contractor_signature == null ||
+  leadRow.contractor_signature.trim() === ''
+) {
+  const { data: sigRow, error: sigErr } = await supabase
+    .from('lead_signatures')
+    .select('signature, signed_at')
+    .eq('lead_id', leadIdFromUrl)
+    .eq('signer', 'contractor')
+    .maybeSingle();
+
+  if (sigErr) throw sigErr;
+  if (sigRow) {
+    leadRow.contractor_signature      = sigRow.signature;
+    leadRow.contractor_signature_date = sigRow.signed_at;
+  }
+}
+
+    console.log('Fetched lead (hydrated):', leadRow);
+    return leadRow as Lead;
+  },
+  enabled: !!leadIdFromUrl,
+});
+
 
   // Fetch contractor data using the effective ID
   const { data: contractor, isLoading: isLoadingContractor } = useQuery({

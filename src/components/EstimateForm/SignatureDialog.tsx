@@ -1,3 +1,4 @@
+// src/components/EstimateForm/SignatureDialog.tsx
 import React, { useState } from "react";
 import {
   Dialog,
@@ -9,91 +10,57 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { saveSignature, type Signer } from "@/api/signatures";
 
-interface SignatureDialogProps {
+interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSign: (signature: string) => void;
-  contractorId?: string | null;
-  leadId?: string;
-  estimateData?: any;
-  isContractorSignature?: boolean; // New prop to determine if this is for a contractor or client
+  /** tells the parent to refresh */
+  onSign: (sig: string) => void;
+  leadId: string;
+  /** true ⇒ contractor is signing – otherwise client */
+  isContractorSignature?: boolean;
 }
 
-export const SignatureDialog = ({
+export function SignatureDialog({
   isOpen,
   onClose,
   onSign,
-  contractorId,
   leadId,
-  estimateData,
-  isContractorSignature = false // Default to client signature
-}: SignatureDialogProps) => {
+  isContractorSignature = false,
+}: Props) {
   const [signature, setSignature] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
 
+  /** submit form */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!signature.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter your signature.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
+    const sig = signature.trim();
+    if (!sig) return;
+
     try {
-      // If lead ID and contractor ID are provided, update the lead
-      if (leadId && contractorId) {
-        // Determine which signature field to update based on isContractorSignature prop
-       const updatePayload = isContractorSignature
-  ? {
-      contractor_signature: signature,
-      contractor_signature_date: new Date().toISOString(),
-      status: "approved"          // NEW – contractor signs → approved
-    }
-  : {
-      client_signature: signature,
-      client_signature_date: new Date().toISOString(),
-      status: "in-progress"       // NEW – client signs    → in‑progress
-    };
-       const { error: dbError } = await supabase
-           .from("leads")
-           .update(updatePayload)
-           .eq("id", leadId);
-          
-         if (dbError) throw dbError;
-        
-        // Show success message
-        toast({
-          title: "Success",
-          description: isContractorSignature 
-            ? "Contractor signature added successfully."
-            : "Client signature added successfully.",
-        });
-      }
-      
-      // Call onSign callback with signature
-      onSign(signature);
-      
-      // Close dialog and reset state
+      setSaving(true);
+
+      // 🔑 SINGLE helper keeps `lead_signatures` and legacy columns in sync
+      await saveSignature(
+        leadId,
+        sig,
+        isContractorSignature ? ("contractor" as Signer) : ("client" as Signer),
+      );
+
+      toast({ title: "Signature saved" });
+      onSign(sig);        // optimistic refresh for parent
       setSignature("");
       onClose();
-    } catch (error) {
-      console.error("Error saving signature:", error);
+    } catch (err: any) {
       toast({
         title: "Error",
-        description: "Failed to save signature. Please try again.",
+        description: err.message,
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setSaving(false);
     }
   };
 
@@ -102,38 +69,31 @@ export const SignatureDialog = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isContractorSignature ? "Add Contractor Signature" : "Add Signature"}
+            {isContractorSignature ? "Contractor Signature" : "Client Signature"}
           </DialogTitle>
-          <DialogDescription>
-            {isContractorSignature 
-              ? "Please type your name to sign this estimate as the contractor."
-              : "Please type your name to sign this estimate."}
-          </DialogDescription>
+          <DialogDescription>Type your full name.</DialogDescription>
         </DialogHeader>
+
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Input
-                id="signature"
-                placeholder="Type your full name"
-                value={signature}
-                onChange={(e) => setSignature(e.target.value)}
-                autoComplete="name"
-                disabled={isSubmitting}
-                required
-              />
-            </div>
-          </div>
+          <Input
+            value={signature}
+            onChange={(e) => setSignature(e.target.value)}
+            placeholder="Full name"
+            disabled={saving}
+            required
+            className="mb-4"
+          />
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            <Button variant="outline" onClick={onClose} disabled={saving}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || !signature.trim()}>
-              {isSubmitting ? "Signing..." : "Sign"}
+            <Button type="submit" disabled={saving || !signature.trim()}>
+              {saving ? "Saving…" : "Sign"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
-};
+}
