@@ -43,7 +43,7 @@ export const EstimateTemplateSettings = ({contractor}) => {
   const [clientMessage, setClientMessage] = useState("");
   const [footerText, setFooterText] = useState("");
   const [hasClientMessageChanges, setHasClientMessageChanges] = useState(false);
-  const [hasFooterTextChanges, setHasFooterTextChanges] = useState(false);
+  const [hasFooterTextChanges, setHasFooterTextChanges] = useState(false);  
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["contractor-settings", contractor?.id],
@@ -143,7 +143,7 @@ export const EstimateTemplateSettings = ({contractor}) => {
           <Input
               name="minimum_project_cost"
               type="number"
-              defaultValue={settings.minimum_project_cost}
+              defaultValue={settings?.minimum_project_cost}
           />
           <p className="text-sm text-muted-foreground mt-1">
             The minimum cost you're willing to take on for any project

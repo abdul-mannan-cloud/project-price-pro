@@ -25,14 +25,6 @@ export const EstimateSignature = ({
 }: EstimateSignatureProps) => {
   const isMobile = useMediaQuery("(max-width: 640px)");
 
-  // For debugging
-  console.log("EstimateSignature props:", { 
-    signature, 
-    contractorSignature, 
-    isLeadPage,
-    canContractorSign
-  });
-
   return (
     <div className={cn(
       "mt-4 sm:mt-6 md:mt-8 pt-3 sm:pt-4 md:pt-6 border-t space-y-3 sm:space-y-6",

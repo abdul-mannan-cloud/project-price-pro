@@ -592,7 +592,6 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   };
 
   const handleEstimateChange = (updated: any) => {
-    console.log("Estimate changed:", updated);
     if (updated) {
       // Use a fresh object to avoid reference issues
       const newEstimate = {

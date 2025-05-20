@@ -137,6 +137,7 @@ export const EstimateDisplay = ({
 
   // Initialize editable groups when component mounts or when groups change
   useEffect(() => {
+    
     if (groups && groups.length > 0) {
       setEditableGroups(JSON.parse(JSON.stringify(groups)));
       setEditableTotalCost(totalCost);
@@ -145,6 +146,8 @@ export const EstimateDisplay = ({
 
   // Effect for updating parent component on editable groups change
   useEffect(() => {
+    // console.log("Editable Issue");
+    
     if (isEditable && onEstimateChange && editableGroups.length > 0) {
       const estimate = {
         groups: editableGroups,
@@ -154,7 +157,7 @@ export const EstimateDisplay = ({
     }
   }, [editableGroups, editableTotalCost, isEditable, onEstimateChange]);
 
-  useEffect(() => {
+  useEffect(() => {    
     if (!contractorId) {
       getContractorId();
     }
@@ -199,7 +202,7 @@ export const EstimateDisplay = ({
   });
 
   // Update signature state when fetching lead data
-  useEffect(() => {
+  useEffect(() => {    
     if (leadData?.contractor_signature) {
       setSignature(leadData.contractor_signature);
     }
@@ -254,6 +257,8 @@ export const EstimateDisplay = ({
 
   // Update the effect to handle the signatures correctly with null checks
   useEffect(() => {
+    console.log("LEAD DATA, ESTIMATE CHAGNE");
+    
     if (leadData) {
       // Get contractor signature if any
       if (leadData.contractor_signature) {
@@ -272,7 +277,7 @@ export const EstimateDisplay = ({
         onEstimateChange(leadData.estimate_data);
       }
     }
-  }, [leadData, isEditable, onEstimateChange]);
+  }, [leadData, isEditable]);
 
   // Safely check for signatures from estimate or lead
   useEffect(() => {
@@ -936,7 +941,7 @@ const displayGroups = groups.map(g => ({
               isOpen={showSettings}
               onClose={() => setShowSettings(false)}
             >
-              <EstimateTemplateSettings contractorId={contractorId} />
+              <EstimateTemplateSettings contractor={contractor} />
             </SettingsDialog>
           )}
           {showAIPreferences && (
