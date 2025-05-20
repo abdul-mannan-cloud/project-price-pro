@@ -755,7 +755,8 @@ const handleSaveEstimate = async () => {
         <DialogContent className="max-w-full h-[100vh] p-0 m-0">
           <DialogTitle className="sr-only">Lead Details</DialogTitle>
           <DialogDescription className="sr-only">View and manage lead details</DialogDescription>
-          <div className="flex flex-col h-full relative overflow-y-scroll pb-20">
+          <div className="flex flex-col h-full relative overflow-hidden pb-20">
+
             {isMobile ? (
               <div className="sticky top-0 z-50 bg-white border-b">
                 <button
@@ -780,45 +781,48 @@ const handleSaveEstimate = async () => {
                 <LeadViewToggle view={view} onViewChange={setView} />
               </div>
             </div>
-            {view === "history" && <LeadHistory leadId={lead.id} />}
+            {/* put all three views into the same scrollable panel */}
+<div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
+  <div className="max-w-6xl mx-auto pt-6 space-y-6">
+    {view === "history" && (
+      <LeadHistory leadId={lead.id} />
+    )}
 
+    {view === "estimate" && lead && (
+      <>
+        {isEstimateLocked && (
+          <EstimateLockBanner
+            isLocked={isEstimateLocked}
+            onUnlock={() => setShowUnlockDialog(true)}
+            className="mb-4"
+          />
+        )}
+        {renderActionButtons()}
+        <div className="mt-4">
+          <EstimateDisplay
+            groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
+            totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
+            projectSummary={lead.project_description}
+            isEditable={isEditing}
+            onEstimateChange={handleEstimateChange}
+            contractor={contractor}
+            contractorParam={contractor?.id}
+            handleRefreshEstimate={() => refetchLead()}
+            leadId={lead.id}
+            handleContractSign={() => setShowContractorSignatureDialog(true)}
+            isLeadPage={true}
+            lead={lead}
+            isEstimateLocked={isEstimateLocked}
+          />
+        </div>
+      </>
+    )}
 
-            <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
-              <div className="max-w-6xl mx-auto pt-6">
-                {view === "estimate" && lead && (
-                  <>
-                    {isEstimateLocked && (
-                      <EstimateLockBanner 
-                        isLocked={isEstimateLocked} 
-                        onUnlock={() => setShowUnlockDialog(true)} 
-                        className="mb-4" 
-                      />
-                    )}
-                    {renderActionButtons()}
-                    <div className="mt-4">
-                      <EstimateDisplay 
-                      groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
-                      totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
-                      projectSummary={lead.project_description}
-                      isEditable={isEditing}
-                      onEstimateChange={handleEstimateChange}
-                      contractor={contractor}
-                      contractorParam={contractor?.id}
-                      handleRefreshEstimate={() => refetchLead()}
-                      leadId={lead.id}
-                      handleContractSign={() => setShowContractorSignatureDialog(true)}
-                      isLeadPage={true}
-                      lead={lead}
-                      isEstimateLocked={isEstimateLocked}
-                    />
-                    </div>
-                  </>
-                )}
-                {view === "questions" && (
-                  <LeadQuestionsView lead={lead} refetchLead={refetchLead} />
-                )}
-              </div>
-            </div>
+    {view === "questions" && (
+      <LeadQuestionsView lead={lead} refetchLead={refetchLead} />
+    )}
+  </div>
+</div>
 
             {/* Bottom Action Bar */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">

@@ -193,7 +193,7 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
 
   return (
     <>
-      <ScrollArea className="h-[400px] space-y-4 pr-2">
+      <ScrollArea className="h-full space-y-4 pr-2">
         {data.map((log) => {
           const rows = log.operation === "UPDATE"
             ? getChangeRows(log.old_data, log.new_data)
