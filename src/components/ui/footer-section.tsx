@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export function Footerdemo() {
   const [email, setEmail] = useState("");
@@ -12,6 +12,8 @@ export function Footerdemo() {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const { toast } = useToast();
+
+  const navigate = useNavigate();
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +75,7 @@ export function Footerdemo() {
               <ul role="list" className="mt-6 space-y-4">
                 <li>
                   <button
-                    onClick={() => setShowPrivacy(true)}
+                    onClick={() => navigate('/privacy-policy')}
                     className="text-sm text-gray-600 hover:text-gray-900"
                   >
                     Privacy Policy
@@ -81,7 +83,7 @@ export function Footerdemo() {
                 </li>
                 <li>
                   <button
-                    onClick={() => setShowTerms(true)}
+                    onClick={() => navigate('/terms-of-service')}
                     className="text-sm text-gray-600 hover:text-gray-900"
                   >
                     Terms of Service

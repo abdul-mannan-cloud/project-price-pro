@@ -187,10 +187,12 @@ const Leads = () => {
             onLeadClick={handleLeadClick}
             onDeleteLeads={(leadIds) => deleteLead.mutate(leadIds)}
             onExport={handleExport}
-          /> :
+          /> : isLoading ? 
           <div className="min-h-screen flex items-center justify-center">
             {/* <div className="text-lg">Loading...</div> */}
             <Spinner />
+          </div> : <div className="w-full h-full flex text-center justify-center items-center align-middle">
+            <p className="text-primary text-xl font-semibold">There are no leads yet!</p>
           </div>
         }
         {/* <LeadsTable

@@ -211,11 +211,11 @@ const Onboarding = () => {
                 setLoading(false); 
             } catch (error: any) {
                 console.error("Error checking business info:", error);
-                toast({
-                    title: "Error",
-                    description: "Something went wrong while checking business information.",
-                    variant: "destructive",
-                });
+                // toast({
+                //     title: "Error",
+                //     description: "Something went wrong while checking business information.",
+                //     variant: "destructive",
+                // });
                 setLoading(false);
             }
         };

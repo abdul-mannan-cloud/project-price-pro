@@ -174,7 +174,7 @@ export const UsageSettings = ({ contractor }) => {
           show && (
             <div className="p-4 bg-gray-50 rounded-md">
               <h2 className="text-lg font-semibold">Add Payment Method</h2>
-                <AddPaymentMethod customerName={contractor.businessName} customerId={contractor.stripe_customer_id} clientSecret={clientSecret} setCurrentStep={() => {}} handleSubmit={() => {}} handleBack={handleCancel}/>
+                <AddPaymentMethod customerName={contractor.businessName} customerId={contractor.stripe_customer_id} clientSecret={clientSecret} setCurrentStep={() => {}} handleSubmit={() => {}} handleBack={handleCancel} setIsPaymentModalOpen={setShow}/>
             </div>
           )
         }

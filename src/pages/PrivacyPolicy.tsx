@@ -25,7 +25,7 @@ const PrivacyPolicy = () => {
                         <li><strong>Project Details:</strong> Information users provide about their construction project.</li>
                         <li><strong>Payment Information:</strong> Credit/debit card details, billing address (processed securely).</li>
                         <li><strong>Technical Data:</strong> IP address, device information, browsing activity on our site.</li>
-                        <li><strong>SMS Consent Data:</strong> If you opt in to receive text messages, we collect your mobile number and record your opt-in status, preferences, and related SMS communications.</li>
+                        <li><strong>SMS Consent Data:</strong> If you opt in to receive text messages, we collect your mobile number and record your opt-in status, preferences, and related SMS communications. Your mobile number and SMS opt-in information will not be sold or shared with third parties.</li>
                     </ul>
                 </section>
 

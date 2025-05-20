@@ -15,7 +15,25 @@ import { useLocation } from 'react-router-dom' // Import from react-router-dom
 
 const stripePromise = loadStripe('pk_test_51R7hjJGwj3ICel7hM1235wRDn3lEBEvmYkURzopLYmPpyQa91vdv6HTHffkG5EZFlJBD8v2ruWEhDCknbG8XJn3B00jVdJp7dy')
 
-function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, handleSubmit, handleBack }: { customerName: string, customerId: string, clientSecret: string, setCurrentStep: React.Dispatch<React.SetStateAction<any>>, handleSubmit: () => void, handleBack: () => void }) {
+interface PaymentFormProps {
+  customerName: string;
+  customerId: string;
+  clientSecret: string;
+  setCurrentStep: React.Dispatch<React.SetStateAction<any>>;
+  handleSubmit: () => void;
+  handleBack: () => void;
+  setIsPaymentModalOpen?: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+function PaymentForm({ 
+  customerName, 
+  customerId, 
+  clientSecret, 
+  setCurrentStep, 
+  handleSubmit, 
+  handleBack,
+  setIsPaymentModalOpen
+}: PaymentFormProps) {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
@@ -89,6 +107,11 @@ function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, h
       }
       
       setSuccess(true)
+      
+      // If the setter function is provided, set it to false
+      if (setIsPaymentModalOpen) {
+        setIsPaymentModalOpen(false);
+      }
       
       setTimeout(() => {
         handleSubmit();
@@ -181,10 +204,36 @@ function PaymentForm({ customerName, customerId, clientSecret, setCurrentStep, h
   )
 }
 
-export default function AddPaymentMethod({ customerName, customerId, clientSecret, setCurrentStep, handleSubmit, handleBack }: { customerName: string, customerId: string, clientSecret: string, setCurrentStep: React.Dispatch<React.SetStateAction<any>>, handleSubmit: () => void, handleBack: () => void }) {
+interface AddPaymentMethodProps {
+  customerName: string;
+  customerId: string;
+  clientSecret: string;
+  setCurrentStep: React.Dispatch<React.SetStateAction<any>>;
+  handleSubmit: () => void;
+  handleBack: () => void;
+  setIsPaymentModalOpen?: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+export default function AddPaymentMethod({ 
+  customerName, 
+  customerId, 
+  clientSecret, 
+  setCurrentStep, 
+  handleSubmit, 
+  handleBack,
+  setIsPaymentModalOpen
+}: AddPaymentMethodProps) {
   return (
     <Elements stripe={stripePromise}>
-      <PaymentForm customerName={customerName} customerId={customerId} clientSecret={clientSecret} setCurrentStep={setCurrentStep} handleSubmit={handleSubmit} handleBack={handleBack}/>
+      <PaymentForm 
+        customerName={customerName} 
+        customerId={customerId} 
+        clientSecret={clientSecret} 
+        setCurrentStep={setCurrentStep} 
+        handleSubmit={handleSubmit} 
+        handleBack={handleBack}
+        setIsPaymentModalOpen={setIsPaymentModalOpen}
+      />
     </Elements>
   )
 }
