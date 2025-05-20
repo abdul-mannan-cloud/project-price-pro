@@ -313,14 +313,14 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     }
   };
 
-    const handleGenerateInvoice = async (contractor, estimateData) => {
+    const handleGenerateInvoice = async (contractor, totalCost) => {
       try {        
         const { data, error } = await supabase.functions.invoke('generate-invoice', {
           body: {
             customerId: contractor?.stripe_customer_id,
             description: 'New lead service fee',
             items: [
-              { amount: Math.round((estimateData.totalCost*100) * 0.01 + 20 + 200), description: 'Service charges' },
+              { amount: Math.round((totalCost*100) * 0.01 + 20 + 200), description: 'Service charges' },
             ],
             metadata: {
               plan: 'standard',
@@ -333,13 +333,13 @@ export const useEstimateFlow = (config: EstimateConfig) => {
           throw new Error(error.message || "Failed to generate invoice");
         }
   
-        const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
-          body: {
-            customerId: contractor?.stripe_customer_id,
-            limit: 10,
-            offset: 0
-          }
-        });
+        // const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
+        //   body: {
+        //     customerId: contractor?.stripe_customer_id,
+        //     limit: 10,
+        //     offset: 0
+        //   }
+        // });
         
         // if (refreshData?.success) {
         //   setInvoices(refreshData.invoices || []);
@@ -374,7 +374,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
       const { data: emailData, error: emailFetchError } = await supabase
           .from('contractors')
-          .select('contact_email,contact_phone,business_name, stripe_customer_id, tier, cash_credits')
+          .select('*')
           .eq('id', config.contractorId)
           .single();
 
@@ -383,20 +383,30 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       }
 
       if (emailData.tier === 'pioneer') {
-        const totalFee = lead.estimate_data.totalCost * 0.03 + 0.2 + 2;
-  
-        if (emailData.cash_credits >= totalFee) {
+        console.log("HERE IS THE ESTIMATE DATA", lead.estimate_data);
+
+        const totalFee = lead.estimate_data.totalCost;
+        const availableCredits = emailData.cash_credits;
+        let remainingFee = totalFee;
+
+        if (availableCredits > 0) {
+          const creditsToUse = Math.min(availableCredits, totalFee);
+          remainingFee = totalFee - creditsToUse;
+
+          // Update contractor's cash credits
           const { error } = await supabase
             .from('contractors')
-            .update({ cash_credits: emailData.cash_credits - totalFee })
+            .update({ cash_credits: availableCredits - creditsToUse })
             .eq('id', config.contractorId);
-  
-            if (error) {
-              console.error('Failed to update cash credits:', error.message);
-              return;
-            }
-        } else {
-            handleGenerateInvoice(emailData, lead.estimate_data);
+
+          if (error) {
+            console.error('Failed to update cash credits:', error.message);
+            return;
+          }
+        }
+
+        if (remainingFee > 0) {
+          handleGenerateInvoice(emailData, remainingFee);
         }
       }
 

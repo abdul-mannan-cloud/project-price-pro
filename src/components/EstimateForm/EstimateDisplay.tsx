@@ -321,14 +321,14 @@ export const EstimateDisplay = ({
     }
   }, [contractorId, contractorParam]);
 
-  const handleGenerateInvoice = async (contractor, estimateData) => {
+  const handleGenerateInvoice = async (contractor, totalCost) => {
         try {        
           const { data, error } = await supabase.functions.invoke('generate-invoice', {
             body: {
               customerId: contractor?.stripe_customer_id,
               description: 'New lead service fee',
               items: [
-                { amount: Math.round((estimateData.totalCost*100) * 0.03 + 20 + 200), description: 'Service charges' },
+                { amount: Math.round((totalCost*100) * 0.03 + 20 + 200), description: 'Service charges' },
               ],
               metadata: {
                 plan: 'standard',
@@ -341,13 +341,13 @@ export const EstimateDisplay = ({
             throw new Error(error.message || "Failed to generate invoice");
           }
     
-          const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
-            body: {
-              customerId: contractor?.stripe_customer_id,
-              limit: 10,
-              offset: 0
-            }
-          });
+          // const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
+          //   body: {
+          //     customerId: contractor?.stripe_customer_id,
+          //     limit: 10,
+          //     offset: 0
+          //   }
+          // });
           
           // if (refreshData?.success) {
           //   setInvoices(refreshData.invoices || []);
@@ -358,29 +358,40 @@ export const EstimateDisplay = ({
         }
       };
 
-  const handleClientSignature = async (initials: string) => {
-    setClientSignature(initials);
-    if (onSignatureComplete) {
-      onSignatureComplete(initials);
-    }
-    if (contractor.tier === 'pioneer') {
-      const totalFee = estimate.totalCost * 0.03 + 0.2 + 2;
+    const handleClientSignature = async (initials: string) => {
+      setClientSignature(initials);
+      if (onSignatureComplete) {
+        onSignatureComplete(initials);
+      }
 
-      if (contractor.cash_credits >= totalFee) {
-        const { error } = await supabase
-          .from('contractors')
-          .update({ cash_credits: contractor.cash_credits - totalFee })
-          .eq('id', contractor.id);
+      if (contractor.tier === 'pioneer') {
+        console.log("HERE IS THE ESTIMATE DATA", estimate);
+
+        const totalFee = estimate.totalCost;
+        const availableCredits = contractor.cash_credits;
+        let remainingFee = totalFee;
+
+        if (availableCredits > 0) {
+          const creditsToUse = Math.min(availableCredits, totalFee);
+          remainingFee = totalFee - creditsToUse;
+
+          const { error } = await supabase
+            .from('contractors')
+            .update({ cash_credits: availableCredits - creditsToUse*0.3 })
+            .eq('id', contractor.id);
 
           if (error) {
             console.error('Failed to update cash credits:', error.message);
             return;
           }
-      } else {
-          handleGenerateInvoice(contractor, estimate);
+        }
+
+        if (remainingFee > 0) {
+          handleGenerateInvoice(contractor, remainingFee);
+        }
       }
-    }
-  };
+    };
+
 
   // Handle changes to line items
   const handleLineItemChange = (
