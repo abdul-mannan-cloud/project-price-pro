@@ -94,6 +94,7 @@ interface EstimateDisplayProps {
   isEstimateLocked?: boolean; // New prop to determine if estimate is locked
   onCancel?: () => void;
   onArchive?: () => void;
+  signatureEnabled?: boolean;
 }
 
 export const EstimateDisplay = ({
@@ -116,6 +117,7 @@ export const EstimateDisplay = ({
   lead = null, // Default to null to avoid undefined errors
   isEstimateLocked = false, // Default value,
   onCancel,
+  signatureEnabled = true,
   onArchive
 }: EstimateDisplayProps) => {
   const [editableGroups, setEditableGroups] = useState<ItemGroup[]>([]);
@@ -568,180 +570,6 @@ const handleDeleteGroup = (groupIndex: number) => {
 // (replace the previous renderEditableEstimateTable definition)
 // ─────────────────────────────────────────────────────────────
 // REPLACE the existing renderEditableEstimateTable with this one
-const renderEditableEstimateTable = () => (
-  <div className="space-y-6">
-    {editableGroups.map((group, gi) => (
-      <div key={gi} className={styles.section}>
-        {/* Section name */}
-        <Input
-          value={group.name}
-          placeholder="Section name…"
-          onChange={e => {
-            const g = JSON.parse(JSON.stringify(editableGroups)) as ItemGroup[];
-            g[gi].name = e.target.value;
-            setEditableGroups(g);
-          }}
-          className="w-1/3 mb-2 bg-transparent border-0 focus:ring-0 focus:border-0"
-        />
-
-        {/* Remove Section, placed just under the section name */}
-        <div className="flex justify-end mb-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDeleteGroup(gi)}
-            className="text-destructive hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4" /> Remove Section
-          </Button>
-        </div>
-
-        {group.subgroups.map((sg, sgi) => (
-          <div key={sgi} className="space-y-3 border p-3 rounded-md">
-            {/* Sub-section header */}
-            <div className="flex justify-between items-center mb-3">
-              <Input
-                value={sg.name}
-                placeholder="Sub-section name…"
-                onChange={e => {
-                  const g = JSON.parse(JSON.stringify(editableGroups)) as ItemGroup[];
-                  g[gi].subgroups[sgi].name = e.target.value;
-                  setEditableGroups(g);
-                }}
-                className="h-8 w-32 bg-transparent border-0 focus:ring-0 focus:border-0"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleAddLineItem(gi, sgi)}
-                className="h-8 px-2"
-              >
-                <Plus className="h-4 w-4 mr-1" /> Add Item
-              </Button>
-            </div>
-
-            {sg.items.map((item, ii) => (
-              <div
-                key={ii}
-                className="grid grid-cols-12 gap-2 items-start border-b pb-4 mb-4"
-              >
-                {/* Title */}
-                <div className="col-span-12 sm:col-span-3 space-y-1">
-                  <Label htmlFor={`title-${gi}-${sgi}-${ii}`} className="text-xs">
-                    Title
-                  </Label>
-                  <Input
-                    id={`title-${gi}-${sgi}-${ii}`}
-                    value={item.title}
-                    onChange={e =>
-                      handleLineItemChange(gi, sgi, ii, "title", e.target.value)
-                    }
-                    className="h-8"
-                  />
-                </div>
-
-                {/* Description */}
-                <div className="col-span-12 sm:col-span-5 space-y-1">
-                  <Label htmlFor={`desc-${gi}-${sgi}-${ii}`} className="text-xs">
-                    Description
-                  </Label>
-                  <Textarea
-                    id={`desc-${gi}-${sgi}-${ii}`}
-                    rows={2}
-                    value={item.description || ""}
-                    onChange={e =>
-                      handleLineItemChange(gi, sgi, ii, "description", e.target.value)
-                    }
-                    className="h-12"
-                  />
-                </div>
-
-                {/* Quantity */}
-                <div className="col-span-6 sm:col-span-1 space-y-1">
-                  <Label htmlFor={`qty-${gi}-${sgi}-${ii}`} className="text-xs">
-                    Qty
-                  </Label>
-                  <Input
-                    id={`qty-${gi}-${sgi}-${ii}`}
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={e =>
-                      handleLineItemChange(gi, sgi, ii, "quantity", e.target.value)
-                    }
-                    className="h-8"
-                  />
-                </div>
-
-                {/* Unit Price */}
-                <div className="col-span-6 sm:col-span-1 space-y-1">
-                  <Label htmlFor={`price-${gi}-${sgi}-${ii}`} className="text-xs">
-                    Unit Price
-                  </Label>
-                  <Input
-                    id={`price-${gi}-${sgi}-${ii}`}
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.unitAmount}
-                    onChange={e =>
-                      handleLineItemChange(gi, sgi, ii, "unitAmount", e.target.value)
-                    }
-                    className="h-8"
-                  />
-                </div>
-
-                {/* Total */}
-                <div className="col-span-12 sm:col-span-1 text-right space-y-1">
-                  <Label className="text-xs">Total</Label>
-                  <div className="h-8 flex items-center justify-end text-sm font-medium">
-                    ${item.totalPrice.toFixed(2)}
-                  </div>
-                </div>
-
-                {/* Delete line item */}
-                <div className="col-span-12 sm:col-span-1 flex justify-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteLineItem(gi, sgi, ii)}
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive/90"
-                  >
-                    <MinusCircle className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-
-            <div className="text-right text-sm">
-              Subtotal: ${sg.subtotal.toFixed(2)}
-            </div>
-          </div>
-        ))}
-
-        <div className="text-right font-medium">
-          Group Total: ${group.subtotal?.toFixed(2) ?? "0.00"}
-        </div>
-      </div>
-    ))}
-
-    {/* bottom “Add Group” */}
-    <div className="flex justify-end mt-4">
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={handleAddGroup}
-        className="h-8 px-2"
-      >
-        <Plus className="h-4 w-4 mr-1" /> Add Group
-      </Button>
-    </div>
-
-    <div className="text-right text-lg font-bold mt-4">
-      Total Estimate: ${editableTotalCost.toFixed(2)}
-    </div>
-  </div>
-);
 
 
 const displayGroups = groups.map(g => ({
@@ -870,7 +698,7 @@ const displayGroups = groups.map(g => ({
             </div>
           )}
 
-          {templateSettings?.estimate_signature_enabled && (
+          {templateSettings?.estimate_signature_enabled && signatureEnabled && (
             <EstimateSignature
               signature={clientSignature || estimate?.client_signature || (lead ? lead.client_signature : null)}
               contractorSignature={signature || estimate?.contractor_signature || (lead ? lead.contractor_signature : null)}

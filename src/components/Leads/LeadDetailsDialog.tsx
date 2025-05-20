@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"; 
 import { 
   Phone, 
   MessageSquare, 
@@ -129,6 +130,14 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   // State to hold the lead data
   const [lead, setLead] = useState<Lead | null>(initialLead);
   
+// Add near the top of the component, with your other useState:
+const [signatureEnabled, setSignatureEnabled] = useState<boolean>(true);
+
+useEffect(() => {
+  if (lead?.signature_enabled != null) {
+    setSignatureEnabled(lead.signature_enabled);
+  }
+}, [lead?.signature_enabled]);
 
   // Get current user data if no URL contractor ID
   const { data: currentUser, isLoading: isLoadingUser } = useQuery({
@@ -155,7 +164,14 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
       
       const { data, error } = await supabase
         .from('leads')
-        .select('*, client_signature, client_signature_date, contractor_signature, contractor_signature_date')
+         .select(`
+   *,
+   client_signature,
+   client_signature_date,
+   contractor_signature,
+   contractor_signature_date,
+   signature_enabled
+ `)
         .eq('id', leadIdFromUrl)
         .single();
         
@@ -176,8 +192,11 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
       const { data, error: dbError } = await supabase
         .from('contractors')
         .select('*')
-        .eq('id', effectiveContractorId)
+        .eq('user_id', effectiveContractorId)
+        .eq('tier',    'enterprise')
         .maybeSingle(); 
+        console.log(contractor) 
+        
       if (dbError) throw dbError;
       if (!data) throw new Error('No contractor found');
       return data;
@@ -790,13 +809,47 @@ const handleSaveEstimate = async () => {
 
     {view === "estimate" && lead && (
       <>
-        {isEstimateLocked && (
+        {signatureEnabled && isEstimateLocked && (
           <EstimateLockBanner
             isLocked={isEstimateLocked}
             onUnlock={() => setShowUnlockDialog(true)}
             className="mb-4"
           />
         )}
+        {contractor?.tier === 'enterprise' && (
+  <div className="flex items-center space-x-2 mb-4">
+    <Switch
+      checked={signatureEnabled}
+      onCheckedChange={async (newVal) => {
+        setSignatureEnabled(newVal);
+        // build update
+        const updates: any = { signature_enabled: newVal };
+        if (!newVal) {
+          updates.client_signature = null;
+          updates.client_signature_date = null;
+          updates.contractor_signature = null;
+          updates.contractor_signature_date = null;
+        }
+        const { error } = await supabase
+          .from('leads')
+          .update(updates)
+          .eq('id', lead!.id);
+        if (error) {
+          toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } else {
+          refetchLead();
+          toast({
+            title: `Signatures ${newVal ? 'enabled' : 'disabled'}`,
+            description: newVal
+              ? 'Clients can now sign this estimate.'
+              : 'Signature fields hidden and cleared.',
+          });
+        }
+      }}
+    />
+    <span className="text-sm">Signatures {signatureEnabled ? 'On' : 'Off'}</span>
+  </div>
+)}
         {renderActionButtons()}
         <div className="mt-4">
           <EstimateDisplay
@@ -809,10 +862,11 @@ const handleSaveEstimate = async () => {
             contractorParam={contractor?.id}
             handleRefreshEstimate={() => refetchLead()}
             leadId={lead.id}
-            handleContractSign={() => setShowContractorSignatureDialog(true)}
+            handleContractSign={() => signatureEnabled && setShowContractorSignatureDialog(true)}
             isLeadPage={true}
             lead={lead}
             isEstimateLocked={isEstimateLocked}
+            signatureEnabled={signatureEnabled}
           />
         </div>
       </>
@@ -909,7 +963,7 @@ const handleSaveEstimate = async () => {
       />
 
       {/* Contractor Signature Dialog */}
-      <SignatureDialog
+      {signatureEnabled && <SignatureDialog
         isOpen={showContractorSignatureDialog}
         onClose={() => setShowContractorSignatureDialog(false)}
         onSign={handleContractorSignature}
@@ -918,6 +972,7 @@ const handleSaveEstimate = async () => {
         estimateData={lead?.estimate_data}
         isContractorSignature={true} // Important: set to true for contractor signature
       />
+}
     </>
   );
 };
