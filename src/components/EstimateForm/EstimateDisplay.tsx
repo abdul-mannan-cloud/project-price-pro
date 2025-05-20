@@ -566,9 +566,8 @@ const renderEditableEstimateTable = () => (
             )}
           />
         ) : (
-          !group.hideTitle && group.name?.trim() && (
-            <h3 className={styles.groupTitle}>{group.name}</h3>
-          )
+          !group.hideTitle &&
+          group.name?.trim() && <h3 className={styles.groupTitle}>{group.name}</h3>
         )}
 
         {group.description && (
@@ -623,7 +622,7 @@ const renderEditableEstimateTable = () => (
                   className="grid grid-cols-12 gap-2 border-b pb-3"
                 >
                   {/* title */}
-                  <div className="col-span-12 sm:col-span-5">
+                  <div className="col-span-12 sm:col-span-4">
                     <Label
                       htmlFor={`item-title-${groupIndex}-${subgroupIndex}-${itemIndex}`}
                       className="text-xs"
@@ -639,6 +638,30 @@ const renderEditableEstimateTable = () => (
                           subgroupIndex,
                           itemIndex,
                           "title",
+                          e.target.value
+                        )
+                      }
+                      className="h-8"
+                    />
+                  </div>
+
+                  {/* description */}
+                  <div className="col-span-12 sm:col-span-4">
+                    <Label
+                      htmlFor={`item-desc-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                      className="text-xs"
+                    >
+                      Description
+                    </Label>
+                    <Input
+                      id={`item-desc-${groupIndex}-${subgroupIndex}-${itemIndex}`}
+                      value={item.description || ""}
+                      onChange={(e) =>
+                        handleLineItemChange(
+                          groupIndex,
+                          subgroupIndex,
+                          itemIndex,
+                          "description",
                           e.target.value
                         )
                       }
@@ -673,7 +696,7 @@ const renderEditableEstimateTable = () => (
                   </div>
 
                   {/* unit price */}
-                  <div className="col-span-4 sm:col-span-2">
+                  <div className="col-span-4 sm:col-span-1">
                     <Label
                       htmlFor={`item-price-${groupIndex}-${subgroupIndex}-${itemIndex}`}
                       className="text-xs"
@@ -700,7 +723,7 @@ const renderEditableEstimateTable = () => (
                   </div>
 
                   {/* total */}
-                  <div className="col-span-3 sm:col-span-2">
+                  <div className="col-span-3 sm:col-span-1">
                     <Label className="text-xs">Total</Label>
                     <div className="h-8 flex items-center text-sm">
                       ${item.totalPrice.toFixed(2)}
@@ -708,7 +731,7 @@ const renderEditableEstimateTable = () => (
                   </div>
 
                   {/* delete item */}
-                  <div className="col-span-1 sm:col-span-1 flex items-end justify-end">
+                  <div className="col-span-1 flex items-end justify-end">
                     <Button
                       type="button"
                       variant="ghost"

@@ -212,7 +212,7 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
 
               {log.operation === "UPDATE" && (
                 <details className="border-t pt-2">
-                  <summary className="flex justify-between items-center cursor-pointer text-primary hover:text-secondary">
+                  <summary className="flex justify-between items-center cursor-pointer text-black hover:text-blue-500">
                     <span>Show Changes</span>
                     <ChevronDown className="w-5 h-5 transition-transform duration-200 data-[state=open]:rotate-180" />
                   </summary>

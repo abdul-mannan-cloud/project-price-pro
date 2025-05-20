@@ -763,6 +763,15 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
                   Unlock Estimate
                 </DropdownMenuItem>
               )}
+               {/* ── NEW: Cancel Lead ────────────────────────────────── */}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={handleCancelLead}
+              className="cursor-pointer text-destructive"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Cancel Lead
+            </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleArchiveLead}
@@ -866,23 +875,21 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
                     )}
                     {renderActionButtons()}
                     <div className="mt-4">
-                      <EstimateDisplay 
-                        groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
-                        totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
-                        projectSummary={lead.project_description}
-                        isEditable={isEditing}
-                        onEstimateChange={handleEstimateChange}
-                        contractor={contractor}
-                        contractorParam={contractor?.id}
-                        handleRefreshEstimate={() => refetchLead()}
-                        leadId={lead.id}
-                        handleContractSign={() => setShowContractorSignatureDialog(true)}
-                        isLeadPage={true} // Explicitly set this to true for the lead details page
-                        lead={lead} 
-                        isEstimateLocked={isEstimateLocked}
-                        onCancel={handleCancelLead}
-                        onArchive={handleArchiveLead}
-                      />
+                       <EstimateDisplay 
+                      groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
+                      totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
+                      projectSummary={lead.project_description}
+                      isEditable={isEditing}
+                      onEstimateChange={handleEstimateChange}
+                      contractor={contractor}
+                      contractorParam={contractor?.id}
+                      handleRefreshEstimate={() => refetchLead()}
+                      leadId={lead.id}
+                      handleContractSign={() => setShowContractorSignatureDialog(true)}
+                      isLeadPage={true}
+                      lead={lead}
+                      isEstimateLocked={isEstimateLocked}
+                    />
                     </div>
                   </>
                 )}
