@@ -221,7 +221,14 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
 
   // Check if estimate is locked (client has signed)
 // ✅ new — always reflects the current lead state
-const isEstimateLocked = Boolean(lead?.client_signature);
+// at the top, alongside your other useState calls
+const [isEstimateLocked, setIsEstimateLocked] = useState(true);
+
+// reset to locked whenever the lead changes (i.e. on dialog open or refresh)
+useEffect(() => {
+  setIsEstimateLocked(true);
+}, [lead?.id]);
+
 
 
   // Update email recipient when lead changes
@@ -312,43 +319,45 @@ const isEstimateLocked = Boolean(lead?.client_signature);
 
   // Function to handle unlocking the estimate
   const handleUnlockEstimate = async () => {
-    if (!lead || !effectiveContractorId) return;
-    
-    try {
-      // Update the lead to remove client signature
-     const { error: dbError } = await supabase
-        .from('leads')
-        .update({
-          client_signature: null,
-          client_signature_date: null
-        })
-        .eq('id', lead.id);
-      
-      if (dbError) throw dbError;
-      
-      // Update local state
-     // setIsEstimateLocked(false);
-      
-      // Close dialog
-      setShowUnlockDialog(false);
-      
-      // Refresh lead data
-      refetchLead();
-      
-      // Show toast
-      toast({
-        title: "Estimate unlocked",
-        description: "You can now edit this estimate. The client will need to sign it again.",
-      });
-    } catch (error) {
-      console.error('Error unlocking estimate:', error);
-      toast({
-        title: "Error",
-        description: "Failed to unlock estimate. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  if (!lead) return;
+
+  try {
+    // remove client_signature in DB
+    const { error: dbError } = await supabase
+      .from('leads')
+      .update({ client_signature: null, client_signature_date: null })
+      .eq('id', lead.id);
+    if (dbError) throw dbError;
+
+    // **unlock for this session**
+    setIsEstimateLocked(false);
+
+    // close the confirmation dialog
+    setShowUnlockDialog(false);
+
+    // refetch so the signature truly disappears
+    refetchLead();
+
+    toast({
+      title: "Estimate unlocked",
+      description: "You can now edit this estimate. The client will need to sign again.",
+    });
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to unlock estimate. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
+const handleLockEstimate = () => {
+  setIsEstimateLocked(true);
+  toast({
+    title: "Estimate locked",
+    description: "The estimate is locked again—you’ll need to unlock to edit.",
+  });
+};
+
 
 // ── add this helper right above handleSaveEstimate ─────────────────────────
 // ── simplified validation: only require each item to be fully filled out ─────────────────────
@@ -681,6 +690,12 @@ const handleSaveEstimate = async () => {
             <Copy className="mr-2 h-4 w-4" />
             Duplicate Lead
           </DropdownMenuItem>
+            {!isEstimateLocked && (
+    <DropdownMenuItem onClick={handleLockEstimate}>
+      <LockIcon className="mr-2 h-4 w-4" />
+      Lock Estimate
+    </DropdownMenuItem>
+  )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleCancelLead} className="text-destructive">
             <X className="mr-2 h-4 w-4" />
