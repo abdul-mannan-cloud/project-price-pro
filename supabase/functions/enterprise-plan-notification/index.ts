@@ -109,7 +109,7 @@ serve(async (req: Request): Promise<Response> => {
     // Send email
     const emailResponse = await resend.emails.send({
       from: "Estimatrix <Opportunity@estimatrix.io>",
-      to: ["mkhizerr01@gmail.com"],
+      to: ["cairlbrandon@gmail.com"],
       subject: "Enterprise Plan Activation Request",
       html: emailContent,
     });
