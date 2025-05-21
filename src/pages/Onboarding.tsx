@@ -250,7 +250,7 @@ const Onboarding = () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-  
+
       if (!user) {
         toast({
           title: "Error",
@@ -259,15 +259,15 @@ const Onboarding = () => {
         });
         return;
       }
-  
+
       const { data: existingContractor, error: fetchError } = await supabase
         .from("contractors")
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
-  
+
       if (fetchError) throw fetchError;      
-  
+
       const contractorData: any = {
         business_name: formData.businessName,
         contact_email: formData.contactEmail,
@@ -288,12 +288,12 @@ const Onboarding = () => {
           customer_id: formData.stripe_customer_id,
         },
       });
-  
+
       if (currentStep === OnboardingSteps.PRICING && formData.tier === 'enterprise') {
         contractorData.verified = false;
       }
 
-      if (currentStep === OnboardingSteps.PRICING && formData.tier === 'pioneer' && data.paymentMethods.data.length > 0) {
+      if (currentStep === OnboardingSteps.PRICING && formData.tier === 'pioneer' && data?.paymentMethods?.data?.length > 0) {
         contractorData.verified = true;
         contractorData.cash_credits = 1000
       }
@@ -302,18 +302,18 @@ const Onboarding = () => {
         contractorData.verified = true;
         contractorData.cash_credits = 1000
       }
-  
+
       if (existingContractor) {
         const { error: updateError } = await supabase
           .from("contractors")
           .update(contractorData)
           .eq('id', existingContractor.id);
-  
+
         if (updateError)  { 
           console.log("Update error:", updateError);
           throw updateError
         };
-  
+
         const { error: settingsError } = await supabase
           .from("contractor_settings")
           .update({
@@ -322,12 +322,12 @@ const Onboarding = () => {
             tax_rate: parseFloat(formData.taxRate),
           })
           .eq('id', existingContractor.id);
-  
+
         if (settingsError) throw settingsError;
-  
+
       } else {
         const newId = crypto.randomUUID();
-  
+
         const { error: insertError } = await supabase
           .from("contractors")
           .insert({
@@ -335,9 +335,9 @@ const Onboarding = () => {
             user_id: user.id,
             ...contractorData,
           });
-  
+
         if (insertError) throw insertError;
-  
+
         const { error: settingsError } = await supabase
           .from("contractor_settings")
           .upsert({
@@ -346,32 +346,48 @@ const Onboarding = () => {
             markup_percentage: parseFloat(formData.markupPercentage),
             tax_rate: parseFloat(formData.taxRate),
           });
-  
+
         if (settingsError) throw settingsError;
       }
-  
+
       toast({
         title: "Information saved!",
         description: "Your business information has been saved successfully.",
       });
-       
+      
+      // Add delay and proper query invalidation before navigation
+      await queryClient.invalidateQueries({ queryKey: ["contractor"] });
+      await queryClient.invalidateQueries({ queryKey: ["contractor-verification"] });
+      
+      // Create a promise that resolves after 5 seconds
+      const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+      
       if (currentStep === OnboardingSteps.PRICING && formData.tier === 'enterprise') {
         console.log("NAVIGATION TO DASHBOARD ENTERPRISE");
-        
+        // Add delay before navigation
+        await delay(5000);
         navigate("/dashboard");
       }
-      if (data.paymentMethods.data.length > 0) { 
-        await queryClient.invalidateQueries({ queryKey: ["contractor"] });
+      else if (currentStep === OnboardingSteps.PRICING && data?.paymentMethods?.data?.length > 0) { 
         await queryClient.refetchQueries({ queryKey: ["contractor"] });
+        await queryClient.refetchQueries({ queryKey: ["contractor-verification"] });
         
+        // Add delay before navigation
+        await delay(5000);
         navigate("/dashboard");
       }
-      if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
+      else if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
+        await queryClient.refetchQueries({ queryKey: ["contractor"] });
+        await queryClient.refetchQueries({ queryKey: ["contractor-verification"] });
+        
+        // Add delay before navigation
+        await delay(5000);
         navigate("/dashboard");
-      } else {
+      } 
+      else {
         setCurrentStep((prev) => (prev + 1) as OnboardingStep);
       }
-  
+
     } catch (error: any) {
       console.error('Onboarding error:', error);
       toast({
@@ -392,6 +408,10 @@ const Onboarding = () => {
         setLoading(true);
         
         if (formData.tier === "pioneer") {
+          
+          await queryClient.invalidateQueries({ queryKey: ["contractor"] });
+          await queryClient.refetchQueries({ queryKey: ["contractor"] });
+          
           if (formData.stripe_customer_id) {
             const { data, error } = await supabase.functions.invoke('get-client-secret', {
               body: { customerId: formData.stripe_customer_id },
@@ -786,9 +806,6 @@ const Onboarding = () => {
                 <h1 className="text-[40px] font-semibold text-[#1d1d1f] tracking-tight">
                   Access
                 </h1>
-                <p className="text-[15px] text-[#86868b]">
-                  No charges will be made at this time. Adding a card helps us verify your account and prevent fraud.
-                </p>
               </div>
   
               <div className="bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 min-w-full md:min-w-[80%]">
