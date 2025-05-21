@@ -1,11 +1,11 @@
-
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
-import { Loader2 } from "lucide-react";
 import Spinner from "../ui/spinner";
+import { Button } from "@/components/ui/button"; // Add this if you have a button component
 
 type ContractorSettings = Database["public"]["Tables"]["contractor_settings"]["Row"];
 
@@ -13,7 +13,9 @@ export const ServiceCategoriesSettings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch all available options/categories
+  const [localExcluded, setLocalExcluded] = useState<string[]>([]);
+  const [initialExcluded, setInitialExcluded] = useState<string[]>([]);
+
   const { data: optionsCategories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["options"],
     queryFn: async () => {
@@ -21,23 +23,19 @@ export const ServiceCategoriesSettings = () => {
         .from("Options")
         .select("*")
         .single();
-      
+
       if (error) throw error;
-      
-      // Transform the Options row into an array of categories
-      const categories = Object.entries(data)
-        .filter(([key]) => key !== "Key Options") // Exclude the primary key
+
+      return Object.entries(data)
+        .filter(([key]) => key !== "Key Options")
         .map(([name]) => ({
           id: name,
-          name: name,
-          description: `Projects related to ${name.toLowerCase()}`
+          name,
+          description: `Projects related to ${name.toLowerCase()}`,
         }));
-      
-      return categories;
     }
   });
 
-  // Fetch contractor settings to get excluded categories
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["contractor_settings"],
     queryFn: async () => {
@@ -58,20 +56,19 @@ export const ServiceCategoriesSettings = () => {
 
       if (error) throw error;
       return data as ContractorSettings;
-    }
+    },
   });
 
-  // Update excluded categories mutation
   const updateExcludedCategories = useMutation({
     mutationFn: async (excludedCategories: string[]) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       const contractor_id = await supabase
-          .from("contractors")
-          .select("id")
-          .eq("user_id", user.id)
-          .single();
+        .from("contractors")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
 
       const { error } = await supabase
         .from("contractor_settings")
@@ -86,6 +83,7 @@ export const ServiceCategoriesSettings = () => {
         title: "Settings saved",
         description: "Your service categories have been updated successfully.",
       });
+      setInitialExcluded(localExcluded); // reset initial after successful save
     },
     onError: (error) => {
       toast({
@@ -94,28 +92,33 @@ export const ServiceCategoriesSettings = () => {
         variant: "destructive",
       });
       console.error("Error updating categories:", error);
-    }
+    },
   });
+
+  useEffect(() => {
+    if (settings?.excluded_categories) {
+      setLocalExcluded(settings.excluded_categories);
+      setInitialExcluded(settings.excluded_categories);
+    }
+  }, [settings]);
 
   if (categoriesLoading || settingsLoading) {
     return (
       <div className="flex items-center justify-center p-8 min-h-full">
         <Spinner />
-        {/* <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /> */}
-        {/* <span className="ml-2 text-sm text-muted-foreground">Loading categories...</span> */}
       </div>
     );
   }
 
-  const excludedCategories = settings?.excluded_categories || [];
+  const toggleCategory = (categoryId: string, isEnabled: boolean) => {
+    const updated = isEnabled
+      ? localExcluded.filter(id => id !== categoryId)
+      : [...localExcluded, categoryId];
 
-  const handleCategoryToggle = (categoryId: string, isEnabled: boolean) => {
-    const newExcludedCategories = isEnabled
-      ? excludedCategories.filter(id => id !== categoryId)
-      : [...excludedCategories, categoryId];
-    
-    updateExcludedCategories.mutate(newExcludedCategories);
+    setLocalExcluded(updated);
   };
+
+  const isSaveDisabled = JSON.stringify(localExcluded.sort()) === JSON.stringify(initialExcluded.sort());
 
   return (
     <div className="space-y-4">
@@ -126,7 +129,7 @@ export const ServiceCategoriesSettings = () => {
           Unchecked categories will not appear in your estimator.
         </p>
       </div>
-      
+
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {optionsCategories.map((category) => (
           <div 
@@ -135,10 +138,10 @@ export const ServiceCategoriesSettings = () => {
           >
             <Checkbox
               id={category.id}
-              checked={!excludedCategories.includes(category.id)}
-              onCheckedChange={(checked) => {
-                handleCategoryToggle(category.id, checked as boolean);
-              }}
+              checked={!localExcluded.includes(category.id)}
+              onCheckedChange={(checked) =>
+                toggleCategory(category.id, checked as boolean)
+              }
               className="mt-1"
             />
             <div>
@@ -154,6 +157,15 @@ export const ServiceCategoriesSettings = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="pt-4 flex justify-end">
+        <Button
+          onClick={() => updateExcludedCategories.mutate(localExcluded)}
+          disabled={isSaveDisabled || updateExcludedCategories.isPending}
+        >
+          {updateExcludedCategories.isPending ? "Saving..." : "Save"}
+        </Button>
       </div>
     </div>
   );
