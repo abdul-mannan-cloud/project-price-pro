@@ -112,7 +112,6 @@ const Dashboard = () => {
     },
   });
 
-  // Handle query errors with useEffect
   useEffect(() => {
     if (isLeadsError) {
       toast({

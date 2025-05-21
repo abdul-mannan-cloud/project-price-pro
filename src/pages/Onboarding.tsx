@@ -12,6 +12,7 @@ import { set } from "date-fns";
 import { cn } from "@/lib/utils";
 import PricingPlans from "@/components/PricingPlans";
 import AddPaymentMethod from "@/components/Onboarding/addPaymentMethod";
+import { useQueryClient } from "@tanstack/react-query";
 
 type OnboardingStep = 0 | 1 | 2 | 3;
 
@@ -43,6 +44,8 @@ const DEFAULT_CONTRACTOR_ID = "82499c2f-960f-4042-b277-f86ea2d99929";
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(OnboardingSteps.BUSINESS_INFO);
   const [loading, setLoading] = useState(false);
@@ -279,9 +282,20 @@ const Onboarding = () => {
         stripe_customer_id: formData.stripe_customer_id,
         resend_contact_key: formData.resend_contact_key,
       };
+
+      const { data } = await supabase.functions.invoke('get-payment-methods', {
+        body: {
+          customer_id: formData.stripe_customer_id,
+        },
+      });
   
       if (currentStep === OnboardingSteps.PRICING && formData.tier === 'enterprise') {
         contractorData.verified = false;
+      }
+
+      if (currentStep === OnboardingSteps.PRICING && formData.tier === 'pioneer' && data.paymentMethods.data.length > 0) {
+        contractorData.verified = true;
+        contractorData.cash_credits = 1000
       }
 
       if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
@@ -340,8 +354,15 @@ const Onboarding = () => {
         title: "Information saved!",
         description: "Your business information has been saved successfully.",
       });
+       
       if (currentStep === OnboardingSteps.PRICING && formData.tier === 'enterprise') {
         console.log("NAVIGATION TO DASHBOARD ENTERPRISE");
+        
+        navigate("/dashboard");
+      }
+      if (data.paymentMethods.data.length > 0) { 
+        await queryClient.invalidateQueries({ queryKey: ["contractor"] });
+        await queryClient.refetchQueries({ queryKey: ["contractor"] });
         
         navigate("/dashboard");
       }
