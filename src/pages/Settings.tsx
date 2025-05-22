@@ -709,8 +709,8 @@ const Settings = () => {
         return <WebhookSettings />;
       case "translation":
         return <TranslationSettings />;
-      case "admin":
-        return isAdmin ? <AdminSettings /> : null;
+      // case "admin":
+      //   return isAdmin ? <AdminSettings /> : null;
       default:
         return null;
     }
@@ -824,7 +824,7 @@ const Settings = () => {
                   isActive={activeSection === "translation"}
                   access={true}
               />
-              {isAdmin && (
+              {/* {isAdmin && (
                   <SettingsMenuItem
                       icon={<ShieldAlert className="h-5 w-5" />}
                       title={t("Admin Settings")}
@@ -833,7 +833,7 @@ const Settings = () => {
                       isActive={activeSection === "admin"}
                       access={true}
                   />
-              )}
+              )} */}
               <SettingsMenuItem
                   icon={<LogOut className="h-5 w-5" />}
                   title={t("Log Out")}

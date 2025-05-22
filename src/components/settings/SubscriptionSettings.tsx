@@ -327,15 +327,46 @@ export const SubscriptionSettings = ({ contractor }) => {
     <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
   );
 
+  const sendSMS = async () => {
+    try {
+          const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
+            method: 'POST',
+            body: JSON.stringify({
+              type: 'new_opportunity',
+              phone: '+13125550002',
+              data: {
+                clientName: 'John Smith',
+                totalEstimate: '$5,500',
+                leadPageUrl: 'https://yourapp.com/leads/123',
+                clientPhone: '9876543210',
+                address: '123 Main St, City, State',
+                estimateCategories: [
+                  { category: 'Plumbing', amount: '$2,500' },
+                  { category: 'Electrical', amount: '$3,000' }
+                ],
+                aiDescription: 'Kitchen renovation project'
+              }
+            })
+          });
+          
+          if (smsSendError) {
+            console.error("Failed to send contractor SMS", smsSendError);
+          }
+        } catch (smsError) {
+          console.error("Error sending contractor SMS:", smsError);
+        }
+  }
+
   return (
     <div className="space-y-4">
       <h1>Subscriptions</h1>
-      <div>
+      <div className="flex justify-between">
         <span>
           <strong>Current Plan:</strong>{" "}
           {(refreshedContractor || contractor)?.tier?.charAt(0).toUpperCase() + 
            (refreshedContractor || contractor)?.tier?.slice(1)}
         </span>
+        <button className="bg-blue-600 text-white p-2 rounded-md" onClick={() => sendSMS()}>SEND SMS</button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
         {plans.map((plan) => (

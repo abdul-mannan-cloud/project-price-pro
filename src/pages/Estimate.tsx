@@ -283,7 +283,7 @@ const EstimatePage = () => {
         <>
             <GlobalBrandingLoader contractorId={urlContractorId}/>
             <div className="min-h-screen bg-secondary">
-                {(
+                {( stage !== 'estimate'  && stage !== 'contact' && !isGeneratingEstimate &&
                     <div className="sticky top-0 z-[10000] w-full bg-white border-b border-gray-200 shadow-sm">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <div className="flex justify-between items-center py-4">
@@ -349,7 +349,10 @@ const EstimatePage = () => {
                         </div>
                     </div>
                 )}
-                <EstimateProgress stage={stage} progress={progress}/>
+                { 
+                    stage !== 'estimate'  && stage !== 'contact' && !isGeneratingEstimate &&
+                        <EstimateProgress stage={stage} progress={progress}/>
+                }
 
                 {isAuthenticated && authenticatedContractor?.id === urlContractorId && (
                     <div className="w-full border-b border-gray-200">
