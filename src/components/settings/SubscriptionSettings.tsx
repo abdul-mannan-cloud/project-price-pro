@@ -141,6 +141,10 @@ export const SubscriptionSettings = ({ contractor }) => {
           }
         }
       });
+      const { error: updateError } = await supabase
+          .from("contractors")
+          .update({ enterprise_request: true })
+          .eq("id", currentContractor.id);
 
       if (error) {
         console.error("Error sending enterprise notification:", error);
@@ -330,12 +334,16 @@ export const SubscriptionSettings = ({ contractor }) => {
   return (
     <div className="space-y-4">
       <h1>Subscriptions</h1>
-      <div>
+      <div className="flex justify-between">
         <span>
           <strong>Current Plan:</strong>{" "}
           {(refreshedContractor || contractor)?.tier?.charAt(0).toUpperCase() + 
            (refreshedContractor || contractor)?.tier?.slice(1)}
         </span>
+        { 
+          contractor?.enterprise_request == true &&
+          <span className="text-white font-semibold bg-blue-200 p-2 rounded-md">Request Pending for Enterprise Plan</span>
+        }
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
         {plans.map((plan) => (
