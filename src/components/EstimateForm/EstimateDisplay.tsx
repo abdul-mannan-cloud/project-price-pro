@@ -124,7 +124,7 @@ export const EstimateDisplay = ({
   const [editableTotalCost, setEditableTotalCost] = useState(totalCost);
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
-  const [contractorId, setContractorId] = useState<string>(contractorParam);
+  const [contractorId, setContractorId] = useState<string>(contractorParam ?? "");
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
@@ -145,7 +145,10 @@ export const EstimateDisplay = ({
       setEditableTotalCost(totalCost);
     }
   }, [groups, totalCost]);
-
+useEffect(() => {
+  if (!contractorId && contractor?.id) setContractorId(contractor.id);
+}, [contractorId, contractor?.id]);
+  
   // Effect for updating parent component on editable groups change
   useEffect(() => {
     // console.log("Editable Issue");
@@ -315,7 +318,7 @@ export const EstimateDisplay = ({
           .eq('user_id', user.id)
           .maybeSingle();
           
-        if (contractor && contractor.id === contractorParam) {
+        if (contractor && contractor.id === contractorId) {
           setIsContractor(true);
         }
       } catch (error) {
@@ -323,7 +326,7 @@ export const EstimateDisplay = ({
       }
     };
     
-    if (contractorParam) {
+    if (contractorId) {
       checkContractorAccess();
     }
   }, [contractorId, contractorParam]);
