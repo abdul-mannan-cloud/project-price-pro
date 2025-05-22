@@ -438,24 +438,43 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         console.error("Failed to send contractor email", emailError1);
       }
 
-      // Send SMS to contractor
-      // if (emailData?.contact_phone && !skip) {
-      //   try {
-      //     const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
-      //       body: {
-      //         phone: emailData.contact_phone,
-      //         message: `New estimate opportunity! ${lead.user_name} is requesting an estimate for ${formatCurrency(lead.estimate_data.totalCost)}. Check your email for details.`,
-      //         recipientType: 'contractor'
-      //       }
-      //     });
+      // Send SMS to contractor about new opportunity
+      if (emailData?.contact_phone && !skip) {
+        try {
+          // Format available appointment times
+          const availableAppointments = lead.available_date && lead.available_time 
+            ? `${lead.available_date} ${lead.available_time}${lead.flexible ? ' (flexible)' : ''}`
+            : 'Not specified';
+
+          // Format estimate categories from estimate data
+          const estimateCategories = lead.estimate_data.categories?.map(cat => ({
+            category: cat.name || cat.category,
+            amount: cat.total || cat.amount
+          })) || [];
+
+          const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
+            body: {
+              type: 'estimate_sent',
+              phone: lead.user_phone,
+              data: {
+                businessName: emailData.business_name || "Your Contractor",
+                estimatePageUrl: `${window.location.origin}/e/${leadId}`,
+                businessOwnerFullName: emailData.business_owner_name || emailData.business_name || "Your Contractor",
+                businessPhone: emailData.contact_phone || "N/A",
+                businessEmail: emailData.contact_email || "N/A"
+              }
+            }
+          });
           
-      //     if (smsSendError) {
-      //       console.error("Failed to send contractor SMS", smsSendError);
-      //     }
-      //   } catch (smsError) {
-      //     console.error("Error sending contractor SMS:", smsError);
-      //   }
-      // }
+          if (smsSendError) {
+            console.error("Failed to send contractor SMS", smsSendError);
+          } else {
+            console.log("Contractor SMS sent successfully");
+          }
+        } catch (smsError) {
+          console.error("Error sending contractor SMS:", smsError);
+        }
+      }
 
       // Generate PDF if not provided
       const pdfToSend = pdfBase64 || await handleExportPDF(emailData.business_name || "Estimate");
@@ -481,25 +500,6 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         console.log("Error sending customer email");
         throw emailError;
       }
-
-      // Send SMS to customer
-      // if (lead.user_phone && !skip) {
-      //   try {
-      //     const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
-      //       body: {
-      //         phone: lead.user_phone,
-      //         message: `Your estimate from ${emailData.business_name || "Your Contractor"} is ready! Total: ${formatCurrency(lead.estimate_data.totalCost)}. Check your email for details or view online: ${window.location.origin}/e/${leadId}`,
-      //         recipientType: 'customer'
-      //       }
-      //     });
-          
-      //     if (smsSendError) {
-      //       console.error("Failed to send customer SMS", smsSendError);
-      //     }
-      //   } catch (smsError) {
-      //     console.error("Error sending customer SMS:", smsError);
-      //   }
-      // }
 
       setIsGeneratingEstimate(false);
       setStage('estimate');
