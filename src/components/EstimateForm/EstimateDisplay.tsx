@@ -716,7 +716,7 @@ const displayGroups = groups.map(g => ({
               }
               canContractorSign={
                 isLeadPage && // Only in the lead page
-                !isEstimateLocked && // Only when not locked
+               // !isEstimateLocked && // Only when not locked
                 isContractor // Only if it's the contractor
               }
             />
