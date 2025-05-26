@@ -11,22 +11,6 @@ export const TeammateSettings = () => {
   const [email, setEmail] = useState("");
   const queryClient = useQueryClient();
 
-  const { data: teammates = [], isLoading } = useQuery({
-    queryKey: ["teammates"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
-      const { data, error } = await supabase
-        .from("teammates")
-        .select("*")
-        .eq("contractor_id", user.id);
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
   const { data: currentUser } = useQuery({
     queryKey: ["currentUser"],
     queryFn: async () => {
@@ -36,7 +20,7 @@ export const TeammateSettings = () => {
       const { data, error } = await supabase
         .from("contractors")
         .select("*")
-        .eq("id", user.id)
+        .eq("user_id", user.id)
         .single();
 
       if (error) throw error;
@@ -53,7 +37,7 @@ export const TeammateSettings = () => {
         const { error } = await supabase.functions.invoke('send-teammate-invitation', {
           body: { 
             email,
-            contractorId: user.id,
+            contractorId: currentUser.id,
             businessName: currentUser?.business_name || 'Our Company'
           }
         });
@@ -63,7 +47,7 @@ export const TeammateSettings = () => {
         const { error: dbError } = await supabase
           .from("teammates")
           .insert([{ 
-            contractor_id: user.id, 
+            contractor_id: currentUser.id, 
             email,
             invitation_status: 'pending',
             role: 'member'
@@ -166,6 +150,22 @@ export const TeammateSettings = () => {
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+
+  const { data: teammates = [], isLoading } = useQuery({
+    queryKey: ["teammates"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No authenticated user");
+
+      const { data, error } = await supabase
+        .from("teammates")
+        .select("*")
+        .eq("contractor_id", currentUser.id);
+
+      if (error) throw error;
+      return data;
     },
   });
 

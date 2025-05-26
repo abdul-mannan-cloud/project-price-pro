@@ -40,7 +40,7 @@ serve(async (req) => {
 
     console.log('Preparing to send invitation email...')
     const emailResponse = await resend.emails.send({
-      from: 'noreply@lovable.dev',
+      from: "Estimatrix <Invitation@estimatrix.io>",
       to: email,
       subject: `Join ${businessName} as a Team Member`,
       html: `

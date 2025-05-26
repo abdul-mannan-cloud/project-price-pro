@@ -272,6 +272,8 @@ const Onboarding = () => {
         business_name: formData.businessName,
         contact_email: formData.contactEmail,
         contact_phone: formData.contactPhone,
+        full_name: formData.fullName,
+        industry: formData.industry,
         business_address: existingContractor ? businessAddress : formData.address,
         license_number: formData.licenseNumber,
         branding_colors: {
