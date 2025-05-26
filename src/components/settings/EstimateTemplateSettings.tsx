@@ -105,6 +105,7 @@ export const EstimateTemplateSettings = ({contractor}) => {
     )
   }
 
+
   const handleClientMessageChange = (value: string) => {
     setClientMessage(value);
     setHasClientMessageChanges(value !== settings?.estimate_client_message);
