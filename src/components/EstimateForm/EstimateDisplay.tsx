@@ -94,6 +94,7 @@ interface EstimateDisplayProps {
   isEstimateLocked?: boolean; // New prop to determine if estimate is locked
   onCancel?: () => void;
   onArchive?: () => void;
+  signatureEnabled?: boolean;
 }
 
 export const EstimateDisplay = ({
@@ -116,13 +117,14 @@ export const EstimateDisplay = ({
   lead = null, // Default to null to avoid undefined errors
   isEstimateLocked = false, // Default value,
   onCancel,
+  signatureEnabled = true,
   onArchive
 }: EstimateDisplayProps) => {
   const [editableGroups, setEditableGroups] = useState<ItemGroup[]>([]);
   const [editableTotalCost, setEditableTotalCost] = useState(totalCost);
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
-  const [contractorId, setContractorId] = useState<string>(contractorParam);
+  const [contractorId, setContractorId] = useState<string>(contractorParam ?? "");
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
@@ -143,7 +145,10 @@ export const EstimateDisplay = ({
       setEditableTotalCost(totalCost);
     }
   }, [groups, totalCost]);
-
+useEffect(() => {
+  if (!contractorId && contractor?.id) setContractorId(contractor.id);
+}, [contractorId, contractor?.id]);
+  
   // Effect for updating parent component on editable groups change
   useEffect(() => {
     // console.log("Editable Issue");
@@ -313,7 +318,7 @@ export const EstimateDisplay = ({
           .eq('user_id', user.id)
           .maybeSingle();
           
-        if (contractor && contractor.id === contractorParam) {
+        if (contractor && contractor.id === contractorId) {
           setIsContractor(true);
         }
       } catch (error) {
@@ -321,7 +326,7 @@ export const EstimateDisplay = ({
       }
     };
     
-    if (contractorParam) {
+    if (contractorId) {
       checkContractorAccess();
     }
   }, [contractorId, contractorParam]);
@@ -555,214 +560,186 @@ const handleAddGroup = () => {
   if (isLoading) {
     return <EstimateSkeleton />;
   }
+// ── new: remove entire group ───────────────────────────────────────────────
+const handleDeleteGroup = (groupIndex: number) => {
+  const newGroups = JSON.parse(JSON.stringify(editableGroups)) as ItemGroup[];
+  newGroups.splice(groupIndex, 1);
+  recalculateEstimateTotals(newGroups);
+  setEditableGroups(newGroups);
+};
 
   // ─────────────────────────────────────────────────────────────
 // Paste this whole function inside EstimateDisplay.tsx
 // (replace the previous renderEditableEstimateTable definition)
 // ─────────────────────────────────────────────────────────────
 // REPLACE the existing renderEditableEstimateTable with this one
-// ─────────────────────────────────────────────────────────────
+
 const renderEditableEstimateTable = () => (
   <div className="space-y-6">
-    {editableGroups.map((group, groupIndex) => (
-      <div key={`group-${groupIndex}`} className={styles.section}>
-        {/* ── GROUP NAME (border-less input, hides when empty) ── */}
-        {isEditable ? (
-          <Input
-            value={group.name}
-            placeholder="Section name…"
-            onChange={(e) => {
-              const newGroups = JSON.parse(JSON.stringify(editableGroups));
-              newGroups[groupIndex].name = e.target.value;
-              setEditableGroups(newGroups);
-            }}
-            className={cn(
-              styles.groupTitle,
-              "mb-2 bg-transparent border-0 focus:ring-0 focus:border-0"
-            )}
-          />
-        ) : (
-          !group.hideTitle && group.name?.trim() && (
-            <h3 className={styles.groupTitle}>{group.name}</h3>
-          )
-        )}
+    {editableGroups.map((group, gi) => (
+      <div key={gi} className={styles.section}>
+        {/* Section name */}
+        <Input
+          value={group.name}
+          placeholder="Section name…"
+          onChange={e => {
+            const g = JSON.parse(JSON.stringify(editableGroups)) as ItemGroup[];
+            g[gi].name = e.target.value;
+            setEditableGroups(g);
+          }}
+          className="w-1/3 mb-2 bg-transparent border-0 focus:ring-0 focus:border-0"
+        />
 
-        {group.description && (
-          <p className="text-sm text-gray-600 mb-4">{group.description}</p>
-        )}
-
-        {/* ── SUB-GROUPS & ITEMS ─────────────────────────────── */}
-        <div className="space-y-6">
-          {group.subgroups.map((subgroup, subgroupIndex) => (
-            <div
-              key={`subgroup-${groupIndex}-${subgroupIndex}`}
-              className="space-y-3 border p-4 rounded-md"
-            >
-              {/* sub-group header (editable) */}
-              <div className="flex justify-between items-center">
-                {isEditable ? (
-                  <Input
-                    value={subgroup.name}
-                    placeholder="Sub-section name…"
-                    onChange={(e) => {
-                      const newGroups = JSON.parse(JSON.stringify(editableGroups));
-                      newGroups[groupIndex].subgroups[subgroupIndex].name =
-                        e.target.value;
-                      setEditableGroups(newGroups);
-                    }}
-                    className="h-8 w-40 bg-transparent border-0 focus:ring-0 focus:border-0"
-                  />
-                ) : (
-                  subgroup.name?.trim() && (
-                    <h5 className="text-sm font-medium text-muted-foreground">
-                      {subgroup.name}
-                    </h5>
-                  )
-                )}
-
-                {/* add-item button */}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleAddLineItem(groupIndex, subgroupIndex)}
-                  className="h-8 px-2"
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Add Item
-                </Button>
-              </div>
-
-              {/* each line-item */}
-              {subgroup.items.map((item, itemIndex) => (
-                <div
-                  key={`item-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                  className="grid grid-cols-12 gap-2 border-b pb-3"
-                >
-                  {/* title */}
-                  <div className="col-span-12 sm:col-span-5">
-                    <Label
-                      htmlFor={`item-title-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                      className="text-xs"
-                    >
-                      Title
-                    </Label>
-                    <Input
-                      id={`item-title-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                      value={item.title}
-                      onChange={(e) =>
-                        handleLineItemChange(
-                          groupIndex,
-                          subgroupIndex,
-                          itemIndex,
-                          "title",
-                          e.target.value
-                        )
-                      }
-                      className="h-8"
-                    />
-                  </div>
-
-                  {/* quantity */}
-                  <div className="col-span-4 sm:col-span-2">
-                    <Label
-                      htmlFor={`item-qty-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                      className="text-xs"
-                    >
-                      Quantity
-                    </Label>
-                    <Input
-                      id={`item-qty-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        handleLineItemChange(
-                          groupIndex,
-                          subgroupIndex,
-                          itemIndex,
-                          "quantity",
-                          e.target.value
-                        )
-                      }
-                      className="h-8"
-                    />
-                  </div>
-
-                  {/* unit price */}
-                  <div className="col-span-4 sm:col-span-2">
-                    <Label
-                      htmlFor={`item-price-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                      className="text-xs"
-                    >
-                      Unit Price
-                    </Label>
-                    <Input
-                      id={`item-price-${groupIndex}-${subgroupIndex}-${itemIndex}`}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.unitAmount}
-                      onChange={(e) =>
-                        handleLineItemChange(
-                          groupIndex,
-                          subgroupIndex,
-                          itemIndex,
-                          "unitAmount",
-                          e.target.value
-                        )
-                      }
-                      className="h-8"
-                    />
-                  </div>
-
-                  {/* total */}
-                  <div className="col-span-3 sm:col-span-2">
-                    <Label className="text-xs">Total</Label>
-                    <div className="h-8 flex items-center text-sm">
-                      ${item.totalPrice.toFixed(2)}
-                    </div>
-                  </div>
-
-                  {/* delete item */}
-                  <div className="col-span-1 sm:col-span-1 flex items-end justify-end">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        handleDeleteLineItem(groupIndex, subgroupIndex, itemIndex)
-                      }
-                      className="h-8 w-8 p-0 text-destructive hover:text-destructive/90"
-                    >
-                      <MinusCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-
-              <div className="text-right text-sm">
-                Subtotal: ${subgroup.subtotal.toFixed(2)}
-              </div>
-            </div>
-          ))}
+        {/* Remove Section, placed just under the section name */}
+        <div className="flex justify-end mb-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDeleteGroup(gi)}
+            className="text-destructive hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4" /> Remove Section
+          </Button>
         </div>
 
-        <div className="text-right font-medium mt-2">
-          Group Total: ${group.subtotal?.toFixed(2) || "0.00"}
+        {group.subgroups.map((sg, sgi) => (
+          <div key={sgi} className="space-y-3 border p-3 rounded-md">
+            {/* Sub-section header */}
+            <div className="flex justify-between items-center mb-3">
+              <Input
+                value={sg.name}
+                placeholder="Sub-section name…"
+                onChange={e => {
+                  const g = JSON.parse(JSON.stringify(editableGroups)) as ItemGroup[];
+                  g[gi].subgroups[sgi].name = e.target.value;
+                  setEditableGroups(g);
+                }}
+                className="h-8 w-32 bg-transparent border-0 focus:ring-0 focus:border-0"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleAddLineItem(gi, sgi)}
+                className="h-8 px-2"
+              >
+                <Plus className="h-4 w-4 mr-1" /> Add Item
+              </Button>
+            </div>
+
+            {sg.items.map((item, ii) => (
+              <div
+                key={ii}
+                className="grid grid-cols-12 gap-2 items-start border-b pb-4 mb-4"
+              >
+                {/* Title */}
+                <div className="col-span-12 sm:col-span-3 space-y-1">
+                  <Label htmlFor={`title-${gi}-${sgi}-${ii}`} className="text-xs">
+                    Title
+                  </Label>
+                  <Input
+                    id={`title-${gi}-${sgi}-${ii}`}
+                    value={item.title}
+                    onChange={e =>
+                      handleLineItemChange(gi, sgi, ii, "title", e.target.value)
+                    }
+                    className="h-8"
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="col-span-12 sm:col-span-5 space-y-1">
+                  <Label htmlFor={`desc-${gi}-${sgi}-${ii}`} className="text-xs">
+                    Description
+                  </Label>
+                  <Textarea
+                    id={`desc-${gi}-${sgi}-${ii}`}
+                    rows={2}
+                    value={item.description || ""}
+                    onChange={e =>
+                      handleLineItemChange(gi, sgi, ii, "description", e.target.value)
+                    }
+                    className="h-12"
+                  />
+                </div>
+
+                {/* Quantity */}
+                <div className="col-span-6 sm:col-span-1 space-y-1">
+                  <Label htmlFor={`qty-${gi}-${sgi}-${ii}`} className="text-xs">
+                    Qty
+                  </Label>
+                  <Input
+                    id={`qty-${gi}-${sgi}-${ii}`}
+                    type="number"
+                    min="1"
+                    value={item.quantity}
+                    onChange={e =>
+                      handleLineItemChange(gi, sgi, ii, "quantity", e.target.value)
+                    }
+                    className="h-8"
+                  />
+                </div>
+
+                {/* Unit Price */}
+                <div className="col-span-6 sm:col-span-1 space-y-1">
+                  <Label htmlFor={`price-${gi}-${sgi}-${ii}`} className="text-xs">
+                    Unit Price
+                  </Label>
+                  <Input
+                    id={`price-${gi}-${sgi}-${ii}`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={item.unitAmount}
+                    onChange={e =>
+                      handleLineItemChange(gi, sgi, ii, "unitAmount", e.target.value)
+                    }
+                    className="h-8"
+                  />
+                </div>
+
+                {/* Total */}
+                <div className="col-span-12 sm:col-span-1 text-right space-y-1">
+                  <Label className="text-xs">Total</Label>
+                  <div className="h-8 flex items-center justify-end text-sm font-medium">
+                    ${item.totalPrice.toFixed(2)}
+                  </div>
+                </div>
+
+                {/* Delete line item */}
+                <div className="col-span-12 sm:col-span-1 flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteLineItem(gi, sgi, ii)}
+                    className="h-8 w-8 p-0 text-destructive hover:text-destructive/90"
+                  >
+                    <MinusCircle className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+
+            <div className="text-right text-sm">
+              Subtotal: ${sg.subtotal.toFixed(2)}
+            </div>
+          </div>
+        ))}
+
+        <div className="text-right font-medium">
+          Group Total: ${group.subtotal?.toFixed(2) ?? "0.00"}
         </div>
       </div>
     ))}
 
-    {/* add-section button */}
-    <div className="flex justify-end">
+    {/* bottom “Add Group” */}
+    <div className="flex justify-end mt-4">
       <Button
-        type="button"
         size="sm"
         variant="outline"
         onClick={handleAddGroup}
-        className="h-8 px-2 mt-4"
+        className="h-8 px-2"
       >
-        <Plus className="h-4 w-4 mr-1" /> Add Section
+        <Plus className="h-4 w-4 mr-1" /> Add Group
       </Button>
     </div>
 
@@ -898,7 +875,7 @@ const displayGroups = groups.map(g => ({
             </div>
           )}
 
-          {templateSettings?.estimate_signature_enabled && (
+          {templateSettings?.estimate_signature_enabled && signatureEnabled && (
             <EstimateSignature
               signature={clientSignature || estimate?.client_signature || (lead ? lead.client_signature : null)}
               contractorSignature={signature || estimate?.contractor_signature || (lead ? lead.contractor_signature : null)}
@@ -913,7 +890,7 @@ const displayGroups = groups.map(g => ({
               }
               canContractorSign={
                 isLeadPage && // Only in the lead page
-                !isEstimateLocked && // Only when not locked
+               // !isEstimateLocked && // Only when not locked
                 isContractor // Only if it's the contractor
               }
             />
