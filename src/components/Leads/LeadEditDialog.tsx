@@ -174,63 +174,78 @@ export const LeadEditDialog = ({ lead, isOpen, onClose, onLeadUpdated }) => {
       estimated_cost: totalCost
     });
   };
+  /** 
+ * Remove any blank items / sub-groups / groups 
+ */
+function pruneEmptySections(est: any) {
+  if (!est?.groups) return est;
+
+  est.groups = est.groups
+    .map((g: any) => ({
+      ...g,
+      subgroups: (g.subgroups || [])
+        .map((sg: any) => ({
+          ...sg,
+          items: (sg.items || []).filter((it: any) =>
+            it.title?.trim() ||
+            it.description?.trim() ||
+            Number(it.unitAmount) > 0
+          ),
+        }))
+        // ── keep only sub-groups with at least one item
+        .filter((sg: any) => sg.items.length),
+    }))
+    // ── keep only groups with at least one sub-group
+    .filter((g: any) => g.subgroups.length);
+
+  return est;
+}
+
 
   // Handle save
-  const handleSave = async () => {
-    if (!editedLead) return;
-    
-    setIsSaving(true);
-    
-    try {
-      console.log("Saving lead with data:", editedLead);
-      
-      // Make sure totalCost is up to date in both places
-      const updatedLeadData = {
-        project_title: editedLead.project_title,
-        project_description: editedLead.project_description,
-        estimate_data: editedLead.estimate_data,
-        estimated_cost: editedLead.estimate_data?.totalCost || 0
-      };
-      
-      console.log("Update payload:", updatedLeadData);
-      
-      // Update lead in database
-      const { data, error } = await supabase
-        .from('leads')
-        .update(updatedLeadData)
-        .eq('id', editedLead.id)
-        .select();
-      
-      if (error) throw error;
-      
-      console.log("Update response data:", data);
-      
-      // Show success toast
-      toast({
-        title: "Success",
-        description: "Lead updated successfully",
-      });
-      
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries(['lead', editedLead.id]);
-      queryClient.invalidateQueries(['leads']);
-      
-      // Notify parent component with the updated lead data
-      onLeadUpdated(data?.[0] || editedLead);
-      
-      // Close the dialog
-      onClose();
-    } catch (error) {
-      console.error('Error updating lead:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update lead. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+const handleSave = async () => {
+  if (!editedLead) return;
+  setIsSaving(true);
+
+  try {
+    // ── CLEAN before saving ───────────────────────────────────────
+    const cleaned = pruneEmptySections(editedLead.estimate_data);
+    // ensure totalCost propagated
+    const updatedCost = cleaned.totalCost;
+
+    const updatePayload = {
+      project_title:    editedLead.project_title,
+      project_description: editedLead.project_description,
+      estimate_data:    cleaned,
+      estimated_cost:   updatedCost,
+    };
+
+    console.log("Saving lead with payload:", updatePayload);
+
+    const { data, error } = await supabase
+      .from("leads")
+      .update(updatePayload)
+      .eq("id", editedLead.id)
+      .select();
+    if (error) throw error;
+
+    toast({ title: "Success", description: "Lead updated successfully" });
+    queryClient.invalidateQueries(["lead", editedLead.id]);
+    queryClient.invalidateQueries(["leads"]);
+    onLeadUpdated(data?.[0] || editedLead);
+    onClose();
+  } catch (err) {
+    console.error("Error updating lead:", err);
+    toast({
+      title: "Error",
+      description: "Failed to update lead. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSaving(false);
+  }
+};
+
 
   // Handle delete
   const handleDelete = async () => {
