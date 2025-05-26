@@ -102,7 +102,11 @@ const getChangeRows = (oldData: any = {}, newData: any = {}): ChangeRow[] => {
 
   rows.push(...describeEstimateDiff(oldEst, newEst));
 
-  if (oldEst.totalCost != null && newEst.totalCost != null && oldEst.totalCost !== newEst.totalCost) {
+  if (
+    oldEst.totalCost != null &&
+    newEst.totalCost != null &&
+    oldEst.totalCost !== newEst.totalCost
+  ) {
     // Subtotal
     rows.push({
       field: "Subtotal",
@@ -126,11 +130,21 @@ const getChangeRows = (oldData: any = {}, newData: any = {}): ChangeRow[] => {
   }
 
   Object.keys({ ...oldData, ...newData }).forEach((key) => {
-    if (["estimate_data", "estimated_cost"].includes(key)) return;
-    const oVal = oldData[key], nVal = newData[key];
+    // skip estimate_data, estimated_cost, and anything signature-related
+    if (
+      ["estimate_data", "estimated_cost"].includes(key) ||
+      key.toLowerCase().includes("signature")
+    ) {
+      return;
+    }
+
+    const oVal = oldData[key];
+    const nVal = newData[key];
     if (JSON.stringify(oVal) !== JSON.stringify(nVal)) {
-      let oldValue = typeof oVal === "string" ? oVal : JSON.stringify(oVal);
-      let newValue = typeof nVal === "string" ? nVal : JSON.stringify(nVal);
+      let oldValue =
+        typeof oVal === "string" ? oVal : JSON.stringify(oVal);
+      let newValue =
+        typeof nVal === "string" ? nVal : JSON.stringify(nVal);
       oldValue = formatMaybeTimestamp(oldValue);
       newValue = formatMaybeTimestamp(newValue);
       rows.push({ field: key, oldValue, newValue });

@@ -749,10 +749,18 @@ const renderEditableEstimateTable = () => (
   </div>
 );
 
-const displayGroups = groups.map(g => ({
-  ...g,
-  hideTitle: !g.name?.trim(),   // <- flag empty titles
-}));
+// just before you render the read-only table…
+const displayGroups = groups
+  .map(g => ({
+    ...g,
+    // drop any sub-group with zero items
+    subgroups: (g.subgroups || []).filter(sg => sg.items?.length),
+    // hide section title if blank
+    hideTitle: !g.name?.trim(),
+  }))
+  // then drop any group that now has zero sub-groups
+  .filter(g => g.subgroups.length);
+
 
   return (
     <>
