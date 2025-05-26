@@ -152,10 +152,14 @@ function PaymentForm({
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-4">
-      <p className='text-4xl text-gray-800 font-medium'>$0.00</p>
-      <p className="text-[15px] text-[#86868b]">
-        No charges will be made at this time. Adding a card helps us verify your account and prevent fraud.
-      </p>
+      {!setIsPaymentModalOpen && (
+        <>
+          <p className='text-4xl text-gray-800 font-medium'>$0.00</p>
+          <p className="text-[15px] text-[#86868b]">
+            No charges will be made at this time. Adding a card helps us verify your account and prevent fraud.
+          </p>
+        </>
+      )}
       <label className="block text-sm font-medium text-gray-700">Card Details</label>
       <div className='flex flex-col rounded-md border border-gray-300'>
         <div className="p-3 bg-white rounded-t-md border-b border-gray-300">
@@ -182,13 +186,14 @@ function PaymentForm({
       </div>
       {error && <p className="text-red-500">{error}</p>}
       {success && <p className="text-green-500">Payment method saved successfully!</p>}
-
-      <div className="mt-6 text-xs text-center text-gray-500 flex flex-row gap-2 items-center align-middle p-2 border rounded-md bg-gray-50">
-        <div className=''>
-          <Lock className='w-5 h-5' />
+      {!setIsPaymentModalOpen && (
+        <div className="mt-6 text-xs text-center text-gray-500 flex flex-row gap-2 items-center align-middle p-2 border rounded-md bg-gray-50">
+          <div className=''>
+            <Lock className='w-5 h-5' />
+          </div>
+          <span>All payment details are encrypted and securely processed via Stripe — we never store your card information.</span>
         </div>
-        <span>All payment details are encrypted and securely processed via Stripe — we never store your card information.</span>
-      </div>
+      )}
 
       <div className={`flex ${isSettingsPage ? 'justify-between' : 'justify-between'} pt-6`}>
           <Button

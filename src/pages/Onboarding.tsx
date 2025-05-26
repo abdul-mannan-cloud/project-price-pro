@@ -320,6 +320,7 @@ const Onboarding = () => {
             minimum_project_cost: parseFloat(formData.minimumProjectCost),
             markup_percentage: parseFloat(formData.markupPercentage),
             tax_rate: parseFloat(formData.taxRate),
+            estimate_signature_enabled: true,
           })
           .eq('id', existingContractor.id);
 
