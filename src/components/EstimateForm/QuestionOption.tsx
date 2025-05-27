@@ -223,27 +223,17 @@ export const QuestionOption = ({
             <div
                 onClick={onClick}
                 className={cn(
-                    "group relative rounded-xl transition-all duration-200 cursor-pointer overflow-hidden",
+                    "group relative rounded-xl flex items-center align-middle transition-all duration-200 cursor-pointer overflow-hidden",
                     isSelected
                         ? "bg-primary-100"
                         : "hover:bg-primary-50 border border-gray-200 hover:border-primary-300",
-                    showImage ? "pb-4" : "p-4",
+                    showImage ? "" : "p-4",
                     hasSpecialInput && isSelected ? "rounded-b-none ring-0" : " ring-2 ring-primary ring-offset-1"
                 )}
             >
-                {showImage && option.image_url && (
-                    <div className="w-full aspect-video overflow-hidden">
-                        <img
-                            src={option.image_url}
-                            alt={option.label}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                    </div>
-                )}
-
                 <div className={cn(
                     "flex items-center gap-3 w-full",
-                    showImage ? "px-4 pt-4" : ""
+                    showImage ? "px-4" : ""
                 )}>
                     {type === 'multiple_choice' ? (
                         <div className={cn(
@@ -273,26 +263,26 @@ export const QuestionOption = ({
                     )}
 
                     <div className="flex flex-col w-full">
-            <span className={cn(
-                "text-base sm:text-lg transition-all duration-200",
-                isSelected
-                    ? "font-medium text-primary-700"
-                    : "text-gray-800 group-hover:text-primary-600"
-            )}>
-              {option.label}
-            </span>
+                <span className={cn(
+                    "text-base sm:text-lg transition-all duration-200",
+                    isSelected
+                        ? "font-medium text-primary-700"
+                        : "text-gray-800 group-hover:text-primary-600"
+                )}>
+                {option.label}
+                </span>
 
                         {option.description && (
-                            <span className="text-sm text-gray-500 mt-1">
-                {option.description}
-              </span>
+                <span className="text-sm text-gray-500 mt-1">
+                    {option.description}
+                </span>
                         )}
 
                         {/* Small indicator that this option has input capability */}
                         {hasSpecialInput && !isSelected && (
-                            <span className="text-xs text-primary-600 mt-1">
-                {option.type === 'text_input' ? 'Enter text...' : 'Enter number...'}
-              </span>
+                <span className="text-xs text-primary-600 mt-1">
+                    {option.type === 'text_input' ? 'Enter text...' : 'Enter number...'}
+                </span>
                         )}
                     </div>
                 </div>
@@ -302,6 +292,17 @@ export const QuestionOption = ({
                     "absolute inset-0 bg-primary-100 opacity-0 pointer-events-none transition-opacity duration-300",
                     isSelected ? "opacity-0" : "group-hover:opacity-5"
                 )}/>
+
+                {showImage && option.image_url && (
+                    <div className="h-24 w-full flex justify-end aspect-square overflow-hidden">
+                        <img
+                            src={option.image_url}
+                            alt={option.label}
+                            className="min-w-32 h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                    </div>
+                )}
+
             </div>
 
             {/* Render input field below the option when selected */}
