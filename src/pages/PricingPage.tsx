@@ -1,42 +1,42 @@
 // src/pages/PricingPage.tsx
 import * as React from "react";
-import { PricingCards } from "@/components/ui/pricing-cards";
-
-const tiers = [
-  {
-    name: "SELF",
-    price: 299,
-    description: "For small teams and growing businesses",
-    features: [
-      { name: "Up to 20 team members", included: true },
-      { name: "Advanced analytics", included: true },
-      { name: "24/7 email support", included: true },
-      { name: "API access", included: true, highlight: true },
-      { name: "Custom integrations", included: false },
-      { name: "Enterprise features", included: false },
-    ],
-    cta: { text: "Get started", href: "/signup" },
-  },
-  {
-    name: "TEAM",
-    price: 999,
-    interval: "monthly",
-    description: "For large organizations and enterprises",
-    highlight: true,
-    features: [
-      { name: "Unlimited team members", included: true },
-      { name: "Advanced analytics", included: true },
-      { name: "24/7 priority support", included: true },
-      { name: "Unlimited API access", included: true, highlight: true },
-      { name: "Custom integrations", included: true },
-      { name: "Enterprise features", included: true },
-    ],
-    cta: { text: "Contact sales", onClick: () => console.log("Contact sales") },
-  },
-];
+import { Header1 } from "@/components/ui/header";
+import { Footerdemo } from "@/components/ui/footer-section";
+import PricingPlans from "@/components/PricingPlans";
 
 export default function PricingPage() {
+  const [formData, setFormData] = React.useState<{ tier: string | null }>({
+    tier: null,
+  });
+  const [loading, setLoading] = React.useState(false);
+
+  const handleSelectPlan = (selectedTier: string) => {
+    setLoading(true);
+    setFormData({ tier: selectedTier });
+    // simulate async action
+    setTimeout(() => setLoading(false), 500);
+  };
+
   return (
-    <PricingCards tiers={tiers} className="gap-6" containerClassName="py-12" />
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <Header1 />
+
+      <main className="flex-grow flex flex-col items-center justify-start px-4 pt-16">
+        <h1 className="text-[40px] font-semibold text-center text-[#1d1d1f] tracking-tight mb-4">
+          Pricing Plans
+        </h1>
+
+        <div className="w-full max-w-3xl bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-6 mb-12">
+          <PricingPlans
+            formData={formData}
+            setFormData={setFormData}
+            selectPlan={handleSelectPlan}
+            loading={loading}
+          />
+        </div>
+      </main>
+
+      <Footerdemo />
+    </div>
   );
 }

@@ -25,14 +25,35 @@ const posts = [
       "Stay on trend with the latest UI/UX patterns that make service sites stand out...",
     date: "May 15, 2025",
   },
+  {
+    id: 4,
+    title: "Data-Driven Estimating Strategies",
+    excerpt:
+      "Use analytics to predict project costs and timelines more accurately...",
+    date: "May 22, 2025",
+  },
+  {
+    id: 5,
+    title: "Leveraging Automation in Quoting",
+    excerpt:
+      "See how tools like AI and templating can cut your quote turnaround time in half...",
+    date: "May 29, 2025",
+  },
+  {
+    id: 6,
+    title: "Building Trust with Transparent Pricing",
+    excerpt:
+      "Why showing clear breakdowns in your estimates wins more repeat business...",
+    date: "June 5, 2025",
+  },
 ];
 
 export default function Blog() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50 flex flex-col">
       <Header1 />
 
-      <main className="container mx-auto px-4 py-16">
+      <main className="min-h-screen container mx-auto px-4 py-16">
         <h1 className="text-4xl font-bold text-center mb-12">Our Blog</h1>
 
         <div className="grid gap-8 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1">
