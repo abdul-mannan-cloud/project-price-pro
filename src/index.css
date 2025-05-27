@@ -33,7 +33,22 @@
     --ring: var(--primary);
     --warning: #fbbf24;
     --warning-foreground: #1d1d1f;
+    
   }
+   :root.dark {
+    --background: #0d0f1c;
+    --foreground: #f5f5f7;
+    --card: #1a1e2e;
+    --card-foreground: #f5f5f7;
+    --popover: #1a1e2e;
+    --popover-foreground: #f5f5f7;
+    --primary: #1dd97a;
+    --primary-foreground: #0d0f1c;
+    --border: #2a2e3e;
+    --input: #2a2e3e;
+    /* add any other overrides you need */
+  }
+
 
   * {
     @apply border-border;

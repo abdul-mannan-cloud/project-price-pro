@@ -12,7 +12,6 @@ export function Footerdemo() {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const { toast } = useToast();
-
   const navigate = useNavigate();
 
   const handleSubscribe = async (e: React.FormEvent) => {
@@ -31,76 +30,66 @@ export function Footerdemo() {
         }
       );
       if (!response.ok) throw new Error("Subscription failed");
-      toast({
-        title: "Successfully subscribed!",
-        description: "Thank you for subscribing to our newsletter.",
-      });
+      toast({ title: "Successfully subscribed!", description: "Thank you for subscribing." });
       setEmail("");
     } catch {
-      toast({
-        title: "Subscription failed",
-        description: "Please try again later.",
-        variant: "destructive",
-      });
+      toast({ title: "Subscription failed", description: "Please try again later.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <footer className="bg-white border-t relative z-50">
+    <footer className="bg-white dark:bg-[var(--card)] border-t border-gray-200 dark:border-[#2a2e3e] text-gray-800 dark:text-[var(--card-foreground)] relative z-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="py-16">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {/* Quick Links */}
             <div className="space-y-8">
-              <h3 className="text-sm font-semibold text-gray-900">Quick Links</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-[var(--foreground)]">Quick Links</h3>
               <ul role="list" className="mt-6 space-y-4">
                 <li>
-                  <Link to="/pricing" className="text-sm text-gray-600 hover:text-gray-900">
+                  <Link to="/pricing" className="text-sm text-gray-600 dark:text-[var(--muted-foreground)] hover:text-gray-900 dark:hover:text-[var(--foreground)]">
                     Pricing
                   </Link>
                 </li>
                 <li>
-                  <Link to="/industry" className="text-sm text-gray-600 hover:text-gray-900">
+                  <Link to="/industry" className="text-sm text-gray-600 dark:text-[var(--muted-foreground)] hover:text-gray-900 dark:hover:text-[var(--foreground)]">
                     Industries
                   </Link>
                 </li>
               </ul>
             </div>
 
-            {/* Legal */}
             <div className="space-y-8">
-              <h3 className="text-sm font-semibold text-gray-900">Legal</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-[var(--foreground)]">Legal</h3>
               <ul role="list" className="mt-6 space-y-4">
                 <li>
                   <button
-                    onClick={() => navigate('/privacy-policy')}
-                    className="text-sm text-gray-600 hover:text-gray-900"
+                    onClick={() => navigate("/privacy-policy")}
+                    className="text-sm text-gray-600 dark:text-[var(--muted-foreground)] hover:text-gray-900 dark:hover:text-[var(--foreground)]"
                   >
                     Privacy Policy
                   </button>
                 </li>
                 <li>
                   <button
-                    onClick={() => navigate('/terms-of-service')}
-                    className="text-sm text-gray-600 hover:text-gray-900"
+                    onClick={() => navigate("/terms-of-service")}
+                    className="text-sm text-gray-600 dark:text-[var(--muted-foreground)] hover:text-gray-900 dark:hover:text-[var(--foreground)]"
                   >
                     Terms of Service
                   </button>
                 </li>
                 <li>
-                  <Link to="/blog" className="text-sm text-gray-600 hover:text-gray-900">
+                  <Link to="/blog" className="text-sm text-gray-600 dark:text-[var(--muted-foreground)] hover:text-gray-900 dark:hover:text-[var(--foreground)]">
                     Blog
                   </Link>
                 </li>
               </ul>
             </div>
 
-            {/* Newsletter */}
             <div className="md:col-span-2">
-              <h3 className="text-sm font-semibold text-gray-900">Stay connected</h3>
-              <p className="mt-6 text-sm text-gray-600">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-[var(--foreground)]">Stay connected</h3>
+              <p className="mt-6 text-sm text-gray-600 dark:text-[var(--muted-foreground)]">
                 Subscribe to our newsletter for updates and exclusive content.
               </p>
               <form onSubmit={handleSubscribe} className="mt-4 flex max-w-md">
@@ -120,22 +109,20 @@ export function Footerdemo() {
           </div>
         </div>
 
-        {/* Support Email */}
         <div className="flex justify-center mb-4">
           <a
-            href="mailto:support@estimatix.io"
-            className="text-sm text-gray-600 hover:text-gray-900"
+            href="mailto:support@estimatrix.io"
+            className="text-sm text-gray-600 dark:text-[var(--muted-foreground)] hover:text-gray-900 dark:hover:text-[var(--foreground)]"
           >
-            support@estimatix.io
+            support@estimatrix.io
           </a>
         </div>
 
         <div className="flex justify-center pb-8">
-          <p>© {new Date().getFullYear()} ESTIMATIRX LLC. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} ESTIMATRIX LLC. All rights reserved.</p>
         </div>
       </div>
 
-      {/* Privacy Policy Dialog */}
       <Dialog open={showPrivacy} onOpenChange={setShowPrivacy}>
         <DialogContent>
           <DialogHeader>
@@ -147,7 +134,6 @@ export function Footerdemo() {
         </DialogContent>
       </Dialog>
 
-      {/* Terms of Service Dialog */}
       <Dialog open={showTerms} onOpenChange={setShowTerms}>
         <DialogContent>
           <DialogHeader>
