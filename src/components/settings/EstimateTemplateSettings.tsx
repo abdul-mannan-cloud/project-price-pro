@@ -55,6 +55,9 @@ export const EstimateTemplateSettings = ({
   const [hasClientMessageChanges, setHasClientMessageChanges] = useState(false);
   const [hasFooterTextChanges, setHasFooterTextChanges] = useState(false);
 
+  console.log("Contractor Settings:", contractor);
+  
+
   const { data: settings, isLoading } = useQuery({
     queryKey: ["contractor-settings", contractor?.id],
     queryFn: async () => {
