@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"; 
+//import { Switch } from "@/components/ui/switch"; 
 import { 
   Phone, 
   MessageSquare, 
@@ -129,15 +129,11 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   
   // State to hold the lead data
   const [lead, setLead] = useState<Lead | null>(initialLead);
-  
-// Add near the top of the component, with your other useState:
-const [signatureEnabled, setSignatureEnabled] = useState<boolean>(true);
+  // Per-lead signature flag (no local toggle)
+const signatureEnabled = lead?.signature_enabled ?? true;
 
-useEffect(() => {
-  if (lead?.signature_enabled != null) {
-    setSignatureEnabled(lead.signature_enabled);
-  }
-}, [lead?.signature_enabled]);
+// Add near the top of the component, with your other useState:
+
 
   // Get current user data if no URL contractor ID
   const { data: currentUser, isLoading: isLoadingUser } = useQuery({
@@ -808,71 +804,40 @@ const handleSaveEstimate = async () => {
     )}
 
     {view === "estimate" && lead && (
-      <>
-        {signatureEnabled && isEstimateLocked && (
-          <EstimateLockBanner
-            isLocked={isEstimateLocked}
-            onUnlock={() => setShowUnlockDialog(true)}
-            className="mb-4"
-          />
-        )}
-        {/*  ── Signature-enabled toggle — comment out to disable ──────────────────
-        {contractor?.tier === 'enterprise' && (
-  <div className="flex items-center space-x-2 mb-4">
-    <Switch
-      checked={signatureEnabled}
-      onCheckedChange={async (newVal) => {
-        setSignatureEnabled(newVal);
-        // build update
-        const updates: any = { signature_enabled: newVal };
-        if (!newVal) {
-          updates.client_signature = null;
-          updates.client_signature_date = null;
-          updates.contractor_signature = null;
-          updates.contractor_signature_date = null;
-        }
-        const { error } = await supabase
-          .from('leads')
-          .update(updates)
-          .eq('id', lead!.id);
-        if (error) {
-          toast({ title: 'Error', description: error.message, variant: 'destructive' });
-        } else {
-          refetchLead();
-          toast({
-            title: `Signatures ${newVal ? 'enabled' : 'disabled'}`,
-            description: newVal
-              ? 'Clients can now sign this estimate.'
-              : 'Signature fields hidden and cleared.',
-          });
-        }
-      }}
-    />
-    <span className="text-sm">Signatures {signatureEnabled ? 'On' : 'Off'}</span>
-  </div>
-)}
-*/} 
-        {renderActionButtons()}
-        <div className="mt-4">
-          <EstimateDisplay
-            groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
-            totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
-            projectSummary={lead.project_description}
-            isEditable={isEditing}
-            onEstimateChange={handleEstimateChange}
-            contractor={contractor}
-            contractorParam={contractor?.id}
-            handleRefreshEstimate={() => refetchLead()}
-            leadId={lead.id}
-            handleContractSign={() => signatureEnabled && setShowContractorSignatureDialog(true)}
-            isLeadPage={true}
-            lead={lead}
-            isEstimateLocked={isEstimateLocked}
-            signatureEnabled={signatureEnabled}
-          />
-        </div>
-      </>
+  <>
+    {/* ── Per-lead signature toggle ─────────────────────────────── */}
+    
+    {/* ── Locked banner shows only if per-lead flag AND locked ── */}
+    {isEstimateLocked && (
+      <EstimateLockBanner
+        isLocked={isEstimateLocked}
+        onUnlock={() => setShowUnlockDialog(true)}
+        className="mb-4"
+      />
     )}
+
+    {/* ── Existing buttons & display ───────────────────────────── */}
+    {renderActionButtons()}
+    <div className="mt-4">
+      <EstimateDisplay
+        groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
+        totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
+        projectSummary={lead.project_description}
+        isEditable={isEditing}
+        onEstimateChange={handleEstimateChange}
+        contractor={contractor}
+        contractorParam={contractor?.id}
+        handleRefreshEstimate={() => refetchLead()}
+        leadId={lead.id}
+        handleContractSign={() => lead.signature_enabled && setShowContractorSignatureDialog(true)}
+        isLeadPage={true}
+        lead={lead}
+        isEstimateLocked={isEstimateLocked}
+        signatureEnabled={lead?.signature_enabled ?? true}
+      />
+    </div>
+  </>
+)}
 
     {view === "questions" && (
       <LeadQuestionsView lead={lead} refetchLead={refetchLead} />

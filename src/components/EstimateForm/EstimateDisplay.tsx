@@ -136,6 +136,8 @@ export const EstimateDisplay = ({
   // Check if the screen is mobile-sized
   const isMobile = useMediaQuery("(max-width: 640px)");
   const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)");
+// Effective flag = global setting AND per-lead flag
+
 
   // Initialize editable groups when component mounts or when groups change
   useEffect(() => {
@@ -555,6 +557,8 @@ const handleAddGroup = () => {
     estimate_compact_view: true
   };
 
+const signaturesOn = templateSettings.estimate_signature_enabled && signatureEnabled;
+
   const styles = getTemplateStyles(templateSettings.estimate_template_style);
 
   if (isLoading) {
@@ -883,7 +887,7 @@ const displayGroups = groups
             </div>
           )}
 
-          {templateSettings?.estimate_signature_enabled && signatureEnabled && (
+          {signaturesOn && (
             <EstimateSignature
               signature={clientSignature || estimate?.client_signature || (lead ? lead.client_signature : null)}
               contractorSignature={signature || estimate?.contractor_signature || (lead ? lead.contractor_signature : null)}
@@ -926,7 +930,7 @@ const displayGroups = groups
               isOpen={showSettings}
               onClose={() => setShowSettings(false)}
             >
-              <EstimateTemplateSettings contractor={contractor} />
+              <EstimateTemplateSettings contractor={contractor}lead={lead} />
             </SettingsDialog>
           )}
           {showAIPreferences && (
