@@ -22,16 +22,20 @@ export default function PricingPage() {
       <Header1 />
 
       <main className="flex-grow flex flex-col items-center justify-start px-4 pt-16">
-        <h1 className="text-[40px] font-semibold text-center text-[#1d1d1f] tracking-tight mb-4">
+        <h1 className="text-[40px] font-semibold text-center text-[#1d1d1f] tracking-tight mb-8">
           Pricing Plans
         </h1>
 
-        <div className="w-full max-w-3xl bg-white rounded-2xl border border-[#d2d2d7] shadow-sm p-8 space-y-6 mb-12">
+        {/* Removed the extra bg-white panel wrapper here */}
+        <div className="w-full max-w-3xl mb-12">
           <PricingPlans
             formData={formData}
             setFormData={setFormData}
             selectPlan={handleSelectPlan}
             loading={loading}
+            // you can still pass any gap/container props if needed:
+            className="gap-6"
+            containerClassName="py-0"
           />
         </div>
       </main>
