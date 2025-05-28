@@ -243,7 +243,7 @@ export const EstimateDisplay = ({
 
       const { data, error } = await supabase
         .from('leads')
-        .select('estimate_data, status, contractor_signature, contractor_signature_date, client_signature, client_signature_date')
+     .select('id, estimate_data, status, contractor_signature, contractor_signature_date,' +' client_signature, client_signature_date, signature_enabled')
         .eq('id', leadId)
         .maybeSingle();
 
@@ -584,8 +584,8 @@ export const EstimateDisplay = ({
     estimate_hide_subtotals: false,
     estimate_compact_view: true
   };
-
-  const signaturesOn = templateSettings.estimate_signature_enabled && signatureEnabled;
+const perLeadSignatureEnabled = leadData?.signature_enabled ?? true;
+  const signaturesOn = templateSettings.estimate_signature_enabled && perLeadSignatureEnabled;
   const styles = getTemplateStyles(templateSettings.estimate_template_style);
 
   // Show loading if we're waiting for contractor data
@@ -775,6 +775,7 @@ export const EstimateDisplay = ({
     </div>
   );
 
+
   // Filter display groups
   const displayGroups = groups
     .map(g => ({
@@ -947,7 +948,7 @@ export const EstimateDisplay = ({
               isOpen={showSettings}
               onClose={() => setShowSettings(false)}
             >
-              <EstimateTemplateSettings contractor={contractor} lead={lead} />
+              <EstimateTemplateSettings contractor={contractor} lead={lead || leadData /* <- per-lead context */} />
             </SettingsDialog>
           )}
           {showAIPreferences && (

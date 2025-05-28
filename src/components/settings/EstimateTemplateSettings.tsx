@@ -259,10 +259,7 @@ export const EstimateTemplateSettings = ({
                         variant: "destructive",
                       });
                     } else {
-                      queryClient.invalidateQueries([
-                        "lead",
-                        lead.id.toString(),
-                      ]);
+                     queryClient.invalidateQueries(["estimate-status", lead.id]);
                       toast({
                         title: "Updated",
                         description: "Signature setting saved for this lead.",
