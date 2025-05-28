@@ -1,4 +1,3 @@
-// src/pages/Industry.tsx
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +8,9 @@ import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 type Category = { id: string; name: string; description: string };
+
+/* ── keep this in sync with Header1 real height ── */
+const HEADER_HEIGHT = 80; // px
 
 export default function Industry() {
   const { data: categories = [], isLoading } = useQuery<Category[]>({
@@ -30,17 +32,21 @@ export default function Industry() {
   });
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-[var(--background)] dark:bg-[#0B1E3C] text-[var(--foreground)] transition-colors">
       <Header1 />
 
-      <main className="flex-grow container mx-auto px-4 pt-16 pb-12">
+      {/* push content below the fixed header */}
+      <main
+        className="flex-grow container mx-auto px-4 pb-12"
+        style={{ paddingTop: HEADER_HEIGHT }}
+      >
         {isLoading ? (
           <div className="flex justify-center py-20">
             <Spinner />
           </div>
         ) : (
           <div className="space-y-10">
-            {/* Badge + Title + Subtitle */}
+            {/* badge + heading */}
             <div className="space-y-2">
               <Badge variant="outline">Service</Badge>
               <h2 className="text-3xl md:text-5xl font-semibold tracking-tight">
@@ -51,7 +57,7 @@ export default function Industry() {
               </p>
             </div>
 
-            {/* Grid of categories (no cards, tighter spacing) */}
+            {/* category list */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {categories.map((cat) => (
                 <div key={cat.id} className="flex items-start gap-4">

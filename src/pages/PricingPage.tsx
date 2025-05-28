@@ -3,6 +3,9 @@ import { Header1 } from "@/components/ui/header";
 import { Footerdemo } from "@/components/ui/footer-section";
 import PricingPlans from "@/components/PricingPlans";
 
+/* ─── keep this in sync with Header1 actual height ─── */
+const HEADER_HEIGHT = 80; // px
+
 export default function PricingPage() {
   const [formData, setFormData] = React.useState<{ tier: string | null }>({
     tier: null,
@@ -11,15 +14,19 @@ export default function PricingPage() {
 
   const handleSelectPlan = () => {
     setLoading(true);
-    // simulate async action delay
+    /* simulate async delay */
     setTimeout(() => setLoading(false), 500);
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+    <div className="flex flex-col min-h-screen bg-[var(--background)] dark:bg-[#0B1E3C] text-[var(--foreground)] transition-colors">
       <Header1 />
 
-      <main className="flex-grow flex flex-col items-center justify-start px-4 pt-16">
+      {/* push content below fixed header so nothing hides  */}
+      <main
+        className="flex-grow flex flex-col items-center justify-start px-4"
+        style={{ paddingTop: HEADER_HEIGHT }}
+      >
         <h1 className="mb-8 text-[40px] font-semibold text-center">
           Pricing Plans
         </h1>
