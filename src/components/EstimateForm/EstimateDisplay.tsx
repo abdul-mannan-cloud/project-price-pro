@@ -23,7 +23,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, MinusCircle, Save } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { Switch } from "@/components/ui/switch";
 export interface LineItem {
   title: string;
   description?: string;
@@ -130,6 +132,28 @@ export const EstimateDisplay = ({
   const [isEstimateReady, setIsEstimateReady] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+const toggleSignatureSetting = useMutation({
+  mutationFn: async (enabled: boolean) => {
+    if (!contractorId) return;
+    const { error } = await supabase
+      .from("contractor_settings")
+      .update({ estimate_signature_enabled: enabled })
+      .eq("id", contractorId);
+    if (error) throw error;
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries(["contractor-settings", contractorId]);
+  },
+  onError: () =>
+    toast({
+      title: "Error",
+      description: "Couldn’t update signature preference – try again.",
+      variant: "destructive",
+    }),
+});
+
   const [clientSignature, setClientSignature] = useState<string | null>(null);
   // Check if the screen is mobile-sized
   const isMobile = useMediaQuery("(max-width: 640px)");
@@ -875,49 +899,85 @@ const displayGroups = groups.map(g => ({
           )}
 
           {/* Cancel / Archive buttons */}
-          {!isEditable && (onCancel || onArchive) && (
-            <div className="mt-6 flex justify-end gap-2">
-              {onCancel && (
-                <Button variant="destructive" size="sm" onClick={onCancel}>
-                  Cancel
-                </Button>
-              )}
-              {onArchive && (
-                <Button variant="outline" size="sm" onClick={onArchive}>
-                  Archive
-                </Button>
-              )}
-            </div>
-          )}
+        {!isEditable && (onCancel || onArchive) && (
+  <div className="mt-6 flex flex-col items-end gap-2">
+    {/* Buttons row */}
+    <div className="flex gap-2">
+      {onCancel && (
+        <Button variant="destructive" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+      )}
+      {onArchive && (
+        <Button variant="outline" size="sm" onClick={onArchive}>
+          Archive
+        </Button>
+      )}
+    </div>
 
-          {templateSettings?.estimate_footer_text && (
-            <div className={cn("mt-6 sm:mt-8 pt-4 sm:pt-6 border-t", styles.text, "text-xs sm:text-sm")}>
-              <p className="whitespace-pre-wrap">
-                {templateSettings.estimate_footer_text}
-              </p>
-            </div>
-          )}
+    {/* Signature toggle (Lead page only) */}
+    {isLeadPage && (
+      <div className="flex items-center">
+        <Label htmlFor="lead-signature-toggle" className="mr-3 text-sm">
+          Enable Signature Section
+        </Label>
+        <Switch
+          id="lead-signature-toggle"
+          checked={templateSettings.estimate_signature_enabled ?? false}
+          onCheckedChange={(checked) => toggleSignatureSetting.mutate(checked)}
+        />
+      </div>
+    )}
+  </div>
+)}
 
-          {templateSettings?.estimate_signature_enabled && (
-            <EstimateSignature
-              signature={clientSignature || estimate?.client_signature || (lead ? lead.client_signature : null)}
-              contractorSignature={signature || estimate?.contractor_signature || (lead ? lead.contractor_signature : null)}
-              isEstimateReady={isEstimateReady}
-              onSignatureClick={() => setShowSignatureDialog(true)}
-              styles={styles}
-              isLeadPage={isLeadPage || false}
-              onContractorSignatureClick={
-                isLeadPage && handleContractSign ? 
-                () => handleContractSign(leadId) : 
-                undefined
-              }
-              canContractorSign={
-                isLeadPage && // Only in the lead page
-                !isEstimateLocked && // Only when not locked
-                isContractor // Only if it's the contractor
-              }
-            />
-          )}
+{/* Footer text stays after that */}
+{templateSettings?.estimate_footer_text && (
+  <div
+    className={cn(
+      "mt-6 sm:mt-8 pt-4 sm:pt-6 border-t",
+      styles.text,
+      "text-xs sm:text-sm"
+    )}
+  >
+    <p className="whitespace-pre-wrap">
+      {templateSettings.estimate_footer_text}
+    </p>
+  </div>
+)}
+
+
+{/* Only render the signature box if the setting is on */}
+{templateSettings.estimate_signature_enabled && (
+  <EstimateSignature
+    signature={
+      clientSignature ||
+      estimate?.client_signature ||
+      (lead ? lead.client_signature : null)
+    }
+    contractorSignature={
+      signature ||
+      estimate?.contractor_signature ||
+      (lead ? lead.contractor_signature : null)
+    }
+    isEstimateReady={isEstimateReady}
+    onSignatureClick={() => setShowSignatureDialog(true)}
+    styles={styles}
+    isLeadPage={isLeadPage}
+    onContractorSignatureClick={
+      isLeadPage && handleContractSign
+        ? () => handleContractSign(leadId)
+        : undefined
+    }
+    canContractorSign={
+      isLeadPage &&        // Only in the lead page
+      !isEstimateLocked && // Only when not locked
+      isContractor        // Only if it's the contractor
+    }
+  />
+)}
+
+
         </div>
       </Card>
 
