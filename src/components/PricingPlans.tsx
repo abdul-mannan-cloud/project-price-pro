@@ -1,16 +1,29 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const PricingPlans = ({ formData, setFormData, selectPlan, loading }) => {
+interface PricingPlansProps {
+  formData: { tier: string | null };
+  setFormData: React.Dispatch<React.SetStateAction<{ tier: string | null }>>;
+  selectPlan: () => void;
+  loading: boolean;
+}
+
+const PricingPlans = ({
+  formData,
+  setFormData,
+  selectPlan,
+  loading,
+}: PricingPlansProps) => {
   const navigate = useNavigate();
-  // Add the manual selection flag
   const [manualSelection, setManualSelection] = useState(false);
-  
+
   const plans = [
     {
       key: "pioneer",
       title: "Pioneer",
       pricing: ".01 - .03",
+      subtitle: "Subtotal Volume",
+      label: "$1,000 Free Credit",
       features: [
         "Up to 2 team members",
         "Unlimited leads",
@@ -25,6 +38,8 @@ const PricingPlans = ({ formData, setFormData, selectPlan, loading }) => {
       key: "enterprise",
       title: "Enterprise",
       pricing: "",
+      subtitle: "Talk to Sales",
+      label: "Unlimited",
       features: [
         "Everything in PIONEER +",
         "Use your own domain",
@@ -35,78 +50,90 @@ const PricingPlans = ({ formData, setFormData, selectPlan, loading }) => {
         "24/7 priority support",
       ],
       buttonText: "Schedule a call",
-    }
+    },
   ];
 
-  // Update handleSelectPlan to set the manual selection flag
-  const handleSelectPlan = (planKey) => {
+  // Fire only on manual selection
+  const handleSelectPlan = (planKey: string) => {
     setManualSelection(true);
-    setFormData({ ...formData, tier: planKey });
+    setFormData({ tier: planKey });
   };
 
-  // Modify useEffect to only call selectPlan when manual selection is true
   useEffect(() => {
     if (manualSelection) {
       selectPlan();
-      setManualSelection(false); // Reset the flag after calling selectPlan
+      setManualSelection(false);
     }
   }, [formData.tier, manualSelection, selectPlan]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
-      {plans.map((plan) => (
-        <div 
-          key={plan.key}
-          className={`flex flex-col rounded-lg p-4 md:p-8 border border-gray-200
-              ${plan.key === "pioneer" ? "bg-white" : "bg-gray-100"}
+      {plans.map((plan) => {
+        const isCurrent = formData.tier === plan.key;
+        return (
+          <div
+            key={plan.key}
+            className={`
+              flex flex-col rounded-lg p-4 md:p-8
+              bg-[var(--card)] border border-[var(--border)]
+              transition-shadow hover:shadow-lg
             `}
-        >
-          <div className="mb-4 md:mb-6 flex flex-col gap-5">
-            <div className="flex gap-3 items-center">
-              <h3 className="text-lg md:text-2xl font-bold">{plan.title}</h3>
-              <div className={`${plan.key === "pioneer" ? "bg-green-400 text-white" : "bg-white text-green-400"} rounded-full py-1 px-3 text-[10px] md:text-sm font-semibold`}>
-                { plan.key === "pioneer" ?
-                  <span>$1,000 Free Credit</span>
-                  :                 
-                  <span>Unlimited</span>
-                }
+            style={{ color: "var(--card-foreground)" }}
+          >
+            {/* Header */}
+            <div className="mb-6 flex flex-col gap-5">
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg md:text-2xl font-bold">
+                  {plan.title}
+                </h3>
+                <span
+                  className="
+                    inline-block rounded-full py-1 px-3 text-[10px] md:text-sm font-semibold
+                    bg-[var(--primary)] text-[var(--primary-foreground)]
+                  "
+                >
+                  {plan.label}
+                </span>
+              </div>
+              <div>
+                <p className="text-[var(--foreground)] text-4xl font-bold">
+                  {plan.pricing}
+                </p>
+                <p className="text-[var(--muted-foreground)]">{plan.subtitle}</p>
               </div>
             </div>
-            <div>
-              <p className="text-black text-4xl font-bold">{plan.pricing}</p>
-              {
-                plan.key === "pioneer" ?
-                <p>Subtotal Volume</p>
-                :
-                <p>Talk to Sales</p>
-              }
-            </div>
-          </div>
 
-          <div className="min-w-[100%] border-b border-gray-200 mb-8"></div>
-          
-          <div className="flex-grow">
-            <ul className="space-y-2 md:space-y-4 text-sm md:text-base">
-              {plan.features.map((feature, index) => (
-                <li key={index} className="flex items-start">
-                  <span className="mr-5 flex-shrink-0">✓</span>
+            {/* Divider */}
+            <div className="border-b mb-8 border-[var(--border)]" />
+
+            {/* Features */}
+            <ul className="flex-grow space-y-3 md:space-y-4 text-sm md:text-base">
+              {plan.features.map((feature, idx) => (
+                <li key={idx} className="flex items-start">
+                  <span className="mr-3 mt-1 text-[var(--card-foreground)]">
+                    ✓
+                  </span>
                   <span>{feature}</span>
                 </li>
               ))}
             </ul>
+
+            {/* CTA */}
+            <button
+              onClick={() => handleSelectPlan(plan.key)}
+              disabled={loading}
+              className={`
+                mt-6 md:mt-8 w-full py-2 md:py-3 rounded-md font-semibold
+                bg-[var(--primary)] text-[var(--primary-foreground)]
+                disabled:opacity-50 disabled:cursor-not-allowed
+                transition-colors duration-200
+              `}
+            >
+              {loading && isCurrent ? "Processing..." : plan.buttonText}
+            </button>
           </div>
-          
-          <button
-            onClick={() => handleSelectPlan(plan.key)}
-            disabled={loading}
-            className={`mt-6 md:mt-8 w-full py-2 md:py-3 px-4 rounded-md text-center font-semibold 
-              hover:bg-primary hover:text-white hover:border-primary disabled:opacity-50
-              transition-colors duration-200 ${plan.key === "pioneer" ? "bg-gray-100" : "bg-white"}`}
-          >
-            {loading && formData.tier == plan.key ? 'Processing...' : plan.buttonText}
-          </button>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

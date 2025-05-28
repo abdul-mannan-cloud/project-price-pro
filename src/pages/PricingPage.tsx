@@ -1,4 +1,3 @@
-// src/pages/PricingPage.tsx
 import * as React from "react";
 import { Header1 } from "@/components/ui/header";
 import { Footerdemo } from "@/components/ui/footer-section";
@@ -10,32 +9,27 @@ export default function PricingPage() {
   });
   const [loading, setLoading] = React.useState(false);
 
-  const handleSelectPlan = (selectedTier: string) => {
+  const handleSelectPlan = () => {
     setLoading(true);
-    setFormData({ tier: selectedTier });
-    // simulate async action
+    // simulate async action delay
     setTimeout(() => setLoading(false), 500);
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <Header1 />
 
       <main className="flex-grow flex flex-col items-center justify-start px-4 pt-16">
-        <h1 className="text-[40px] font-semibold text-center text-[#1d1d1f] tracking-tight mb-8">
+        <h1 className="mb-8 text-[40px] font-semibold text-center">
           Pricing Plans
         </h1>
 
-        {/* Removed the extra bg-white panel wrapper here */}
         <div className="w-full max-w-3xl mb-12">
           <PricingPlans
             formData={formData}
             setFormData={setFormData}
             selectPlan={handleSelectPlan}
             loading={loading}
-            // you can still pass any gap/container props if needed:
-            className="gap-6"
-            containerClassName="py-0"
           />
         </div>
       </main>
