@@ -1,6 +1,5 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
-
 export const formatAnswersForContext = (answers: Record<string, any>) => {
     return Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
         acc[category] = Object.entries(categoryAnswers || {}).reduce((catAcc, [questionId, answer]) => {
@@ -126,7 +125,6 @@ export const generateEstimate = async (
             }
         ];
 
-
         if (imageUrl) {
             messages.push({
                 role: "user",
@@ -157,6 +155,7 @@ export const generateEstimate = async (
                 temperature: 0.7,
                 max_tokens: 2000,
                 response_format: {type: "json_object"}
+                // Removed stream_options as it's only for streaming mode
             }),
             signal
         });
@@ -171,6 +170,14 @@ export const generateEstimate = async (
             throw new Error('Invalid response format from OpenAI');
         }
 
+        // Extract token usage information
+        const tokenUsage = data.usage;
+        console.log('Token usage:', {
+            promptTokens: tokenUsage?.prompt_tokens || 0,
+            completionTokens: tokenUsage?.completion_tokens || 0,
+            totalTokens: tokenUsage?.total_tokens || 0
+        });
+
         const content = data.choices[0].message.content;
         console.log('Raw AI response content:', content);
 
@@ -183,8 +190,18 @@ export const generateEstimate = async (
             throw new Error('AI response missing required fields');
         }
 
+        // Add token usage to the response
+        const responseWithUsage = {
+            ...parsed,
+            tokenUsage: {
+                promptTokens: tokenUsage?.prompt_tokens || 0,
+                completionTokens: tokenUsage?.completion_tokens || 0,
+                totalTokens: tokenUsage?.total_tokens || 0
+            }
+        };
+
         // Return stringified JSON to ensure consistent format
-        return JSON.stringify(parsed);
+        return JSON.stringify(responseWithUsage);
 
     } catch (error) {
         console.error('Error generating estimate with AI:', error);
@@ -196,7 +213,6 @@ export const generateEstimate = async (
 };
 
 async function findSimilarTasks(query: string, limit = 10) {
-
     const supabase = createClient(
         Deno.env.get('SUPABASE_URL')!,
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -215,11 +231,19 @@ async function findSimilarTasks(query: string, limit = 10) {
         })
     });
 
-    const {data} = await response.json();
+    const embeddingData = await response.json();
+    
+    // Log embedding token usage if available
+    if (embeddingData.usage) {
+        console.log('Embedding API usage:', {
+            promptTokens: embeddingData.usage.prompt_tokens,
+            totalTokens: embeddingData.usage.total_tokens
+        });
+    }
 
     // Query Supabase
     const {data: similarTasks} = await supabase.rpc('match_tasks', {
-        query_embedding: data[0].embedding,
+        query_embedding: embeddingData.data[0].embedding,
         match_threshold: 0.5,
         match_count: limit,
         query_text: query
