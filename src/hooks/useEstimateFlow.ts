@@ -313,42 +313,49 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     }
   };
 
-    const handleGenerateInvoice = async (contractor, totalCost) => {
-      try {        
-        const { data, error } = await supabase.functions.invoke('generate-invoice', {
-          body: {
-            customerId: contractor?.stripe_customer_id,
-            description: 'New lead service fee',
-            items: [
-              { amount: Math.round((totalCost*100) * 0.01 + 20 + 200), description: 'Service charges' },
-            ],
-            metadata: {
-              plan: 'standard',
-              source: 'website'
-            }
-          }
-        });
-        
-        if (error) {
-          throw new Error(error.message || "Failed to generate invoice");
-        }
-  
-        // const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
-        //   body: {
-        //     customerId: contractor?.stripe_customer_id,
-        //     limit: 10,
-        //     offset: 0
-        //   }
-        // });
-        
-        // if (refreshData?.success) {
-        //   setInvoices(refreshData.invoices || []);
-        // }
-        
-      } catch (error) {
-        console.error('Error generating invoice:', error);
+  const handleGenerateInvoice = async (contractor, totalCost) => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('Error checking authentication:', authError);
+        return;
       }
-    };
+      
+      if (!user) {
+        console.log('User not logged in, skipping invoice generation');
+        return;
+      }
+      
+      console.log('User is logged in, generating invoice for user:', user.id);
+      
+      const { data, error } = await supabase.functions.invoke('generate-invoice', {
+        body: {
+          customerId: contractor?.stripe_customer_id,
+          description: 'New lead service fee',
+          items: [
+            { amount: Math.round((totalCost * 100) * 0.01 + 10 ), description: 'Service charges' },
+          ],
+          metadata: {
+            plan: 'standard',
+            source: 'website',
+            userId: user.id 
+          }
+        }
+      });
+      
+      if (error) {
+        throw new Error(error.message || "Failed to generate invoice");
+      }
+      
+      console.log('Invoice generated successfully:', data);
+      return data;
+      
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      throw error;
+    }
+  };
 
   const checkEstimateStatus = async (leadId: string, skip: boolean = false, pdfBase64?: string): Promise<boolean> => {
     const { data: lead, error } = await supabase
