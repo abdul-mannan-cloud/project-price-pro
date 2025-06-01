@@ -315,20 +315,6 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
   const handleGenerateInvoice = async (contractor, totalCost) => {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError) {
-        console.error('Error checking authentication:', authError);
-        return;
-      }
-      
-      if (!user) {
-        console.log('User not logged in, skipping invoice generation');
-        return;
-      }
-      
-      console.log('User is logged in, generating invoice for user:', user.id);
-      
       const { data, error } = await supabase.functions.invoke('generate-invoice', {
         body: {
           customerId: contractor?.stripe_customer_id,
@@ -339,7 +325,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
           metadata: {
             plan: 'standard',
             source: 'website',
-            userId: user.id 
+            userId: contractor.id 
           }
         }
       });
@@ -400,7 +386,6 @@ export const useEstimateFlow = (config: EstimateConfig) => {
           const creditsToUse = Math.min(availableCredits, totalFee);
           remainingFee = totalFee - creditsToUse;
 
-          // Update contractor's cash credits
           const { error } = await supabase
             .from('contractors')
             .update({ cash_credits: availableCredits - creditsToUse })
@@ -412,7 +397,25 @@ export const useEstimateFlow = (config: EstimateConfig) => {
           }
         }
 
-        if (remainingFee > 0) {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError) {
+          console.error('Error checking authentication:', authError);
+        }
+        
+        if (user) {
+          console.log('User logged in, skipping invoice generation');
+          const {data: usageData} = await supabase
+                                            .from('contractors')
+                                            .update({
+                                              usage: ((lead.estimate_data.tokenUsage.totalTokens/1000) * 2 * 0.01) + 0.10,
+                                            }).eq('id', emailData.id);
+          
+        }
+      
+        console.log('User is logged in, generating invoice for user:', user.id);
+
+        if (remainingFee > 0 && !user) {
           handleGenerateInvoice(emailData, remainingFee);
         }
       }

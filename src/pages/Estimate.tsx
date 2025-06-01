@@ -140,41 +140,62 @@ const EstimatePage = () => {
     });
 
     // Fetch contractor data from Supabase using the extracted ID
-    const {data: contractor, isLoading: isContractorLoading, error: contractorError} = useQuery({
+    const {
+        data: contractor,
+        isLoading: isContractorLoading,
+        error: contractorError,
+        } = useQuery({
         queryKey: ["contractor", finalContractorId],
         queryFn: async () => {
             console.log('Fetching contractor settings for ID:', finalContractorId);
-            
-            const {data, error} = await supabase
-                .from("contractors")
-                .select("*, contractor_settings(*)")
-                .eq("user_id", finalContractorId)
-                .maybeSingle();
+
+            let { data, error } = await supabase
+            .from("contractors")
+            .select("*, contractor_settings(*)")
+            .eq("user_id", finalContractorId)
+            .maybeSingle();
 
             if (error) {
-                console.error('Error fetching contractor:', error);
-                throw new Error(`Failed to fetch contractor: ${error.message}`);
+            console.error('Error fetching contractor by user_id:', error);
+            throw new Error(`Failed to fetch contractor by user_id: ${error.message}`);
             }
-            
+
             if (!data) {
-                console.error('No contractor found with User ID:', finalContractorId);
-                throw new Error(`No contractor found with User ID: ${finalContractorId}`);
+            console.warn('No contractor found by user_id. Trying by id...');
+
+            const fallbackResult = await supabase
+                .from("contractors")
+                .select("*, contractor_settings(*)")
+                .eq("id", finalContractorId)
+                .maybeSingle();
+
+            if (fallbackResult.error) {
+                console.error('Error fetching contractor by id:', fallbackResult.error);
+                throw new Error(`Failed to fetch contractor by id: ${fallbackResult.error.message}`);
             }
-            
-            console.log('Successfully fetched contractor:', data);
+
+            if (!fallbackResult.data) {
+                console.error('No contractor found with user_id or id:', finalContractorId);
+                throw new Error(`No contractor found with user_id or id: ${finalContractorId}`);
+            }
+
+            console.log('Successfully fetched contractor by id:', fallbackResult.data);
+            return fallbackResult.data;
+            }
+
+            console.log('Successfully fetched contractor by user_id:', data);
             return data;
         },
         enabled: isValidUUID(finalContractorId),
         retry: (failureCount, error) => {
-            // Don't retry if contractor doesn't exist
             if (error?.message?.includes('No contractor found')) {
-                return false;
+            return false;
             }
-            // Retry up to 2 times for other errors
             return failureCount < 2;
         },
         staleTime: 5 * 60 * 1000, // 5 minutes
     });
+
 
     // Always use the final contractor ID for the estimate config
     const estimateConfig: EstimateConfig = {
