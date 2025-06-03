@@ -398,19 +398,44 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         }
 
         const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+                  console.log('User logged innnnnnnnnnnnnnnnnnnnnnn', user);
+
         
         if (authError) {
           console.error('Error checking authentication:', authError);
         }
+
+
         
-        if (user) {
+        if (user && user !== null) {
           console.log('User logged in, skipping invoice generation');
-          const {data: usageData} = await supabase
-                                            .from('contractors')
-                                            .update({
-                                              usage: ((lead.estimate_data.tokenUsage.totalTokens/1000) * 2 * 0.01) + 0.10,
-                                            }).eq('id', emailData.id);
-          
+
+          // Step 1: Fetch current usage
+          const { data: currentData, error: fetchError } = await supabase
+            .from('contractors')
+            .select('usage')
+            .eq('id', emailData?.id)
+            .single();
+
+          if (fetchError) {
+            console.error('Error fetching current usage:', fetchError);
+            return;
+          }
+
+          const currentUsage = currentData?.usage || 0;
+          const additionalUsage = ((lead.estimate_data.tokenUsage.totalTokens / 1000) * 2 * 0.01) + 0.10;
+          const newUsage = currentUsage + additionalUsage;
+
+          // Step 2: Update usage
+          const { data: usageData, error: updateError } = await supabase
+            .from('contractors')
+            .update({ usage: newUsage })
+            .eq('id', emailData?.id);
+
+          if (updateError) {
+            console.error('Error updating usage:', updateError);
+          }
         }
       
         console.log('User is logged in, generating invoice for user:', user.id);
