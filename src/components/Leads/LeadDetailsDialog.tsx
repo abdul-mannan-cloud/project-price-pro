@@ -808,7 +808,7 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
                         onEstimateChange={handleEstimateChange}
                         contractor={contractor}
                         contractorParam={contractor?.id}
-                        handleRefreshEstimate={() => refetchLead()}
+                        handleRefreshEstimate={() => handleRefreshEstimate()}
                         leadId={lead.id}
                         handleContractSign={() => setShowContractorSignatureDialog(true)}
                         isLeadPage={true} // Explicitly set this to true for the lead details page
