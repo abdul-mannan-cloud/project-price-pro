@@ -161,6 +161,12 @@ export const UsageSettings = ({ contractor }) => {
       </div>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
+          <p className="text-sm font-medium text-muted-foreground">AI Usage</p>
+          <span className="font-semibold">${contractor?.usage || 0.00}</span> 
+        </div>
+      </div>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
           <p className="text-sm font-medium text-muted-foreground">Payment Methods</p>
           <button
             onClick={() => handleAddPaymentMethod()}
