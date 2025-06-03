@@ -343,6 +343,37 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     }
   };
 
+  const handleUsageInvoice = async (contractor, totalCost) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-invoice', {
+        body: {
+          customerId: contractor?.stripe_customer_id,
+          description: 'New lead service fee',
+          items: [
+            { amount: Math.round((totalCost * 100)), description: 'Service charges' },
+          ],
+          metadata: {
+            plan: 'standard',
+            source: 'website',
+            userId: contractor.id 
+          }
+        }
+      });
+      
+      if (error) {
+        throw new Error(error.message || "Failed to generate invoice");
+        return false;
+      }
+      
+      console.log('Invoice generated successfully:', data);
+      return true;
+      
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      throw error;
+    }
+  };
+
   const checkEstimateStatus = async (leadId: string, skip: boolean = false, pdfBase64?: string): Promise<boolean> => {
     const { data: lead, error } = await supabase
         .from('leads')
@@ -399,14 +430,10 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-                  console.log('User logged innnnnnnnnnnnnnnnnnnnnnn', user);
-
         
         if (authError) {
           console.error('Error checking authentication:', authError);
         }
-
-
         
         if (user && user !== null) {
           console.log('User logged in, skipping invoice generation');
@@ -427,25 +454,37 @@ export const useEstimateFlow = (config: EstimateConfig) => {
           const additionalUsage = ((lead.estimate_data.tokenUsage.totalTokens / 1000) * 2 * 0.01) + 0.10;
           const newUsage = currentUsage + additionalUsage;
 
-          // Step 2: Update usage
-          const { data: usageData, error: updateError } = await supabase
-            .from('contractors')
-            .update({ usage: newUsage })
-            .eq('id', emailData?.id);
+          if (newUsage > 5) {
+            const result = handleUsageInvoice(emailData, newUsage);
+            if (result) {
+              const { data: usageData, error: updateError } = await supabase
+              .from('contractors')
+              .update({ usage: 0.00 })
+              .eq('id', emailData?.id);  
+            } else {
+              const { data: usageData, error: updateError } = await supabase
+              .from('contractors')
+              .update({ usage: newUsage })
+              .eq('id', emailData?.id);
+            }
+          } else {
+            // Step 2: Update usage
+            const { data: usageData, error: updateError } = await supabase
+              .from('contractors')
+              .update({ usage: newUsage })
+              .eq('id', emailData?.id);
 
-          if (updateError) {
-            console.error('Error updating usage:', updateError);
+            if (updateError) {
+              console.error('Error updating usage:', updateError);
+            }
           }
         }
-      
-        console.log('User is logged in, generating invoice for user:', user.id);
 
         if (remainingFee > 0 && !user) {
           handleGenerateInvoice(emailData, remainingFee);
         }
       }
 
-      // Send email notification to contractor
       const { error: emailError1 } = await supabase.functions.invoke('send-contractor-notification', {
         body: {
           estimate: {
