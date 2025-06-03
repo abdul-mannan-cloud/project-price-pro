@@ -391,7 +391,44 @@ export const EstimateDisplay = ({
           }
         }
 
-        if (remainingFee > 0) {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+                
+        if (authError) {
+          console.error('Error checking authentication:', authError);
+        }
+        
+        if (user) {
+          console.log('User logged in, skipping invoice generation');
+
+          const { data: currentData, error: fetchError } = await supabase
+            .from('contractors')
+            .select('usage')
+            .eq('id', contractor?.id)
+            .single();
+
+          if (fetchError) {
+            console.error('Error fetching current usage:', fetchError);
+            return;
+          }
+
+          const currentUsage = currentData?.usage || 0;
+          const additionalUsage = 0.10;
+          const newUsage = currentUsage + additionalUsage;
+
+          const { data: usageData, error: updateError } = await supabase
+            .from('contractors')
+            .update({ usage: newUsage })
+            .eq('id', contractor?.id);
+
+          if (updateError) {
+            console.error('Error updating usage:', updateError);
+          }
+        }
+
+      
+        console.log('User is logged in, generating invoice for user:', user.id);
+
+        if (remainingFee > 0 && !user) {
           handleGenerateInvoice(contractor, remainingFee);
         }
       }
