@@ -1,8 +1,7 @@
 import { NavBar } from "@/components/ui/tubelight-navbar";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useLayoutEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { LayoutDashboard, Users, Settings, Copy, LineChart, FileText, Bell, History, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,69 @@ import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Spinner from "@/components/ui/spinner";
+import { useQuery, useIsFetching } from "@tanstack/react-query";
+import { createPortal } from "react-dom";
+
+// Pre-loader component that renders to document.body
+const PreLoader = ({ show }: { show: boolean }) => {
+  if (!show) return null;
+
+  return createPortal(
+    <div 
+      id="dash-preloader"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backdropFilter: 'blur(4px)',
+        background: 'rgba(0, 0, 0, 0.30)',
+        zIndex: 9999,
+      }}
+    >
+      <div 
+        style={{
+          background: 'rgba(255, 255, 255, 0.80)',
+          padding: '24px 32px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 10px rgba(0,0,0,.15)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          alignItems: 'center',
+          fontFamily: 'system-ui, sans-serif',
+        }}
+      >
+        <svg 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2"
+          style={{
+            width: '24px',
+            height: '24px',
+            animation: 'spin 1s linear infinite',
+            color: '#2563eb',
+          }}
+        >
+          <circle cx="12" cy="12" r="10" strokeLinecap="round" />
+        </svg>
+        <p style={{ margin: 0, fontWeight: '600', color: '#2563eb' }}>
+          Please wait&hellip; loading your dashboard
+        </p>
+      </div>
+      <style>
+        {`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+    </div>,
+    document.body
+  );
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -19,6 +81,11 @@ const Dashboard = () => {
   const [isCopyingUrl, setIsCopyingUrl] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [contractorId, setContractorId] = useState<string | null>(null);
+  const [showPreLoader, setShowPreLoader] = useState(true);
+  const [isReady, setIsReady] = useState(false);
+
+  const globalFetching = useIsFetching();
+  const showOverlay = globalFetching > 0 && !isReady;
 
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -41,18 +108,16 @@ const Dashboard = () => {
         return;
       }
 
-      try{
-
-      const contractorId = await supabase.from("contractors").select("id").eq("user_id", user.id).single();
-      setContractorId(contractorId?.data.id);
-
-        } catch (error) {
-            console.error('Error fetching contractor:', error); // Debug log
-            throw error;
+      try {
+        const contractorId = await supabase.from("contractors").select("id").eq("user_id", user.id).single();
+        setContractorId(contractorId?.data.id);
+      } catch (error) {
+        console.error('Error fetching contractor:', error);
+        throw error;
       }
 
       setUserId(user.id);
-      console.log('Set user ID:', user.id); // Debug log
+      console.log('Set user ID:', user.id);
     };
     
     checkAuth();
@@ -62,7 +127,7 @@ const Dashboard = () => {
     queryKey: ["contractor", userId],
     queryFn: async () => {
       if (!userId) return null;
-      console.log('Fetching contractor data for ID:', userId); // Debug log
+      console.log('Fetching contractor data for ID:', userId);
 
       const { data, error } = await supabase
         .from("contractors")
@@ -71,11 +136,11 @@ const Dashboard = () => {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching contractor:', error); // Debug log
+        console.error('Error fetching contractor:', error);
         throw error;
       }
       if (!data) {
-        console.log('No contractor data found, redirecting to onboarding'); // Debug log
+        console.log('No contractor data found, redirecting to onboarding');
         navigate("/onboarding");
         return null;
       }
@@ -92,7 +157,7 @@ const Dashboard = () => {
     queryKey: ["leads", userId],
     queryFn: async () => {
       if (!userId) {
-        console.error('No user ID available for leads query'); // Debug log
+        console.error('No user ID available for leads query');
         throw new Error("No user ID available");
       }
 
@@ -112,6 +177,17 @@ const Dashboard = () => {
     },
   });
 
+  // Check if everything is ready and hide pre-loader
+  useEffect(() => {
+    if (!isContractorLoading && contractor && !globalFetching) {
+      setIsReady(true);
+      // Hide pre-loader after a brief delay to ensure smooth transition
+      setTimeout(() => {
+        setShowPreLoader(false);
+      }, 100);
+    }
+  }, [isContractorLoading, contractor, globalFetching]);
+
   useEffect(() => {
     if (isLeadsError) {
       toast({
@@ -130,13 +206,13 @@ const Dashboard = () => {
       if (!effectiveContractorId) {
         throw new Error('No contractor ID available');
       }
-      console.log('Using contractor ID for link:', effectiveContractorId); // Debug log
+      console.log('Using contractor ID for link:', effectiveContractorId);
       const longUrl = `${baseUrl}/estimate/${effectiveContractorId}`;
       
       const { data, error } = await supabase.functions.invoke('shorten-url', {
         body: { 
           longUrl,
-          contractorId: effectiveContractorId // Pass contractor ID explicitly
+          contractorId: effectiveContractorId
         }
       });
 
@@ -173,13 +249,9 @@ const Dashboard = () => {
     }
   };
 
-  if (isContractorLoading) {
-    return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        {/* <div className="text-lg">Loading...</div> */}
-        <Spinner />
-      </div>
-    );
+  // Show pre-loader while loading
+  if (showPreLoader) {
+    return <PreLoader show={true} />;
   }
 
   if (!contractor) return null;
