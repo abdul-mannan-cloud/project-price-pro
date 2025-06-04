@@ -1,5 +1,13 @@
+/* --------------------------------------------------------------------------
+   src/pages/Leads.tsx   – drop-in replacement
+   ────────────────────────────────────────────────────────────────────────── */
+
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { toast } from "@/hooks/use-toast";
@@ -16,35 +24,42 @@ const Leads = () => {
   const navigate = useNavigate();
   const [contractorId, setContractorId] = useState<string | null>(null);
 
+  /* ── top nav items ──────────────────────────────────────────────── */
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { name: "Leads", url: "/leads", icon: Users },
-    { name: "Settings", url: "/settings", icon: Settings }
+    { name: "Settings", url: "/settings", icon: Settings },
   ];
 
-  // Check authentication status and get contractor ID
+  /* ── auth & contractorId ────────────────────────────────────────── */
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
         if (!user) {
           navigate("/login");
           toast({
             title: "Authentication required",
             description: "Please log in to view leads.",
-            variant: "destructive"
+            variant: "destructive",
           });
-        } else {
-          const contractor = await supabase
-            .from("contractors")
-            .select("id")
-            .eq("user_id", user.id)
-            .single();
-          setContractorId(contractor.data.id);
-          console.log('Set contractor ID:', user.id);
+          return;
         }
-      } catch (error) {
-        console.error("Auth error:", error);
+
+        const { data, error } = await supabase
+          .from("contractors")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (error || !data) throw error || new Error("No contractor");
+
+        setContractorId(data.id);
+      } catch (err) {
+        console.error("Auth error:", err);
         navigate("/login");
       }
     };
@@ -52,11 +67,14 @@ const Leads = () => {
     checkAuth();
   }, [navigate]);
 
-  const { data: leads = [], isLoading } = useQuery({
+  /* ── leads list ─────────────────────────────────────────────────── */
+  const {
+    data: leads = [],
+    isLoading,
+  } = useQuery({
     queryKey: ["leads", contractorId],
+    enabled: !!contractorId,
     queryFn: async () => {
-      if (!contractorId) throw new Error("No contractor ID available");
-
       const { data, error } = await supabase
         .from("leads")
         .select("*")
@@ -64,27 +82,65 @@ const Leads = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      
-      return (data || []).map(lead => ({
-        ...lead,
-        answers: lead.answers as { answers: Record<string, any> },
-        estimate_data: lead.estimate_data as EstimateData
-      })) as Lead[];
+
+      return (data || []).map(
+        (lead) =>
+          ({
+            ...lead,
+            answers: lead.answers as { answers: Record<string, any> },
+            estimate_data: lead.estimate_data as EstimateData,
+          }) as Lead,
+      );
     },
-    enabled: !!contractorId,
   });
 
-  const deleteLead = useMutation({
-    mutationFn: async (leadIds: string[]) => {
-      if (!contractorId) throw new Error("No contractor ID available");
+  /* ── realtime sync ─────────────────────────────────────────────── */
+  useEffect(() => {
+    if (!contractorId) return;
 
-      const { error } = await supabase
+    const channel = supabase
+      .channel(`leads-${contractorId}`)
+      .on(
+        "postgres_changes",
+        {
+          schema: "public",
+          table: "leads",
+          filter: `contractor_id=eq.${contractorId}`,
+        },
+        (payload) => {
+          queryClient.setQueryData<Lead[]>(
+            ["leads", contractorId],
+            (old = []) => {
+              switch (payload.eventType) {
+                case "INSERT":
+                  if (old.some((l) => l.id === payload.new.id)) return old;
+                  return [payload.new as Lead, ...old];
+                case "UPDATE":
+                  return old.map((l) =>
+                    l.id === payload.new.id ? (payload.new as Lead) : l,
+                  );
+                case "DELETE":
+                  return old.filter((l) => l.id !== payload.old.id);
+                default:
+                  return old;
+              }
+            },
+          );
+        },
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [contractorId, queryClient]);
+
+  /* ── mutations ──────────────────────────────────────────────────── */
+  const deleteLead = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await supabase
         .from("leads")
         .delete()
-        .in("id", leadIds)
-        .eq("contractor_id", contractorId); // Add contractor_id check for security
-
-      if (error) throw error;
+        .in("id", ids)
+        .eq("contractor_id", contractorId!);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads", contractorId] });
@@ -93,27 +149,21 @@ const Leads = () => {
         description: "The selected leads have been deleted successfully.",
       });
     },
-    onError: (error) => {
-      console.error('Delete error:', error);
+    onError: () =>
       toast({
         title: "Error",
         description: "Failed to delete leads. Please try again.",
         variant: "destructive",
-      });
-    },
+      }),
   });
 
   const updateLead = useMutation({
     mutationFn: async (lead: Lead) => {
-      if (!contractorId) throw new Error("No contractor ID available");
-
-      const { error } = await supabase
+      await supabase
         .from("leads")
         .update(lead)
         .eq("id", lead.id)
-        .eq("contractor_id", contractorId); // Add contractor_id check for security
-
-      if (error) throw error;
+        .eq("contractor_id", contractorId!);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads", contractorId] });
@@ -122,86 +172,60 @@ const Leads = () => {
         description: "The lead has been updated successfully.",
       });
     },
-    onError: (error) => {
-      console.error('Update error:', error);
+    onError: () =>
       toast({
         title: "Error",
         description: "Failed to update lead. Please try again.",
         variant: "destructive",
-      });
-    },
-  })
+      }),
+  });
+
+  /* ── helpers ───────────────────────────────────────────────────── */
+  const waitingForData = !contractorId || isLoading;
 
   const handleLeadClick = async (lead: Lead) => {
-    if (!contractorId) {
-      toast({
-        title: "Error",
-        description: "Contractor ID not available. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Ensure the lead has a contractor_id
-    if (!lead.contractor_id) {
-      const { error: updateError } = await supabase
+    if (!lead.contractor_id && contractorId) {
+      await supabase
         .from("leads")
         .update({ contractor_id: contractorId })
         .eq("id", lead.id);
-
-      if (updateError) {
-        console.error('Error updating lead with contractor_id:', updateError);
-      }
     }
-
     setSelectedLead(lead);
   };
 
-  const handleExport = (filteredLeads: Lead[]) => {
-    // TODO: Implement export functionality
+  const handleExport = () =>
     toast({
       title: "Export",
       description: "Export functionality will be implemented soon.",
     });
-  };
 
-  // if (isLoading) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center">
-  //       {/* <div className="text-lg">Loading...</div> */}
-  //       <Spinner />
-  //     </div>
-  //   )
-  // }
-
+  /* ── UI ─────────────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-secondary">
       <NavBar items={navItems} />
+
       <div className="container mx-auto py-8">
         <h1 className="text-2xl font-semibold mb-6">Leads</h1>
-        {
-          leads.length > 0 ? 
+
+        {waitingForData ? (
+          <div className="h-[60vh] flex items-center justify-center">
+            <Spinner />
+          </div>
+        ) : leads.length ? (
           <LeadsTable
             leads={leads}
-            updateLead={(lead)=> updateLead.mutate(lead)}
+            updateLead={(lead) => updateLead.mutate(lead)}
             onLeadClick={handleLeadClick}
-            onDeleteLeads={(leadIds) => deleteLead.mutate(leadIds)}
+            onDeleteLeads={(ids) => deleteLead.mutate(ids)}
             onExport={handleExport}
-          /> : isLoading ? 
-          <div className="min-h-screen flex items-center justify-center">
-            {/* <div className="text-lg">Loading...</div> */}
-            <Spinner />
-          </div> : <div className="w-full h-full flex text-center justify-center items-center align-middle">
-            <p className="text-primary text-xl font-semibold">There are no leads yet!</p>
+          />
+        ) : (
+          <div className="h-[60vh] flex items-center justify-center">
+            <p className="text-primary text-xl font-semibold">
+              There are no leads yet!
+            </p>
           </div>
-        }
-        {/* <LeadsTable
-          leads={leads}
-          updateLead={(lead)=> updateLead.mutate(lead)}
-          onLeadClick={handleLeadClick}
-          onDeleteLeads={(leadIds) => deleteLead.mutate(leadIds)}
-          onExport={handleExport}
-        /> */}
+        )}
       </div>
 
       <LeadDetailsDialog
