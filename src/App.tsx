@@ -1,4 +1,5 @@
 import {BrowserRouter, Routes, Route, Navigate, useParams} from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,6 +105,7 @@ function GlobalBrandingLoader() {
 function App() {
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
   const {contractorId} = useParams()
+  const navigate = useNavigate();
 
   console.log('contractor parameter id:', contractorId)
 
@@ -135,6 +137,13 @@ function App() {
     </div>
   )
 
+  useEffect(() => {
+    const currentHost = window.location.hostname;
+    if (currentHost === 'reliablepro.ai') {
+      navigate('/estimate/82499c2f-960f-4042-b277-f86ea2d99929', { replace: true });
+    }
+  }, [navigate]);
+  
   return (
     <QueryClientProvider client={queryClient}>
       <ContractorProvider>
