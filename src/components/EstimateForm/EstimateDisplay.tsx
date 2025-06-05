@@ -143,6 +143,9 @@ export const EstimateDisplay = ({
   const isMobile = useMediaQuery("(max-width: 640px)");
   const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)");
  const [leadSigEnabled, setLeadSigEnabled] = useState(signatureEnabled);
+ // ── keep toggle state in-sync with new data ──────────────────────────
+
+
 
   const toggleLeadSignature = async (checked: boolean) => {
     if (!leadId) return;
@@ -290,6 +293,17 @@ export const EstimateDisplay = ({
   });
 
   // Update signature state when fetching lead data
+  // ── place directly AFTER the `useQuery` that defines leadData ──────────
+useEffect(() => {
+  if (leadData?.signature_enabled !== undefined) {
+    setLeadSigEnabled(leadData.signature_enabled);
+  }
+}, [leadData?.signature_enabled]);
+
+useEffect(() => {
+  setLeadSigEnabled(signatureEnabled);
+}, [signatureEnabled]);
+
   useEffect(() => {    
     if (leadData?.contractor_signature) {
       setSignature(leadData.contractor_signature);
