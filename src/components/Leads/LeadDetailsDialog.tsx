@@ -112,6 +112,78 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  // --- refresh-estimate -------------------------------------------------------
+//const [isRefreshingEstimate, setIsRefreshingEstimate] = useState(false);
+
+/**
+ * Ask the edge-function to rebuild the estimate, then pull the fresh row
+ */
+const [isRefreshingEstimate, setIsRefreshingEstimate] = useState(false);
+
+// check poll-status exactly like useEstimateFlow does
+const waitForEstimateReady = async (
+  leadId: string,
+  maxAttempts = 10,
+  sleep = 3000
+) => {
+  let count = 0;
+  while (count < maxAttempts) {
+    const { data, error } = await supabase
+      .from("leads")
+      .select("status, estimate_data")
+      .eq("id", leadId)
+      .maybeSingle();
+    if (error) throw error;
+    if (data?.status === "complete" && data.estimate_data) return true;
+    await new Promise((r) => setTimeout(r, sleep));
+    count++;
+  }
+  return false;
+};
+
+/**
++ * Same refresh routine that EstimatePage uses
++ */
+const refreshEstimate = async (leadId: string) => {
+  if (!leadId) return;
+  setIsRefreshingEstimate(true);
+
+  try {
+    toast({ title: "Refreshing", description: "Generating a new estimate…" });
+
+    // kick off the edge-function
+    const { error } = await supabase.functions.invoke("generate-estimate", {
+      body: { leadId, contractorId: effectiveContractorId },
+    });
+    if (error) throw error;
+
+    // wait until the row flips back to “complete”
+    const ready = await waitForEstimateReady(leadId);
+    if (!ready) {
+      toast({
+        title: "Still working",
+       description:
+          "Generation is taking longer than usual – try again in a minute.",
+      });
+    }
+
+    await refetchLead(); // pull the fresh data into the UI
+
+    toast({
+      title: "Estimate updated",
+      description: "The latest numbers are now showing.",
+    });
+  } catch (err) {
+    console.error(err);
+    toast({
+      title: "Error",
+      description: "Could not refresh estimate – please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsRefreshingEstimate(false);
+  }
+};
   // State for estimate locking
   //const [isEstimateLocked, setIsEstimateLocked] = useState(false);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
@@ -827,7 +899,8 @@ const handleSaveEstimate = async () => {
         onEstimateChange={handleEstimateChange}
         contractor={contractor}
         contractorParam={contractor?.id}
-        handleRefreshEstimate={() => refetchLead()}
+       // handleRefreshEstimate={() => refetchLead()}
+       handleRefreshEstimate={refreshEstimate}
         leadId={lead.id}
         handleContractSign={() => lead.signature_enabled && setShowContractorSignatureDialog(true)}
         isLeadPage={true}
@@ -844,7 +917,11 @@ const handleSaveEstimate = async () => {
     )}
   </div>
 </div>
-
+ {isRefreshingEstimate && (
+   <div className="absolute inset-0 bg-background/70 flex items-center justify-center z-50">
+     <p className="animate-pulse text-sm">Refreshing estimate…</p>
+   </div>
+ )}
             {/* Bottom Action Bar */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">
               <div className="container max-w-6xl mx-auto">
@@ -869,6 +946,7 @@ const handleSaveEstimate = async () => {
             </div>
           </div>
         </DialogContent>
+        
       </Dialog>
 
       {/* Email Dialog */}
@@ -940,6 +1018,8 @@ const handleSaveEstimate = async () => {
         isContractorSignature={true} // Important: set to true for contractor signature
       />
 }
+
+
     </>
   );
 };
