@@ -168,7 +168,7 @@ export const EstimateDisplay = ({
       });
     } else {
       setLeadSigEnabled(checked);
-      handleRefreshEstimate(leadId);          // re-fetch
+      //handleRefreshEstimate(leadId);          // re-fetch
       toast({
         title: "Updated",
         description: `Signature section ${
