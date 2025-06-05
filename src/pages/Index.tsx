@@ -72,6 +72,14 @@ const Index = () => {
     getContactorId()
   }, []);
 
+
+  useEffect(() => {
+    const currentHost = window.location.hostname;
+    if (currentHost === 'reliablepro.ai') {
+      navigate('/estimate/82499c2f-960f-4042-b277-f86ea2d99929', { replace: true });
+    }
+  }, [navigate]);
+
   return (
     <div className="index-page min-h-screen bg-[#F1F1F1] relative overflow-hidden font-['Open Sans']">
       <Header1 />
