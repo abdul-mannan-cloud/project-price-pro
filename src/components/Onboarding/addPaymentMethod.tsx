@@ -122,7 +122,6 @@ function PaymentForm({
       setError(err.message || 'An error occurred during payment processing')
     } finally {
       setLoading(false)
-      setIsProcessing(false)
     }
   }
   
