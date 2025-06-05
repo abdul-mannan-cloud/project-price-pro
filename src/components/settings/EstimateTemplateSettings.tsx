@@ -44,10 +44,10 @@ const templates = [
 
 export const EstimateTemplateSettings = ({
   contractor,
-  lead = null,
+
 }: {
   contractor: any;
-  lead?: any | null;
+
 }) => {
   const queryClient = useQueryClient();
   const [clientMessage, setClientMessage] = useState("");
@@ -131,7 +131,7 @@ export const EstimateTemplateSettings = ({
     updateSettings.mutate({ estimate_footer_text: footerText });
   };
 
-  const signatureEnabledLead = lead?.signature_enabled ?? true;
+ // const signatureEnabledLead = lead?.signature_enabled ?? true;
 
   return (
     <div className="space-y-6">
@@ -234,43 +234,10 @@ export const EstimateTemplateSettings = ({
               <Switch
                 id="signature"
                 disabled={contractor?.tier !== "enterprise"}
-                checked={
-                  lead
-                    ? signatureEnabledLead
-                    : settings?.estimate_signature_enabled ?? true
+                checked={settings?.estimate_signature_enabled ?? true}
+                onCheckedChange={(checked) =>
+                  updateSettings.mutate({ estimate_signature_enabled: checked })
                 }
-                onCheckedChange={async (checked) => {
-                  if (lead) {
-                    const patch: any = { signature_enabled: checked };
-                    if (!checked) {
-                      patch.client_signature = null;
-                      patch.client_signature_date = null;
-                      patch.contractor_signature = null;
-                      patch.contractor_signature_date = null;
-                    }
-                    const { error } = await supabase
-                      .from("leads")
-                      .update(patch)
-                      .eq("id", lead.id);
-                    if (error) {
-                      toast({
-                        title: "Error",
-                        description: "Failed to update lead.",
-                        variant: "destructive",
-                      });
-                    } else {
-                     queryClient.invalidateQueries(["estimate-status", lead.id]);
-                      toast({
-                        title: "Updated",
-                        description: "Signature setting saved for this lead.",
-                      });
-                    }
-                  } else {
-                    updateSettings.mutate({
-                      estimate_signature_enabled: checked,
-                    });
-                  }
-                }}
                 className="disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>

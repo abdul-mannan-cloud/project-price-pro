@@ -584,8 +584,9 @@ export const EstimateDisplay = ({
     estimate_hide_subtotals: false,
     estimate_compact_view: true
   };
-const perLeadSignatureEnabled = leadData?.signature_enabled ?? true;
-  const signaturesOn = templateSettings.estimate_signature_enabled && perLeadSignatureEnabled;
+//const perLeadSignatureEnabled = leadData?.signature_enabled ?? true;
+ // const signaturesOn = templateSettings.estimate_signature_enabled && perLeadSignatureEnabled;
+ const signaturesOn = templateSettings.estimate_signature_enabled;
   const styles = getTemplateStyles(templateSettings.estimate_template_style);
 
   // Show loading if we're waiting for contractor data
