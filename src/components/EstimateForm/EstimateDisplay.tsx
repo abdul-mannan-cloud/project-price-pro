@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, MinusCircle, Save } from "lucide-react";
-
+import { Switch } from "@/components/ui/switch"
 export interface LineItem {
   title: string;
   description?: string;
@@ -142,7 +142,38 @@ export const EstimateDisplay = ({
   // Check if the screen is mobile-sized
   const isMobile = useMediaQuery("(max-width: 640px)");
   const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)");
+ const [leadSigEnabled, setLeadSigEnabled] = useState(signatureEnabled);
 
+  const toggleLeadSignature = async (checked: boolean) => {
+    if (!leadId) return;
+    const patch: any = { signature_enabled: checked };
+    if (!checked) {
+      patch.client_signature = null;
+      patch.client_signature_date = null;
+      patch.contractor_signature = null;
+      patch.contractor_signature_date = null;
+    }
+    const { error } = await supabase
+      .from("leads")
+      .update(patch)
+      .eq("id", leadId);
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update lead.",
+        variant: "destructive",
+      });
+    } else {
+      setLeadSigEnabled(checked);
+      handleRefreshEstimate(leadId);          // re-fetch
+      toast({
+        title: "Updated",
+        description: `Signature section ${
+          checked ? "enabled" : "disabled"
+        } for this lead.`,
+      });
+    }
+  };
   // Update contractor state when prop changes
   useEffect(() => {
     if (contractorProp) {
@@ -586,7 +617,8 @@ export const EstimateDisplay = ({
   };
 //const perLeadSignatureEnabled = leadData?.signature_enabled ?? true;
  // const signaturesOn = templateSettings.estimate_signature_enabled && perLeadSignatureEnabled;
- const signaturesOn = templateSettings.estimate_signature_enabled;
+ const signaturesOn =  templateSettings.estimate_signature_enabled && leadSigEnabled;
+ //const signaturesOn = templateSettings.estimate_signature_enabled;
   const styles = getTemplateStyles(templateSettings.estimate_template_style);
 
   // Show loading if we're waiting for contractor data
@@ -883,7 +915,20 @@ export const EstimateDisplay = ({
               taxRate={settings?.tax_rate ?? 0}
             />
           )}
-
+{!isEditable && isLeadPage && contractor?.tier === "enterprise" && (
+            <div className="mt-4 flex items-center justify-end gap-4">
+              <div className="text-sm">
+                Enable signature section <br />
+                <span className="text-muted-foreground">
+                  (this lead only)
+                </span>
+              </div>
+              <Switch
+                checked={leadSigEnabled}
+                onCheckedChange={toggleLeadSignature}
+              />
+            </div>
+          )}
           {/* Cancel / Archive buttons */}
           {!isEditable && (onCancel || onArchive) && (
             <div className="mt-6 flex justify-end gap-2">
