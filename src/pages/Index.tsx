@@ -76,7 +76,7 @@ const Index = () => {
   useEffect(() => {
     const currentHost = window.location.hostname;
     if (currentHost === 'reliablepro.ai') {
-      navigate('/estimate/82499c2f-960f-4042-b277-f86ea2d99929', { replace: true });
+      navigate('/estimate/dabe7335-5617-4cad-8842-8de7a157704e', { replace: true });
     }
   }, [navigate]);
 
