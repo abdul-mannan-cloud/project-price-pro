@@ -313,42 +313,66 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     }
   };
 
-    const handleGenerateInvoice = async (contractor, totalCost) => {
-      try {        
-        const { data, error } = await supabase.functions.invoke('generate-invoice', {
-          body: {
-            customerId: contractor?.stripe_customer_id,
-            description: 'New lead service fee',
-            items: [
-              { amount: Math.round((totalCost*100) * 0.01 + 20 + 200), description: 'Service charges' },
-            ],
-            metadata: {
-              plan: 'standard',
-              source: 'website'
-            }
+  const handleGenerateInvoice = async (contractor, totalCost) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-invoice', {
+        body: {
+          customerId: contractor?.stripe_customer_id,
+          description: 'New lead service fee',
+          items: [
+            { amount: Math.round((totalCost * 100) * 0.01 + 10 ), description: 'Service charges' },
+          ],
+          metadata: {
+            plan: 'standard',
+            source: 'website',
+            userId: contractor.id 
           }
-        });
-        
-        if (error) {
-          throw new Error(error.message || "Failed to generate invoice");
         }
-  
-        // const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
-        //   body: {
-        //     customerId: contractor?.stripe_customer_id,
-        //     limit: 10,
-        //     offset: 0
-        //   }
-        // });
-        
-        // if (refreshData?.success) {
-        //   setInvoices(refreshData.invoices || []);
-        // }
-        
-      } catch (error) {
-        console.error('Error generating invoice:', error);
+      });
+      
+      if (error) {
+        throw new Error(error.message || "Failed to generate invoice");
       }
-    };
+      
+      console.log('Invoice generated successfully:', data);
+      return data;
+      
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      throw error;
+    }
+  };
+
+  const handleUsageInvoice = async (contractor, totalCost) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-invoice', {
+        body: {
+          customerId: contractor?.stripe_customer_id,
+          description: 'New lead service fee',
+          items: [
+            { amount: Math.round((totalCost * 100)), description: 'Service charges' },
+          ],
+          metadata: {
+            plan: 'standard',
+            source: 'website',
+            userId: contractor.id 
+          }
+        }
+      });
+      
+      if (error) {
+        throw new Error(error.message || "Failed to generate invoice");
+        return false;
+      }
+      
+      console.log('Invoice generated successfully:', data);
+      return true;
+      
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      throw error;
+    }
+  };
 
   const checkEstimateStatus = async (leadId: string, skip: boolean = false, pdfBase64?: string): Promise<boolean> => {
     const { data: lead, error } = await supabase
@@ -393,7 +417,6 @@ export const useEstimateFlow = (config: EstimateConfig) => {
           const creditsToUse = Math.min(availableCredits, totalFee);
           remainingFee = totalFee - creditsToUse;
 
-          // Update contractor's cash credits
           const { error } = await supabase
             .from('contractors')
             .update({ cash_credits: availableCredits - creditsToUse })
@@ -405,12 +428,63 @@ export const useEstimateFlow = (config: EstimateConfig) => {
           }
         }
 
-        if (remainingFee > 0) {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        
+        if (authError) {
+          console.error('Error checking authentication:', authError);
+        }
+        
+        if (user && user !== null) {
+          console.log('User logged in, skipping invoice generation');
+
+          // Step 1: Fetch current usage
+          const { data: currentData, error: fetchError } = await supabase
+            .from('contractors')
+            .select('usage')
+            .eq('id', emailData?.id)
+            .single();
+
+          if (fetchError) {
+            console.error('Error fetching current usage:', fetchError);
+            return;
+          }
+
+          const currentUsage = currentData?.usage || 0;
+          const additionalUsage = ((lead.estimate_data.tokenUsage.totalTokens / 1000) * 2 * 0.01) + 0.10;
+          const newUsage = currentUsage + additionalUsage;
+
+          if (newUsage > 5) {
+            const result = handleUsageInvoice(emailData, newUsage);
+            if (result) {
+              const { data: usageData, error: updateError } = await supabase
+              .from('contractors')
+              .update({ usage: 0.00 })
+              .eq('id', emailData?.id);  
+            } else {
+              const { data: usageData, error: updateError } = await supabase
+              .from('contractors')
+              .update({ usage: newUsage })
+              .eq('id', emailData?.id);
+            }
+          } else {
+            // Step 2: Update usage
+            const { data: usageData, error: updateError } = await supabase
+              .from('contractors')
+              .update({ usage: newUsage })
+              .eq('id', emailData?.id);
+
+            if (updateError) {
+              console.error('Error updating usage:', updateError);
+            }
+          }
+        }
+
+        if (remainingFee > 0 && !user) {
           handleGenerateInvoice(emailData, remainingFee);
         }
       }
 
-      // Send email notification to contractor
       const { error: emailError1 } = await supabase.functions.invoke('send-contractor-notification', {
         body: {
           estimate: {

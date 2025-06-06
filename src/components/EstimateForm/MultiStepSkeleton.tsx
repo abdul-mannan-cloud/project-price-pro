@@ -1,10 +1,10 @@
 export const MultiStepSkeleton = () => {
   return (
-    <div className="animate-pulse bg-pink-100 min-h-screen">
+    <div className="animate-pulse min-h-screen">
       {/* Tab navigation */}
       <div className="flex px-4 py-2 border-b">
         <div className="flex-1 flex items-center">
-          <div className="h-4 w-24 bg-pink-300 rounded-full" />
+          <div className="h-4 w-24 rounded-full" />
         </div>
         <div className="flex-1 flex items-center justify-center">
           <div className="h-4 w-16 bg-gray-200 rounded-full" />
