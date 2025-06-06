@@ -56,8 +56,6 @@ const setColorVariables = (colors: { primary: string; secondary: string }) => {
 };
 
 function GlobalBrandingLoader({contractorId}) {
-
-
     useQuery({
         queryKey: ["globalBranding", contractorId],
         queryFn: async () => {
@@ -73,7 +71,6 @@ function GlobalBrandingLoader({contractorId}) {
                 return null;
             }
 
-
             const colors = contractor.branding_colors as { primary: string; secondary: string } | null;
             if (colors) {
                 setColorVariables(colors);
@@ -87,34 +84,39 @@ function GlobalBrandingLoader({contractorId}) {
 
 const EstimatePage = () => {
     const navigate = useNavigate();
-    const {contractorId} = useParams();
+    const {contractorId: urlContractorId} = useParams();
     const [isSpeechSupported, setIsSpeechSupported] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [authUserId, setAuthUserId] = useState<string | null>(null);
     const [isRefreshingEstimate, setIsRefreshingEstimate] = useState(false);
-    const {
-        updateContractorId,
-    } = useContractor();
+    const {updateContractorId} = useContractor();
 
-    useEffect(() => {
-        updateContractorId(contractorId);
-    }, []);
-
-    // Get the contractor ID from the URL first
-    const urlContractorId = (() => {
-        try {
-            if (!contractorId || contractorId === ":contractorId?" || contractorId === "undefined") {
-                return DEFAULT_CONTRACTOR_ID;
-            }
-
-            // Clean the ID without decoding/encoding
-            return isValidUUID(contractorId) ? contractorId : DEFAULT_CONTRACTOR_ID;
-
-        } catch (error) {
-            console.error('Error processing URL contractor ID:', error);
+    // Extract and validate contractor ID from URL
+    const getContractorIdFromUrl = (): string => {
+        // If no contractor ID in URL or it's a placeholder, use default
+        if (!urlContractorId || 
+            urlContractorId === ":contractorId?" || 
+            urlContractorId === "undefined" || 
+            urlContractorId === "null") {
+            console.log('No valid contractor ID in URL, using default:', DEFAULT_CONTRACTOR_ID);
             return DEFAULT_CONTRACTOR_ID;
         }
-    })();
+
+        // Validate UUID format
+        if (!isValidUUID(urlContractorId)) {
+            console.log('Invalid UUID format in URL, using default:', DEFAULT_CONTRACTOR_ID);
+            return DEFAULT_CONTRACTOR_ID;
+        }
+
+        console.log('Valid contractor ID from URL:', urlContractorId);
+        return urlContractorId;
+    };
+
+    const finalContractorId = getContractorIdFromUrl();
+
+    useEffect(() => {
+        updateContractorId(finalContractorId);
+    }, [finalContractorId, updateContractorId]);
 
     // Get the authenticated user's contractor ID for comparison only
     const {data: authenticatedContractor} = useQuery({
@@ -137,37 +139,71 @@ const EstimatePage = () => {
         },
     });
 
-    // Always use the URL contractor ID for the estimate config
+    // Fetch contractor data from Supabase using the extracted ID
+    const {
+        data: contractor,
+        isLoading: isContractorLoading,
+        error: contractorError,
+        } = useQuery({
+        queryKey: ["contractor", finalContractorId],
+        queryFn: async () => {
+            console.log('Fetching contractor settings for ID:', finalContractorId);
+
+            let { data, error } = await supabase
+            .from("contractors")
+            .select("*, contractor_settings(*)")
+            .eq("user_id", finalContractorId)
+            .maybeSingle();
+
+            if (error) {
+            console.error('Error fetching contractor by user_id:', error);
+            throw new Error(`Failed to fetch contractor by user_id: ${error.message}`);
+            }
+
+            if (!data) {
+            console.warn('No contractor found by user_id. Trying by id...');
+
+            const fallbackResult = await supabase
+                .from("contractors")
+                .select("*, contractor_settings(*)")
+                .eq("id", finalContractorId)
+                .maybeSingle();
+
+            if (fallbackResult.error) {
+                console.error('Error fetching contractor by id:', fallbackResult.error);
+                throw new Error(`Failed to fetch contractor by id: ${fallbackResult.error.message}`);
+            }
+
+            if (!fallbackResult.data) {
+                console.error('No contractor found with user_id or id:', finalContractorId);
+                throw new Error(`No contractor found with user_id or id: ${finalContractorId}`);
+            }
+
+            console.log('Successfully fetched contractor by id:', fallbackResult.data);
+            return fallbackResult.data;
+            }
+
+            console.log('Successfully fetched contractor by user_id:', data);
+            return data;
+        },
+        enabled: isValidUUID(finalContractorId),
+        retry: (failureCount, error) => {
+            if (error?.message?.includes('No contractor found')) {
+            return false;
+            }
+            return failureCount < 2;
+        },
+        staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+
+
+    // Always use the final contractor ID for the estimate config
     const estimateConfig: EstimateConfig = {
-        contractorId: urlContractorId,
+        contractorId: contractor?.id,
         isPreview: false,
         allowSignature: true,
         showSubtotals: true
     };
-
-    const {data: contractor, isLoading: isContractorLoading} = useQuery({
-        queryKey: ["contractor", urlContractorId],
-        queryFn: async () => {
-            console.log('Fetching contractor settings for ID:', urlContractorId);
-            const {data, error} = await supabase
-                .from("contractors")
-                .select("*, contractor_settings(*)")
-                .eq("id", urlContractorId)
-                .maybeSingle();
-
-            if (error) {
-                console.error('Error fetching contractor:', error);
-                throw error;
-            }
-            if (!data) {
-                console.error('No contractor found with ID:', urlContractorId);
-                throw new Error("Contractor not found");
-            }
-            return data;
-        },
-        enabled: isValidUUID(urlContractorId),
-        retry: false
-    });
 
     const {
         stage,
@@ -222,7 +258,7 @@ const EstimatePage = () => {
                 const excludedCategoriesData = await supabase
                     .from('contractor_settings')
                     .select('excluded_categories')
-                    .eq('id', urlContractorId)
+                    .eq('id', contractor?.id)
                     .single()
 
                 const excludedCategories = excludedCategoriesData.data?.excluded_categories || [];
@@ -247,7 +283,6 @@ const EstimatePage = () => {
                 }
 
                 console.log('excludedCategories', excludedCategories);
-
                 setCategories(transformedCategories);
             } catch (error) {
                 console.error('Error loading categories:', error);
@@ -257,16 +292,14 @@ const EstimatePage = () => {
         };
 
         loadCategories();
-    }, []);
+    }, [contractor?.id, setCategories, setIsLoading]);
 
     useEffect(() => {
         const isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
         setIsSpeechSupported(isSupported);
     }, []);
 
-
-
-    // Show loading state if contractor data is loading
+    // Handle contractor loading states and errors
     if (isContractorLoading) {
         return (
             <div className="min-h-screen bg-gray-100">
@@ -278,80 +311,97 @@ const EstimatePage = () => {
         );
     }
 
+    if (contractorError || !contractor) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="text-center p-8">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Contractor Not Found</h2>
+                    <p className="text-gray-600 mb-6">
+                        The contractor with ID "{finalContractorId}" could not be found.
+                    </p>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                        Go to Home
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>
-            <GlobalBrandingLoader contractorId={urlContractorId}/>
+            <GlobalBrandingLoader contractorId={contractor?.id}/>
             <div className="min-h-screen bg-secondary">
-                {(
-                    <div className="sticky top-0 z-[10000] w-full bg-white border-b border-gray-200 shadow-sm">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <div className="flex justify-between items-center py-4">
-                                {/* Logo and Business Name */}
-                                <div className="flex items-center space-x-3">
-                                    {contractor.business_logo_url && <div
-                                        className="flex-shrink-0 h-12 w-12 rounded-full overflow-hidden border border-gray-100 shadow-sm">
-                                        <img
-                                            src={contractor.business_logo_url}
-                                            className="w-full h-full object-cover"
-                                            alt={`${contractor.business_name} logo`}
-                                        />
-                                    </div>}
-                                    <div>
-                                        <h1 className="text-lg md:text-xl font-bold text-gray-900">{contractor.business_name}</h1>
-                                        <p className="text-xs text-gray-500 hidden sm:block">Professional Contractor</p>
-                                    </div>
+                <div className="sticky top-0 z-[10000] w-full bg-white border-b border-gray-200 shadow-sm">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex justify-between items-center py-4">
+                            {/* Logo and Business Name */}
+                            <div className="flex items-center space-x-3">
+                                {contractor?.business_logo_url && <div
+                                    className="flex-shrink-0 h-12 w-12 rounded-full overflow-hidden border border-gray-100 shadow-sm">
+                                    <img
+                                        src={contractor?.business_logo_url}
+                                        className="w-full h-full object-cover"
+                                        alt={`${contractor?.business_name} logo`}
+                                    />
+                                </div>}
+                                <div>
+                                    <h1 className="text-lg md:text-xl font-bold text-gray-900">{contractor?.business_name}</h1>
+                                    <p className="text-xs text-gray-500 hidden sm:block">Professional Contractor</p>
                                 </div>
+                            </div>
 
-                                {/* Contact Information */}
-                                <div className="hidden md:flex items-center space-x-8">
-                                    <div className="flex items-center space-x-2">
-                                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                                                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500">Phone</p>
-                                            <p className="text-sm font-medium">{contractor.contact_phone}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center space-x-2">
-                                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                                                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500">Email</p>
-                                            <p className="text-sm font-medium">{contractor.contact_email}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Mobile Contact Information */}
-                                <div className="md:hidden flex space-x-2">
-                                    <a href={`tel:${contractor.contact_phone}`} className="p-2 rounded-full bg-primary text-white flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            {/* Contact Information */}
+                            <div className="hidden md:flex items-center space-x-8">
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" viewBox="0 0 20 20" fill="currentColor">
                                             <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                                         </svg>
-                                    </a>
-                                    <a href={`mailto:${contractor.contact_email}`} className="p-2 rounded-full bg-primary-100 text-primary flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500">Phone</p>
+                                        <p className="text-sm font-medium">{contractor?.contact_phone}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" viewBox="0 0 20 20" fill="currentColor">
                                             <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                                             <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                                         </svg>
-                                    </a>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500">Email</p>
+                                        <p className="text-sm font-medium">{contractor?.contact_email}</p>
+                                    </div>
                                 </div>
+                            </div>
+
+                            {/* Mobile Contact Information */}
+                            <div className="md:hidden flex space-x-2">
+                                <a href={`tel:${contractor?.contact_phone}`} className="p-2 rounded-full bg-primary text-white flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                    </svg>
+                                </a>
+                                <a href={`mailto:${contractor?.contact_email}`} className="p-2 rounded-full bg-primary-100 text-primary flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                    </svg>
+                                </a>
                             </div>
                         </div>
                     </div>
-                )}
+                </div>
+                
                 <EstimateProgress stage={stage} progress={progress}/>
 
-                {isAuthenticated && authenticatedContractor?.id === urlContractorId && (
+                {isAuthenticated && authenticatedContractor?.id === contractor?.id && (
                     <div className="w-full border-b border-gray-200">
                         <div className="max-w-4xl mx-auto px-4 py-2">
                             <button
@@ -396,9 +446,9 @@ const EstimatePage = () => {
                             onComplete={handleQuestionComplete}
                             onProgressChange={progress => changeProgress(progress)}
                             contractor={contractor || undefined}
-                            contractorId={urlContractorId} // Pass contractorId
-                            projectDescription={projectDescription} // Pass projectDescription
-                            uploadedPhotos={uploadedPhotos} // Pass uploadedPhotos
+                            contractorId={contractor?.id}
+                            projectDescription={projectDescription}
+                            uploadedPhotos={uploadedPhotos}
                             uploadedImageUrl={uploadedImageUrl}
                             currentStageName={stage}
                         />
@@ -420,7 +470,7 @@ const EstimatePage = () => {
                                     isLoading={isGeneratingEstimate}
                                     projectImages={uploadedPhotos}
                                     leadId={currentLeadId}
-                                    contractorParam={contractorId}
+                                    contractorParam={urlContractorId}
                                     handleRefreshEstimate={handleRefreshEstimateWithLoading}
                                     handleContractSign={handleContractSign}
                                 />
@@ -436,7 +486,7 @@ const EstimatePage = () => {
                                         leadId={currentLeadId || undefined}
                                         estimate={estimate}
                                         contractor={contractor}
-                                        contractorId={urlContractorId}
+                                        contractorId={contractor?.id}
                                         onSkip={async () => {
                                             if (currentLeadId) {
                                                 await handleContactSubmit({}, true);

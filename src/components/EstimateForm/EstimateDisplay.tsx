@@ -270,6 +270,18 @@ export const EstimateDisplay = ({
     }
   }, [fetchedContractor, contractor]);
 
+
+  const {data: contractorSettings} = useQuery({
+    queryKey: ['contractor-settings'],
+    queryFn: async () => {
+      const {data, error} = await supabase.from("contractor_settings").select("*").eq("id", contractorId)
+      if (error) {
+        return null
+      }
+      return data;
+    }
+  })
+
   const { data: leadData } = useQuery({
     queryKey: ['estimate-status', leadId],
     queryFn: async () => {
@@ -424,29 +436,73 @@ useEffect(() => {
     }
   }, [contractorId, contractorParam]);
 
-  const handleGenerateInvoice = async (contractor: ContractorDisplay, totalCost: number) => {
-    try {        
-      const { data, error } = await supabase.functions.invoke('generate-invoice', {
-        body: {
-          customerId: contractor?.stripe_customer_id,
-          description: 'New lead service fee',
-          items: [
-            { amount: Math.round((totalCost*100) * 0.03 + 20 + 200), description: 'Service charges' },
-          ],
-          metadata: {
-            plan: 'standard',
-            source: 'website'
+  const handleGenerateInvoice = async (contractor, totalCost) => {
+        try {        
+          const { data, error } = await supabase.functions.invoke('generate-invoice', {
+            body: {
+              customerId: contractor?.stripe_customer_id,
+              description: 'New lead service fee',
+              items: [
+                { amount: Math.round((totalCost*100) * 0.03 + 20 + 200), description: 'Service charges' },
+              ],
+              metadata: {
+                plan: 'standard',
+                source: 'website'
+              }
+            }
+          });
+          
+          if (error) {
+            throw new Error(error.message || "Failed to generate invoice");
           }
+    
+          // const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
+          //   body: {
+          //     customerId: contractor?.stripe_customer_id,
+          //     limit: 10,
+          //     offset: 0
+          //   }
+          // });
+          
+          // if (refreshData?.success) {
+          //   setInvoices(refreshData.invoices || []);
+          // }
+          
+        } catch (error) {
+          console.error('Error generating invoice:', error);
         }
-      });
-      
-      if (error) {
-        throw new Error(error.message || "Failed to generate invoice");
-      }
-    } catch (error) {
-      console.error('Error generating invoice:', error);
-    }
-  };
+      };
+
+      const handleUsageInvoice = async (contractor, totalCost) => {
+          try {
+            const { data, error } = await supabase.functions.invoke('generate-invoice', {
+              body: {
+                customerId: contractor?.stripe_customer_id,
+                description: 'New lead service fee',
+                items: [
+                  { amount: Math.round((totalCost * 100)), description: 'Service charges' },
+                ],
+                metadata: {
+                  plan: 'standard',
+                  source: 'website',
+                  userId: contractor.id 
+                }
+              }
+            });
+            
+            if (error) {
+              throw new Error(error.message || "Failed to generate invoice");
+              return false;
+            }
+            
+            console.log('Invoice generated successfully:', data);
+            return true;
+            
+          } catch (error) {
+            console.error('Error generating invoice:', error);
+            throw error;
+          }
+        };
 
   const handleClientSignature = async (initials: string) => {
     setClientSignature(initials);
@@ -477,11 +533,62 @@ useEffect(() => {
         }
       }
 
-      if (remainingFee > 0) {
-        handleGenerateInvoice(contractor, remainingFee);
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+                
+        if (authError) {
+          console.error('Error checking authentication:', authError);
+        }
+        
+        if (user && user !== null) {
+          console.log('User logged in, skipping invoice generation');
+
+          const { data: currentData, error: fetchError } = await supabase
+            .from('contractors')
+            .select('usage')
+            .eq('id', contractor?.id)
+            .single();
+
+          if (fetchError) {
+            console.error('Error fetching current usage:', fetchError);
+            return;
+          }
+
+          const currentUsage = currentData?.usage || 0;
+          const additionalUsage = 0.10;
+          const newUsage = currentUsage + additionalUsage;
+
+          if (newUsage > 5) {
+            const result = handleUsageInvoice(contractor, newUsage);
+            if (result) {
+              const { data: usageData, error: updateError } = await supabase
+              .from('contractors')
+              .update({ usage: 0.00 })
+              .eq('id', contractor?.id);  
+            } else {
+              const { data: usageData, error: updateError } = await supabase
+              .from('contractors')
+              .update({ usage: newUsage })
+              .eq('id', contractor?.id);
+            }
+          } else {
+            const { data: usageData, error: updateError } = await supabase
+              .from('contractors')
+              .update({ usage: newUsage })
+              .eq('id', contractor?.id);
+            if (updateError) {
+              console.error('Error updating usage:', updateError);
+            }
+          }
+        }
+
+      
+        console.log('User is logged in, generating invoice for user:', user?.id);
+
+        if (remainingFee > 0 && !user) {
+          handleGenerateInvoice(contractor, remainingFee);
+        }
       }
-    }
-  };
+    };
 
   const handleLineItemChange = (
     groupIndex: number,
@@ -999,7 +1106,7 @@ useEffect(() => {
         isContractorSignature={false} // Set to false for clients in estimate page
       />
 
-      {isContractor && (
+      {settings?.estimate_signature_enabled && (
         <>
           {showSettings && (
             <SettingsDialog

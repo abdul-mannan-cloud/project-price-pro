@@ -161,6 +161,12 @@ export const UsageSettings = ({ contractor }) => {
       </div>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
+          <p className="text-sm font-medium text-muted-foreground">AI Usage</p>
+          <span className="font-semibold">${contractor?.usage || 0.00}</span> 
+        </div>
+      </div>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
           <p className="text-sm font-medium text-muted-foreground">Payment Methods</p>
           <button
             onClick={() => handleAddPaymentMethod()}
@@ -173,8 +179,7 @@ export const UsageSettings = ({ contractor }) => {
         {
           show && (
             <div className="p-4 bg-gray-50 rounded-md">
-              <h2 className="text-lg font-semibold">Add Payment Method</h2>
-                <AddPaymentMethod customerName={contractor.businessName} customerId={contractor.stripe_customer_id} clientSecret={clientSecret} setCurrentStep={() => {}} handleSubmit={() => {}} handleBack={handleCancel} setIsPaymentModalOpen={setShow}/>
+              <AddPaymentMethod customerName={contractor.businessName} customerId={contractor.stripe_customer_id} clientSecret={clientSecret} setCurrentStep={() => {}} handleSubmit={() => {}} handleBack={handleCancel} setIsPaymentModalOpen={setShow}/>
             </div>
           )
         }

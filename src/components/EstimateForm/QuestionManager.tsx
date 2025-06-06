@@ -116,6 +116,8 @@ export const QuestionManager = ({
             if ((displayQuestion.type !== 'single_choice' && displayQuestion.type !== 'multiple_choice')) {
                 hasAnswer = true;
             }
+
+            console.log('display question',displayQuestion,'currentAnswer',currentAnswer,'hasAnswer',hasAnswer);
     
             // Only proceed if we have an answer for the current question
             if (hasAnswer) {

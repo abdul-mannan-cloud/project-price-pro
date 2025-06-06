@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
@@ -11,6 +10,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
+
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -41,7 +42,7 @@ serve(async (req) => {
       throw new Error('leadId is required');
     }
 
-    const address  = requestData.address;
+    const address = requestData.address;
 
     // Get lead data first to find contractor_id if not provided
     const { data: lead, error: leadError } = await supabase
@@ -65,7 +66,6 @@ serve(async (req) => {
     // Use provided contractorId, fall back to lead's contractor_id, or use default
     const contractorId = requestData.contractorId || lead.contractor_id || DEFAULT_CONTRACTOR_ID;
 
-
     // Get contractor data
     const { data: contractor, error: contractorError } = await supabase
       .from('contractors')
@@ -76,7 +76,6 @@ serve(async (req) => {
       `)
       .eq('id', contractorId)
       .maybeSingle();
-
 
     if (contractorError) {
       console.error('Error fetching contractor:', contractorError);
@@ -92,8 +91,7 @@ serve(async (req) => {
     const { data: aiRates, error: ratesError } = await supabase
       .from('ai_rates')
       .select('*')
-      .eq('contractor_id', contractorId)
-      // .eq('type', (requestData.category || lead.category || '')?.toLowerCase() || '');
+      .eq('contractor_id', contractorId);
 
     if (ratesError) {
       console.error('Error fetching AI rates:', ratesError);
@@ -109,7 +107,7 @@ serve(async (req) => {
       aiRates: aiRates || [],
       contractor: {
         settings: contractor.contractor_settings,
-        businessAddress: contractor.business_address==""?requestData.address:contractor.business_address,
+        businessAddress: contractor.business_address == "" ? requestData.address : contractor.business_address,
         aiInstructions: contractor.ai_instructions || []
       }
     });
@@ -119,15 +117,14 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-
     console.log('Generating estimate with AI...');
     const aiResponse = await generateEstimate(
       context,
       requestData.imageUrl,
       openAIApiKey,
       signal,
-        requestData.projectDescription || lead.project_description,
-        requestData.category || lead.category
+      requestData.projectDescription || lead.project_description,
+      requestData.category || lead.category
     );
 
     console.log('Processing AI response...');
@@ -137,6 +134,16 @@ serve(async (req) => {
       requestData.projectDescription || lead.project_description
     );
 
+    // Parse the AI response to extract token usage
+    const aiResponseParsed = JSON.parse(aiResponse);
+    const tokenUsage = aiResponseParsed.tokenUsage;
+
+    if (tokenUsage) {
+      console.log('Total token usage for this request:', tokenUsage);
+      
+      // Add token usage to the estimate response
+      estimate.tokenUsage = tokenUsage;
+    }
 
     console.log('Updating lead with estimate...');
     await updateLeadWithEstimate(
@@ -145,7 +152,6 @@ serve(async (req) => {
       supabaseUrl,
       supabaseKey
     );
-
 
     console.log('Estimate generation completed successfully');
     return new Response(
