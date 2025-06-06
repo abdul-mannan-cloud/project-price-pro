@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, MinusCircle, Save } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+//import { EstimateProgress } from "./EstimateProgress";
 import { useQueryClient } from '@tanstack/react-query'
 export interface LineItem {
   title: string;
@@ -958,10 +959,26 @@ useEffect(() => {
         </div>
       )}
 
-      <Card className={cn(styles.card, isBlurred && "blur-md pointer-events-none", "max-w-full mx-auto overflow-hidden")}>
-        <div id="estimate-content" className="p-2 sm:p-4 md:p-6">
-          <div className={cn("flex flex-col sm:flex-row justify-between gap-4 sm:gap-2", isMobile ? "mb-4" : "")}>
-            <EstimateHeader contractor={contractor} styles={styles} />
+     <Card
+  className={cn(
+    styles.card,
+    isBlurred && "blur-md pointer-events-none",
+    "max-w-full mx-auto overflow-hidden"
+  )}
+>
+  <div id="estimate-content" className="p-2 sm:p-4 md:p-6">
+    <div
+      className={cn(
+        "flex flex-col sm:flex-row justify-between gap-4 sm:gap-2",
+        isMobile ? "mb-4" : ""
+      )}
+    >
+      {/* ===== HEADER (hide once estimate is ready) ===== */}
+      {(!isEstimateReady || isEditable) && (
+        <EstimateHeader contractor={contractor} styles={styles} />
+      )}
+
+
 
             <div className={cn(styles.headerContent, "mt-2 sm:mt-0")}>
               <EstimateActions
