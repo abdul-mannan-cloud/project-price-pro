@@ -201,6 +201,7 @@ function generateEmailContent(params: {
  * @param customerInfo - Customer information
  * @returns HTML string with availability details
  */
+
 function formatAvailability(customerInfo: CustomerInfo): string {
   let availableDate = '';
 
@@ -220,11 +221,7 @@ function formatAvailability(customerInfo: CustomerInfo): string {
   `;
 }
 
-/**
- * Main request handler
- */
 serve(async (req: Request): Promise<Response> => {
-  // Handle preflight CORS requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS_HEADERS });
   }
@@ -240,14 +237,13 @@ serve(async (req: Request): Promise<Response> => {
       isTestEstimate = false,
     } = requestData;
 
-    // Validate required fields
     if (!contractor?.contact_email) {
       throw new Error("Contractor email not provided");
     }
 
     const subject = isTestEstimate
         ? `[TEST] New Estimate Preview Generated`
-        : `New ${formatCurrency(estimate.totalCost)} Opportunity from ${customerInfo.fullName}`;
+        : `New $${estimate.totalCost.toFixed(2)} Opportunity from ${customerInfo.fullName}`;
 
     const customerDetails = isTestEstimate
         ? `<p style="color: #666;"><strong>Note:</strong> This is a test estimate preview.</p>`
@@ -279,8 +275,6 @@ serve(async (req: Request): Promise<Response> => {
       subject: subject,
       html: emailContent,
     });
-
-    console.log("Contractor notification sent successfully:", emailResponse);
 
     return new Response(JSON.stringify(emailResponse), {
       status: 200,
