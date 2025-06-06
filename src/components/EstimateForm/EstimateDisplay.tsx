@@ -23,7 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, MinusCircle, Save } from "lucide-react";
-import { Switch } from "@/components/ui/switch"
+import { Switch } from "@/components/ui/switch";
+import { useQueryClient } from '@tanstack/react-query'
 export interface LineItem {
   title: string;
   description?: string;
@@ -146,7 +147,7 @@ export const EstimateDisplay = ({
  // ── keep toggle state in-sync with new data ──────────────────────────
 
 
-
+const queryClient = useQueryClient();
   const toggleLeadSignature = async (checked: boolean) => {
     if (!leadId) return;
     const patch: any = { signature_enabled: checked };
@@ -169,6 +170,8 @@ export const EstimateDisplay = ({
     } else {
       setLeadSigEnabled(checked);
       //handleRefreshEstimate(leadId);          // re-fetch
+      queryClient.invalidateQueries({ queryKey: ['estimate-status', leadId] });
+    queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
       toast({
         title: "Updated",
         description: `Signature section ${
