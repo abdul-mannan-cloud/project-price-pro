@@ -18,6 +18,9 @@ interface ContactFormFieldsProps {
 
 // Google Maps API key (Note: You should secure this in production)
 const GOOGLE_API_KEY = "AIzaSyBuZj-RWOoAc24CaC2h4SY9LvD-WzQPtJs";
+// right under the GOOGLE_API_KEY line
+
+
 
 // Validation utilities
 const validateEmail = (email: string) => {
@@ -35,6 +38,7 @@ const validateFullAddress = (address: string) => {
 };
 
 export const ContactFormFields = ({ formData, onChange }: ContactFormFieldsProps) => {
+    const sessionToken = useRef(crypto.randomUUID());
     const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -63,13 +67,18 @@ export const ContactFormFields = ({ formData, onChange }: ContactFormFieldsProps
 
         setIsLoading(true);
         try {
-            const response = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(input)}&key=${GOOGLE_API_KEY}`
-            );
+                const response = await fetch(
+      `https://maps.googleapis.com/maps/api/place/autocomplete/json` +
+      `?input=${encodeURIComponent(input)}` +      // what the user typed
+      `&types=address` +                           // street addresses only
+      `&components=country:us` +                   // optional: limit to US
+      `&sessiontoken=${sessionToken.current}` +    // groups calls → cheaper
+      `&key=${GOOGLE_API_KEY}`
+    );
             const data = await response.json();
 
-            if (data.status === "OK" && data.results) {
-                const suggestions = data.results.map((result: any) => result.formatted_address);
+             if (data.status === "OK" && data.predictions) {
+      const suggestions = data.predictions.map((p: any) => p.description);
                 setAddressSuggestions(suggestions);
                 setShowSuggestions(true);
             } else {

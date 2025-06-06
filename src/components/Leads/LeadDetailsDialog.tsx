@@ -252,26 +252,27 @@ const signatureEnabled = lead?.signature_enabled ?? true;
   });
 
   // Fetch contractor data using the effective ID
-  const { data: contractor, isLoading: isLoadingContractor } = useQuery({
+   const { data: contractor, isLoading: isLoadingContractor } = useQuery({
     queryKey: ['contractor', effectiveContractorId],
     queryFn: async () => {
-      if (!effectiveContractorId) throw new Error('No contractor ID available');
+      if (!effectiveContractorId)
+        throw new Error('No contractor identifier available');
 
-      const { data, error: dbError } = await supabase
+      const { data, error } = await supabase
         .from('contractors')
         .select('*')
-        .eq('user_id', effectiveContractorId)
-        .eq('tier',    'enterprise')
-        .maybeSingle(); 
-        console.log(contractor) 
-        
-      if (dbError) throw dbError;
-      if (!data) throw new Error('No contractor found');
+        .or(                           // ✅ match **either** column
+          `id.eq.${effectiveContractorId},user_id.eq.${effectiveContractorId}`
+        )
+        .eq('tier', 'enterprise')
+        .limit(1)         // ensure at most one row
+      .maybeSingle();                    // returns 406 only if >1 row
+
+      if (error) throw error;
       return data;
     },
-    enabled: !!effectiveContractorId
+    enabled: !!effectiveContractorId,
   });
-
   // Initialize editedEstimate with deep copy when lead changes
   useEffect(() => {
     if (initialLead?.estimate_data) {
@@ -629,45 +630,65 @@ const handleSaveEstimate = async () => {
       setIsDuplicating(false);
     }
   };
+// ── wrap handleExportPDF in try/catch so email still sends if PDF fails ──
+const tryGeneratePdf = async (companyName: string) => {
+  try {
+    return await handleExportPDF(companyName);
+  } catch (err) {
+    console.warn("PDF generation skipped:", err);
+    return null;
+  }
+};
 
-  const handleSendEmail = async () => {
-    if (!emailRecipient || !lead || !effectiveContractorId) {
-      toast({
-        title: "Error",
-        description: "Please provide an email address.",
-        variant: "destructive",
-      });
-      return;
-    }
+const handleSendEmail = async () => {
+  if (!emailRecipient || !lead || !effectiveContractorId) {
+    toast({
+      title: "Error",
+      description: "Please provide an email address.",
+      variant: "destructive",
+    });
+    return;
+  }
 
-    try {
-      const estimateUrl = `${window.location.origin}/e/${lead?.id}`;
-      const response = await supabase.functions.invoke('send-estimate-email', {
-        body: {
-          name: lead?.user_name,
-          customerEmail: emailRecipient,
-          estimateData: lead?.estimate_data,
-          estimateUrl,
-          contractorId: effectiveContractorId,
-          businessName: contractor?.business_name,
-        },
-      });
+  if (!lead || !contractor) return;
 
-      if (response.error) throw response.error;
+  try {
+    // optional – try to attach a fresh PDF, or skip if it fails
+    const pdfBase64 = await tryGeneratePdf(
+      contractor.business_name || "Estimate"
+    );
 
-      toast({
-        title: "Email sent",
-        description: "The estimate has been sent successfully.",
-      });
-      setShowEmailDialog(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send email. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+    const body: Record<string, any> = {
+      estimateId:      lead.id,
+      contractorEmail: contractor.contact_email,
+      contractorName:  contractor.business_name,
+      contractorPhone: contractor.contact_phone,
+      customerEmail:   emailRecipient || lead.user_email,
+      customerName:    lead.user_name,
+      estimateData:    lead.estimate_data,
+      estimateUrl:     `${window.location.origin}/e/${lead.id}`,
+      businessName:    contractor.business_name,
+      isTestEstimate:  false,
+      // only attach pdfBase64 if not null
+      ...(pdfBase64 && { pdfBase64 }),
+    };
+
+    const { error } = await supabase.functions.invoke("send-estimate-email", { body });
+    if (error) throw error;
+
+    toast({
+      title: "Email sent",
+      description: "The estimate has been sent successfully.",
+    });
+    setShowEmailDialog(false);
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to send email. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
 
   const handleCopyLink = () => {
     if (!lead) return;
