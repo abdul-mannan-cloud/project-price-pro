@@ -191,8 +191,6 @@ export const LeadEditDialog = ({ lead, isOpen, onClose, onLeadUpdated }) => {
         estimated_cost: editedLead.estimate_data?.totalCost || 0
       };
       
-      console.log("Update payload:", updatedLeadData);
-      
       // Update lead in database
       const { data, error } = await supabase
         .from('leads')
