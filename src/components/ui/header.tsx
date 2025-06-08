@@ -53,7 +53,7 @@ export function Header1() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 onClick={() => navigate('/')} className="text-xl cursor-pointer font-bold text-primary">Estimatrix.io</h1>
+            <h1 onClick={() => navigate('/')} className="text-xl font-bold text-primary cursor-pointer">Estimatrix.io</h1>
           </motion.div>
           <div className="flex items-center gap-4">
             {!isAuthenticated ? (

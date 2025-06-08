@@ -246,6 +246,8 @@ const Onboarding = () => {
     return requiredFields.every(field => formData[field as keyof typeof formData]);
   };
 
+  const [navigatingToDashboard, setNavigatingToDashboard] = useState(false);
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -320,6 +322,7 @@ const Onboarding = () => {
             minimum_project_cost: parseFloat(formData.minimumProjectCost),
             markup_percentage: parseFloat(formData.markupPercentage),
             tax_rate: parseFloat(formData.taxRate),
+            estimate_signature_enabled: true,
           })
           .eq('id', existingContractor.id);
 
@@ -364,24 +367,28 @@ const Onboarding = () => {
       
       if (currentStep === OnboardingSteps.PRICING && formData.tier === 'enterprise') {
         console.log("NAVIGATION TO DASHBOARD ENTERPRISE");
-        // Add delay before navigation
+
+        setNavigatingToDashboard(true);
         await delay(5000);
+        setNavigatingToDashboard(false);
         navigate("/dashboard");
       }
       else if (currentStep === OnboardingSteps.PRICING && data?.paymentMethods?.data?.length > 0) { 
         await queryClient.refetchQueries({ queryKey: ["contractor"] });
         await queryClient.refetchQueries({ queryKey: ["contractor-verification"] });
         
-        // Add delay before navigation
+        setNavigatingToDashboard(true);
         await delay(5000);
+        setNavigatingToDashboard(false);
         navigate("/dashboard");
       }
       else if (currentStep === OnboardingSteps.PAYMENT_METHOD) {
         await queryClient.refetchQueries({ queryKey: ["contractor"] });
         await queryClient.refetchQueries({ queryKey: ["contractor-verification"] });
         
-        // Add delay before navigation
+        setNavigatingToDashboard(true);
         await delay(5000);
+        setNavigatingToDashboard(false);
         navigate("/dashboard");
       } 
       else {
@@ -828,12 +835,24 @@ const Onboarding = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] py-12">
-      <div className="container max-w-4xl w-2xl mx-auto">
-        <div className="md:block hidden">
-          <ProgressSteps steps={steps} currentStep={currentStep} />
+      {
+        navigatingToDashboard ? 
+        <div>
+          <div className="flex items-center justify-center h-screen">
+            <div className="text-center flex flex-col items-center justify-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <p className="mt-4 text-lg text-muted-foreground">Setting up your account...</p>
+            </div>
+          </div>
         </div>
-        {renderStep()}
-      </div>
+        :       
+        <div className="container max-w-4xl w-2xl mx-auto">
+          <div className="md:block hidden">
+            <ProgressSteps steps={steps} currentStep={currentStep} />
+          </div>
+          {renderStep()}
+        </div>
+      }
     </div>
   );
 };

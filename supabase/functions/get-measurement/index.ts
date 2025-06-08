@@ -179,11 +179,11 @@ ALWAYS respond with valid JSON in the following format:
             throw new Error('Invalid response format from OpenAI');
         }
 
-        const content = data.choices[0].message.content;
+        const response_content = data.choices[0].message.content;
         console.log('Raw AI measurement response:', content);
 
         // Ensure we have valid JSON
-        const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+        const parsed = typeof response_content === 'string' ? JSON.parse(response_content) : content;
 
         // Validate structure
         if (!parsed.measurements || !parsed.measurements.primary) {
