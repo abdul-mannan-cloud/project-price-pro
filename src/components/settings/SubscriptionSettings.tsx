@@ -366,7 +366,6 @@ export const SubscriptionSettings = ({ contractor }) => {
           {(refreshedContractor || contractor)?.tier?.charAt(0).toUpperCase() + 
            (refreshedContractor || contractor)?.tier?.slice(1)}
         </span>
-        <button className="bg-blue-600 text-white p-2 rounded-md" onClick={() => sendSMS()}>SEND SMS</button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
         {plans.map((plan) => (
