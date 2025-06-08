@@ -634,6 +634,29 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
       if (error) throw error;
 
+      let projectTitle='';
+      for (const group in lead.estimate_data?.groups){
+        projectTitle += ` - ${lead.estimate_data?.groups[group].title}`;
+      }
+
+      const smsRequestData = {
+        type: 'customer_signed',
+        phone: contractor.contact_phone,
+        data: {
+          businessName: contractor.business_name || "Your Contractor",
+          clientFirstName: lead.user_name || "Customer",
+          projectTitle: projectTitle || "Your Project",
+          leadPageUrl: `${window.location.origin}/e/${leadId}`,
+          totalEstimate: lead.estimate_data?.totalCost || 0,
+        }
+      }
+
+      const {error:e} = await supabase.functions.invoke('send-sms',{
+        body: smsRequestData,
+      })
+
+      if (e) throw error;
+
       toast({
         title: "Success",
         description: "Contract signed and notifications sent successfully!",
