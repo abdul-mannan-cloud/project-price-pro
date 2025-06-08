@@ -52,7 +52,7 @@ const Leads = () => {
     checkAuth();
   }, [navigate]);
 
-  const { data: leads = [], isLoading } = useQuery({
+  const { data: leads, isLoading } = useQuery({
     queryKey: ["leads", contractorId],
     queryFn: async () => {
       if (!contractorId) throw new Error("No contractor ID available");
@@ -64,7 +64,7 @@ const Leads = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      
+
       return (data || []).map(lead => ({
         ...lead,
         answers: lead.answers as { answers: Record<string, any> },
@@ -73,6 +73,7 @@ const Leads = () => {
     },
     enabled: !!contractorId,
   });
+
 
   const deleteLead = useMutation({
     mutationFn: async (leadIds: string[]) => {
@@ -179,29 +180,23 @@ const Leads = () => {
       <NavBar items={navItems} />
       <div className="container mx-auto py-8">
         <h1 className="text-2xl font-semibold mb-6">Leads</h1>
-        {
-          leads.length > 0 ? 
+        {isLoading || !leads ? (
+          <div className="min-h-screen flex items-center justify-center">
+            <Spinner />
+          </div>
+        ) : leads.length > 0 ? (
           <LeadsTable
             leads={leads}
             updateLead={(lead)=> updateLead.mutate(lead)}
             onLeadClick={handleLeadClick}
             onDeleteLeads={(leadIds) => deleteLead.mutate(leadIds)}
             onExport={handleExport}
-          /> : isLoading ? 
-          <div className="min-h-screen flex items-center justify-center">
-            {/* <div className="text-lg">Loading...</div> */}
-            <Spinner />
-          </div> : <div className="w-full h-full flex text-center justify-center items-center align-middle">
+          />
+        ) : (
+          <div className="w-full h-full flex text-center justify-center items-center align-middle">
             <p className="text-primary text-xl font-semibold">There are no leads yet!</p>
           </div>
-        }
-        {/* <LeadsTable
-          leads={leads}
-          updateLead={(lead)=> updateLead.mutate(lead)}
-          onLeadClick={handleLeadClick}
-          onDeleteLeads={(leadIds) => deleteLead.mutate(leadIds)}
-          onExport={handleExport}
-        /> */}
+        )}
       </div>
 
       <LeadDetailsDialog

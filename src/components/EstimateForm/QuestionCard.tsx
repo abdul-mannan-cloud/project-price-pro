@@ -664,7 +664,7 @@ export const QuestionCard = ({
                 ) : (
                     <div className={cn(
                         "grid gap-6 mb-12",
-                        isMobile ? "grid-cols-1 px-4" : question.type === 'multiple_choice' ? "grid-cols-2" : "grid-cols-1"
+                        isMobile ? "grid-cols-1 px-4" : question.type === 'multiple_choice' ? "grid-cols-1" : "grid-cols-1"
                     )}>
                         {options.map((option) => (
                             <QuestionOption

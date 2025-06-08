@@ -1,10 +1,13 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
+import { Textarea } from "@/components/ui/textarea"
+//import { Switch } from "@/components/ui/switch"; 
 import {
   Phone,
   MessageSquare,
   Send,
+  Mail,
   X,
   Edit,
   Link as LinkIcon,
@@ -111,6 +114,78 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  // --- refresh-estimate -------------------------------------------------------
+//const [isRefreshingEstimate, setIsRefreshingEstimate] = useState(false);
+
+/**
+ * Ask the edge-function to rebuild the estimate, then pull the fresh row
+ */
+const [isRefreshingEstimate, setIsRefreshingEstimate] = useState(false);
+
+// check poll-status exactly like useEstimateFlow does
+const waitForEstimateReady = async (
+  leadId: string,
+  maxAttempts = 10,
+  sleep = 3000
+) => {
+  let count = 0;
+  while (count < maxAttempts) {
+    const { data, error } = await supabase
+      .from("leads")
+      .select("status, estimate_data")
+      .eq("id", leadId)
+      .maybeSingle();
+    if (error) throw error;
+    if (data?.status === "complete" && data.estimate_data) return true;
+    await new Promise((r) => setTimeout(r, sleep));
+    count++;
+  }
+  return false;
+};
+
+/**
++ * Same refresh routine that EstimatePage uses
++ */
+const refreshEstimate = async (leadId: string) => {
+  if (!leadId) return;
+  setIsRefreshingEstimate(true);
+
+  try {
+    toast({ title: "Refreshing", description: "Generating a new estimate…" });
+
+    // kick off the edge-function
+    const { error } = await supabase.functions.invoke("generate-estimate", {
+      body: { leadId, contractorId: effectiveContractorId },
+    });
+    if (error) throw error;
+
+    // wait until the row flips back to “complete”
+    const ready = await waitForEstimateReady(leadId);
+    if (!ready) {
+      toast({
+        title: "Still working",
+       description:
+          "Generation is taking longer than usual – try again in a minute.",
+      });
+    }
+
+    await refetchLead(); // pull the fresh data into the UI
+
+    toast({
+      title: "Estimate updated",
+      description: "The latest numbers are now showing.",
+    });
+  } catch (err) {
+    console.error(err);
+    toast({
+      title: "Error",
+      description: "Could not refresh estimate – please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsRefreshingEstimate(false);
+  }
+};
   const [isSending, setIsSending] = useState(false);
 
   // Send options state
@@ -121,7 +196,7 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   });
 
   // State for estimate locking
-  const [isEstimateLocked, setIsEstimateLocked] = useState(false);
+  //const [isEstimateLocked, setIsEstimateLocked] = useState(false);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   // New state for contractor signature dialog
   const [showContractorSignatureDialog, setShowContractorSignatureDialog] = useState(false);
@@ -137,6 +212,10 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
 
   // State to hold the lead data
   const [lead, setLead] = useState<Lead | null>(initialLead);
+  // Per-lead signature flag (no local toggle)
+const signatureEnabled = lead?.signature_enabled ?? true;
+
+// Add near the top of the component, with your other useState:
 
 
   // Get current user data if no URL contractor ID
@@ -161,11 +240,18 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
       if (!leadIdFromUrl) return null;
 
       const { data, error } = await supabase
-          .from('leads')
-          .select('*, client_signature, client_signature_date, contractor_signature, contractor_signature_date')
-          .eq('id', leadIdFromUrl)
-          .single();
-
+        .from('leads')
+         .select(`
+   *,
+   client_signature,
+   client_signature_date,
+   contractor_signature,
+   contractor_signature_date,
+   signature_enabled
+ `)
+        .eq('id', leadIdFromUrl)
+        .single();
+        
       if (error) throw error;
 
       console.log("Fetched lead with signatures:", data);
@@ -181,10 +267,13 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
       if (!effectiveContractorId) throw new Error('No contractor ID available');
 
       const { data, error: dbError } = await supabase
-          .from('contractors')
-          .select('*')
-          .eq('id', effectiveContractorId)
-          .maybeSingle();
+        .from('contractors')
+        .select('*')
+        .eq('user_id', effectiveContractorId)
+        .eq('tier',    'enterprise')
+        .maybeSingle(); 
+        console.log(contractor) 
+        
       if (dbError) throw dbError;
       if (!data) throw new Error('No contractor found');
       return data;
@@ -227,13 +316,16 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   }, [fetchedLead]);
 
   // Check if estimate is locked (client has signed)
-  useEffect(() => {
-    if (lead?.client_signature) {
-      setIsEstimateLocked(true);
-    } else {
-      setIsEstimateLocked(false);
-    }
-  }, [lead?.client_signature]);
+// ✅ new — always reflects the current lead state
+// at the top, alongside your other useState calls
+const [isEstimateLocked, setIsEstimateLocked] = useState(true);
+
+// reset to locked whenever the lead changes (i.e. on dialog open or refresh)
+useEffect(() => {
+  setIsEstimateLocked(true);
+}, [lead?.id]);
+
+
 
   // Update email recipient when lead changes
   useEffect(() => {
@@ -356,122 +448,135 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
 
   // Function to handle unlocking the estimate
   const handleUnlockEstimate = async () => {
-    if (!lead || !effectiveContractorId) return;
+  if (!lead) return;
 
-    try {
-      // Update the lead to remove client signature
-      const { error: dbError } = await supabase
-          .from('leads')
-          .update({
-            client_signature: null,
-            client_signature_date: null
-          })
-          .eq('id', lead.id);
+  try {
+    // remove client_signature in DB
+    const { error: dbError } = await supabase
+      .from('leads')
+      .update({ client_signature: null, client_signature_date: null })
+      .eq('id', lead.id);
+    if (dbError) throw dbError;
 
-      if (dbError) throw dbError;
+    // **unlock for this session**
+    setIsEstimateLocked(false);
 
-      // Update local state
-      setIsEstimateLocked(false);
+    // close the confirmation dialog
+    setShowUnlockDialog(false);
 
-      // Close dialog
-      setShowUnlockDialog(false);
+    // refetch so the signature truly disappears
+    refetchLead();
 
-      // Refresh lead data
-      refetchLead();
+    toast({
+      title: "Estimate unlocked",
+      description: "You can now edit this estimate. The client will need to sign again.",
+    });
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to unlock estimate. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
+const handleLockEstimate = () => {
+  setIsEstimateLocked(true);
+  toast({
+    title: "Estimate locked",
+    description: "The estimate is locked again—you’ll need to unlock to edit.",
+  });
+};
 
-      // Show toast
-      toast({
-        title: "Estimate unlocked",
-        description: "You can now edit this estimate. The client will need to sign it again.",
-      });
-    } catch (error) {
-      console.error('Error unlocking estimate:', error);
-      toast({
-        title: "Error",
-        description: "Failed to unlock estimate. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
-  const handleSaveEstimate = async () => {
-    if (!lead || !effectiveContractorId) {
-      toast({
-        title: "Error",
-        description: "Unable to save estimate. Please try again later.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      console.log('Updating estimate with contractorId:', effectiveContractorId);
-      console.log('Edited estimate data:', editedEstimate);
-
-      // Create a properly structured update payload
-      const updatePayload = {
-        project_title: lead.project_title,
-        project_description: lead.project_description,
-        estimate_data: editedEstimate,
-        estimated_cost: editedEstimate.totalCost
-      };
-
-      console.log("Saving with payload:", updatePayload);
-
-      // Update the lead without trying to select in the same query
-      const { error: dbError } = await supabase
-          .from('leads')
-          .update(updatePayload)
-          .eq('id', lead.id);
-
-      if (dbError) {
-        console.error('Update error:', dbError);
-        throw dbError;
+// ── add this helper right above handleSaveEstimate ─────────────────────────
+// ── simplified validation: only require each item to be fully filled out ─────────────────────
+const validateEstimate = () => {
+  if (!editedEstimate?.groups?.length) return false;
+  for (const group of editedEstimate.groups) {
+    for (const subgroup of group.subgroups) {
+      for (const item of subgroup.items) {
+        // title must be non-empty and not our placeholder
+        if (!item.title?.trim() || item.title === "New Item") return false;
+        // description must be non-empty
+        if (!item.description?.trim()) return false;
+        // unit price must be > 0
+        if (Number(item.unitAmount) <= 0) return false;
       }
-
-      // Manually fetch the updated lead
-      const { data: updatedLead, error: fetchError } = await supabase
-          .from('leads')
-          .select('*')
-          .eq('id', lead.id)
-          .single();
-
-      if (fetchError) {
-        console.error('Error fetching updated lead:', fetchError);
-        throw fetchError;
-      }
-
-      // Update local state with the fresh data
-      setLead(updatedLead as Lead);
-
-      // Make a deep copy of the estimate data
-      if (updatedLead.estimate_data) {
-        const deepCopy = JSON.parse(JSON.stringify(updatedLead.estimate_data));
-        setEditedEstimate(deepCopy);
-      }
-
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries(['lead', lead.id]);
-      queryClient.invalidateQueries(['leads']);
-
-      toast({
-        title: "Success",
-        description: "The estimate has been successfully updated.",
-      });
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Error updating estimate:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update estimate. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
     }
-  };
+  }
+  return true;
+};
+
+
+// ── replace your handleSaveEstimate with this ───────────────────────────────
+const handleSaveEstimate = async () => {
+  // 1) quick validation before even trying to save
+  if (!validateEstimate()) {
+    toast({
+      title: "Missing or invalid fields",
+      description: "Please fill out every title, description, and set a unit price > 0 before saving.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  if (!lead || !effectiveContractorId) {
+    toast({
+      title: "Error",
+      description: "Unable to save estimate. Please try again later.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  setIsSaving(true);
+
+  try {
+    const updatePayload = {
+      project_title: lead.project_title,
+      project_description: lead.project_description,
+      estimate_data: editedEstimate,
+      estimated_cost: editedEstimate.totalCost
+    };
+
+    const { error: dbError } = await supabase
+      .from('leads')
+      .update(updatePayload)
+      .eq('id', lead.id);
+
+    if (dbError) throw dbError;
+
+    // Refresh local data
+    const { data: updatedLead, error: fetchError } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('id', lead.id)
+      .single();
+    if (fetchError) throw fetchError;
+
+    setLead(updatedLead);
+    setEditedEstimate(JSON.parse(JSON.stringify(updatedLead.estimate_data)));
+
+    queryClient.invalidateQueries(['lead', lead.id]);
+    queryClient.invalidateQueries(['leads']);
+
+    toast({
+      title: "Success",
+      description: "The estimate has been successfully updated.",
+    });
+    setIsEditing(false);
+  } catch (error) {
+    console.error('Error updating estimate:', error);
+    toast({
+      title: "Error",
+      description: "Failed to save estimate. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSaving(false);
+  }
+};
+
 
   const handleDeleteLead = async () => {
     if (!lead) return;
@@ -789,121 +894,100 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   };
 
   const renderActionButtons = () => {
-    if (isEditing) {
-      return (
-          <div className="flex justify-end items-center space-x-2">
-            <Button
-                variant="outline"
-                onClick={() => {
-                  setIsEditing(false);
-                  // Reset edited estimate to original values
-                  if (lead?.estimate_data) {
-                    const deepCopy = JSON.parse(JSON.stringify(lead.estimate_data));
-                    setEditedEstimate(deepCopy);
-                  }
-                }}
-            >
-              Cancel
-            </Button>
-            <Button
-                onClick={handleSaveEstimate}
-                disabled={isSaving || (!effectiveContractorId || (isLoadingUser && !urlContractorId))}
-            >
-              {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-      );
-    }
-
-    const isLoading = !urlContractorId && isLoadingUser;
-    const disabled = isLoading || !effectiveContractorId;
-
+  // ── 1) EDIT MODE ───────────────────────────────────────────────────────────
+  if (isEditing) {
     return (
-        <div className="flex justify-end items-center">
-          <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse">
-            {isEstimateLocked ? (
-                // If estimate is locked (client has signed), show locked button
-                <Button
-                    className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10"
-                    variant="outline"
-                    disabled={true}
-                    title="Estimate is locked - client has signed"
-                >
-                  <LockIcon className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
-                  Locked
-                </Button>
-            ) : (
-                // If estimate is not locked, show normal edit button
-                <Button
-                    className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10"
-                    variant="outline"
-                    onClick={() => setIsEditing(true)}
-                    disabled={disabled}
-                >
-                  <Edit className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
-                  Edit
-                </Button>
-            )}
-            <Button
-                className="rounded-none shadow-none focus-visible:z-10"
-                variant="outline"
-                onClick={() => setShowSendDialog(true)}
-                disabled={disabled}
-            >
-              <Send className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
-              Send
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                    className="rounded-none shadow-none last:rounded-e-lg focus-visible:z-10 px-4"
-                    variant="outline"
-                    aria-label="More options"
-                    disabled={disabled}
-                >
-                  <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                    onClick={handleDuplicateLead}
-                    disabled={isDuplicating}
-                    className="cursor-pointer"
-                >
-                  <Copy className="mr-2 h-4 w-4" />
-                  Duplicate Lead
-                </DropdownMenuItem>
-                {isEstimateLocked && (
-                    <DropdownMenuItem
-                        onClick={() => setShowUnlockDialog(true)}
-                        className="cursor-pointer"
-                    >
-                      <UnlockIcon className="mr-2 h-4 w-4" />
-                      Unlock Estimate
-                    </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                    onClick={handleArchiveLead}
-                    disabled={isCancelling}
-                    className="cursor-pointer"
-                >
-                  <Copy className="mr-2 h-4 w-4 rotate-90" />
-                  Archive Lead
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                    onClick={() => setShowDeleteDialog(true)}
-                    className="text-destructive cursor-pointer focus:text-destructive"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Lead
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+      <div className="flex justify-end items-center space-x-2">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setIsEditing(false);
+            if (lead?.estimate_data) {
+              setEditedEstimate(JSON.parse(JSON.stringify(lead.estimate_data)));
+            }
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSaveEstimate}
+          disabled={isSaving || (!effectiveContractorId || (isLoadingUser && !urlContractorId))}
+        >
+          {isSaving ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
     );
-  };
+  }
+
+  // ── 2) LOCKED STATE ────────────────────────────────────────────────────────
+  // no action buttons here—unlock lives in the banner
+  if (isEstimateLocked) {
+    return null;
+  }
+
+  // ── 3) UNLOCKED STATE ─────────────────────────────────────────────────────
+  const isLoading = !urlContractorId && isLoadingUser;
+  const disabled = isLoading || !effectiveContractorId;
+
+  return (
+    <div className="flex justify-end items-center space-x-2">
+      <Button
+        variant="outline"
+        onClick={() => setIsEditing(true)}
+        disabled={disabled}
+      >
+        <Edit className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} />
+        Edit
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => setShowEmailDialog(true)}
+        disabled={disabled}
+      >
+        <Mail className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} />
+        Email
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            disabled={disabled}
+            className="px-4"
+            aria-label="More options"
+          >
+            <MoreHorizontal size={16} strokeWidth={2} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={handleDuplicateLead} disabled={isDuplicating}>
+            <Copy className="mr-2 h-4 w-4" />
+            Duplicate Lead
+          </DropdownMenuItem>
+            {!isEstimateLocked && (
+    <DropdownMenuItem onClick={handleLockEstimate}>
+      <LockIcon className="mr-2 h-4 w-4" />
+      Lock Estimate
+    </DropdownMenuItem>
+  )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleCancelLead} className="text-destructive">
+            <X className="mr-2 h-4 w-4" />
+            Cancel Lead
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleArchiveLead} disabled={isCancelling}>
+            <Copy className="mr-2 h-4 w-4 rotate-90" />
+            Archive Lead
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Lead
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+};
 
   // Show loading state while fetching lead or contractor
   if ((isLoadingLead && leadIdFromUrl) || (isLoadingUser && !urlContractorId) || isLoadingContractor) {
@@ -939,102 +1023,117 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
   }
 
   return (
-      <>
-        <Dialog open={open} onOpenChange={handleCloseDialog}>
-          <DialogContent className="max-w-full h-[100vh] p-0 m-0">
-            <DialogTitle className="sr-only">Lead Details</DialogTitle>
-            <DialogDescription className="sr-only">View and manage lead details</DialogDescription>
-            <div className="flex flex-col h-full relative overflow-y-scroll pb-20">
-              {isMobile ? (
-                  <div className="sticky top-0 z-50 bg-white border-b">
-                    <button
-                        onClick={handleCloseDialog}
-                        className="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-                    >
-                      <X className="h-5 w-5 text-gray-500" />
-                    </button>
-                    <div className="h-14" />
-                  </div>
-              ) : (
-                  <button
-                      onClick={handleCloseDialog}
-                      className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-50"
-                  >
-                    <X className="h-5 w-5 text-gray-500" />
+    <>
+      <Dialog open={open} onOpenChange={handleCloseDialog}>
+        <DialogContent className="max-w-full h-[100vh] p-0 m-0">
+          <DialogTitle className="sr-only">Lead Details</DialogTitle>
+          <DialogDescription className="sr-only">View and manage lead details</DialogDescription>
+          <div className="flex flex-col h-full relative overflow-hidden pb-20">
+
+            {isMobile ? (
+              <div className="sticky top-0 z-50 bg-white border-b">
+                <button
+                  onClick={handleCloseDialog}
+                  className="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
                   </button>
-              )}
-
-              <div className="border-b bg-background sticky top-0 z-40">
-                <div className="max-w-6xl mx-auto w-[95%]">
-                  <LeadViewToggle view={view} onViewChange={setView} />
-                </div>
+                <div className="h-14" />
               </div>
-              {view === "history" && <LeadHistory leadId={lead.id} />}
+            ) : (
+              <button
+                onClick={handleCloseDialog}
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors z-50"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            )}
 
-
-              <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
-                <div className="max-w-6xl mx-auto pt-6">
-                  {view === "estimate" && lead && (
-                      <>
-                        {isEstimateLocked && (
-                            <EstimateLockBanner
-                                isLocked={isEstimateLocked}
-                                onUnlock={() => setShowUnlockDialog(true)}
-                                className="mb-4"
-                            />
-                        )}
-                        {renderActionButtons()}
-                        <div className="mt-4">
-                          <EstimateDisplay
-                              groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
-                              totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
-                              projectSummary={lead.project_description}
-                              isEditable={isEditing}
-                              onEstimateChange={handleEstimateChange}
-                              contractor={contractor}
-                              contractorParam={contractor?.id}
-                              handleRefreshEstimate={() => refetchLead()}
-                              leadId={lead.id}
-                              handleContractSign={() => setShowContractorSignatureDialog(true)}
-                              isLeadPage={true} // Explicitly set this to true for the lead details page
-                              lead={lead}
-                              isEstimateLocked={isEstimateLocked}
-                              onCancel={handleCancelLead}
-                              onArchive={handleArchiveLead}
-                          />
-                        </div>
-                      </>
-                  )}
-                  {view === "questions" && (
-                      <LeadQuestionsView lead={lead} refetchLead={refetchLead} />
-                  )}
-                </div>
-              </div>
-
-              {/* Bottom Action Bar */}
-              <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">
-                <div className="container max-w-6xl mx-auto">
-                  <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse w-full">
-                    <Button
-                        variant="outline"
-                        className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
-                    >
-                      <Phone className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
-                      Call
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="rounded-none shadow-none focus-visible:z-10 flex-1"
-                    >
-                      <MessageSquare className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
-                      Text
-                    </Button>
-                  </div>
-                </div>
+            <div className="border-b bg-background sticky top-0 z-40">
+              <div className="max-w-6xl mx-auto w-[95%]">
+                <LeadViewToggle view={view} onViewChange={setView} />
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+            {/* put all three views into the same scrollable panel */}
+<div className={`flex-1 overflow-y-auto ${isMobile ? 'p-0' : 'p-6'}`}>
+  <div className="max-w-6xl mx-auto pt-6 space-y-6">
+    {view === "history" && (
+      <LeadHistory leadId={lead.id} />
+    )}
+
+    {view === "estimate" && lead && (
+  <>
+    {/* ── Per-lead signature toggle ─────────────────────────────── */}
+    
+    {/* ── Locked banner shows only if per-lead flag AND locked ── */}
+    {isEstimateLocked && (
+      <EstimateLockBanner
+        isLocked={isEstimateLocked}
+        onUnlock={() => setShowUnlockDialog(true)}
+        className="mb-4"
+      />
+    )}
+
+    {/* ── Existing buttons & display ───────────────────────────── */}
+    {renderActionButtons()}
+    <div className="mt-4">
+      <EstimateDisplay
+        groups={isEditing ? editedEstimate?.groups || [] : lead.estimate_data?.groups || []}
+        totalCost={isEditing ? editedEstimate?.totalCost || 0 : lead.estimate_data?.totalCost || 0}
+        projectSummary={lead.project_description}
+        isEditable={isEditing}
+        onEstimateChange={handleEstimateChange}
+        contractor={contractor}
+        contractorParam={contractor?.id}
+       // handleRefreshEstimate={() => refetchLead()}
+       handleRefreshEstimate={refreshEstimate}
+        leadId={lead.id}
+        handleContractSign={() => lead.signature_enabled && setShowContractorSignatureDialog(true)}
+        isLeadPage={true}
+        lead={lead}
+        isEstimateLocked={isEstimateLocked}
+        signatureEnabled={lead?.signature_enabled ?? true}
+      />
+    </div>
+  </>
+)}
+
+    {view === "questions" && (
+      <LeadQuestionsView lead={lead} refetchLead={refetchLead} />
+    )}
+  </div>
+</div>
+ {isRefreshingEstimate && (
+   <div className="absolute inset-0 bg-background/70 flex items-center justify-center z-50">
+     <p className="animate-pulse text-sm">Refreshing estimate…</p>
+   </div>
+ )}
+            {/* Bottom Action Bar */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">
+              <div className="container max-w-6xl mx-auto">
+                <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse w-full">
+                  <Button 
+                    variant="outline" 
+                    className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
+                  >
+                    <Phone className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+                    Call
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="rounded-none shadow-none focus-visible:z-10 flex-1"
+                  >
+                    <MessageSquare className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+                    Text
+                  </Button>
+                  
+                    </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+        
+      </Dialog>
 
         {/* Send Options Dialog */}
         <AlertDialog open={showSendDialog} onOpenChange={setShowSendDialog}>
@@ -1158,16 +1257,19 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
             onConfirm={handleUnlockEstimate}
         />
 
-        {/* Contractor Signature Dialog */}
-        <SignatureDialog
-            isOpen={showContractorSignatureDialog}
-            onClose={() => setShowContractorSignatureDialog(false)}
-            onSign={handleContractorSignature}
-            contractorId={effectiveContractorId}
-            leadId={lead?.id}
-            estimateData={lead?.estimate_data}
-            isContractorSignature={true} // Important: set to true for contractor signature
-        />
-      </>
+      {/* Contractor Signature Dialog */}
+      {signatureEnabled && <SignatureDialog
+        isOpen={showContractorSignatureDialog}
+        onClose={() => setShowContractorSignatureDialog(false)}
+        onSign={handleContractorSignature}
+        contractorId={effectiveContractorId}
+        leadId={lead?.id}
+        estimateData={lead?.estimate_data}
+        isContractorSignature={true} // Important: set to true for contractor signature
+      />
+}
+
+
+    </>
   );
 };
