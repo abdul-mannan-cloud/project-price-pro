@@ -369,6 +369,23 @@ export const EstimateDisplay = ({
         onSignatureComplete(initials);
       }
 
+      const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
+        body: {
+          type: 'customer_signed',
+          phone: lead.user_phone,
+          data: {
+            clientFirstName: lead.user_name || "Customer",
+            projectTitle: lead.estimate_data.category || "Your Project",
+            totalEstimate: lead.estimate_data.totalCost || 0,
+            leadPageUrl:  `${window.location.origin}/e/${leadId}`
+          }
+        }
+      });
+
+      if (smsSendError) {
+        console.error('Error sending SMS:', smsSendError);
+      }
+
       if (contractor.tier === 'pioneer') {
         console.log("HERE IS THE ESTIMATE DATA", estimate);
 

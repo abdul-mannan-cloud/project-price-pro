@@ -454,14 +454,12 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
           const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
             body: {
-              type: 'estimate_sent',
-              phone: lead.user_phone,
+              type: 'new_opportunity',
+              phone: emailData.contact_phone,
               data: {
-                businessName: emailData.business_name || "Your Contractor",
-                estimatePageUrl: `${window.location.origin}/e/${leadId}`,
-                businessOwnerFullName: emailData.business_owner_name || emailData.business_name || "Your Contractor",
-                businessPhone: emailData.contact_phone || "N/A",
-                businessEmail: emailData.contact_email || "N/A"
+                clientName: lead.user_name || "Customer",
+                totalEstimate: lead.estimate_data.totalCost || "N/A",
+                leadPageUrl:  `${window.location.origin}/e/${leadId}`
               }
             }
           });
@@ -633,29 +631,6 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       });
 
       if (error) throw error;
-
-      let projectTitle='';
-      for (const group in lead.estimate_data?.groups){
-        projectTitle += ` - ${lead.estimate_data?.groups[group].title}`;
-      }
-
-      const smsRequestData = {
-        type: 'customer_signed',
-        phone: contractor.contact_phone,
-        data: {
-          businessName: contractor.business_name || "Your Contractor",
-          clientFirstName: lead.user_name || "Customer",
-          projectTitle: projectTitle || "Your Project",
-          leadPageUrl: `${window.location.origin}/e/${leadId}`,
-          totalEstimate: lead.estimate_data?.totalCost || 0,
-        }
-      }
-
-      const {error:e} = await supabase.functions.invoke('send-sms',{
-        body: smsRequestData,
-      })
-
-      if (e) throw error;
 
       toast({
         title: "Success",
