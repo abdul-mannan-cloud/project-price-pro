@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button } from "@/components/ui/button";
 import { EstimateDisplay } from "@/components/EstimateForm/EstimateDisplay";
 import { Textarea } from "@/components/ui/textarea"
+import html2pdf from 'html2pdf.js';
 //import { Switch } from "@/components/ui/switch"; 
 import {
   Phone,
@@ -680,6 +681,94 @@ const handleSaveEstimate = async () => {
     }
   };
 
+    const handleExportPDF = async (companyName: string): Promise<string> => {
+      const element = document.getElementById('estimate-content');
+      if (!element) throw new Error('No estimate content found');
+  
+      // Hide action buttons during export
+      const actionButtons = document.getElementById('estimate-actions');
+      if (actionButtons) {
+        actionButtons.style.display = 'none';
+      }
+  
+      // Create a loading toast
+      toast({
+        title: "Generating PDF",
+        description: "Please wait while your PDF is being created...",
+      });
+  
+      try {
+        // Improved options for better image rendering and page formatting
+        const opt = {
+          margin: [15, 15, 20, 15],
+          filename: `${companyName}-estimate.pdf`,
+          image: {
+            type: 'jpeg',
+            quality: 1.0
+          },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            letterRendering: true,
+            allowTaint: true,
+            imageTimeout: 0,
+            backgroundColor: '#ffffff'
+          },
+          jsPDF: {
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'portrait',
+            compress: true,
+            putOnlyUsedFonts: true
+          },
+          pagebreak: { mode: 'avoid-all' }
+        };
+  
+        // Wait for all images to load
+        const images = element.getElementsByTagName('img');
+        await Promise.all(Array.from(images).map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        }));
+  
+        // Generate PDF and get as base64
+        const pdf = await html2pdf()
+            .set(opt)
+            .from(element)
+            .outputPdf('datauristring');
+  
+        // Restore UI elements
+        if (actionButtons) {
+          actionButtons.style.display = 'flex';
+        }
+  
+        // // Success notification
+        // toast({
+        //   title: "PDF generated successfully",
+        //   description: "Your estimate has been saved as a PDF file",
+        // });
+  
+        return pdf;
+      } catch (error) {
+        console.error("PDF generation error:", error);
+        // Restore UI elements
+        if (actionButtons) {
+          actionButtons.style.display = 'flex';
+        }
+        // Error notification
+        toast({
+          title: "Error",
+          description: "Failed to export PDF. Please try again.",
+          variant: "destructive",
+        });
+        throw error;
+      }
+    };
+
   const handleSendEmail = async () => {
     if (!emailRecipient || !lead || !effectiveContractorId) {
       toast({
@@ -690,16 +779,38 @@ const handleSaveEstimate = async () => {
       return;
     }
 
+    const { data: contractorData, error: contractorError } = await supabase
+      .from("contractors")
+      .select("*")
+      .eq("id", effectiveContractorId)
+      .single();
+    if (contractorError) {
+      console.error("Error fetching contractor:", contractorError);
+      return false;
+    }
+    const contractor = contractorData;
+
+    console.log("CONTRACTOR EMAILLLLLLLL:", contractor);
+    
+
+    const pdfToSend = await handleExportPDF(contractor.business_name || "Estimate");
+
+
     try {
       const estimateUrl = `${window.location.origin}/e/${lead?.id}`;
       const response = await supabase.functions.invoke('send-estimate-email', {
         body: {
-          name: lead?.user_name,
-          customerEmail: emailRecipient,
-          estimateData: lead?.estimate_data,
+          estimateId: lead.id,
+          contractorEmail: contractor.contact_email,
+          contractorName: contractor.business_name || "Contractor",
+          contractorPhone: contractor.contact_phone || "N/A",
+          customerEmail: lead.user_email,
+          customerName: lead.user_name,
+          estimateData: lead.estimate_data,
           estimateUrl,
-          contractorId: effectiveContractorId,
-          businessName: contractor?.business_name,
+          pdfBase64: pdfToSend,
+          businessName: contractor?.business_name || "Your Contractor",
+          isTestEstimate: false
         },
       });
 
