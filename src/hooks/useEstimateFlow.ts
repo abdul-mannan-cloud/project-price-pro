@@ -377,7 +377,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
   const checkEstimateStatus = async (leadId: string, skip: boolean = false, pdfBase64?: string): Promise<boolean> => {
     const { data: lead, error } = await supabase
         .from('leads')
-        .select('estimate_data, status, error_message, user_name, user_email, user_phone, project_address, available_date, available_time, flexible')
+        .select('id, estimate_data, status, error_message, user_name, user_email, user_phone, project_address, available_date, available_time, flexible')
         .eq('id', leadId)
         .maybeSingle() as { data: Lead, error: Error };
 
@@ -504,7 +504,8 @@ export const useEstimateFlow = (config: EstimateConfig) => {
             available_date: lead.available_date,
             available_time: lead.available_time,
             flexibility: lead.flexible
-          }
+          },
+          leadId: leadId
         }
       });
 
