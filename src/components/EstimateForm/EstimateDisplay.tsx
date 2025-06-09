@@ -190,6 +190,27 @@ const queryClient = useQueryClient();
     }
   }, [contractorProp]);
 
+  // const { data: leadData } = useQuery({
+  //   queryKey: ['lead', leadId],
+  //   queryFn: async () => {
+  //     if (!leadId) return null;
+
+  //     const { data, error } = await supabase
+  //       .from('leads')
+  //       .select('*')
+  //       .eq('id', leadId)
+  //       .single();
+
+  //     if (error) {
+  //       console.error('Error fetching lead:', error);
+  //       return null;
+  //     }
+
+  //     return data;
+  //   },
+  //   enabled: !!leadId,
+  // });
+
   // Initialize editable groups when component mounts or when groups change
   useEffect(() => {
     if (groups && groups.length > 0) {
@@ -285,14 +306,18 @@ const queryClient = useQueryClient();
     }
   })
 
-  const { data: leadData } = useQuery({
+  let {
+    data: leadData,
+    refetch: refetchLeadData
+  } = useQuery({
     queryKey: ['estimate-status', leadId],
     queryFn: async () => {
       if (!leadId) return null;
 
       const { data, error } = await supabase
         .from('leads')
-     .select('id, estimate_data, status, contractor_signature, contractor_signature_date,' +' client_signature, client_signature_date, signature_enabled')
+        .select('*, id, estimate_data, status, contractor_signature, contractor_signature_date,' + 
+                ' client_signature, client_signature_date, signature_enabled')
         .eq('id', leadId)
         .maybeSingle();
 
@@ -304,8 +329,10 @@ const queryClient = useQueryClient();
       return data;
     },
     refetchInterval: !isEstimateReady ? 3000 : false,
-    enabled: !!leadId
+    enabled: !!leadId,
+    staleTime: 0,
   });
+
 
   // Update signature state when fetching lead data
   // ── place directly AFTER the `useQuery` that defines leadData ──────────
@@ -508,19 +535,34 @@ useEffect(() => {
         };
 
   const handleClientSignature = async (initials: string) => {
+    console.log("Handling client signature:", lead, estimate, projectSummary, leadData);
+    
     setClientSignature(initials);
     if (onSignatureComplete) {
       onSignatureComplete(initials);
     }
 
+      if (!leadData?.user_name || !leadData?.user_email || !leadData?.user_phone) {
+        console.warn('Missing leadData fields, refetching...');
+        const { data: newLeadData, error: refetchError } = await refetchLeadData();
+
+        if (refetchError) {
+          console.error('Error refetching lead data:', refetchError);
+          return;
+        }
+
+        // Optional: update leadData reference if needed
+        leadData = newLeadData; // This only works if leadData is mutable in your scope
+      }
+
       const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
         body: {
           type: 'customer_signed',
-          phone: lead.user_phone,
+          phone: leadData.user_phone,
           data: {
-            clientFirstName: lead.user_name || "Customer",
-            projectTitle: lead.estimate_data.category || "Your Project",
-            totalEstimate: lead.estimate_data.totalCost || 0,
+            clientFirstName: leadData.user_name || "Customer",
+            projectTitle: leadData.estimate_data.category || "Your Project",
+            totalEstimate: leadData.estimate_data.totalCost || 0,
             leadPageUrl:  `${window.location.origin}/e/${leadId}`
           }
         }
