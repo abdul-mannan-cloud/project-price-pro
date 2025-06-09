@@ -517,7 +517,7 @@ export function CameraMeasurementModal({
                             <Button variant="outline" onClick={() => setStep('upload')} className="flex-1">
                                 Back
                             </Button>
-                            <Button disabled={description.trim().length < 10 || description.trim().length > 250} onClick={startMeasuring} className="flex-1 disabled:opacity-50">
+                            <Button disabled={imagePreviews.length < 1 && (description.trim().length < 10 || description.trim().length > 250)} onClick={startMeasuring} className="flex-1 disabled:opacity-50">
                                 Start Measuring
                             </Button>
                         </div>

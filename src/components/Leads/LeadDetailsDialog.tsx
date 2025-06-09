@@ -15,7 +15,8 @@ import {
   MoreHorizontal,
   Copy,
   LockIcon,
-  UnlockIcon
+  UnlockIcon,
+  ArchiveIcon
 } from "lucide-react";
 import type { Lead } from "./LeadsTable";
 import { useState, useEffect } from "react";
@@ -122,6 +123,15 @@ export const LeadDetailsDialog = ({ lead: initialLead, onClose, open, urlContrac
  * Ask the edge-function to rebuild the estimate, then pull the fresh row
  */
 const [isRefreshingEstimate, setIsRefreshingEstimate] = useState(false);
+
+// Deprecated: const user = supabase.auth.user();
+// Use getUser() instead if you need the user object, or remove if unused.
+let user = null;
+supabase.auth.getUser().then(({ data, error }) => {
+  if (!error) {
+    user = data.user;
+  }
+});
 
 // check poll-status exactly like useEstimateFlow does
 const waitForEstimateReady = async (
@@ -892,30 +902,6 @@ const handleSaveEstimate = async () => {
   };
 
   const renderActionButtons = () => {
-  // ── 1) EDIT MODE ───────────────────────────────────────────────────────────
-  if (isEditing) {
-    return (
-      <div className="flex justify-end items-center space-x-2">
-        <Button
-          variant="outline"
-          onClick={() => {
-            setIsEditing(false);
-            if (lead?.estimate_data) {
-              setEditedEstimate(JSON.parse(JSON.stringify(lead.estimate_data)));
-            }
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSaveEstimate}
-          disabled={isSaving || (!effectiveContractorId || (isLoadingUser && !urlContractorId))}
-        >
-          {isSaving ? "Saving..." : "Save Changes"}
-        </Button>
-      </div>
-    );
-  }
 
   // ── 2) LOCKED STATE ────────────────────────────────────────────────────────
   // no action buttons here—unlock lives in the banner
@@ -962,21 +948,21 @@ const handleSaveEstimate = async () => {
             Duplicate Lead
           </DropdownMenuItem>
             {!isEstimateLocked && (
-    <DropdownMenuItem onClick={handleLockEstimate}>
-      <LockIcon className="mr-2 h-4 w-4" />
-      Lock Estimate
-    </DropdownMenuItem>
-  )}
+              <DropdownMenuItem onClick={handleLockEstimate}>
+                <LockIcon className="mr-2 h-4 w-4" />
+                Lock Estimate
+              </DropdownMenuItem>
+            )}
           <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleArchiveLead} disabled={isCancelling}>
+            <ArchiveIcon className="mr-2 h-4 w-4" />
+            Archive Lead
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleCancelLead} className="text-destructive">
             <X className="mr-2 h-4 w-4" />
             Cancel Lead
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleArchiveLead} disabled={isCancelling}>
-            <Copy className="mr-2 h-4 w-4 rotate-90" />
-            Archive Lead
-          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
             <Trash2 className="mr-2 h-4 w-4" />
             Delete Lead
@@ -1107,27 +1093,56 @@ const handleSaveEstimate = async () => {
    </div>
  )}
             {/* Bottom Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">
-              <div className="container max-w-6xl mx-auto">
-                <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse w-full">
-                  <Button 
-                    variant="outline" 
-                    className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
-                  >
-                    <Phone className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
-                    Call
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="rounded-none shadow-none focus-visible:z-10 flex-1"
-                  >
-                    <MessageSquare className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
-                    Text
-                  </Button>
-                  
-                    </div>
+            {
+              !isEditing ? 
+              <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">
+                <div className="container max-w-6xl mx-auto">
+                  <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse w-full">
+                    <Button 
+                      variant="outline" 
+                      className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
+                    >
+                      <Phone className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+                      Call
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="rounded-l-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
+                    >
+                      <MessageSquare className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+                      Text
+                    </Button>
+                    
+                      </div>
+                </div>
               </div>
-            </div>
+              :     
+              <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">
+                <div className="container max-w-6xl mx-auto">
+                  <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse w-full">                
+                    <Button
+                      variant="outline"
+                      className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
+                      onClick={() => {
+                        setIsEditing(false);
+                        if (lead?.estimate_data) {
+                          setEditedEstimate(JSON.parse(JSON.stringify(lead.estimate_data)));
+                        }
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="rounded-l-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
+                      onClick={handleSaveEstimate}
+                      disabled={isSaving || (!effectiveContractorId || (isLoadingUser && !urlContractorId))}
+                    >
+                      {isSaving ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            }
           </div>
         </DialogContent>
         
@@ -1264,6 +1279,7 @@ const handleSaveEstimate = async () => {
         leadId={lead?.id}
         estimateData={lead?.estimate_data}
         isContractorSignature={true} // Important: set to true for contractor signature
+        clientName={lead.user_name}
       />
 }
 
