@@ -48,6 +48,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SignatureDialog } from "@/components/EstimateForm/SignatureDialog";
+import { set } from "date-fns";
 
 // EstimateLockBanner Component
 const EstimateLockBanner = ({ isLocked, onUnlock, className = "" }) => {
@@ -937,12 +938,12 @@ const handleSaveEstimate = async () => {
         Edit
       </Button>
       <Button
-        variant="outline"
-        onClick={() => setShowEmailDialog(true)}
-        disabled={disabled}
+          variant="outline"
+          onClick={() => setShowSendDialog(true)}
+          disabled={disabled}
       >
-        <Mail className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} />
-        Email
+        <Send className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+        Send
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
