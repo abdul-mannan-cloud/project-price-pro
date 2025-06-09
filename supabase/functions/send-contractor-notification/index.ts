@@ -51,7 +51,9 @@ interface ContractorNotificationRequest {
   questions: CategoryData[];
   answers: Answers;
   isTestEstimate?: boolean;
+  leadId: string; // <-- Added this line
 }
+
 
 // Environment variables handling
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -148,6 +150,7 @@ function generateEmailContent(params: {
   answers: Answers;
   estimate: Estimate;
   isTestEstimate: boolean;
+  leadId: string; // <-- Added this line
 }): string {
   const {
     subject,
@@ -156,8 +159,11 @@ function generateEmailContent(params: {
     questions,
     answers,
     estimate,
-    isTestEstimate
+    isTestEstimate,
+    leadId // <-- Destructured this
   } = params;
+
+  const viewLink = `https://estimatrix.io/leads?leadId=${leadId}`;
 
   return `
     <!DOCTYPE html>
@@ -186,15 +192,20 @@ function generateEmailContent(params: {
         <p><strong>Total Estimated Cost:</strong> ${formatCurrency(estimate.totalCost || 0)}</p>
       </div>
 
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${viewLink}" target="_blank" style="background-color: #1a73e8; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Opportunity</a>
+      </div>
+
       <p style="color: #666; font-size: 14px;">
         ${isTestEstimate
-      ? 'This is a test estimate preview. No customer information is attached.'
-      : 'This is an automated notification. Please log in to your dashboard to view the full estimate details and take action.'}
+          ? 'This is a test estimate preview. No customer information is attached.'
+          : 'This is an automated notification. Please log in to your dashboard to view the full estimate details and take action.'}
       </p>
     </body>
     </html>
   `;
 }
+
 
 /**
  * Formats customer availability information
@@ -205,6 +216,15 @@ function generateEmailContent(params: {
 function formatAvailability(customerInfo: CustomerInfo): string {
   let availableDate = '';
 
+  if (customerInfo.available_date == null && customerInfo.available_time == null) {
+    return `
+      <ul style="list-style-type: none; padding: 0;">
+        ${`<li><strong>Date Available:</strong>N/A</li>`}
+        ${`<li><strong>Time Available:</strong>N/A</li>`}
+      </ul>
+    `;
+  }
+
   if (customerInfo.flexible === 'flexible') {
     availableDate = 'Flexible Date';
   } else if (customerInfo.flexible === 'on_date') {
@@ -212,6 +232,7 @@ function formatAvailability(customerInfo: CustomerInfo): string {
   } else if (customerInfo.available_date) {
     availableDate = `Before Date ${customerInfo.available_date}`;
   }
+
 
   return `
     <ul style="list-style-type: none; padding: 0;">
@@ -235,6 +256,7 @@ serve(async (req: Request): Promise<Response> => {
       questions,
       answers,
       isTestEstimate = false,
+      leadId
     } = requestData;
 
     if (!contractor?.contact_email) {
@@ -242,8 +264,9 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     const subject = isTestEstimate
-        ? `[TEST] New Estimate Preview Generated`
-        : `New $${estimate.totalCost.toFixed(2)} Opportunity from ${customerInfo.fullName}`;
+      ? `[TEST] New Estimate Preview Generated`
+      : `New $${estimate.totalCost.toLocaleString()} Opportunity from ${customerInfo.fullName}`;
+
 
     const customerDetails = isTestEstimate
         ? `<p style="color: #666;"><strong>Note:</strong> This is a test estimate preview.</p>`
@@ -266,7 +289,8 @@ serve(async (req: Request): Promise<Response> => {
       questions,
       answers,
       estimate,
-      isTestEstimate
+      isTestEstimate,
+      leadId // <-- pass it here
     });
 
     const emailResponse = await resend.emails.send({
