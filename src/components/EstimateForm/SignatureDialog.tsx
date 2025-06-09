@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,9 @@ interface SignatureDialogProps {
   contractorId?: string | null;
   leadId?: string;
   estimateData?: any;
-  isContractorSignature?: boolean; // New prop to determine if this is for a contractor or client
+  isContractorSignature?: boolean;
+  contractorName?: string;
+  clientName?: string;
 }
 
 export const SignatureDialog = ({
@@ -29,14 +31,60 @@ export const SignatureDialog = ({
   contractorId,
   leadId,
   estimateData,
-  isContractorSignature = false // Default to client signature
+  isContractorSignature = false,
 }: SignatureDialogProps) => {
   const [signature, setSignature] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);  
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error("Failed to fetch user:", error.message);
+        return;
+      }
+
+      console.log(user);
+      
+
+      const userName =
+        user?.user_metadata?.first_name || "";
+
+       setSignature(userName);
+    };
+
+    const fetchLead = async () => {
+      const {
+        data: lead,
+        error,
+      } = await supabase.from("leads").select("*").eq("id", leadId).single();
+
+      if (error) {
+        console.error("Failed to fetch user:", error.message);
+        return;
+      }
+
+      console.log(lead.user_name);
+      
+
+      const userName = lead.user_name || ""
+       setSignature(userName);
+    };
+
+    if (isOpen && isContractorSignature) {
+      fetchUser();
+    } else {
+      fetchLead()
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!signature.trim()) {
       toast({
         title: "Error",
@@ -45,44 +93,39 @@ export const SignatureDialog = ({
       });
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
-      // If lead ID and contractor ID are provided, update the lead
       if (leadId && contractorId) {
-        // Determine which signature field to update based on isContractorSignature prop
-       const updatePayload = isContractorSignature
-  ? {
-      contractor_signature: signature,
-      contractor_signature_date: new Date().toISOString(),
-      status: "approved"          // NEW – contractor signs → approved
-    }
-  : {
-      client_signature: signature,
-      client_signature_date: new Date().toISOString(),
-      status: "in-progress"       // NEW – client signs    → in‑progress
-    };
-       const { error: dbError } = await supabase
-           .from("leads")
-           .update(updatePayload)
-           .eq("id", leadId);
-          
-         if (dbError) throw dbError;
-        
-        // Show success message
+        const updatePayload = isContractorSignature
+          ? {
+              contractor_signature: signature,
+              contractor_signature_date: new Date().toISOString(),
+              status: "approved",
+            }
+          : {
+              client_signature: signature,
+              client_signature_date: new Date().toISOString(),
+              status: "in-progress",
+            };
+
+        const { error: dbError } = await supabase
+          .from("leads")
+          .update(updatePayload)
+          .eq("id", leadId);
+
+        if (dbError) throw dbError;
+
         toast({
           title: "Success",
-          description: isContractorSignature 
+          description: isContractorSignature
             ? "Contractor signature added successfully."
             : "Client signature added successfully.",
         });
       }
-      
-      // Call onSign callback with signature
+
       onSign(signature);
-      
-      // Close dialog and reset state
       setSignature("");
       onClose();
     } catch (error) {
@@ -105,7 +148,7 @@ export const SignatureDialog = ({
             {isContractorSignature ? "Add Contractor Signature" : "Add Signature"}
           </DialogTitle>
           <DialogDescription>
-            {isContractorSignature 
+            {isContractorSignature
               ? "Please type your name to sign this estimate as the contractor."
               : "Please type your name to sign this estimate."}
           </DialogDescription>

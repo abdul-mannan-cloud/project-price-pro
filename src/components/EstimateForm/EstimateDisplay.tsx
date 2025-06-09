@@ -1150,8 +1150,8 @@ useEffect(() => {
                 undefined
               }
               canContractorSign={
-                isLeadPage && // Only in the lead page
-                isContractor // Only if it's the contractor
+                isLeadPage && 
+                isContractor 
               }
             />
           )}
