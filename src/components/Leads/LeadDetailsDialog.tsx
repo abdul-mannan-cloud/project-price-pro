@@ -353,7 +353,7 @@ useEffect(() => {
       // Refresh lead data
       refetchLead();
 
-      const { data: emailData, error: emailFetchError } = await supabase
+      const { data: contractor} = await supabase
           .from('contractors')
           .select('*')
           .eq('id', lead.contractor_id)
@@ -367,13 +367,10 @@ useEffect(() => {
       const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
         body: {
           type: 'contractor_signed',
-          phone: lead.user_phone,
+          phone: contractor.contact_phone,
           data: {
-            businessName: emailData.business_name || "Your Contractor",
-            estimatePageUrl: `${window.location.origin}/e/${leadId}`,
-            businessOwnerFullName: emailData.business_owner_name || emailData.business_name || "Your Contractor",
-            businessPhone: emailData.contact_phone || "N/A",
-            businessEmail: emailData.contact_email || "N/A",
+            businessName: contractor.business_name || "Your Contractor",
+            estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
             projectTitle:projectTitle
           }
         }
