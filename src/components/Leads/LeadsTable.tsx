@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo  } from "react";
 import {
   Table,
   TableBody,
@@ -186,6 +186,30 @@ export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExp
 
 cleanupIncompleteLeads(); 
   }, []);
+  // ── FIX bad “complete” statuses immediately ────────────────────────────────
+useEffect(() => {
+  if (!leads?.length) return;
+
+  // any lead marked “complete” but lacking a client signature
+  const toFix = leads
+    .filter(l => l.status === "complete" && !l.client_signature)
+    .map(l => l.id);
+
+  if (!toFix.length) return;
+
+  // update once in Supabase, then let React-Query refetch
+  (async () => {
+    const { error } = await supabase
+      .from("leads")
+      .update({ status: "in-progress" })
+      .in("id", toFix);
+
+    if (error) {
+      console.error("Failed to normalise lead status", error);
+    }
+  })();
+}, [leads]);
+
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -260,8 +284,20 @@ cleanupIncompleteLeads();
       });
     }
   };
+// treat unsigned “complete” leads as “in-progress” right away
+const computedLeads = useMemo(
+  () =>
+    leads.map(l => ({
+      ...l,
+      status:
+        l.status === "complete" && !l.client_signature
+          ? "in-progress"
+          : l.status,
+    })),
+  [leads]
+);
 
-  const filteredLeads = leads
+  const filteredLeads = computedLeads
     .filter(lead => {
       const searchLower = searchTerm.toLowerCase();
       return (

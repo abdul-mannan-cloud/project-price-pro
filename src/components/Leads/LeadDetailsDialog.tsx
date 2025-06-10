@@ -326,6 +326,29 @@ const signatureEnabled = lead?.signature_enabled ?? true;
       }
     }
   }, [fetchedLead]);
+  // ── Auto-downgrade “complete” ➜ “in-progress” when no signature ─────────────
+useEffect(() => {
+  if (!lead) return;                   // nothing loaded yet
+  if (lead.status !== "complete") return; // already fine
+  if (lead.client_signature) return;   // the client HAS signed
+
+  // flip it in DB and locally
+  (async () => {
+    const { error } = await supabase
+      .from("leads")
+      .update({ status: "in-progress" })
+      .eq("id", lead.id);
+
+    if (!error) {
+      setLead(prev => prev ? { ...prev, status: "in-progress" } : prev);
+      queryClient.invalidateQueries(["leads"]);
+      queryClient.invalidateQueries(["lead", lead.id]);
+    } else {
+      console.error("Could not change status to in-progress", error);
+    }
+  })();
+}, [lead?.id, lead?.status, lead?.client_signature]);
+
 
   // Check if estimate is locked (client has signed)
 // ✅ new — always reflects the current lead state
@@ -823,43 +846,69 @@ const handleSaveEstimate = async () => {
     }
   };
 
-  const handleSendSMS = async () => {
-    if (!lead?.user_phone || !lead || !effectiveContractorId) {
+  const handleSendSMS = async (): Promise<boolean> => {
+  if (!lead?.user_phone || !lead || !effectiveContractorId) {
+    return false;
+  }
+
+  try {
+    // build your project title
+    let projectTitle = "";
+    for (const group of lead.estimate_data?.groups || []) {
+      projectTitle += ` - ${group.title}`;
+    }
+
+    // send the SMS
+    const { error: smsSendError } = await supabase.functions.invoke("send-sms", {
+      body: {
+        type: "estimate_sent",
+        phone: lead.user_phone,
+        data: {
+          businessName:
+            contractor?.business_name || "Your Contractor",
+          estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
+          businessOwnerFullName:
+            contractor?.business_owner_name ||
+            contractor?.business_name ||
+            "Your Contractor",
+          businessPhone: contractor?.contact_phone || "N/A",
+          businessEmail: contractor?.contact_email || "N/A",
+          projectTitle,
+        },
+      },
+    });
+
+    if (smsSendError) {
+      console.error("Failed to send SMS", smsSendError);
       return false;
     }
 
+    // ── SMS succeeded, now add 10¢ to this contractor’s usage ───────────
     try {
-      let projectTitle = '';
-      for (const group in lead.estimate_data?.groups) {
-        projectTitle += ` - ${lead.estimate_data?.groups[group].title}`;
-      }
+      const { data: current } = await supabase
+        .from("contractors")
+        .select("usage")
+        .eq("id", contractor.id)
+        .single();
 
-      const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
-        body: {
-          type: 'estimate_sent',
-          phone: lead.user_phone,
-          data: {
-            businessName: contractor?.business_name || "Your Contractor",
-            estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
-            businessOwnerFullName: contractor?.business_owner_name || contractor?.business_name || "Your Contractor",
-            businessPhone: contractor?.contact_phone || "N/A",
-            businessEmail: contractor?.contact_email || "N/A",
-            projectTitle: projectTitle
-          }
-        }
-      });
+      const newUsage = (current?.usage || 0) + 0.10;
 
-      if (smsSendError) {
-        console.error("Failed to send SMS", smsSendError);
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error sending SMS:', error);
-      return false;
+      await supabase
+        .from("contractors")
+        .update({ usage: newUsage })
+        .eq("id", contractor.id);
+    } catch (uErr) {
+      console.error("Could not increment contractor usage", uErr);
+      // not fatal — SMS was sent, so we still count it as success
     }
-  };
+
+    return true;
+  } catch (error) {
+    console.error("Error sending SMS:", error);
+    return false;
+  }
+};
+
 
   const handleSendEstimate = async () => {
     if (!lead || !effectiveContractorId) {
@@ -961,6 +1010,20 @@ const handleSaveEstimate = async () => {
         // Reset form
         setSendOptions({ email: false, sms: false, copyLink: false });
       }
+      try {
+  if (lead.status === "complete") {
+    await supabase
+      .from("leads")
+      .update({ status: "in-progress" })
+      .eq("id", lead.id);
+
+    // refresh cached lists
+    queryClient.invalidateQueries(["leads"]);
+    queryClient.invalidateQueries(["lead", lead.id]);
+  }
+} catch (e) {
+  console.error("Could not flip status to in-progress", e);
+}
 
     } catch (error) {
       console.error('Error sending estimate:', error);
