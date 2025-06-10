@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import AddPaymentMethod from "../Onboarding/addPaymentMethod";
 import { Button } from "@/components/ui/button";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Trash2 } from "lucide-react";
 
 export const UsageSettings = ({ contractor }) => {
   const [cards, setCards] = useState([]);
@@ -11,34 +11,35 @@ export const UsageSettings = ({ contractor }) => {
   const [loading, setLoading] = useState(false);
   const [customer, setCustomer] = useState(null);
   const [updatingDefault, setUpdatingDefault] = useState(false);
+  const [removingPaymentMethod, setRemovingPaymentMethod] = useState(null);
+
+  const fetchPaymentMethods = async () => {
+    try {
+      const response = await supabase.functions.invoke('get-payment-methods', {
+        body: {
+          customer_id: contractor?.stripe_customer_id,
+        },
+      });
+      setCustomer(response.data.customer);
+      setCards(response.data.paymentMethods.data.map((method) => {
+        const card = method.card;
+        return {
+          display_brand: card.brand,
+          exp_month: card.exp_month,
+          exp_year: card.exp_year,
+          funding: card.funding,
+          last4: card.last4,
+          paymentMethodID: method.id,
+          isDefault: method.id === response.data.customer?.invoice_settings?.default_payment_method
+        };
+      }));
+    } catch (error) {
+      console.error("Error fetching payment methods:", error);
+      toast.error("Failed to load payment methods");
+    }
+  };
 
   useEffect(() => {
-    const fetchPaymentMethods = async () => {
-      try {
-        const response = await supabase.functions.invoke('get-payment-methods', {
-          body: {
-            customer_id: contractor?.stripe_customer_id,
-          },
-        });
-        setCustomer(response.data.customer);
-        setCards(response.data.paymentMethods.data.map((method) => {
-          const card = method.card;
-          return {
-            display_brand: card.brand,
-            exp_month: card.exp_month,
-            exp_year: card.exp_year,
-            funding: card.funding,
-            last4: card.last4,
-            paymentMethodID: method.id,
-            isDefault: method.id === response.data.customer?.invoice_settings?.default_payment_method
-          };
-        }));
-      } catch (error) {
-        console.error("Error fetching payment methods:", error);
-        toast.error("Failed to load payment methods");
-      }
-    };
-
     if (contractor?.stripe_customer_id) {
       fetchPaymentMethods();
     }
@@ -120,6 +121,12 @@ export const UsageSettings = ({ contractor }) => {
     setShow(false);
   }
 
+  const handlePaymentMethodSuccess = () => {
+    setShow(false);
+    fetchPaymentMethods(); // Refetch payment methods after successful addition
+    toast.success('Payment method added successfully');
+  }
+
   // Function to set a payment method as default
   const setDefaultPaymentMethod = async (paymentMethodId) => {
     setUpdatingDefault(true);
@@ -150,21 +157,36 @@ export const UsageSettings = ({ contractor }) => {
     }
   };
 
+  // Function to remove a payment method
+  const removePaymentMethod = async (paymentMethodId) => {
+    setRemovingPaymentMethod(paymentMethodId);
+    try {
+      const { data, error } = await supabase.functions.invoke('remove-payment-method', {
+        body: {
+          paymentMethodId: paymentMethodId
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || "Failed to remove payment method");
+      }
+
+      // Update local state to remove the payment method
+      setCards(cards.filter(card => card.paymentMethodID !== paymentMethodId));
+
+      toast.success('Payment method removed successfully');
+    } catch (error) {
+      console.error("Error removing payment method:", error);
+      toast.error("Failed to remove payment method");
+    } finally {
+      setRemovingPaymentMethod(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Usage</h1>
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-sm font-medium text-muted-foreground">Cash Credits</p>
-          <span className="font-semibold">${formatCashCredits(contractor?.cash_credits || 0)}</span> 
-        </div>
-      </div>
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-sm font-medium text-muted-foreground">AI Usage</p>
-          <span className="font-semibold">${contractor?.usage || 0.00}</span> 
-        </div>
-      </div>
+      
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <p className="text-sm font-medium text-muted-foreground">Payment Methods</p>
@@ -179,7 +201,15 @@ export const UsageSettings = ({ contractor }) => {
         {
           show && (
             <div className="p-4 bg-gray-50 rounded-md">
-              <AddPaymentMethod customerName={contractor.businessName} customerId={contractor.stripe_customer_id} clientSecret={clientSecret} setCurrentStep={() => {}} handleSubmit={() => {}} handleBack={handleCancel} setIsPaymentModalOpen={setShow}/>
+              <AddPaymentMethod 
+                customerName={contractor.businessName} 
+                customerId={contractor.stripe_customer_id} 
+                clientSecret={clientSecret} 
+                setCurrentStep={() => {}} 
+                handleSubmit={handlePaymentMethodSuccess} 
+                handleBack={handleCancel} 
+                setIsPaymentModalOpen={setShow}
+              />
             </div>
           )
         }
@@ -202,22 +232,43 @@ export const UsageSettings = ({ contractor }) => {
                   <div className="text-sm text-gray-500">
                     {card.exp_month.toString().padStart(2, '0')}/{card.exp_year}
                   </div>
-                  {!card.isDefault && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setDefaultPaymentMethod(card.paymentMethodID)}
-                      disabled={updatingDefault}
-                    >
-                      Make Default
-                    </Button>
-                  )}
+                  <div className="flex items-center space-x-2">
+                    {!card.isDefault && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setDefaultPaymentMethod(card.paymentMethodID)}
+                        disabled={updatingDefault}
+                      >
+                        Make Default
+                      </Button>
+                    )}
+                    {!card.isDefault && cards.length > 1 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removePaymentMethod(card.paymentMethodID)}
+                        disabled={removingPaymentMethod === card.paymentMethodID}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))
           ) : (
             <div className="p-4 text-sm text-gray-500">No payment methods found</div>
           )}
+        </div>
+      </div>
+
+      {/* Cash Credits Container */}
+      <div className="border rounded-md p-4 bg-gray-50">
+        <div className="flex justify-between items-center">
+          <p className="text-sm font-medium text-muted-foreground">Cash Credits</p>
+          <span className="font-semibold">${formatCashCredits(contractor?.cash_credits || 0)}</span> 
         </div>
       </div>
       
@@ -254,49 +305,77 @@ export const UsageSettings = ({ contractor }) => {
                     Loading invoices...
                   </td>
                 </tr>
-              ) : invoices.length > 0 ? (
-                invoices.map((invoice, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">
-                      {formatDate(invoice.created_at)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r">
-                      {invoice.description || "Invoice"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r">
-                      {formatCurrency(invoice.amount_paid)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap border-r">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full  ${
-                        invoice.status === 'paid' 
-                          ? 'text-green-800' 
-                          : invoice.status === 'open' 
-                          ? 'text-blue-800' 
-                          : 'text-gray-800'
-                      }`}>
-                        {invoice.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium ">
-                      {invoice.invoice_pdf && (
-                        <a
-                          href={invoice.invoice_pdf}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:text-primary-dark"
-                        >
-                          Download
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                ))
               ) : (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
-                    No invoices found
-                  </td>
-                </tr>
+                <>
+                  {/* AI Usage Row - only show if usage > 0 */}
+                  {contractor?.usage > 0 && (
+                    <tr className="bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">
+                        {formatDate(new Date())}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r">
+                        AI Usage
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r">
+                        {formatCurrency(contractor.usage)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap border-r">
+                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full text-blue-800">
+                          current
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        -
+                      </td>
+                    </tr>
+                  )}
+                  
+                  {/* Regular invoices */}
+                  {invoices.length > 0 ? (
+                    invoices.map((invoice, index) => (
+                      <tr key={index}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">
+                          {formatDate(invoice.created_at)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r">
+                          {invoice.description || "Invoice"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r">
+                          {formatCurrency(invoice.amount_paid)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap border-r">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            invoice.status === 'paid' 
+                              ? 'text-green-800' 
+                              : invoice.status === 'open' 
+                              ? 'text-blue-800' 
+                              : 'text-gray-800'
+                          }`}>
+                            {invoice.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {invoice.invoice_pdf && (
+                            <a
+                              href={invoice.invoice_pdf}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:text-primary-dark"
+                            >
+                              Download
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : contractor?.usage <= 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                        No invoices found
+                      </td>
+                    </tr>
+                  )}
+                </>
               )}
             </tbody>
           </table>
