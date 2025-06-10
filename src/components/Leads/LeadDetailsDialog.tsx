@@ -1012,36 +1012,36 @@ const handleSaveEstimate = async () => {
     }
   };
 
-  const renderActionButtons = () => {
-
-  // ── 2) LOCKED STATE ────────────────────────────────────────────────────────
-  // no action buttons here—unlock lives in the banner
-  if (isEstimateLocked) {
-    return null;
-  }
-
-  // ── 3) UNLOCKED STATE ─────────────────────────────────────────────────────
-  const isLoading = !urlContractorId && isLoadingUser;
-  const disabled = isLoading || !effectiveContractorId;
+ const renderActionButtons = () => {
+  // disable while we’re still figuring out which contractor the user is
+  const isLoading   = !urlContractorId && isLoadingUser;
+  const disabled    = isLoading || !effectiveContractorId;
 
   return (
     <div className="flex justify-end items-center space-x-2">
+      {/* EDIT – hide when locked */}
+      {!isEstimateLocked && (
+        <Button
+          variant="outline"
+          onClick={() => setIsEditing(true)}
+          disabled={disabled}
+        >
+          <Edit className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} />
+          Edit
+        </Button>
+      )}
+
+      {/* SEND – always shown */}
       <Button
         variant="outline"
-        onClick={() => setIsEditing(true)}
+        onClick={() => setShowSendDialog(true)}
         disabled={disabled}
       >
-        <Edit className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} />
-        Edit
-      </Button>
-      <Button
-          variant="outline"
-          onClick={() => setShowSendDialog(true)}
-          disabled={disabled}
-      >
-        <Send className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+        <Send className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} />
         Send
       </Button>
+
+      {/* MORE (⋯) – always shown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -1053,27 +1053,35 @@ const handleSaveEstimate = async () => {
             <MoreHorizontal size={16} strokeWidth={2} />
           </Button>
         </DropdownMenuTrigger>
+
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={handleDuplicateLead} disabled={isDuplicating}>
             <Copy className="mr-2 h-4 w-4" />
             Duplicate Lead
           </DropdownMenuItem>
-            {!isEstimateLocked && (
-              <DropdownMenuItem onClick={handleLockEstimate}>
-                <LockIcon className="mr-2 h-4 w-4" />
-                Lock Estimate
-              </DropdownMenuItem>
-            )}
+
+          {/* Lock / Unlock options */}
+          {!isEstimateLocked ? (
+            <DropdownMenuItem onClick={handleLockEstimate}>
+              <LockIcon className="mr-2 h-4 w-4" />
+              Lock Estimate
+            </DropdownMenuItem>
+          ) : null}
+
           <DropdownMenuSeparator />
+
           <DropdownMenuItem onClick={handleArchiveLead} disabled={isCancelling}>
             <ArchiveIcon className="mr-2 h-4 w-4" />
             Archive Lead
           </DropdownMenuItem>
+
           <DropdownMenuItem onClick={handleCancelLead} className="text-destructive">
             <X className="mr-2 h-4 w-4" />
             Cancel Lead
           </DropdownMenuItem>
+
           <DropdownMenuSeparator />
+
           <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
             <Trash2 className="mr-2 h-4 w-4" />
             Delete Lead
@@ -1083,7 +1091,6 @@ const handleSaveEstimate = async () => {
     </div>
   );
 };
-
   // Show loading state while fetching lead or contractor
   if ((isLoadingLead && leadIdFromUrl) || (isLoadingUser && !urlContractorId) || isLoadingContractor) {
     return (
