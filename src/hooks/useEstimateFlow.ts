@@ -99,7 +99,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
       const { data: addressData, error: addressError } = await supabase
           .from('contractors')
-          .select('business_address')
+          .select('*')
           .eq('id', config.contractorId)
           .single();
 
@@ -131,7 +131,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         description: "Your estimate will be updated shortly.",
       });
 
-      const { error: generateError } = await supabase.functions.invoke('generate-estimate', {
+      const {data, error: generateError } = await supabase.functions.invoke('generate-estimate', {
         body: {
           leadId,
           contractorId: config.contractorId,
@@ -146,37 +146,48 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
       if (generateError) throw generateError;
 
-      let attempts = 0;
-      const maxAttempts = 10;
-      const pollInterval = setInterval(async () => {
-        try {
-          const isComplete = await checkEstimateStatus(leadId, false);
-          attempts++;
+      const currentUsage = addressData?.usage || 0;
+      const newUsage = currentUsage + ((data.tokenUsage.totalTokens / 1000) * 0.01 * 2);
 
-          if (isComplete || attempts >= maxAttempts) {
-            clearInterval(pollInterval);
-            setIsLoading(false);
+      console.log("Updating contractor usage:", data);
+      
 
-            if (!isComplete && attempts >= maxAttempts) {
-              toast({
-                title: "Timeout",
-                description: "Estimate generation is taking longer than expected. Please check back later.",
-                variant: "destructive",
-              });
-            }
-          }
-        } catch (pollError) {
-          console.error('Error polling estimate:', pollError);
-          clearInterval(pollInterval);
-          setIsLoading(false);
+      const { error: updateError } = await supabase
+        .from('contractors')
+        .update({ usage: newUsage })
+        .eq('id', config.contractorId);
 
-          toast({
-            title: "Error",
-            description: "Failed to check estimate status. Please try again.",
-            variant: "destructive",
-          });
-        }
-      }, 3000);
+      // let attempts = 0;
+      // const maxAttempts = 10;
+      // const pollInterval = setInterval(async () => {
+      //   try {
+      //     const isComplete = await checkEstimateStatus(leadId, false);
+      //     attempts++;
+
+      //     if (isComplete || attempts >= maxAttempts) {
+      //       clearInterval(pollInterval);
+      //       setIsLoading(false);
+
+      //       if (!isComplete && attempts >= maxAttempts) {
+      //         toast({
+      //           title: "Timeout",
+      //           description: "Estimate generation is taking longer than expected. Please check back later.",
+      //           variant: "destructive",
+      //         });
+      //       }
+      //     }
+      //   } catch (pollError) {
+      //     console.error('Error polling estimate:', pollError);
+      //     clearInterval(pollInterval);
+      //     setIsLoading(false);
+
+      //     toast({
+      //       title: "Error",
+      //       description: "Failed to check estimate status. Please try again.",
+      //       variant: "destructive",
+      //     });
+      //   }
+      // }, 3000);
 
     } catch (error) {
       console.error('Error refreshing estimate:', error);

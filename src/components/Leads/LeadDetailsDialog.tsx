@@ -166,7 +166,7 @@ const refreshEstimate = async (leadId: string) => {
     toast({ title: "Refreshing", description: "Generating a new estimate…" });
 
     // kick off the edge-function
-    const { error } = await supabase.functions.invoke("generate-estimate", {
+    const { data, error } = await supabase.functions.invoke("generate-estimate", {
       body: { leadId, contractorId: effectiveContractorId },
     });
     if (error) throw error;
@@ -187,6 +187,20 @@ const refreshEstimate = async (leadId: string) => {
       title: "Estimate updated",
       description: "The latest numbers are now showing.",
     });
+
+    const contractorData = await supabase.from("contractors").select("*").eq("id", effectiveContractorId).single();
+
+    const currentUsage = contractorData?.usage || 0;
+    const newUsage = currentUsage + ((data.tokenUsage.totalTokens / 1000) * 0.01 * 2);
+
+    console.log("Updating contractor usage:", data);
+    
+
+    const { error: updateError } = await supabase
+      .from('contractors')
+      .update({ usage: newUsage })
+      .eq('id', effectiveContractorId);
+
   } catch (err) {
     console.error(err);
     toast({
