@@ -896,7 +896,7 @@ useEffect(() => {
                     <Textarea
                       id={`desc-${gi}-${sgi}-${ii}`}
                       rows={2}
-                      value={item.description || ""}
+                      // value={item.description || ""}
                       onChange={e =>
                         handleLineItemChange(gi, sgi, ii, "description", e.target.value)
                       }

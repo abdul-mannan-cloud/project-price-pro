@@ -43,7 +43,7 @@ import Spinner from "@/components/ui/spinner";
 import { UsageSettings } from "@/components/settings/UsageSettings";
 
 // Google Maps API key (Note: You should secure this in production)
-const GOOGLE_API_KEY = "AIzaSyDKyBrlESqS6pcYT-diR2x_S3X5C3DFPkA";
+const GOOGLE_API_KEY = import.meta.env.GOOGLE_API_KEY;
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -709,8 +709,8 @@ const Settings = () => {
         return <WebhookSettings />;
       case "translation":
         return <TranslationSettings />;
-      // case "admin":
-      //   return isAdmin ? <AdminSettings /> : null;
+      case "admin":
+        return isAdmin ? <AdminSettings /> : null;
       default:
         return null;
     }
@@ -824,7 +824,7 @@ const Settings = () => {
                   isActive={activeSection === "translation"}
                   access={true}
               />
-              {/* {isAdmin && (
+              {isAdmin && (
                   <SettingsMenuItem
                       icon={<ShieldAlert className="h-5 w-5" />}
                       title={t("Admin Settings")}
@@ -833,7 +833,7 @@ const Settings = () => {
                       isActive={activeSection === "admin"}
                       access={true}
                   />
-              )} */}
+              )}
               <SettingsMenuItem
                   icon={<LogOut className="h-5 w-5" />}
                   title={t("Log Out")}

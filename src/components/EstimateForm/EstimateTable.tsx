@@ -130,9 +130,16 @@ export const EstimateTable = ({
                               </td>
                               <td className={cn(styles.tableCell, "w-[35%]")}>
                                 {isLoading ? (
-                                    <div className="h-4 bg-gray-200 rounded w-1/2" />
+                                  <div className="h-4 bg-gray-200 rounded w-1/2" />
                                 ) : (
-                                    item.description + (item.costType ? ` (${item.costType})` : "")
+                                  <>
+                                    {item.description}
+                                    {item.costType && (
+                                      <span className="ml-2 inline-block rounded-full bg-gray-100 px-2 py-[1px] text-[12px] text-gray-800 shadow">
+                                        {item.costType}
+                                      </span>
+                                    )}
+                                  </>
                                 )}
                               </td>
                               <td className={cn(styles.tableCell, "w-[7%] text-right")}>
