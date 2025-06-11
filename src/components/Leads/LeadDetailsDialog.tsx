@@ -846,36 +846,40 @@ const handleSaveEstimate = async () => {
     }
   };
 
-  const handleSendSMS = async (): Promise<boolean> => {
+const handleSendSMS = async () => {
   if (!lead?.user_phone || !lead || !effectiveContractorId) {
     return false;
   }
 
   try {
-    // build your project title
-    let projectTitle = "";
-    for (const group of lead.estimate_data?.groups || []) {
-      projectTitle += ` - ${group.title}`;
+    let projectTitle = '';
+    for (const group in lead.estimate_data?.groups) {
+      projectTitle += ` - ${lead.estimate_data?.groups[group].title}`;
     }
 
-    // send the SMS
-    const { error: smsSendError } = await supabase.functions.invoke("send-sms", {
+    const { data: emailData } = await supabase
+      .from("contractors")
+      .select("*")
+      .eq("id", effectiveContractorId)
+      .single();
+
+    const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
       body: {
-        type: "estimate_sent",
+        type: 'estimate_sent',
         phone: lead.user_phone,
         data: {
-          businessName:
-            contractor?.business_name || "Your Contractor",
+          businessName: emailData?.business_name || "Your Contractor",
+          // <-- wrap this entire URL in backticks:
           estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
           businessOwnerFullName:
-            contractor?.business_owner_name ||
-            contractor?.business_name ||
+            emailData?.business_owner_name ||
+            emailData?.business_name ||
             "Your Contractor",
-          businessPhone: contractor?.contact_phone || "N/A",
-          businessEmail: contractor?.contact_email || "N/A",
-          projectTitle,
-        },
-      },
+          businessPhone: emailData?.contact_phone || "N/A",
+          businessEmail: emailData?.contact_email || "N/A",
+          projectTitle
+        }
+      }
     });
 
     if (smsSendError) {
@@ -883,31 +887,37 @@ const handleSaveEstimate = async () => {
       return false;
     }
 
-    // ── SMS succeeded, now add 10¢ to this contractor’s usage ───────────
-    try {
-      const { data: current } = await supabase
-        .from("contractors")
-        .select("usage")
-        .eq("id", contractor.id)
-        .single();
+    const { data: contractorData, error: contractorError } = await supabase
+      .from("contractors")
+      .select("usage")
+      .eq("id", effectiveContractorId)
+      .single();
 
-      const newUsage = (current?.usage || 0) + 0.10;
+    if (contractorError) {
+      console.error("Failed to fetch contractor data", contractorError);
+      return false;
+    }
 
-      await supabase
-        .from("contractors")
-        .update({ usage: newUsage })
-        .eq("id", contractor.id);
-    } catch (uErr) {
-      console.error("Could not increment contractor usage", uErr);
-      // not fatal — SMS was sent, so we still count it as success
+    const currentUsage = contractorData?.usage || 0;
+    const newUsage = currentUsage + 0.10;
+
+    const { error: updateError } = await supabase
+      .from('contractors')
+      .update({ usage: newUsage })
+      .eq('id', effectiveContractorId);
+
+    if (updateError) {
+      console.error("Failed to update usage", updateError);
+      return false;
     }
 
     return true;
   } catch (error) {
-    console.error("Error sending SMS:", error);
+    console.error('Error sending SMS:', error);
     return false;
   }
 };
+
 
 
   const handleSendEstimate = async () => {
