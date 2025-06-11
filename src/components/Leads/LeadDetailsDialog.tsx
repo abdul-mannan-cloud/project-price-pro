@@ -1308,14 +1308,14 @@ const handleSendSMS = async () => {
                       className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
                     >
                       <Phone className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
-                      Call
+                      <a href={`tel:${lead.user_phone}`}>Call</a>
                     </Button>
                     <Button 
                       variant="outline" 
                       className="rounded-l-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
                     >
                       <MessageSquare className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
-                      Text
+                      <a href={`sms:${lead.user_phone}`}>Text</a>
                     </Button>
                     
                       </div>
