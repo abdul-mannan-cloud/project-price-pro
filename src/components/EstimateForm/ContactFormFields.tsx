@@ -16,10 +16,6 @@ interface ContactFormFieldsProps {
     onChange: (field: string, value: string) => void;
 }
 
-// Google Maps API key (Note: You should secure this in production)
-const GOOGLE_API_KEY = "AIzaSyBuZj-RWOoAc24CaC2h4SY9LvD-WzQPtJs";
-
-// Validation utilities
 const validateEmail = (email: string) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
     return regex.test(email);
@@ -64,7 +60,7 @@ export const ContactFormFields = ({ formData, onChange }: ContactFormFieldsProps
         setIsLoading(true);
         try {
             const response = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(input)}&key=${GOOGLE_API_KEY}`
+                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(input)}&key=${process.env.GOOGLE_API_KEY}`
             );
             const data = await response.json();
 
