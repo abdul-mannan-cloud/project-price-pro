@@ -340,6 +340,29 @@ const signatureEnabled = lead?.signature_enabled ?? true;
       }
     }
   }, [fetchedLead]);
+  // ── Auto-downgrade “complete” ➜ “in-progress” when no signature ─────────────
+useEffect(() => {
+  if (!lead) return;                   // nothing loaded yet
+  if (lead.status !== "complete") return; // already fine
+  if (lead.client_signature) return;   // the client HAS signed
+
+  // flip it in DB and locally
+  (async () => {
+    const { error } = await supabase
+      .from("leads")
+      .update({ status: "in-progress" })
+      .eq("id", lead.id);
+
+    if (!error) {
+      setLead(prev => prev ? { ...prev, status: "in-progress" } : prev);
+      queryClient.invalidateQueries(["leads"]);
+      queryClient.invalidateQueries(["lead", lead.id]);
+    } else {
+      console.error("Could not change status to in-progress", error);
+    }
+  })();
+}, [lead?.id, lead?.status, lead?.client_signature]);
+
 
   // Check if estimate is locked (client has signed)
 // ✅ new — always reflects the current lead state
@@ -837,67 +860,79 @@ const handleSaveEstimate = async () => {
     }
   };
 
-  const handleSendSMS = async () => {
-    if (!lead?.user_phone || !lead || !effectiveContractorId) {
-      return false;
+const handleSendSMS = async () => {
+  if (!lead?.user_phone || !lead || !effectiveContractorId) {
+    return false;
+  }
+
+  try {
+    let projectTitle = '';
+    for (const group in lead.estimate_data?.groups) {
+      projectTitle += ` - ${lead.estimate_data?.groups[group].title}`;
     }
 
-    try {
-      let projectTitle = '';
-      for (const group in lead.estimate_data?.groups) {
-        projectTitle += ` - ${lead.estimate_data?.groups[group].title}`;
-      }
+    const { data: emailData } = await supabase
+      .from("contractors")
+      .select("*")
+      .eq("id", effectiveContractorId)
+      .single();
 
-      const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
-        body: {
-          type: 'estimate_sent',
-          phone: lead.user_phone,
-          data: {
-            businessName: contractor?.business_name || "Your Contractor",
-            estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
-            businessOwnerFullName: contractor?.business_owner_name || contractor?.business_name || "Your Contractor",
-            businessPhone: contractor?.contact_phone || "N/A",
-            businessEmail: contractor?.contact_email || "N/A",
-            projectTitle: projectTitle
-          }
+    const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
+      body: {
+        type: 'estimate_sent',
+        phone: lead.user_phone,
+        data: {
+          businessName: emailData?.business_name || "Your Contractor",
+          // <-- wrap this entire URL in backticks:
+          estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
+          businessOwnerFullName:
+            emailData?.business_owner_name ||
+            emailData?.business_name ||
+            "Your Contractor",
+          businessPhone: emailData?.contact_phone || "N/A",
+          businessEmail: emailData?.contact_email || "N/A",
+          projectTitle
         }
-      });
-
-      if (smsSendError) {
-        console.error("Failed to send SMS", smsSendError);
-        return false;
       }
+    });
 
-      const { data: contractorData, error: contractorError } = await supabase
-        .from("contractors")
-        .select("usage")
-        .eq("id", effectiveContractorId)
-        .single();
-
-      if (contractorError) {
-        console.error("Failed to fetch contractor data", contractorError);
-        return false;
-      }
-
-      const currentUsage = contractorData?.usage || 0;
-      const newUsage = currentUsage + 0.10;
-
-      const { error: updateError } = await supabase
-        .from('contractors')
-        .update({ usage: newUsage })
-        .eq('id', effectiveContractorId);
-
-      if (updateError) {
-        console.error("Failed to update usage", updateError);
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error sending SMS:', error);
+    if (smsSendError) {
+      console.error("Failed to send SMS", smsSendError);
       return false;
     }
-  };
+
+    const { data: contractorData, error: contractorError } = await supabase
+      .from("contractors")
+      .select("usage")
+      .eq("id", effectiveContractorId)
+      .single();
+
+    if (contractorError) {
+      console.error("Failed to fetch contractor data", contractorError);
+      return false;
+    }
+
+    const currentUsage = contractorData?.usage || 0;
+    const newUsage = currentUsage + 0.10;
+
+    const { error: updateError } = await supabase
+      .from('contractors')
+      .update({ usage: newUsage })
+      .eq('id', effectiveContractorId);
+
+    if (updateError) {
+      console.error("Failed to update usage", updateError);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error sending SMS:', error);
+    return false;
+  }
+};
+
+
 
   const handleSendEstimate = async () => {
     if (!lead || !effectiveContractorId) {
@@ -999,6 +1034,20 @@ const handleSaveEstimate = async () => {
         // Reset form
         setSendOptions({ email: false, sms: false, copyLink: false });
       }
+      try {
+  if (lead.status === "complete") {
+    await supabase
+      .from("leads")
+      .update({ status: "in-progress" })
+      .eq("id", lead.id);
+
+    // refresh cached lists
+    queryClient.invalidateQueries(["leads"]);
+    queryClient.invalidateQueries(["lead", lead.id]);
+  }
+} catch (e) {
+  console.error("Could not flip status to in-progress", e);
+}
 
     } catch (error) {
       console.error('Error sending estimate:', error);
@@ -1050,36 +1099,36 @@ const handleSaveEstimate = async () => {
     }
   };
 
-  const renderActionButtons = () => {
-
-  // ── 2) LOCKED STATE ────────────────────────────────────────────────────────
-  // no action buttons here—unlock lives in the banner
-  if (isEstimateLocked) {
-    return null;
-  }
-
-  // ── 3) UNLOCKED STATE ─────────────────────────────────────────────────────
-  const isLoading = !urlContractorId && isLoadingUser;
-  const disabled = isLoading || !effectiveContractorId;
+ const renderActionButtons = () => {
+  // disable while we’re still figuring out which contractor the user is
+  const isLoading   = !urlContractorId && isLoadingUser;
+  const disabled    = isLoading || !effectiveContractorId;
 
   return (
     <div className="flex justify-end items-center space-x-2">
+      {/* EDIT – hide when locked */}
+      {!isEstimateLocked && (
+        <Button
+          variant="outline"
+          onClick={() => setIsEditing(true)}
+          disabled={disabled}
+        >
+          <Edit className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} />
+          Edit
+        </Button>
+      )}
+
+      {/* SEND – always shown */}
       <Button
         variant="outline"
-        onClick={() => setIsEditing(true)}
+        onClick={() => setShowSendDialog(true)}
         disabled={disabled}
       >
-        <Edit className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} />
-        Edit
-      </Button>
-      <Button
-          variant="outline"
-          onClick={() => setShowSendDialog(true)}
-          disabled={disabled}
-      >
-        <Send className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+        <Send className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} />
         Send
       </Button>
+
+      {/* MORE (⋯) – always shown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -1091,27 +1140,35 @@ const handleSaveEstimate = async () => {
             <MoreHorizontal size={16} strokeWidth={2} />
           </Button>
         </DropdownMenuTrigger>
+
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={handleDuplicateLead} disabled={isDuplicating}>
             <Copy className="mr-2 h-4 w-4" />
             Duplicate Lead
           </DropdownMenuItem>
-            {!isEstimateLocked && (
-              <DropdownMenuItem onClick={handleLockEstimate}>
-                <LockIcon className="mr-2 h-4 w-4" />
-                Lock Estimate
-              </DropdownMenuItem>
-            )}
+
+          {/* Lock / Unlock options */}
+          {!isEstimateLocked ? (
+            <DropdownMenuItem onClick={handleLockEstimate}>
+              <LockIcon className="mr-2 h-4 w-4" />
+              Lock Estimate
+            </DropdownMenuItem>
+          ) : null}
+
           <DropdownMenuSeparator />
+
           <DropdownMenuItem onClick={handleArchiveLead} disabled={isCancelling}>
             <ArchiveIcon className="mr-2 h-4 w-4" />
             Archive Lead
           </DropdownMenuItem>
+
           <DropdownMenuItem onClick={handleCancelLead} className="text-destructive">
             <X className="mr-2 h-4 w-4" />
             Cancel Lead
           </DropdownMenuItem>
+
           <DropdownMenuSeparator />
+
           <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
             <Trash2 className="mr-2 h-4 w-4" />
             Delete Lead
@@ -1121,7 +1178,6 @@ const handleSaveEstimate = async () => {
     </div>
   );
 };
-
   // Show loading state while fetching lead or contractor
   if ((isLoadingLead && leadIdFromUrl) || (isLoadingUser && !urlContractorId) || isLoadingContractor) {
     return (
