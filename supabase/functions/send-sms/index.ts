@@ -56,8 +56,11 @@ To view, save, or print the signed agreement, visit: {estimatePageUrl}
 {businessPhone}
 This is an automated message. Replies are not monitored.`,
 
-  estimate_sent: `{businessName} has prepared an estimate for your review: {estimatePageUrl}
+  estimate_sent: 
+`{businessName} has prepared an estimate for your review: {estimatePageUrl}
+
 If you have any questions, feel free to contact {businessOwnerFullName} at {businessPhone} or {businessEmail}.
+
 This is an automated message. Replies are not monitored.`
 };
 
@@ -105,7 +108,7 @@ function replacePlaceholders(template: string, data: SMSRequest['data']): string
   message = message
     .split('\n')
     .map(line => line.trim())
-    .filter(line => line.length > 0)
+   // .filter(line => line.length > 0)
     .join('\n');
 
   return message;
@@ -214,7 +217,7 @@ serve(async (req: Request) => {
     formattedPhone = '+' + formattedPhone; // Add + prefix
     
     console.log(`Sending ${type} SMS to: ${formattedPhone}`);
-    console.log(`Message preview: ${message.substring(0, 100)}...`);
+console.log(message);
 
     // Send SMS via Telnyx API
     const telnyxResponse = await fetch('https://api.telnyx.com/v2/messages', {

@@ -420,21 +420,23 @@ useEffect(() => {
   }, [leadData, isEditable]);
 
   // Safely check for signatures from estimate or lead
-  useEffect(() => {
-    // Initialize client signature from the estimate or lead prop if available
-    if (estimate?.client_signature && !clientSignature) {
-      setClientSignature(estimate.client_signature);
-    } else if (lead?.client_signature && !clientSignature) {
-      setClientSignature(lead.client_signature);
-    }
-    
-    // Initialize contractor signature similarly
-    if (estimate?.contractor_signature && !signature) {
-      setSignature(estimate.contractor_signature);
-    } else if (lead?.contractor_signature && !signature) {
-      setSignature(lead.contractor_signature);
-    }
-  }, [estimate, lead, clientSignature, signature]);
+    useEffect(() => {
+    /*  Whenever either prop changes we simply mirror the latest value.
+        If the estimate was just unlocked, the signatures coming from the DB
+        will now be null, so we’ll immediately clear the local state and the
+        signature image disappears. */
+    setClientSignature(
+      estimate?.client_signature ?? lead?.client_signature ?? null
+    );
+    setSignature(
+      estimate?.contractor_signature ?? lead?.contractor_signature ?? null
+    );
+  }, [
+    estimate?.client_signature,
+    estimate?.contractor_signature,
+    lead?.client_signature,
+    lead?.contractor_signature,
+  ]);
 
   useEffect(() => {
     const hasValidEstimate = groups?.length > 0 && totalCost > 0;
@@ -800,14 +802,12 @@ useEffect(() => {
   };
 //const perLeadSignatureEnabled = leadData?.signature_enabled ?? true;
  // const signaturesOn = templateSettings.estimate_signature_enabled && perLeadSignatureEnabled;
- const signaturesOn =  templateSettings.estimate_signature_enabled && leadSigEnabled;
+ //const signaturesOn = leadSigEnabled;
  //const signaturesOn = templateSettings.estimate_signature_enabled;
+  const leadOverride = lead?.signature_enabled;
+ const signaturesOn = leadOverride === true ? true : leadOverride === false ? false : templateSettings.estimate_signature_enabled;
   const styles = getTemplateStyles(templateSettings.estimate_template_style);
 
-  // Show loading if we're waiting for contractor data
-  if (isLoading || (!contractor && contractorId && !fetchedContractor)) {
-    return <EstimateSkeleton />;
-  }
 
   const handleDeleteGroup = (groupIndex: number) => {
     const newGroups = JSON.parse(JSON.stringify(editableGroups)) as ItemGroup[];
