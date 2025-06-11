@@ -60,7 +60,7 @@ export const ContactFormFields = ({ formData, onChange }: ContactFormFieldsProps
         setIsLoading(true);
         try {
             const response = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(input)}&key=${process.env.GOOGLE_API_KEY}`
+                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(input)}&key=${process.env.REACT_APP_GOOGLE_API_KEY}`
             );
             const data = await response.json();
 
