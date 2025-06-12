@@ -135,6 +135,9 @@ const [isRefreshingEstimate, setIsRefreshingEstimate] = useState(false);
 // });
 
 // check poll-status exactly like useEstimateFlow does
+// holds the editable phone number for SMS
+const [smsNumber, setSmsNumber] = useState<string>(initialLead?.user_phone || "");
+
 const waitForEstimateReady = async (
   leadId: string,
   maxAttempts = 10,
@@ -382,6 +385,12 @@ const [isEstimateLocked, setIsEstimateLocked] = useState(!!initialLead?.client_s
       setEmailRecipient(lead.user_email);
     }
   }, [lead?.user_email]);
+// whenever the lead loads or changes, reset smsNumber
+useEffect(() => {
+  if (lead?.user_phone) {
+    setSmsNumber(lead.user_phone);
+  }
+}, [lead?.user_phone]);
 
   // Function to handle contractor signature
   const handleContractorSignature = async (signature: string) => {
@@ -880,7 +889,7 @@ const handleSendSMS = async () => {
     const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
       body: {
         type: 'estimate_sent',
-        phone: lead.user_phone,
+        phone: smsNumber,
         data: {
           businessName: emailData?.business_name || "Your Contractor",
           // <-- wrap this entire URL in backticks:
@@ -1437,9 +1446,22 @@ const handleSendSMS = async () => {
                     SMS
                   </label>
                 </div>
-                <span className="text-sm text-gray-500">
-                {lead?.user_phone || "No phone number"}
-              </span>
+                 {sendOptions.sms ? (
+    <Input
+      type="tel"
+      placeholder="+1 (555) 123-4567"
+      value={smsNumber}
+      onChange={e => setSmsNumber(e.target.value)}
+      className="flex-1 max-w-xs"
+    />
+  ) : (
+    <span
+      className="text-sm text-blue-600 cursor-pointer"
+      onClick={() => setSendOptions(prev => ({ ...prev, sms: true }))}
+    >
+      {lead?.user_phone || "Add phone"}
+    </span>
+  )}
               </div>
 
               {/* Copy Link Option */}
