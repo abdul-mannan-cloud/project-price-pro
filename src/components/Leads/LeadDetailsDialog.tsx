@@ -353,12 +353,12 @@ useEffect(() => {
   // Check if estimate is locked (client has signed)
 // ✅ new — always reflects the current lead state
 // at the top, alongside your other useState calls
-const [isEstimateLocked, setIsEstimateLocked] = useState(true);
+const [isEstimateLocked, setIsEstimateLocked] = useState(!!initialLead?.client_signature);
 
 // reset to locked whenever the lead changes (i.e. on dialog open or refresh)
-useEffect(() => {
-  setIsEstimateLocked(true);
-}, [lead?.id]);
+ useEffect(() => {
+    setIsEstimateLocked(!!lead?.client_signature);
+  }, [lead?.id, lead?.client_signature]);
 
 
 
