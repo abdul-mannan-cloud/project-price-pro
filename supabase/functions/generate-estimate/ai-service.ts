@@ -39,6 +39,9 @@ export const generateEstimate = async (
 
                     Your task is to generate a detailed estimate with the following intelligent features:
 
+                    **MAIN TASK**: 
+                   Analyze the Questions and Answers provided by the user to identify the specific changes they want in their project. Break down each Q&A pair step by step to determine what modifications are requested. For every change, specify both the nature of the change and an estimated price based on global market rates. Take into account the user's location (Scottsdale, Phoenix, USA) to adjust the pricing accordingly for better local relevance.
+
                     1. COST TYPE DETECTION:
                     - If only labor costs are required, clearly mark as 'LABOR ONLY' and only include labor costs.
                     - If only material costs are required, clearly mark as 'MATERIAL ONLY' and only include material costs.
@@ -57,7 +60,7 @@ export const generateEstimate = async (
                         - Divide into logical groups and subgroups.
                     - For each item include:
                         * Title with unit (e.g., 'Flooring Installation (SF)')
-                        * Detailed description ( in description also include if its Labor/Material/Both )
+                        * Detailed description 
                         * Quantity
                         * Unit amount
                         * Total price

@@ -106,7 +106,7 @@ const Onboarding = () => {
 
         setIsLoadingAddress(true);
         try {
-            const GOOGLE_API_KEY = "AIzaSyDKyBrlESqS6pcYT-diR2x_S3X5C3DFPkA";
+            const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
             const response = await fetch(
                 `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(input)}&key=${GOOGLE_API_KEY}`
             );
