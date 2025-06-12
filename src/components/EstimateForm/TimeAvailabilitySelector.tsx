@@ -63,10 +63,10 @@ export const TimeAvailabilitySelector = ({ onChange }: TimeAvailabilityProps) =>
                 <label className="block text-lg font-semibold mb-3 text-navy-700">
                     When do you need this done?
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
                     <button
                         type="button"
-                        className={`px-4 flex gap-1 py-2 rounded-full border ${
+                        className={`px-4 flex gap-1 py-2 rounded-full border whitespace-nowrap flex-shrink-0 ${
                             flexibility === "on_date"
                                 ? "bg-primary text-secondary border-primary"
                                 : "bg-white text-navy-800 border-navy-800"
@@ -78,7 +78,7 @@ export const TimeAvailabilitySelector = ({ onChange }: TimeAvailabilityProps) =>
                     </button>
                     <button
                         type="button"
-                        className={`px-4 flex py-2 rounded-full border ${
+                        className={`px-4 flex py-2 rounded-full border whitespace-nowrap flex-shrink-0 ${
                             flexibility === "before_date"
                                 ? "bg-primary text-secondary border-primary"
                                 : "bg-white text-secondary-foreground border-navy-800"
@@ -91,7 +91,7 @@ export const TimeAvailabilitySelector = ({ onChange }: TimeAvailabilityProps) =>
                     </button>
                     <button
                         type="button"
-                        className={`px-4 py-2 rounded-full border ${
+                        className={`px-4 py-2 rounded-full border whitespace-nowrap flex-shrink-0 ${
                             flexibility === "flexible"
                                 ? "bg-primary text-secondary border-primary"
                                 : "bg-white text-navy-800 border-navy-800"

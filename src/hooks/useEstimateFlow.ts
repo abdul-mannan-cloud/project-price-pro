@@ -580,6 +580,31 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         }
       });
 
+      let projectTitle = '';
+      for (const group in lead.estimate_data?.groups) {
+        projectTitle += ` - ${lead.estimate_data?.groups[group].title}`;
+      }
+      
+      const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
+        body: {
+          type: 'estimate_sent',
+          phone: lead.user_phone,
+          data: {
+            businessName: emailData?.business_name || "Your Contractor",
+            // <-- wrap this entire URL in backticks:
+            estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
+            businessOwnerFullName:
+              emailData?.business_owner_name ||
+              emailData?.business_name ||
+              "Your Contractor",
+            businessPhone: emailData?.contact_phone || "N/A",
+            businessEmail: emailData?.contact_email || "N/A",
+            projectTitle
+          }
+        }
+      });
+
+
       if (emailError) {
         console.log("Error sending customer email");
         throw emailError;

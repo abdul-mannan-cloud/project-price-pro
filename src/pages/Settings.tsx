@@ -68,7 +68,7 @@ const Settings = () => {
     { name: t("Settings"), url: "/settings", icon: SettingsIcon }
   ];
 
-  const { data: contractor, isLoading: contractorLoading } = useQuery({
+  const { data: contractor, isLoading: contractorLoading, error: contractorError } = useQuery({
     queryKey: ["contractor"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -83,97 +83,69 @@ const Settings = () => {
       if (error) throw error;
       return data;
     },
+    retry: 3, // Add retry logic
+    retryDelay: 1000, // Wait 1 second between retries
   });
 
+  // Initialize states after contractor data loads
   useEffect(() => {
     if (contractor?.website) {
       setWebsiteInput(contractor.website);
+    }
+    if (contractor?.business_address) {
+      setBusinessAddress(contractor.business_address);
     }
   }, [contractor]);
 
   const handleWebsiteChange = (e) => {
     let value = e.target.value;
-
-    // If user is starting to type and hasn't entered a protocol yet
     if (value && !value.startsWith('http://') && !value.startsWith('https://')) {
       value = 'https://' + value;
     }
-
     setWebsiteInput(value);
   };
 
-  const { data: aiInstructions, isLoading: aiInstructionsLoading } = useQuery({
-    queryKey: ["aiInstructions"],
+  const { data: aiInstructions, isLoading: aiInstructionsLoading, error: aiInstructionsError } = useQuery({
+    queryKey: ["aiInstructions", contractor?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
-
-      // First get the contractor ID
-      const { data: contractorData, error: contractorError } = await supabase
-          .from("contractors")
-          .select("id")
-          .eq("user_id", user.id)
-          .single();
-
-      if (contractorError) throw contractorError;
-
-      // Then get the AI instructions using the contractor_id
+      if (!contractor?.id) return [];
+      
       const { data, error } = await supabase
           .from("ai_instructions")
           .select("*")
-          .eq("contractor_id", contractorData.id);
+          .eq("contractor_id", contractor.id);
 
       if (error) throw error;
       return data || [];
     },
+    enabled: !!contractor?.id, // Only run when contractor is loaded
+    retry: 2,
   });
 
-  const { data: aiRates, isLoading: aiRatesLoading } = useQuery({
-    queryKey: ["aiRates"],
+  const { data: aiRates, isLoading: aiRatesLoading, error: aiRatesError } = useQuery({
+    queryKey: ["aiRates", contractor?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
+      if (!contractor?.id) return [];
 
-      // First get the contractor ID
-      const { data: contractorData, error: contractorError } = await supabase
-          .from("contractors")
-          .select("id")
-          .eq("user_id", user.id)
-          .single();
-
-      if (contractorError) throw contractorError;
-
-      // Then get the AI rates using the contractor_id
       const { data, error } = await supabase
           .from("ai_rates")
           .select("*")
-          .eq("contractor_id", contractorData.id);
+          .eq("contractor_id", contractor.id);
 
       if (error) throw error;
       return data || [];
     },
+    enabled: !!contractor?.id, // Only run when contractor is loaded
+    retry: 2,
   });
 
-// 2. Add a function to save rates
+  // 2. Add a function to save rates
   const saveRates = async (rates) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
+      if (!contractor?.id) throw new Error("No contractor found");
 
-      // Get the contractor to access the contractor_id
-      const { data: contractorData, error: contractorError } = await supabase
-          .from("contractors")
-          .select("id")
-          .eq("user_id", user.id)
-          .single();
-
-      if (contractorError) throw contractorError;
-      const contractor_id = contractorData.id;
-
-      // For each rate in the array, upsert to the ai_rates table
       const promises = rates.map(async (rate) => {
         if (rate.id) {
-          // Update existing rate
           const { error } = await supabase
               .from("ai_rates")
               .update({
@@ -192,11 +164,10 @@ const Settings = () => {
             throw error;
           }
         } else {
-          // Insert new rate
           const { error } = await supabase
               .from("ai_rates")
               .upsert({
-                contractor_id: contractor_id,
+                contractor_id: contractor.id,
                 title: rate.title,
                 rate: rate.rate,
                 unit: rate.unit,
@@ -214,7 +185,6 @@ const Settings = () => {
         }
       });
 
-      // Wait for all database operations to complete
       await Promise.all(promises);
 
       toast({
@@ -230,13 +200,6 @@ const Settings = () => {
       });
     }
   };
-
-  // Set initial business address when contractor data loads
-  useEffect(() => {
-    if (contractor?.business_address) {
-      setBusinessAddress(contractor.business_address);
-    }
-  }, [contractor]);
 
   // Handle clicks outside the suggestions dropdown
   useEffect(() => {
@@ -310,23 +273,10 @@ const Settings = () => {
 
   const saveInstructions = async (instructions) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No authenticated user");
+      if (!contractor?.id) throw new Error("No contractor found");
 
-      // Get the contractor to access the contractor_id
-      const { data: contractorData, error: contractorError } = await supabase
-          .from("contractors")
-          .select("id")
-          .eq("user_id", user.id)
-          .single();
-
-      if (contractorError) throw contractorError;
-      const contractor_id = contractorData.id;
-
-      // For each instruction in the array, upsert to the ai_instructions table
       const promises = instructions.map(async (instruction) => {
         if (instruction.id) {
-          // Update existing instruction
           const { error } = await supabase
               .from("ai_instructions")
               .update({
@@ -339,11 +289,10 @@ const Settings = () => {
 
           if (error) throw error;
         } else {
-          // Insert new instruction
           const { error } = await supabase
               .from("ai_instructions")
               .insert({
-                contractor_id: contractor_id,
+                contractor_id: contractor.id,
                 title: instruction.title,
                 description: instruction.description,
                 instructions: instruction.instructions,
@@ -355,7 +304,6 @@ const Settings = () => {
         }
       });
 
-      // Wait for all database operations to complete
       await Promise.all(promises);
 
       toast({
@@ -383,7 +331,7 @@ const Settings = () => {
             business_name: formData.businessName,
             contact_email: formData.contactEmail,
             contact_phone: formData.contactPhone,
-            business_address: formData.businessAddress || businessAddress, // Use state value if not provided in form
+            business_address: formData.businessAddress || businessAddress,
             website: formData.website,
             license_number: formData.licenseNumber,
           })
@@ -420,7 +368,7 @@ const Settings = () => {
     },
   });
 
-  const handleLogout = async () => {
+  const handleLogout = async (user: string) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
@@ -479,18 +427,21 @@ const Settings = () => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
-    // Add business address from state
     data.businessAddress = businessAddress;
     updateSettings.mutate(data);
   };
 
-  if (contractorLoading) {
+  // Enhanced loading state check
+  const isInitialLoading = contractorLoading || !contractor;
+  const hasErrors = contractorError || aiInstructionsError || aiRatesError;
+
+  // Show loading spinner for initial load
+  if (isInitialLoading) {
     return (
         <div className="min-h-screen bg-secondary">
           <NavBar items={navItems} />
           <div className="container mx-auto py-8">
-            <div className="flex items-center justify-center min-h-screen">
-              {/* <div className="text-muted-foreground">{t("Loading settings...")}</div> */}
+            <div className="flex items-center justify-center min-h-[60vh]">
               <Spinner />
             </div>
           </div>
@@ -498,6 +449,24 @@ const Settings = () => {
     );
   }
 
+  // Show error state
+  if (hasErrors) {
+    return (
+        <div className="min-h-screen bg-secondary">
+          <NavBar items={navItems} />
+          <div className="container mx-auto py-8">
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="text-center">
+                <p className="text-red-500 mb-4">{t("Error loading settings")}</p>
+                <Button onClick={() => window.location.reload()}>
+                  {t("Retry")}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+    );
+  }
 
   const getSectionTitle = () => {
     switch (activeSection) {
@@ -526,24 +495,23 @@ const Settings = () => {
                 <Input
                     label={t("Business Name")}
                     name="businessName"
-                    defaultValue={contractor?.business_name}
+                    defaultValue={contractor?.business_name || ""}
                     required
                 />
                 <Input
                     label={t("Contact Email")}
                     name="contactEmail"
                     type="email"
-                    defaultValue={contractor?.contact_email}
+                    defaultValue={contractor?.contact_email || ""}
                     required
                 />
                 <Input
                     label={t("Contact Phone")}
                     name="contactPhone"
                     type="tel"
-                    defaultValue={contractor?.contact_phone}
+                    defaultValue={contractor?.contact_phone || ""}
                 />
 
-                {/* Address input with autocomplete */}
                 <div className="form-group mb-0 relative group">
                   <Input
                     ref={addressInputRef}
@@ -598,7 +566,7 @@ const Settings = () => {
                 <Input
                     label={t("License Number")}
                     name="licenseNumber"
-                    defaultValue={contractor?.license_number}
+                    defaultValue={contractor?.license_number || ""}
                 />
                 <Button type="submit" className="w-full mt-4" disabled={updateSettings.isPending}>
                   {updateSettings.isPending ? t("Saving...") : t("Save Changes")}
@@ -609,9 +577,7 @@ const Settings = () => {
       case "team":
         return <TeammateSettings />;
       case "subscription":
-        {
-          return <SubscriptionSettings contractor={contractor} />
-        }
+        return <SubscriptionSettings contractor={contractor} />
       case "usage":
         return <UsageSettings contractor={contractor} />;
       case "branding":
@@ -624,63 +590,8 @@ const Settings = () => {
       case "estimate":
         return (
             <div className="space-y-6">
-              {/*<div>*/}
-              {/*  <h3 className="text-lg font-medium">{t("Estimate Configuration")}</h3>*/}
-              {/*  <p className="text-sm text-muted-foreground mb-6">*/}
-              {/*    {t("Configure your pricing settings, including minimum project costs, markup percentages, and tax rates.")}*/}
-              {/*  </p>*/}
-              {/*</div>*/}
-
-              {/*<form onSubmit={(e) => {*/}
-              {/*  e.preventDefault();*/}
-              {/*  const formData = new FormData(e.currentTarget);*/}
-              {/*  const data = Object.fromEntries(formData.entries());*/}
-              {/*  updateSettings.mutate(data);*/}
-              {/*}} className="space-y-4">*/}
-              {/*  <div>*/}
-              {/*    <label className="text-sm font-medium">{t("Minimum Project Cost ($)")}</label>*/}
-              {/*    <Input*/}
-              {/*        name="minimumProjectCost"*/}
-              {/*        type="number"*/}
-              {/*        defaultValue={contractor?.contractor_settings?.minimum_project_cost}*/}
-              {/*    />*/}
-              {/*    <p className="text-sm text-muted-foreground mt-1">*/}
-              {/*      {t("The minimum cost you're willing to take on for any project")}*/}
-              {/*    </p>*/}
-              {/*  </div>*/}
-
-              {/*  <div>*/}
-              {/*    <label className="text-sm font-medium">{t("Markup Percentage (%)")}</label>*/}
-              {/*    <Input*/}
-              {/*        name="markupPercentage"*/}
-              {/*        type="number"*/}
-              {/*        defaultValue={contractor?.contractor_settings?.markup_percentage}*/}
-              {/*    />*/}
-              {/*    <p className="text-sm text-muted-foreground mt-1">*/}
-              {/*      {t("This markup is automatically applied to all AI-generated estimates")}*/}
-              {/*    </p>*/}
-              {/*  </div>*/}
-
-              {/*  <div>*/}
-              {/*    <label className="text-sm font-medium">{t("Tax Rate (%)")}</label>*/}
-              {/*    <Input*/}
-              {/*        name="taxRate"*/}
-              {/*        type="number"*/}
-              {/*        defaultValue={contractor?.contractor_settings?.tax_rate}*/}
-              {/*    />*/}
-              {/*    <p className="text-sm text-muted-foreground mt-1">*/}
-              {/*      {t("Local tax rate automatically applied to all estimates")}*/}
-              {/*    </p>*/}
-              {/*  </div>*/}
-              {/*  <Button type="submit" disabled={updateSettings.isPending}>*/}
-              {/*    {updateSettings.isPending ? t("Saving...") : t("Save Changes")}*/}
-              {/*  </Button>*/}
-              {/*</form>*/}
-
-              <div className="pt-6 ">
-                {
-                  contractor && <EstimateTemplateSettings contractor={contractor} />
-                }
+              <div className="pt-6">
+                <EstimateTemplateSettings contractor={contractor} />
               </div>
             </div>
         );
@@ -693,14 +604,20 @@ const Settings = () => {
                   </div>
               ) : (
                   <AIInstructionsForm
-                      instructions={aiInstructions}
+                      instructions={aiInstructions || []}
                       onSave={saveInstructions}
                   />
               )}
-              <AIRateForm
-                  rates={aiRates}
-                  onSave={saveRates}
-              />
+              {aiRatesLoading ? (
+                  <div className="flex items-center justify-center p-6">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+              ) : (
+                  <AIRateForm
+                      rates={aiRates || []}
+                      onSave={saveRates}
+                  />
+              )}
             </div>
         );
       case "categories":
@@ -709,8 +626,6 @@ const Settings = () => {
         return <WebhookSettings />;
       case "translation":
         return <TranslationSettings />;
-      // case "admin":
-      //   return isAdmin ? <AdminSettings /> : null;
       default:
         return null;
     }
@@ -730,116 +645,119 @@ const Settings = () => {
                   icon={<Building2 className="h-5 w-5" />}
                   title={t("Business Information")}
                   description={t("Update your business details and contact information")}
-                  onClick={() => handleSectionChange("business")}
+                  handleSectionChange={(section) => handleSectionChange(section)}
                   isActive={activeSection === "business"}
                   access={true}
+                  section="business"
               />
               <SettingsMenuItem
                   icon={<Users className="h-5 w-5" />}
                   title={t("Team Members")}
                   description={t("Manage your team members and their access")}
-                  onClick={() => handleSectionChange("team")}
+                  handleSectionChange={(section) => handleSectionChange(section)}
                   isActive={activeSection === "team"}
                   access={true}
+                  section="team"
               />
               <SettingsMenuItem
                   icon={<CreditCard className="h-5 w-5" />}
                   title={t("Subscription")}
                   description={t("Manage your subscription and billing")}
-                  onClick={() => handleSectionChange("subscription")}
+                  handleSectionChange={(section) => handleSectionChange(section)}
                   isActive={activeSection === "subscription"}
                   access={true}
+                  section="subscription"
               />
-              {contractor?.tier === "pioneer" &&
+              {contractor?.tier === "pioneer" && (
                 <SettingsMenuItem
                   icon={<CreditCard className="h-5 w-5" />}
                   title={"Usage"}
                   description={t("Manage Usage")}
-                  onClick={() => handleSectionChange("usage")}
+                  handleSectionChange={(section) => handleSectionChange(section)}
                   isActive={activeSection === "usage"}
                   access={true}
-              />
-              }
+                  section="usage"
+                />
+              )}
               <SettingsMenuItem
                   icon={<Palette className="h-5 w-5" />}
                   title={t("Branding")}
                   description={t("Customize your brand colors and appearance")}
-                  onClick={() => handleSectionChange("branding")}
+                  handleSectionChange={(section) => handleSectionChange(section)}
                   isActive={activeSection === "branding"}
                   access={true}
+                  section="branding"
               />
               <SettingsMenuItem
                   icon={<Calculator className="h-5 w-5" />}
                   title={t("Estimate Settings")}
                   description={t("Configure your pricing and cost calculations")}
-                  onClick={() => handleSectionChange("estimate")}
+                  handleSectionChange={(section) => handleSectionChange(section)}
                   isActive={activeSection === "estimate"}
                   access={true}
+                  section="estimate"
               />
               <SettingsMenuItem
                   icon={<Bot className="h-5 w-5" />}
                   title={t("AI Preferences")}
                   description={t("Configure how AI generates estimates and manages rates")}
-                  onClick={() => handleSectionChange("ai")}
+                  handleSectionChange={(section) => handleSectionChange(section)}
                   isActive={activeSection === "ai"}
-                  access={true}
+                  access={contractor?.tier === "enterprise"}
+                  section="ai"
               />
               <SettingsMenuItem
                   icon={<Grid className="h-5 w-5" />}
                   title={t("Service Categories")}
                   description={t("Select which services you offer and customize your estimate workflow")}
-                  onClick={() => handleSectionChange("categories")}
+                  handleSectionChange={(section) => handleSectionChange(section)}
                   isActive={activeSection === "categories"}
                   access={true}
+                  section="categories"
               />
               <SettingsMenuItem
                 icon={<Grid className="h-5 w-5" />}
                 title={t("Domain")}
                 description={t("Select which services you offer and customize your estimate workflow")}
-                onClick={() => handleSectionChange("domain")}
+                  handleSectionChange={(section) => handleSectionChange(section)}
                 isActive={activeSection === "domain"}
                 access={contractor?.tier === "enterprise"}
+                section="domain"
               />
               <SettingsMenuItem
                 icon={<Grid className="h-5 w-5" />}
                 title={t("API Keys")}
                 description={t("Select which services you offer and customize your estimate workflow")}
-                onClick={() => handleSectionChange("api keys")}
+                handleSectionChange={(section) => handleSectionChange(section)}
                 isActive={activeSection === "api keys"}
                 access={contractor?.tier === "enterprise"}
+                section="api keys"
               />
               <SettingsMenuItem
                   icon={<Webhook className="h-5 w-5" />}
                   title={t("Webhooks")}
                   description={t("Configure external integrations and automation")}
-                  onClick={() => handleSectionChange("webhooks")}
+                  handleSectionChange={(section) => handleSectionChange(section)}
                   isActive={activeSection === "webhooks"}
                   access={true}
+                  section="webhooks"
               />
               <SettingsMenuItem
                   icon={<Globe2 className="h-5 w-5" />}
                   title={t("Language & Translation")}
                   description={t("Configure your language preferences and translations")}
-                  onClick={() => handleSectionChange("translation")}
+                  handleSectionChange={(section) => handleSectionChange(section)}
                   isActive={activeSection === "translation"}
                   access={true}
+                  section="translation"
               />
-              {/* {isAdmin && (
-                  <SettingsMenuItem
-                      icon={<ShieldAlert className="h-5 w-5" />}
-                      title={t("Admin Settings")}
-                      description={t("Access administrative functions and data")}
-                      onClick={() => handleSectionChange("admin")}
-                      isActive={activeSection === "admin"}
-                      access={true}
-                  />
-              )} */}
               <SettingsMenuItem
                   icon={<LogOut className="h-5 w-5" />}
                   title={t("Log Out")}
                   description={t("Sign out of your account")}
-                  onClick={handleLogout}
+                  handleSectionChange={(user) => handleLogout(user)}
                   access={true}
+                  section="logout"
               />
             </div>
 
@@ -853,7 +771,7 @@ const Settings = () => {
                 </SettingsDialog>
             ) : (
                 <div className="flex-1 bg-background rounded-lg border p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
-                  {contractor && renderContent()}
+                  {renderContent()}
                 </div>
             )}
           </div>
