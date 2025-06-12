@@ -341,27 +341,7 @@ const signatureEnabled = lead?.signature_enabled ?? true;
     }
   }, [fetchedLead]);
   // ── Auto-downgrade “complete” ➜ “in-progress” when no signature ─────────────
-useEffect(() => {
-  if (!lead) return;                   // nothing loaded yet
-  if (lead.status !== "complete") return; // already fine
-  if (lead.client_signature) return;   // the client HAS signed
 
-  // flip it in DB and locally
-  (async () => {
-    const { error } = await supabase
-      .from("leads")
-      .update({ status: "in-progress" })
-      .eq("id", lead.id);
-
-    if (!error) {
-      setLead(prev => prev ? { ...prev, status: "in-progress" } : prev);
-      queryClient.invalidateQueries(["leads"]);
-      queryClient.invalidateQueries(["lead", lead.id]);
-    } else {
-      console.error("Could not change status to in-progress", error);
-    }
-  })();
-}, [lead?.id, lead?.status, lead?.client_signature]);
 
 
   // Check if estimate is locked (client has signed)
@@ -477,7 +457,7 @@ const [isEstimateLocked, setIsEstimateLocked] = useState(!!initialLead?.client_s
     try {
       const { error: dbError } = await supabase
           .from("leads")
-          .update({ status: "archived" })
+          .update({ status: "complete" })
           .eq("id", lead.id);
 
       if (dbError) throw dbError;
@@ -622,6 +602,68 @@ const handleSaveEstimate = async () => {
     setIsSaving(false);
   }
 };
+// ────────────────────────────────────────────────────────────────────────────
+// Status synchronisation rules
+//   • 0 sigs          → in-progress
+//   • client only     → action_required
+//   • both            → approved
+//   • 14 days none    → cancelled
+// ────────────────────────────────────────────────────────────────────────────
+const syncLeadStatus = async (l: Lead) => {
+  let desired: "in-progress" | "action_required" | "approved";
+
+  if (!l.client_signature && !l.contractor_signature) {
+    desired = "in-progress";
+  } else if (l.client_signature && !l.contractor_signature) {
+    desired = "action_required";
+  } else if (l.client_signature && l.contractor_signature) {
+    desired = "approved";
+  }
+
+  if (desired && l.status !== desired) {
+    const { error } = await supabase
+      .from("leads")
+      .update({ status: desired })
+      .eq("id", l.id);
+    if (!error) {
+      setLead(p => (p ? { ...p, status: desired } : p));
+      queryClient.invalidateQueries(["lead", l.id]);
+      queryClient.invalidateQueries(["leads"]);
+    } else {
+      console.error("Could not update lead status", error);
+    }
+  }
+};
+
+// keep status in-sync whenever either signature changes
+useEffect(() => {
+  if (lead) syncLeadStatus(lead);
+}, [lead?.client_signature, lead?.contractor_signature]);
+
+// auto-cancel after 14 days with no signatures
+useEffect(() => {
+  if (!lead || lead.client_signature || lead.contractor_signature) return;
+  const ageDays =
+    (Date.now() - new Date(lead.created_at).getTime()) / 86_400_000; // ms → days
+  if (ageDays >= 14 && lead.status !== "cancelled") {
+    (async () => {
+      const { error } = await supabase
+        .from("leads")
+        .update({ status: "cancelled" })
+        .eq("id", lead.id);
+      if (!error) {
+        setLead(p => (p ? { ...p, status: "cancelled" } : p));
+        queryClient.invalidateQueries(["lead", lead.id]);
+        queryClient.invalidateQueries(["leads"]);
+      }
+    })();
+  }
+}, [
+  lead?.created_at,
+  lead?.client_signature,
+  lead?.contractor_signature,
+  lead?.status,
+]);
 
 
   const handleDeleteLead = async () => {
