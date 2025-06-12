@@ -127,12 +127,12 @@ const [isRefreshingEstimate, setIsRefreshingEstimate] = useState(false);
 
 // Deprecated: const user = supabase.auth.user();
 // Use getUser() instead if you need the user object, or remove if unused.
-let user = null;
-supabase.auth.getUser().then(({ data, error }) => {
-  if (!error) {
-    user = data.user;
-  }
-});
+// let user = null;
+// supabase.auth.getUser().then(({ data, error }) => {
+//   if (!error) {
+//     user = data.user;
+//   }
+// });
 
 // check poll-status exactly like useEstimateFlow does
 const waitForEstimateReady = async (
@@ -1282,6 +1282,13 @@ const handleSendSMS = async () => {
         lead={lead}
         isEstimateLocked={isEstimateLocked}
         signatureEnabled={lead?.signature_enabled ?? true}
+        setIsEditing={setIsEditing}
+        setEditedEstimate={setEditedEstimate}
+        handleSaveEstimate={handleSaveEstimate}
+        isSaving={isSaving}
+        effectiveContractorId={effectiveContractorId}
+        isLoadingUser={isLoadingUser}
+        urlContractorId={urlContractorId}
       />
     </div>
   </>
@@ -1322,31 +1329,52 @@ const handleSendSMS = async () => {
                 </div>
               </div>
               :     
-              <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50">
-                <div className="container max-w-6xl mx-auto">
-                  <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse w-full">                
-                    <Button
-                      variant="outline"
-                      className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
-                      onClick={() => {
-                        setIsEditing(false);
-                        if (lead?.estimate_data) {
-                          setEditedEstimate(JSON.parse(JSON.stringify(lead.estimate_data)));
-                        }
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      className="rounded-l-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
-                      onClick={handleSaveEstimate}
-                      disabled={isSaving || (!effectiveContractorId || (isLoadingUser && !urlContractorId))}
-                    >
-                      {isSaving ? "Saving..." : "Save Changes"}
-                    </Button>
+
+              <>
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50 md:block hidden">
+                  <div className="container max-w-6xl mx-auto">
+                    <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse w-full">                
+                      <Button
+                        variant="outline"
+                        className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
+                        onClick={() => {
+                          setIsEditing(false);
+                          if (lead?.estimate_data) {
+                            setEditedEstimate(JSON.parse(JSON.stringify(lead.estimate_data)));
+                          }
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="rounded-l-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
+                        onClick={handleSaveEstimate}
+                        disabled={isSaving || (!effectiveContractorId || (isLoadingUser && !urlContractorId))}
+                      >
+                        {isSaving ? "Saving..." : "Save Changes"}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50 md:hidden block">
+                  <div className="container max-w-6xl mx-auto">
+                    <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse w-full">                
+                      <Button
+                        variant="outline"
+                        className="rounded-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
+                      >
+                        Add Item
+                      </Button>
+                      <Button
+                        className="rounded-l-none shadow-none first:rounded-s-lg focus-visible:z-10 flex-1"
+                        disabled={isSaving || (!effectiveContractorId || (isLoadingUser && !urlContractorId))}
+                      >
+                        Add Group
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </>
             }
           </div>
         </DialogContent>

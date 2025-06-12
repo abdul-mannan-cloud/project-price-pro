@@ -78,6 +78,7 @@ interface ContractorSettings {
   tax_rate?: number;
 }
 
+
 interface EstimateDisplayProps {
   groups: ItemGroup[];
   totalCost: number;
@@ -100,6 +101,14 @@ interface EstimateDisplayProps {
   onCancel?: () => void;
   onArchive?: () => void;
   signatureEnabled?: boolean;
+  // New props from the code snippet
+  setIsEditing?: (isEditing: boolean) => void;
+  setEditedEstimate?: (estimate: any) => void;
+  handleSaveEstimate?: () => void;
+  isSaving?: boolean;
+  effectiveContractorId?: string;
+  isLoadingUser?: boolean;
+  urlContractorId?: string;
 }
 
 export const EstimateDisplay = ({
@@ -123,7 +132,15 @@ export const EstimateDisplay = ({
   isEstimateLocked = false,
   onCancel,
   signatureEnabled = true,
-  onArchive
+  onArchive,
+  // New props with default values
+  setIsEditing,
+  setEditedEstimate,
+  handleSaveEstimate,
+  isSaving = false,
+  effectiveContractorId,
+  isLoadingUser = false,
+  urlContractorId
 }: EstimateDisplayProps) => {
   const [editableGroups, setEditableGroups] = useState<ItemGroup[]>([]);
   const [editableTotalCost, setEditableTotalCost] = useState(totalCost);
@@ -829,11 +846,11 @@ useEffect(() => {
               g[gi].name = e.target.value;
               setEditableGroups(g);
             }}
-            className="w-1/3 mb-2 bg-transparent border-0 focus:ring-0 focus:border-0"
+            className="sm:w-1/3 w-full mb-2 bg-transparent border-0 focus:ring-0 focus:border-0"
           />
 
           {/* Remove Section, placed just under the section name */}
-          <div className="flex justify-end mb-3">
+          <div className="justify-end mb-3 md:flex hidden">
             <Button
               variant="ghost"
               size="sm"
@@ -843,6 +860,33 @@ useEffect(() => {
               <Trash2 className="h-4 w-4" /> Remove Section
             </Button>
           </div>
+          { gi === 0 &&
+            <div className="md:hidden block">
+              <div className="flex items-end justify-end">
+                <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse w-full gap-2">                
+                  <Button
+                    variant="outline"
+                    className="shadow-none  flex-1"
+                    onClick={() => {
+                      setIsEditing(false);
+                      if (lead?.estimate_data) {
+                        setEditedEstimate(JSON.parse(JSON.stringify(lead.estimate_data)));
+                      }
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className=" shadow-none flex-1"
+                    onClick={handleSaveEstimate}
+                    disabled={isSaving || (!effectiveContractorId || (isLoadingUser && !urlContractorId))}
+                  >
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          }
 
           {group.subgroups.map((sg, sgi) => (
             <div key={sgi} className="space-y-3 border p-3 rounded-md">
@@ -856,16 +900,26 @@ useEffect(() => {
                     g[gi].subgroups[sgi].name = e.target.value;
                     setEditableGroups(g);
                   }}
-                  className="h-8 w-32 bg-transparent border-0 focus:ring-0 focus:border-0"
+                  className="h-8 sm:w-32 bg-transparent border-0 focus:ring-0 focus:border-0"
                 />
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => handleAddLineItem(gi, sgi)}
-                  className="h-8 px-2"
+                  className="h-8 px-2 hidden sm:flex"
                 >
                   <Plus className="h-4 w-4 mr-1" /> Add Item
                 </Button>
+                <div className="flex justify-end items-center sm:hidden block rounded-full bg-red-100 ">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteGroup(gi)}
+                    className="text-xs text-destructive hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" /> Remove Section
+                  </Button>
+                </div>
               </div>
 
               {sg.items.map((item, ii) => (
@@ -875,17 +929,32 @@ useEffect(() => {
                 >
                   {/* Title */}
                   <div className="col-span-12 sm:col-span-3 space-y-1">
-                    <Label htmlFor={`title-${gi}-${sgi}-${ii}`} className="text-xs">
-                      Title
-                    </Label>
-                    <Input
-                      id={`title-${gi}-${sgi}-${ii}`}
-                      value={item.title}
-                      onChange={e =>
-                        handleLineItemChange(gi, sgi, ii, "title", e.target.value)
-                      }
-                      className="h-8"
-                    />
+                    <div className="flex sm:hidden flex-row justify-between items-center">
+                      <Label htmlFor={`title-${gi}-${sgi}-${ii}`} className="text-xs">
+                        Title
+                      </Label>
+                      <div className="justify-end flex sm:hidden">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteLineItem(gi, sgi, ii)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive/90"
+                        >
+                          <MinusCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                      <Label htmlFor={`title-${gi}-${sgi}-${ii}`} className="text-xs hidden sm:block">
+                        Title
+                      </Label>
+                      <Input
+                        id={`title-${gi}-${sgi}-${ii}`}
+                        value={item.title}
+                        onChange={e =>
+                          handleLineItemChange(gi, sgi, ii, "title", e.target.value)
+                        }
+                        className="h-8"
+                      />
                   </div>
 
                   {/* Description */}
@@ -905,7 +974,7 @@ useEffect(() => {
                   </div>
 
                   {/* Quantity */}
-                  <div className="col-span-6 sm:col-span-1 space-y-1">
+                  <div className="col-span-4 sm:col-span-1 space-y-1">
                     <Label htmlFor={`qty-${gi}-${sgi}-${ii}`} className="text-xs">
                       Qty
                     </Label>
@@ -922,7 +991,7 @@ useEffect(() => {
                   </div>
 
                   {/* Unit Price */}
-                  <div className="col-span-6 sm:col-span-1 space-y-1">
+                  <div className="col-span-4 sm:col-span-1 space-y-1">
                     <Label htmlFor={`price-${gi}-${sgi}-${ii}`} className="text-xs">
                       Unit Price
                     </Label>
@@ -940,7 +1009,7 @@ useEffect(() => {
                   </div>
 
                   {/* Total */}
-                  <div className="col-span-12 sm:col-span-1 text-right space-y-1">
+                  <div className="col-span-4 sm:col-span-1 text-right space-y-1">
                     <Label className="text-xs">Total</Label>
                     <div className="h-8 flex items-center justify-end text-sm font-medium">
                       ${item.totalPrice.toFixed(2)}
@@ -948,7 +1017,7 @@ useEffect(() => {
                   </div>
 
                   {/* Delete line item */}
-                  <div className="col-span-12 sm:col-span-1 flex justify-end">
+                  <div className="col-span-12 sm:col-span-1 justify-end hidden sm:flex">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -960,7 +1029,16 @@ useEffect(() => {
                   </div>
                 </div>
               ))}
-
+              <div className="min-w-full flex flex-row">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleAddLineItem(gi, sgi)}
+                  className="h-8 min-w-full px-2 block sm:hidden flex flex-row text-primary items-center"
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add Item
+                </Button>
+              </div>
               <div className="text-right text-sm">
                 Subtotal: ${sg.subtotal.toFixed(2)}
               </div>
@@ -974,7 +1052,7 @@ useEffect(() => {
       ))}
 
       {/* bottom "Add Group" */}
-      <div className="flex justify-end mt-4">
+      <div className="hidden justify-end mt-4 sm:flex">
         <Button
           size="sm"
           variant="outline"
@@ -1019,7 +1097,7 @@ useEffect(() => {
 
       <Card className={cn(styles.card, isBlurred && "blur-md pointer-events-none", "max-w-full mx-auto overflow-hidden")}>
         <div id="estimate-content" className="p-2 sm:p-4 md:p-6">
-          <div className={cn("flex flex-col sm:flex-row justify-between gap-4 sm:gap-2", isMobile ? "mb-4" : "")}>
+          <div className={cn("flex flex-row sm:flex-row justify-between gap-4 sm:gap-2", isMobile ? "mb-4" : "")}>
             <EstimateHeader contractor={contractor} styles={styles} />
 
             <div className={cn(styles.headerContent, "mt-2 sm:mt-0")}>
@@ -1135,6 +1213,7 @@ useEffect(() => {
               </p>
             </div>
           )}
+
 
           {signaturesOn && (
             <EstimateSignature
