@@ -189,6 +189,7 @@ const queryClient = useQueryClient();
       });
     } else {
       setLeadSigEnabled(checked);
+      refetchLeadData()
       //handleRefreshEstimate(leadId);          // re-fetch
       queryClient.invalidateQueries({ queryKey: ['estimate-status', leadId] });
     queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
@@ -1191,21 +1192,24 @@ const perLeadEnabled       = leadSigEnabled;
                   Signatures
                 </h2>
 
-                  {showSignatureSection && contractor?.tier === "enterprise" && (
+                  {leadData?.signature_enabled && contractor?.tier === "enterprise" && (
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setShowSignatureSection(false)}
+                      onClick={() => {toggleLeadSignature(false);}}
                     >
-                      Hide signatures
+                      Remove signatures
                     </Button>
                   )}
               </div>
 
               {/* ── Collapsed “Require Signature” card ── */}
-              {!showSignatureSection ? (
+              {!leadData?.signature_enabled ? (
                 <button
-                  onClick={() => setShowSignatureSection(true)}
+                  onClick={() => {
+                                  toggleLeadSignature(true);
+                  }}
+
                   className="w-full border-2 border-dashed border-primary/50
                             rounded-lg py-6 text-primary/70 hover:bg-primary/5
                             transition"
