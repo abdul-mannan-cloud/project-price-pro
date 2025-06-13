@@ -193,7 +193,7 @@ useEffect(() => {
 
   // any lead marked “complete” but lacking a client signature
   const toFix = leads
-    .filter(l => l.status === "complete" && !l.client_signature)
+    .filter(l => !l.client_signature)
     .map(l => l.id);
 
   if (!toFix.length) return;
