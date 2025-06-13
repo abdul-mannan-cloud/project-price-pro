@@ -403,25 +403,27 @@ useEffect(() => {
           .single();
 
       
-      console.log("PROJECT TITLE", projectTitle, lead);
       
-
-      const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
-        body: {
-          type: 'contractor_signed',
-          phone: lead.user_phone,
-          data: {
-            businessName: contractor.business_name || "Your Contractor",
-            estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
-            projectTitle: projectTitle
+      if(lead.client_signature) {
+        const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
+          body: {
+            type: 'contractor_signed',
+            phone: lead.user_phone,
+            data: {
+              businessName: contractor.business_name || "Your Contractor",
+              estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
+              projectTitle: projectTitle,
+              businessEmail: contractor.contact_email,
+              businessPhone: contractor.contact_phone
+            }
           }
-        }
-      });
+        });
 
-      if (smsSendError) {
-        console.error("Failed to send contractor SMS", smsSendError);
-      } else {
-        console.log("Contractor SMS sent successfully");
+        if (smsSendError) {
+          console.error("Failed to send contractor SMS", smsSendError);
+        } else {
+          console.log("Contractor SMS sent successfully");
+        }
       }
 
 
