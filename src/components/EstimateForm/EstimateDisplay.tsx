@@ -162,6 +162,9 @@ export const EstimateDisplay = ({
   const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)");
  const [leadSigEnabled, setLeadSigEnabled] = useState(signatureEnabled);
  // ── keep toggle state in-sync with new data ──────────────────────────
+// Are we on the stand-alone public page “/e/:id” ?
+const { id: sharePageId } = useParams<{ id?: string }>();
+const isShareLink = !!sharePageId && !isLeadPage;   // true only for the copied link
 
 
 const queryClient = useQueryClient();
@@ -1180,7 +1183,7 @@ const perLeadEnabled       = leadSigEnabled;
               taxRate={settings?.tax_rate ?? 0}
             />
           )}
- {isLeadPage && (
+{!isShareLink && (
   <div className="mt-8">
     {/* ── Heading + per-lead toggle (only after expand) ── */}
     <div className="flex items-start justify-between mb-4">
@@ -1268,7 +1271,7 @@ const perLeadEnabled       = leadSigEnabled;
           )}
 
 
-          {isLeadPage && leadData?.signature_enabled &&(
+          {!isShareLink && leadData?.signature_enabled &&(
             <EstimateSignature
               signature={clientSignature || estimate?.client_signature || (lead ? lead.client_signature : null)}
               contractorSignature={signature || estimate?.contractor_signature || (lead ? lead.contractor_signature : null)}
