@@ -173,12 +173,12 @@ export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExp
       console.error("Error auto‑cancelling stale leads:", autoCancelError);
     } else if (autoCancelled && autoCancelled.length) {
       console.log(`Auto‑cancelled ${autoCancelled.length} stale leads`);
-      toast({
-        title: "Leads auto‑cancelled",
-        description: `${autoCancelled.length} lead${
-          autoCancelled.length > 1 ? "s were" : " was"
-        } cancelled (no contractor signature within 7 days).`,
-      });
+      // toast({
+      //   title: "Leads auto‑cancelled",
+      //   description: `${autoCancelled.length} lead${
+      //     autoCancelled.length > 1 ? "s were" : " was"
+      //   } cancelled (no contractor signature within 7 days).`,
+      // });
     }
   } catch (error) {
     console.error("Unexpected error during leads cleanup:", error);
