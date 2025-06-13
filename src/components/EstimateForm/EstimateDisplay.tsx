@@ -581,12 +581,12 @@ useEffect(() => {
       const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
         body: {
           type: 'customer_signed',
-          phone: leadData.user_phone,
+          phone: contractor?.contact_phone,
           data: {
             clientFirstName: leadData.user_name || "Customer",
             projectTitle: leadData.estimate_data.category || "Your Project",
             totalEstimate: leadData.estimate_data.totalCost || 0,
-            leadPageUrl:  `${window.location.origin}/e/${leadId}`
+            leadPageUrl:  `${window.location.origin}/leads?leadId=${leadId}`
           }
         }
       });
@@ -597,7 +597,7 @@ useEffect(() => {
 
     // Only proceed with billing logic if contractor is available
     if (contractor?.tier === 'pioneer' && estimate) {
-      console.log("HERE IS THE ESTIMATE DATA", estimate);
+      console.log("HERE IS THE ESTIMATE DATA", contractor);
 
       const totalFee = estimate.totalCost;
       const availableCredits = contractor.cash_credits || 0;
