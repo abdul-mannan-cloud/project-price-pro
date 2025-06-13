@@ -229,6 +229,7 @@ export const SubscriptionSettings = ({ contractor }) => {
           await createSetupIntent(contractor.stripe_customer_id);
         }
       }
+      await supabase.from("contractor_settings").update({ estimate_signature_enabled: true }).eq("id", currentContractor.id)
     } catch (err) {
       console.error("Error handling Pioneer plan:", err);
       toast({

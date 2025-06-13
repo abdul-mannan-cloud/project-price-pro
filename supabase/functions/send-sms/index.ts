@@ -51,9 +51,11 @@ Please review and countersign here: {leadPageUrl}`,
 
   contractor_signed: `{businessName} has countersigned the estimate for {projectTitle}.
 To view, save, or print the signed agreement, visit: {estimatePageUrl}
-{businessOwnerFullName}
+
+{businessName}
 {businessEmail}
 {businessPhone}
+
 This is an automated message. Replies are not monitored.`,
 
   estimate_sent: 
