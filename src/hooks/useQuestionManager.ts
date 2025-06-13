@@ -482,8 +482,13 @@ export const useQuestionManager = (
       return;
     }
 
-    console.log('Starting estimate generation with answers:', answers);
     setIsGeneratingEstimate(true);
+
+    const { data: contractData } = await supabase
+      .from("contractor_settings")
+      .select("*")
+      .eq("id", contractorId)
+      .single();
 
     try {
       const answersForDb = Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
@@ -499,18 +504,16 @@ export const useQuestionManager = (
         return acc;
       }, {} as Record<string, any>);
 
-      // First, create the lead
       const leadData: LeadInsert = {
         project_description: projectDescription || 'New project',
         project_title: `${questionSets[0]?.category || 'New'} Project`,
         answers: answersForDb as Json,
         category: questionSets[0]?.category,
         status: 'pending',
-        contractor_id: contractorId, // Add contractorId
-        project_images: uploadedPhotos, // Add uploadedPhotos
+        contractor_id: contractorId, 
+        project_images: uploadedPhotos,
+        signature_enabled: contractData.estimate_signature_enabled
       };
-
-      console.log('Creating lead with data:', leadData);
 
       const { data: lead, error: leadError } = await supabase
           .from('leads')
