@@ -1181,6 +1181,8 @@ const perLeadEnabled       = leadSigEnabled;
             />
           )}
  
+ 
+ {isLeadPage && (
   <div className="mt-8">
     {/* ── Heading + per-lead toggle (only after expand) ── */}
     <div className="flex items-start justify-between mb-4">
@@ -1198,6 +1200,8 @@ const perLeadEnabled       = leadSigEnabled;
    </Button>
  )}
     </div>
+   
+    
 
     {/* ── Collapsed “Require Signature” card ── */}
     {!showSignatureSection ? (
@@ -1241,6 +1245,7 @@ const perLeadEnabled       = leadSigEnabled;
       </>
     )}
   </div>
+   )}
 
 
           {/* Cancel / Archive buttons */}
@@ -1268,7 +1273,7 @@ const perLeadEnabled       = leadSigEnabled;
           )}
 
 
-          {leadData?.signature_enabled && (
+          {isLeadPage && leadData?.signature_enabled &&  (
             <EstimateSignature
               signature={clientSignature || estimate?.client_signature || (lead ? lead.client_signature : null)}
               contractorSignature={signature || estimate?.contractor_signature || (lead ? lead.contractor_signature : null)}
