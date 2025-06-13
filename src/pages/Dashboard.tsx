@@ -370,7 +370,7 @@ const Dashboard = () => {
           if (!open) setSelectedFeature(null);
         }}
       >
-        <DialogContent className="w-[90vw] max-h-[90vh] sm:w-auto sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px]">
           {selectedFeature ? features.find(f => f.name === selectedFeature)?.detailContent : null}
         </DialogContent>
       </Dialog>
