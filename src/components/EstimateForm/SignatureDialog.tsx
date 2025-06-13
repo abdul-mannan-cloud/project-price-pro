@@ -98,7 +98,7 @@ export const SignatureDialog = ({
 
     try {
       if (leadId && contractorId) {
-        const updatePayload = isContractorSignature
+      const updatePayload = isContractorSignature
           ? {
               contractor_signature: signature,
               contractor_signature_date: new Date().toISOString(),
@@ -107,7 +107,7 @@ export const SignatureDialog = ({
           : {
               client_signature: signature,
               client_signature_date: new Date().toISOString(),
-              status: "in-progress",
+              status: "action_required",   // ← new rule
             };
 
         const { error: dbError } = await supabase
