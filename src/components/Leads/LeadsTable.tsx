@@ -410,7 +410,7 @@ const handleSelectAll = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="form-group flex-1 max-w-md mb-0 relative">
           <Search className="absolute left-3 top-[50%] -translate-y-[50%] h-4 w-4 text-muted-foreground pointer-events-none z-10" />
           <input
