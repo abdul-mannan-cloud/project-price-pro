@@ -16,6 +16,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { MapPin, ArrowUp, ArrowDown, Search, Download, Trash2, Filter, Phone, Mail, User, Calendar, DollarSign, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Json } from "@/integrations/supabase/types";
+import { startOfToday, startOfWeek, startOfMonth } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -220,13 +221,7 @@ useEffect(() => {
     }
   };
 
-  const handleSelectAll = () => {
-    if (selectedLeads.length === filteredLeads.length) {
-      setSelectedLeads([]);
-    } else {
-      setSelectedLeads(filteredLeads.map(lead => lead.id));
-    }
-  };
+
 
   const handleSelectLead = (leadId: string) => {
     setSelectedLeads(prev => 
@@ -285,6 +280,7 @@ useEffect(() => {
     }
   };
 // treat unsigned “complete” leads as “in-progress” right away
+// treat unsigned “complete” leads as “in-progress” right away
 const computedLeads = useMemo(
   () =>
     leads.map(l => ({
@@ -297,47 +293,120 @@ const computedLeads = useMemo(
   [leads]
 );
 
-  const filteredLeads = computedLeads
-    .filter(lead => {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        lead.project_title?.toLowerCase().includes(searchLower) ||
-        lead.project_address?.toLowerCase().includes(searchLower) ||
-        lead.user_name?.toLowerCase().includes(searchLower) ||
-        lead.user_email?.toLowerCase().includes(searchLower) ||
-        lead.user_phone?.toLowerCase().includes(searchLower)
-      );
-    })
-    .sort((a, b) => {
-      let comparison = 0;
-      switch (sortField) {
-        case 'projectTitle':
-          comparison = (a.project_title || '').localeCompare(b.project_title || '');
-          break;
-        case 'address':
-          comparison = (a.project_address || '').localeCompare(b.project_address || '');
-          break;
-        case 'estimatedCost':
-          comparison = (a.estimated_cost || 0) - (b.estimated_cost || 0);
-          break;
-        case 'status':
-          comparison = (a.status || '').localeCompare(b.status || '');
-          break;
-        case 'createdAt':
-          comparison = new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
-          break;
-        case 'userName':
-          comparison = (a.user_name || '').localeCompare(b.user_name || '');
-          break;
-        case 'userEmail':
-          comparison = (a.user_email || '').localeCompare(b.user_email || '');
-          break;
-        case 'userPhone':
-          comparison = (a.user_phone || '').localeCompare(b.user_phone || '');
-          break;
-      }
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
+
+  /* --------------------------------------------------------------------------
+ *  Filtering  +  Sorting  +  Select-all helpers
+ * ------------------------------------------------------------------------ */
+
+
+/* helper: true when lead.created_at falls inside active date-range filter */
+const matchesDateRange = (lead: Lead, range: string) => {
+  if (range === "all" || !lead.created_at) return true;
+  const created = new Date(lead.created_at);
+
+  switch (range) {
+    case "today":
+      return created >= startOfToday(new Date());
+    case "week":
+      return created >= startOfWeek(new Date(), { weekStartsOn: 1 }); // Monday-start
+    case "month":
+      return created >= startOfMonth(new Date());
+    default:
+      return true;
+  }
+};
+
+/* helper: true when lead’s cost falls inside active cost filter */
+const matchesCostRange = (lead: Lead, range: string) => {
+  const cost = lead.estimate_data?.totalCost ?? 0;
+  switch (range) {
+    case "under1k":
+      return cost < 1_000;
+    case "1k-5k":
+      return cost >= 1_000 && cost < 5_000;
+    case "5k-10k":
+      return cost >= 5_000 && cost < 10_000;
+    case "over10k":
+      return cost >= 10_000;
+    default: // "all"
+      return true;
+  }
+};
+
+/* ---------- MAIN  filteredLeads  ---------------------------------------- */
+const filteredLeads = useMemo(() => {
+  const searchLower = searchTerm.toLowerCase();
+
+  return (
+    computedLeads
+      /* ─ search text ─ */
+      .filter((lead) =>
+        [
+          lead.project_title,
+          lead.project_address,
+          lead.user_name,
+          lead.user_email,
+          lead.user_phone,
+        ]
+          .filter(Boolean)
+          .some((field) => field!.toLowerCase().includes(searchLower))
+      )
+      /* ─ status filter ─ */
+      .filter(
+        (lead) =>
+          filters.status.length === 0 || filters.status.includes(lead.status)
+      )
+      /* ─ date-range filter ─ */
+      .filter((lead) => matchesDateRange(lead, filters.dateRange))
+      /* ─ cost-range filter ─ */
+      .filter((lead) => matchesCostRange(lead, filters.costRange))
+      /* ─ sorting ─ */
+      .sort((a, b) => {
+        let cmp = 0;
+        switch (sortField) {
+          case "projectTitle":
+            cmp = (a.project_title || "").localeCompare(b.project_title || "");
+            break;
+          case "address":
+            cmp = (a.project_address || "").localeCompare(
+              b.project_address || ""
+            );
+            break;
+          case "estimatedCost":
+            cmp = (a.estimated_cost || 0) - (b.estimated_cost || 0);
+            break;
+          case "status":
+            cmp = (a.status || "").localeCompare(b.status || "");
+            break;
+          case "createdAt":
+            cmp =
+              new Date(a.created_at || 0).getTime() -
+              new Date(b.created_at || 0).getTime();
+            break;
+          case "userName":
+            cmp = (a.user_name || "").localeCompare(b.user_name || "");
+            break;
+          case "userEmail":
+            cmp = (a.user_email || "").localeCompare(b.user_email || "");
+            break;
+          case "userPhone":
+            cmp = (a.user_phone || "").localeCompare(b.user_phone || "");
+            break;
+        }
+        return sortDirection === "asc" ? cmp : -cmp;
+      })
+  );
+}, [computedLeads, searchTerm, filters, sortField, sortDirection]);
+
+/* keep “select-all” in-sync with the **filtered** list */
+const handleSelectAll = () => {
+  if (selectedLeads.length === filteredLeads.length) {
+    setSelectedLeads([]);
+  } else {
+    setSelectedLeads(filteredLeads.map((l) => l.id));
+  }
+};
+
 
   return (
     <div className="space-y-4">
