@@ -316,6 +316,7 @@ export type Database = {
           user_email?: string | null
           user_name?: string | null
           user_phone?: string | null
+          signature_enabled?: boolean | null
         }
         Update: {
           ai_generated_message?: string | null

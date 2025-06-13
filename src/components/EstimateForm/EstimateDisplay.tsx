@@ -1069,7 +1069,6 @@ useEffect(() => {
     </div>
   );
 
-
   // Filter display groups
   const displayGroups = groups
     .map(g => ({
@@ -1215,7 +1214,7 @@ useEffect(() => {
           )}
 
 
-          {signaturesOn && (
+          {leadData?.signature_enabled && (
             <EstimateSignature
               signature={clientSignature || estimate?.client_signature || (lead ? lead.client_signature : null)}
               contractorSignature={signature || estimate?.contractor_signature || (lead ? lead.contractor_signature : null)}
