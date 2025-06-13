@@ -1156,7 +1156,7 @@ const handleSendSMS = async () => {
   const disabled    = isLoading || !effectiveContractorId;
 
   return (
-    <div className="flex justify-end items-center space-x-2">
+    <div className="flex justify-end items-center space-x-2 px-4 md:px-0">
       {/* EDIT – hide when locked */}
       {!isEstimateLocked && (
         <Button
