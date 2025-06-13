@@ -30,10 +30,7 @@ export const EstimateSignature = ({
       "mt-4 sm:mt-6 md:mt-8 pt-3 sm:pt-4 md:pt-6 border-t space-y-3 sm:space-y-6",
       styles.text
     )}>
-      <h3 className={cn(
-        styles.title,
-        isMobile ? "text-base" : "!text-xl"
-      )}>Signatures</h3>
+     
 
       <div className={cn(
         "grid gap-4 sm:gap-6",

@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, MinusCircle, Save } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+//import { Switch } from "@/components/ui/switch";
 import { useQueryClient } from '@tanstack/react-query'
 export interface LineItem {
   title: string;
@@ -156,7 +156,7 @@ export const EstimateDisplay = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const [clientSignature, setClientSignature] = useState<string | null>(null);
-  
+  const [showSignatureSection, setShowSignatureSection] = useState(false);
   // Check if the screen is mobile-sized
   const isMobile = useMediaQuery("(max-width: 640px)");
   const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)");
@@ -823,6 +823,11 @@ useEffect(() => {
  //const signaturesOn = templateSettings.estimate_signature_enabled;
   const leadOverride = lead?.signature_enabled;
  const signaturesOn = leadOverride === true ? true : leadOverride === false ? false : templateSettings.estimate_signature_enabled;
+ // true if the contractor has globally enabled signatures
+const globalSignatureEnabled = templateSettings.estimate_signature_enabled;
+// true/false the user can switch per-lead (enterprise only)
+const perLeadEnabled       = leadSigEnabled;
+
   const styles = getTemplateStyles(templateSettings.estimate_template_style);
 
 
@@ -1175,20 +1180,69 @@ useEffect(() => {
               taxRate={settings?.tax_rate ?? 0}
             />
           )}
-{!isEditable && isLeadPage && contractor?.tier === "enterprise" && (
-            <div className="mt-4 flex items-center justify-end gap-4">
-              <div className="text-sm">
-                Enable signature section <br />
-                <span className="text-muted-foreground">
-                  (this lead only)
-                </span>
-              </div>
-              <Switch
-                checked={leadSigEnabled}
-                onCheckedChange={toggleLeadSignature}
-              />
-            </div>
-          )}
+ 
+  <div className="mt-8">
+    {/* ── Heading + per-lead toggle (only after expand) ── */}
+    <div className="flex items-start justify-between mb-4">
+     <h2 className={cn(styles.title, "text-base sm:text-lg md:text-xl")}>
+      Signatures
+    </h2>
+
+   {showSignatureSection && contractor?.tier === "enterprise" && (
+   <Button
+     size="sm"
+     variant="outline"
+     onClick={() => setShowSignatureSection(false)}
+   >
+     Hide signatures
+   </Button>
+ )}
+    </div>
+
+    {/* ── Collapsed “Require Signature” card ── */}
+    {!showSignatureSection ? (
+      <button
+        onClick={() => setShowSignatureSection(true)}
+        className="w-full border-2 border-dashed border-primary/50
+                   rounded-lg py-6 text-primary/70 hover:bg-primary/5
+                   transition"
+      >
+        Require Signature
+      </button>
+    ) : (
+      <>
+        {/* ── Expanded: show signature boxes only if toggle ON ── */}
+      
+          <EstimateSignature
+            signature={
+              clientSignature ||
+              estimate?.client_signature ||
+              lead?.client_signature ||
+              null
+            }
+            contractorSignature={
+              signature ||
+              estimate?.contractor_signature ||
+              lead?.contractor_signature ||
+              null
+            }
+            isEstimateReady={isEstimateReady}
+            onSignatureClick={() => setShowSignatureDialog(true)}
+            styles={styles}
+            isLeadPage={isLeadPage}
+            onContractorSignatureClick={
+              isLeadPage && handleContractSign
+                ? () => handleContractSign(leadId)
+                : undefined
+            }
+            canContractorSign={isLeadPage && isContractor}
+          />
+        
+      </>
+    )}
+  </div>
+
+
           {/* Cancel / Archive buttons */}
           {!isEditable && (onCancel || onArchive) && (
             <div className="mt-6 flex justify-end gap-2">
