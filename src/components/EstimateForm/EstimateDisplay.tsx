@@ -1183,7 +1183,7 @@ const perLeadEnabled       = leadSigEnabled;
               taxRate={settings?.tax_rate ?? 0}
             />
           )}
-{!isShareLink && (
+{isLeadPage && (
   <div className="mt-8">
     {/* ── Heading + per-lead toggle (only after expand) ── */}
     <div className="flex items-start justify-between mb-4">
