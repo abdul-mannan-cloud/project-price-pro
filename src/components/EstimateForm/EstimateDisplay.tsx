@@ -162,6 +162,9 @@ export const EstimateDisplay = ({
   const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)");
  const [leadSigEnabled, setLeadSigEnabled] = useState(signatureEnabled);
  // ── keep toggle state in-sync with new data ──────────────────────────
+// Are we on the stand-alone public page “/e/:id” ?
+const { id: sharePageId } = useParams<{ id?: string }>();
+const isShareLink = !!sharePageId && !isLeadPage;   // true only for the copied link
 
 
 const queryClient = useQueryClient();
@@ -186,6 +189,7 @@ const queryClient = useQueryClient();
       });
     } else {
       setLeadSigEnabled(checked);
+      refetchLeadData()
       //handleRefreshEstimate(leadId);          // re-fetch
       queryClient.invalidateQueries({ queryKey: ['estimate-status', leadId] });
     queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
@@ -1180,68 +1184,71 @@ const perLeadEnabled       = leadSigEnabled;
               taxRate={settings?.tax_rate ?? 0}
             />
           )}
- 
-  <div className="mt-8">
-    {/* ── Heading + per-lead toggle (only after expand) ── */}
-    <div className="flex items-start justify-between mb-4">
-     <h2 className={cn(styles.title, "text-base sm:text-lg md:text-xl")}>
-      Signatures
-    </h2>
+          {isLeadPage && (
+            <div className="mt-8">
+              {/* ── Heading + per-lead toggle (only after expand) ── */}
+              <div className="flex items-start justify-between mb-4">
+                <h2 className={cn(styles.title, "text-base sm:text-lg md:text-xl")}>
+                  Signatures
+                </h2>
 
-   {showSignatureSection && contractor?.tier === "enterprise" && (
-   <Button
-     size="sm"
-     variant="outline"
-     onClick={() => setShowSignatureSection(false)}
-   >
-     Hide signatures
-   </Button>
- )}
-    </div>
+                  {leadData?.signature_enabled && contractor?.tier === "enterprise" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {toggleLeadSignature(false);}}
+                    >
+                      Remove signatures
+                    </Button>
+                  )}
+              </div>
 
-    {/* ── Collapsed “Require Signature” card ── */}
-    {!showSignatureSection ? (
-      <button
-        onClick={() => setShowSignatureSection(true)}
-        className="w-full border-2 border-dashed border-primary/50
-                   rounded-lg py-6 text-primary/70 hover:bg-primary/5
-                   transition"
-      >
-        Require Signature
-      </button>
-    ) : (
-      <>
-        {/* ── Expanded: show signature boxes only if toggle ON ── */}
-      
-          <EstimateSignature
-            signature={
-              clientSignature ||
-              estimate?.client_signature ||
-              lead?.client_signature ||
-              null
-            }
-            contractorSignature={
-              signature ||
-              estimate?.contractor_signature ||
-              lead?.contractor_signature ||
-              null
-            }
-            isEstimateReady={isEstimateReady}
-            onSignatureClick={() => setShowSignatureDialog(true)}
-            styles={styles}
-            isLeadPage={isLeadPage}
-            onContractorSignatureClick={
-              isLeadPage && handleContractSign
-                ? () => handleContractSign(leadId)
-                : undefined
-            }
-            canContractorSign={isLeadPage && isContractor}
-          />
-        
-      </>
-    )}
-  </div>
+              {/* ── Collapsed “Require Signature” card ── */}
+              {!leadData?.signature_enabled ? (
+                <button
+                  onClick={() => {
+                                  toggleLeadSignature(true);
+                  }}
 
+                  className="w-full border-2 border-dashed border-primary/50
+                            rounded-lg py-6 text-primary/70 hover:bg-primary/5
+                            transition"
+                >
+                  Require Signature
+                </button>
+              ) : (
+                <>
+                  {/* ── Expanded: show signature boxes only if toggle ON ── */}
+                
+                    <EstimateSignature
+                      signature={
+                        clientSignature ||
+                        estimate?.client_signature ||
+                        lead?.client_signature ||
+                        null
+                      }
+                      contractorSignature={
+                        signature ||
+                        estimate?.contractor_signature ||
+                        lead?.contractor_signature ||
+                        null
+                      }
+                      isEstimateReady={isEstimateReady}
+                      onSignatureClick={() => setShowSignatureDialog(true)}
+                      styles={styles}
+                      isLeadPage={isLeadPage}
+                      onContractorSignatureClick={
+                        isLeadPage && handleContractSign
+                          ? () => handleContractSign(leadId)
+                          : undefined
+                      }
+                      canContractorSign={isLeadPage && isContractor}
+                    />
+                  
+                </>
+              )}
+            </div>
+          )}
 
           {/* Cancel / Archive buttons */}
           {!isEditable && (onCancel || onArchive) && (
@@ -1268,7 +1275,7 @@ const perLeadEnabled       = leadSigEnabled;
           )}
 
 
-          {leadData?.signature_enabled && (
+          {!isLeadPage && leadData?.signature_enabled &&(
             <EstimateSignature
               signature={clientSignature || estimate?.client_signature || (lead ? lead.client_signature : null)}
               contractorSignature={signature || estimate?.contractor_signature || (lead ? lead.contractor_signature : null)}
