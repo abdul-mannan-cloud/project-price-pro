@@ -375,6 +375,11 @@ useEffect(() => {
   // Function to handle contractor signature
   const handleContractorSignature = async (signature: string) => {
     if (!lead || !effectiveContractorId) return;
+    
+    let projectTitle = ''
+    for (const group in lead.estimate_data?.groups){
+      projectTitle += ` - ${lead.estimate_data?.groups[group].name}`;      
+    }
 
     try {
       // Update the lead with the contractor signature
@@ -397,19 +402,18 @@ useEffect(() => {
           .eq('id', lead.contractor_id)
           .single();
 
-      let projectTitle = ''
-      for (const group in lead.estimate_data?.groups){
-        projectTitle += ` - ${lead.estimate_data?.groups[group].title}`;
-      }
+      
+      console.log("PROJECT TITLE", projectTitle, lead);
+      
 
       const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
         body: {
           type: 'contractor_signed',
-          phone: contractor.contact_phone,
+          phone: lead.user_phone,
           data: {
             businessName: contractor.business_name || "Your Contractor",
             estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
-            projectTitle:projectTitle
+            projectTitle: projectTitle
           }
         }
       });
@@ -1156,7 +1160,7 @@ const handleSendSMS = async () => {
   const disabled    = isLoading || !effectiveContractorId;
 
   return (
-    <div className="flex justify-end items-center space-x-2">
+    <div className="flex justify-end items-center space-x-2 px-4 md:px-0">
       {/* EDIT – hide when locked */}
       {!isEstimateLocked && (
         <Button
