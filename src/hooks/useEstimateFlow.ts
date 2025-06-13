@@ -545,7 +545,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
               data: {
                 clientName: lead.user_name || "Customer",
                 totalEstimate: lead.estimate_data.totalCost || "N/A",
-                leadPageUrl:  `${window.location.origin}/e/${leadId}`
+                leadPageUrl:  `${window.location.origin}/leads?leadId=${leadId}`
               }
             }
           });
@@ -592,7 +592,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
           data: {
             businessName: emailData?.business_name || "Your Contractor",
             // <-- wrap this entire URL in backticks:
-            estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
+            estimatePageUrl: `${window.location.origin}/e/${lead?.id}`,
             businessOwnerFullName:
               emailData?.business_owner_name ||
               emailData?.business_name ||

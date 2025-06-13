@@ -82,7 +82,7 @@ function replacePlaceholders(template: string, data: SMSRequest['data']): string
   
   // Replace all placeholders
   const replacements: Record<string, string> = {
-    '{totalEstimate}': data.totalEstimate || 'N/A',
+    '{totalEstimate}': data.totalEstimate ? `$${data.totalEstimate.toLocaleString()}` : 'N/A',
     '{clientName}': data.clientName || 'N/A',
     '{clientPhone}': data.clientPhone || 'N/A',
     '{clientFirstName}': data.clientFirstName || 'Customer',
