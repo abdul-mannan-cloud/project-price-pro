@@ -44,6 +44,7 @@ export const EstimateActions = ({
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 640px)");
   const [isExporting, setIsExporting] = useState(false);
+const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
 
   const handleExportPDF = () => {
     const element = document.getElementById('estimate-content');
@@ -206,10 +207,13 @@ export const EstimateActions = ({
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh Results
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onShowAIPreferences}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  AI Preferences
-                </DropdownMenuItem>
+                {isEnterprise && (                       // <- ADD WRAPPER
+  <DropdownMenuItem onClick={onShowAIPreferences}>
+    <Settings className="h-4 w-4 mr-2" />
+    AI Preferences
+  </DropdownMenuItem>
+)}
+
                 <DropdownMenuItem onClick={onShowSettings}>
                   <Settings className="h-4 w-4 mr-2" />
                   Estimate Settings
@@ -246,16 +250,19 @@ export const EstimateActions = ({
             <RefreshCw className="h-4 w-4 mr-1" />
             Refresh
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onShowAIPreferences}
-            className={styles.button}
-            title="AI Preferences"
-          >
-            <Settings className="h-4 w-4 mr-1" />
-            AI Preferences
-          </Button>
+        {isEnterprise && (                       // <- ADD WRAPPER
+  <Button
+    variant="ghost"
+    size="sm"
+    onClick={onShowAIPreferences}
+    className={styles.button}
+    title="AI Preferences"
+  >
+    <Settings className="h-4 w-4 mr-1" />
+    AI Preferences
+  </Button>
+)}
+
           <Button
             variant="ghost"
             size="sm"
