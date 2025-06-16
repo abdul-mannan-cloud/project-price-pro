@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SignatureDialog } from "@/components/EstimateForm/SignatureDialog";
 import { set } from "date-fns";
+import { slugify } from "@/utils/string";
 
 // EstimateLockBanner Component
 const EstimateLockBanner = ({ isLocked, onUnlock, className = "" }) => {
@@ -885,12 +886,14 @@ useEffect(() => {
       console.error("Error fetching contractor:", contractorError);
       return false;
     }
+    const safeBusinessName = slugify(contractorData.business_name);
+
     const contractor = contractorData;
 
     console.log("CONTRACTOR EMAILLLLLLLL:", contractor);
     
 
-    const pdfToSend = await handleExportPDF(contractor.business_name || "Estimate");
+    const pdfToSend = await handleExportPDF(safeBusinessName);
 
 
     try {
@@ -899,14 +902,14 @@ useEffect(() => {
         body: {
           estimateId: lead.id,
           contractorEmail: contractor.contact_email,
-          contractorName: contractor.business_name || "Contractor",
+          contractorName: safeBusinessName,
           contractorPhone: contractor.contact_phone || "N/A",
           customerEmail: lead.user_email,
           customerName: lead.user_name,
           estimateData: lead.estimate_data,
           estimateUrl,
           pdfBase64: pdfToSend,
-          businessName: contractor?.business_name || "Your Contractor",
+          businessName: safeBusinessName,
           isTestEstimate: false
         },
       });

@@ -5,6 +5,8 @@ import { Category, CategoryQuestions, AnswersState, EstimateConfig } from "@/typ
 import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
 import { Database, Json } from "@/integrations/supabase/types";
 import html2pdf from 'html2pdf.js';
+import { slugify } from "@/utils/string";
+
 
 type LeadInsert = Database['public']['Tables']['leads']['Insert'];
 type ContactData = {
@@ -416,6 +418,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       if (emailFetchError) {
         throw emailFetchError;
       }
+const safeBusinessName = slugify(emailData.business_name);
 
       if (emailData.tier === 'pioneer') {
         console.log("HERE IS THE ESTIMATE DATA", lead.estimate_data);
@@ -561,21 +564,21 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       }
 
       // Generate PDF if not provided
-      const pdfToSend = pdfBase64 || await handleExportPDF(emailData.business_name || "Estimate");
+      const pdfToSend = pdfBase64 || await handleExportPDF(safeBusinessName);
 
       // Send email to customer
       const { error: emailError } = await supabase.functions.invoke('send-estimate-email', {
         body: {
           estimateId: leadId,
           contractorEmail: emailData.contact_email || "abdulmannankhan1000@gmail.com",
-          contractorName: emailData.business_name || "Contractor",
+          contractorName: safeBusinessName,
           contractorPhone: emailData.contact_phone || "N/A",
           customerEmail: lead.user_email,
           customerName: lead.user_name,
           estimateData: lead.estimate_data,
           estimateUrl: window.location.origin + `/e/${leadId}`,
           pdfBase64: pdfToSend,
-          businessName: emailData?.business_name || "Your Contractor",
+         businessName: safeBusinessName,
           isTestEstimate: skip
         }
       });
