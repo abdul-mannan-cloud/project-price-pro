@@ -593,12 +593,11 @@ export const useEstimateFlow = (config: EstimateConfig) => {
             businessName: emailData?.business_name || "Your Contractor",
             // <-- wrap this entire URL in backticks:
             estimatePageUrl: `${window.location.origin}/e/${lead?.id}`,
-            businessOwnerFullName:
-              emailData?.business_owner_name ||
-              emailData?.business_name ||
-              "Your Contractor",
-            businessPhone: emailData?.contact_phone || "N/A",
-            businessEmail: emailData?.contact_email || "N/A",
+           businessOwnerFullName:
+  emailData?.business_owner_name || emailData?.business_name || "",
+businessPhone: emailData?.contact_phone || "",
+businessEmail: emailData?.contact_email || "",
+
             projectTitle
           }
         }

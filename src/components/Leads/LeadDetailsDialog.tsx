@@ -409,13 +409,16 @@ useEffect(() => {
           body: {
             type: 'contractor_signed',
             phone: lead.user_phone,
-            data: {
-              businessName: contractor.business_name || "Your Contractor",
-              estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
-              projectTitle: projectTitle,
-              businessEmail: contractor.contact_email,
-              businessPhone: contractor.contact_phone
-            }
+           data: {
+  businessName: contractor.business_name || "Your Contractor",
+  businessOwnerFullName:
+    contractor.business_owner_name || contractor.business_name || "Your Contractor",
+  estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
+  projectTitle,
+  businessEmail: contractor.contact_email || "",   // ← no “N/A”
+  businessPhone: contractor.contact_phone || ""    // ← no “N/A”
+}
+
           }
         });
 
@@ -943,11 +946,10 @@ const handleSendSMS = async () => {
           // <-- wrap this entire URL in backticks:
           estimatePageUrl: `${window.location.origin}/e/${lead.id}`,
           businessOwnerFullName:
-            emailData?.business_owner_name ||
-            emailData?.business_name ||
-            "Your Contractor",
-          businessPhone: emailData?.contact_phone || "N/A",
-          businessEmail: emailData?.contact_email || "N/A",
+  emailData?.business_owner_name || emailData?.business_name || "",
+businessPhone: emailData?.contact_phone || "",   // ← drop “N/A”
+businessEmail: emailData?.contact_email || "",   // ← drop “N/A”
+
           projectTitle
         }
       }
