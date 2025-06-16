@@ -212,6 +212,9 @@ export type Database = {
           business_name: string
           contact_email: string
           contact_phone: string | null
+          business_owner_name: string | null    // ← newly added
+         usage: number | null                  // ← newly added
+          cash_credits: number | null 
           created_at: string | null
           id: string
           license_number: string | null
@@ -229,6 +232,9 @@ export type Database = {
           business_name: string
           contact_email: string
           contact_phone?: string | null
+          business_owner_name?: string | null  // ← added here too
+          usage?: number | null                  // ← added here too
+          cash_credits?: number | null           // ← added here too
           created_at?: string | null
           id: string
           license_number?: string | null
@@ -239,13 +245,16 @@ export type Database = {
           user_id: string
           website?: string | null
         }
-        Update: {
+      Update: {
           branding_colors?: Json | null
           business_address?: string | null
           business_logo_url?: string | null
           business_name?: string
           contact_email?: string
           contact_phone?: string | null
+          business_owner_name?: string          // ← and here
+          usage?: number                        // ← and here
+          cash_credits?: number                 // ← and here
           created_at?: string | null
           id?: string
           license_number?: string | null
@@ -256,8 +265,6 @@ export type Database = {
           user_id?: string
           website?: string | null
         }
-        Relationships: []
-      }
       leads: {
         Row: {
           ai_generated_message: string | null
@@ -277,6 +284,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_test_estimate: boolean | null
+          signature_enabled: boolean | null
           preview_data: Json | null
           project_address: string | null
           project_description: string | null
@@ -287,6 +295,7 @@ export type Database = {
           user_email: string | null
           user_name: string | null
           user_phone: string | null
+          
         }
         Insert: {
           ai_generated_message?: string | null
@@ -316,7 +325,8 @@ export type Database = {
           user_email?: string | null
           user_name?: string | null
           user_phone?: string | null
-          signature_enabled?: boolean | null
+          
+         
         }
         Update: {
           ai_generated_message?: string | null
