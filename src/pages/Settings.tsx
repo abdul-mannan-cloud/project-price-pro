@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BrandingColors } from "@/types/settings";
+import { useQueryClient } from "@tanstack/react-query"; 
 import {
   Building2,
   Users,
@@ -61,6 +62,7 @@ const Settings = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionRef = useRef(null);
   const addressInputRef = useRef(null);
+  const queryClient = useQueryClient();
 
   const navItems = [
     { name: t("Dashboard"), url: "/dashboard", icon: LayoutDashboard },
@@ -354,10 +356,11 @@ const Settings = () => {
       if (settingsError) throw settingsError;
     },
     onSuccess: () => {
-      toast({
-        title: t("Settings saved"),
-        description: t("Your settings have been updated successfully."),
-      });
+      queryClient.invalidateQueries({ queryKey: ["contractor"] });   // ← NEW
+    toast({
+      title: t("Settings saved"),
+      description: t("Your settings have been updated successfully."),
+    });
     },
     onError: (error) => {
       toast({
@@ -399,10 +402,14 @@ const Settings = () => {
 
       if (error) throw error;
 
-      toast({
-        title: t("Branding colors updated"),
-        description: t("Your brand colors have been saved successfully."),
-      });
+      queryClient.setQueryData(["contractor"], (old: any) =>
+       old ? { ...old, branding_colors: colors } : old
+     );
+
+     toast({
+       title: t("Branding colors updated"),
+       description: t("Your brand colors have been saved successfully."),
+     });
     } catch (error) {
       console.error('Error updating branding colors:', error);
       toast({
@@ -433,6 +440,22 @@ const Settings = () => {
 
   // Enhanced loading state check
   const isInitialLoading = contractorLoading || !contractor;
+    const firstLoadRef = useRef(true);              // ← NEW
+
+  useEffect(() => {                               // ← NEW: on first load only
+    if (!firstLoadRef.current) return;
+    // if load has finished once, cancel
+    if (!isInitialLoading) {
+      firstLoadRef.current = false;
+      return;
+    }
+    // otherwise after 5s force a hard refresh
+    const id = setTimeout(() => {
+      if (isInitialLoading) window.location.reload();
+    }, 5_000);
+    return () => clearTimeout(id);
+  }, [isInitialLoading]);
+
   const hasErrors = contractorError || aiInstructionsError || aiRatesError;
 
   // Show loading spinner for initial load
