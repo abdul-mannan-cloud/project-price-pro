@@ -180,10 +180,12 @@ function generateEmailContent(params: {
         ${customerDetails}
       </div>
       
-      <div style="margin: 20px 0; padding: 20px; background: #f9f9f9; border-radius: 8px;">
-        <h3 style="color: #444;">Availability:</h3>
-        ${customerAvailability}
-      </div>
+          ${customerAvailability
+        ? `<div style="margin: 20px 0; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+             <h3 style="color: #444;">Availability:</h3>
+             ${customerAvailability}
+           </div>`
+        : ""}
 
       ${formatQuestionsAndAnswers(questions, answers)}
 
@@ -213,33 +215,46 @@ function generateEmailContent(params: {
  * @returns HTML string with availability details
  */
 
+function isProvided(value?: string | null): boolean {
+  return !!value && value.trim() !== "" && value.trim().toLowerCase() !== "n/a";
+}
+
 function formatAvailability(customerInfo: CustomerInfo): string {
-  let availableDate = '';
+  const lines: string[] = [];
 
-  if (customerInfo.available_date == null && customerInfo.available_time == null) {
-    return `
-      <ul style="list-style-type: none; padding: 0;">
-        ${`<li><strong>Date Available:</strong>N/A</li>`}
-        ${`<li><strong>Time Available:</strong>N/A</li>`}
-      </ul>
-    `;
+  // ── Date ──────────────────────────────────────────────────────────
+  if (isProvided(customerInfo.available_date)) {
+    let dateText = customerInfo.available_date!;
+
+    switch (customerInfo.flexible) {
+      case "flexible":
+        dateText = "Flexible";
+        break;
+      case "on_date":
+        dateText = `On ${customerInfo.available_date}`;
+        break;
+      case "before_date":
+      default:
+        dateText = `Before ${customerInfo.available_date}`;
+        break;
+    }
+
+    lines.push(`<li><strong>Date Available:</strong> ${dateText}</li>`);
   }
 
-  if (customerInfo.flexible === 'flexible') {
-    availableDate = 'Flexible Date';
-  } else if (customerInfo.flexible === 'on_date') {
-    availableDate = `On Date ${customerInfo.available_date}`;
-  } else if (customerInfo.available_date) {
-    availableDate = `Before Date ${customerInfo.available_date}`;
+  // ── Time ──────────────────────────────────────────────────────────
+  if (isProvided(customerInfo.available_time)) {
+    lines.push(
+      `<li><strong>Time Available:</strong> ${customerInfo.available_time}</li>`
+    );
   }
 
+  // ── Nothing to show? ──────────────────────────────────────────────
+  if (lines.length === 0) {
+    return ""; // nothing rendered
+  }
 
-  return `
-    <ul style="list-style-type: none; padding: 0;">
-      ${customerInfo.available_date ? `<li><strong>Date Available:</strong> ${availableDate}</li>` : ''}
-      ${customerInfo.available_time ? `<li><strong>Time Available:</strong> ${customerInfo.available_time}</li>` : ''}
-    </ul>
-  `;
+  return `<ul style="list-style-type:none;padding:0;">${lines.join("")}</ul>`;
 }
 
 serve(async (req: Request): Promise<Response> => {
