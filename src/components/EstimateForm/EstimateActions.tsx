@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Copy, FileDown, RefreshCw, Settings, Menu } from "lucide-react";
+import { Copy, FileDown, RefreshCw, Settings, Menu,Bot } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import html2pdf from 'html2pdf.js';
 import { cn } from "@/lib/utils";
@@ -209,7 +209,7 @@ const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
                 </DropdownMenuItem>
                 {isEnterprise && (                       // <- ADD WRAPPER
   <DropdownMenuItem onClick={onShowAIPreferences}>
-    <Settings className="h-4 w-4 mr-2" />
+    <Bot className="h-4 w-4 mr-2" />
     AI Preferences
   </DropdownMenuItem>
 )}
@@ -258,7 +258,7 @@ const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
     className={styles.button}
     title="AI Preferences"
   >
-    <Settings className="h-4 w-4 mr-1" />
+    <Bot className="h-4 w-4 mr-1" />
     AI Preferences
   </Button>
 )}
