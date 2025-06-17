@@ -66,8 +66,8 @@ export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps)
       if (error) throw error;
       
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries(['lead', lead.id]);
-      queryClient.invalidateQueries(['leads']);
+      queryClient.invalidateQueries({ queryKey: ['lead', lead.id] });
+     queryClient.invalidateQueries({ queryKey: ['leads'] });
       
       // Refetch lead data if callback provided
       if (refetchLead) {

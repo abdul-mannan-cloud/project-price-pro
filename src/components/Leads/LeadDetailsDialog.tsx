@@ -602,8 +602,8 @@ const handleSaveEstimate = async () => {
     setLead(updatedLead);
     setEditedEstimate(JSON.parse(JSON.stringify(updatedLead.estimate_data)));
 
-    queryClient.invalidateQueries(['lead', lead.id]);
-    queryClient.invalidateQueries(['leads']);
+   queryClient.invalidateQueries({ queryKey: ['lead', lead.id] });
+    queryClient.invalidateQueries({ queryKey: ['leads'] });
 
     toast({
       title: "Success",
@@ -893,7 +893,7 @@ useEffect(() => {
     console.log("CONTRACTOR EMAILLLLLLLL:", contractor);
     
 
-    const pdfToSend = await handleExportPDF(safeBusinessName);
+    const pdfToSend = await handleExportPDF(safeBusinessName || "Estimate");
 
 
     try {
