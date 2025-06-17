@@ -156,7 +156,7 @@ export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExp
       console.log("No incomplete leads found");
     }
 
-    // ── 2. auto‑cancel stale leads (older than 7 days, no contractor sig) ─
+    // ── 2. auto‑cancel stale leads (older than 7days, no contractor sig) ─
     const sevenDaysAgoISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
 
@@ -166,7 +166,7 @@ export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExp
       .update({ status: "cancelled" })
       .eq("contractor_id", contractorId)
       .is("contractor_signature", null) // contractor hasn't signed
-      .lt("created_at", sevenDaysAgoISO) // older than 7 days
+      .lt("created_at", sevenDaysAgoISO) // older than 7days
       .not("status", "in", "(cancelled,archived,completed)") // still active
       .select("id");
 
@@ -178,7 +178,7 @@ export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExp
       //   title: "Leads auto‑cancelled",
       //   description: `${autoCancelled.length} lead${
       //     autoCancelled.length > 1 ? "s were" : " was"
-      //   } cancelled (no contractor signature within 7 days).`,
+      //   } cancelled (no contractor signature within 7days).`,
       // });
     }
   } catch (error) {
@@ -321,7 +321,7 @@ const matchesDateRange = (lead: Lead, range: string) => {
 
   switch (range) {
     case "today":
-      return created >= startOfToday(new Date());
+      return created >= startOfToday();
     case "week":
       return created >= startOfWeek(new Date(), { weekStartsOn: 1 }); // Monday-start
     case "month":
