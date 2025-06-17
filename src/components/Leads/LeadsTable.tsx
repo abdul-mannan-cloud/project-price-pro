@@ -58,6 +58,7 @@ export interface EstimateData {
 }
 
 export interface Lead {
+  signature_enabled: boolean;
   id: string;
   user_name?: string;
   user_email?: string;
@@ -283,15 +284,29 @@ useEffect(() => {
 // treat unsigned “complete” leads as “in-progress” right away
 const computedLeads = useMemo(
   () =>
-    leads.map(l => ({
-      ...l,
-      status:
-        l.status === "complete" && !l.client_signature
-          ? "in-progress"
-          : l.status,
-    })),
-  [leads]
-);
+    leads.map(l => {
+      // 1) pick the base cost (DB field or fallback)
+      const baseCost =
+        l.estimated_cost && l.estimated_cost > 0
+          ? l.estimated_cost
+          : l.estimate_data?.totalCost ?? 0;
+
+      // 2) apply 8.6% tax and round to cents
+      const TAX_RATE = 0.085;
+      const costWithTax = Math.round((baseCost * (1 + TAX_RATE)) * 100) / 100;
+
+      return {
+        ...l,
+        // overwrite estimated_cost with the tax-included total
+        estimated_cost: costWithTax,
+        status:
+          l.status === "complete" && !l.client_signature
+            ? "in-progress"
+            : l.status,
+      };
+    }),
+   [leads]
+ );
 
 
   /* --------------------------------------------------------------------------
@@ -757,7 +772,13 @@ const handleSelectAll = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm text-muted-foreground">Estimated Cost</p>
-                  <p className="font-medium">${selectedMobileLead.estimated_cost?.toLocaleString() || "0"}</p>
+                  <p className="font-medium">
+  $
+  {(selectedMobileLead.estimated_cost ??
+    selectedMobileLead.estimate_data?.totalCost ??
+    0
+  ).toLocaleString()}
+</p>
                 </div>
                 <Badge 
                   variant="outline"
