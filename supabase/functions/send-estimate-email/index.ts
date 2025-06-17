@@ -114,7 +114,17 @@ serve(async (req) => {
     });
 
     // Ensure totalCost exists and is a number
-    const totalCost = estimateData?.totalCost || 0;
+    // ── total WITH tax ────────────────────────────────────────────────
+let  totalCost = estimateData?.totalCost || 0;          // make it `let`
+const taxRate   = estimateData?.taxRate ??              // % as number
+                  estimateData?.tax_rate ?? 0;          // (both spellings)
+const taxAmount = totalCost * (taxRate / 100);
+
+// overwrite the variable so every later use sees “with-tax”
+totalCost += taxAmount;
+// keep data in-sync for the html helpers that still read estimateData
+estimateData.totalCost = totalCost;
+
     const projectTitle = estimateData?.project_title || 'Project';
 
     // Determine the email content based on signature type
