@@ -21,9 +21,9 @@ import { EstimateSignature } from "./EstimateSignature";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Tables } from "@/integrations/supabase/types";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, MinusCircle, Save } from "lucide-react";
-import type { Lead } from "./LeadsTable";
 //import { Switch } from "@/components/ui/switch";
 import { useQueryClient } from '@tanstack/react-query'
 export interface LineItem {
@@ -31,8 +31,8 @@ export interface LineItem {
   description?: string;
   quantity: number;
   unit?: string;
-  costType: string;
-  unitAmount: string;
+ costType?: string;       
+  unitAmount: number;
   totalPrice: number;
 }
 
@@ -55,7 +55,7 @@ export type ContractorDisplay = {
   business_logo_url?: string | null;
   contact_email?: string;
   contact_phone?: string | null;
-  branding_colors?: Json | null;
+  branding_colors?: JSON | null;
   tier?: string;
   cash_credits?: number;
   stripe_customer_id?: string;
@@ -111,6 +111,30 @@ interface EstimateDisplayProps {
   isLoadingUser?: boolean;
   urlContractorId?: string;
 }
+// —————————————————————————————————————————————————————————————————
+// 🎯 Add these at the top, after imports
+interface EstimateData {
+  totalCost: number;
+  category?: string;
+  client_signature?: string | null;
+  contractor_signature?: string | null;
+}
+
+interface LeadData {
+  id: string;
+  estimate_data: EstimateData;
+  status: string;
+  signature_enabled: boolean;
+  client_signature: string | null;
+  contractor_signature: string | null;
+  client_signature_date: string | null;
+  contractor_signature_date: string | null;
+  user_name?: string;
+  user_email?: string;
+  user_phone?: string;
+}
+// —————————————————————————————————————————————————————————————————
+
 
 export const EstimateDisplay = ({
   groups = [],
@@ -328,24 +352,35 @@ const queryClient = useQueryClient();
     }
   })
 
-  const {
-    data: leadData,
-    refetch: refetchLeadData
-  } = useQuery<Lead | null, Error>({
+ const {
+   data: leadData,
+   refetch: refetchLeadData
+ } = useQuery<LeadData, Error>({
     queryKey: ['estimate-status', leadId],
     queryFn: async () => {
       if (!leadId) return null;
 
       const { data, error } = await supabase
-        .from<Lead>('leads')
-        .select('*, id, estimate_data, status, contractor_signature, contractor_signature_date,' + 
-                ' client_signature, client_signature_date, signature_enabled')
+        .from('leads')
+       .select(`
+         id,
+         estimate_data,
+         status,
+         signature_enabled,
+         client_signature,
+         client_signature_date,
+         contractor_signature,
+         contractor_signature_date,
+         user_name,
+         user_email,
+         user_phone
+       `)
         .eq('id', leadId)
         .maybeSingle();
 
       if (error) {
         console.error('Error fetching lead:', error);
-        throw error;
+        return null;
       }
 
       return data;
@@ -566,34 +601,33 @@ useEffect(() => {
       onSignatureComplete(initials);
     }
 
-      if (!leadData?.user_name || !leadData?.user_email || !leadData?.user_phone) {
-        console.warn('Missing leadData fields, refetching...');
-        const { data: freshLead, error: refetchError } = await refetchLeadData();
+        // work with a mutable copy for fallback
+  let currentLead = leadData;
+  if (!currentLead?.user_name || !currentLead?.user_email || !currentLead?.user_phone) {
+    console.warn('Missing leadData fields, refetching...');
+    const { data: fresh, error: refetchError } = await refetchLeadData();
 
-        if (refetchError) {
-          console.error('Error refetching lead data:', refetchError);
-          return;
-        }
-        if (!freshLead) return;
+    if (refetchError) {
+      console.error('Error refetching lead data:', refetchError);
+      return;
+    }
 
-        // Optional: update leadData reference if needed
-       const userName = freshLead.user_name;
-  const userEmail = freshLead.user_email;
-  const userPhone = freshLead.user_phone; // This only works if leadData is mutable in your scope
-      }
+    // use the freshly fetched data if available
+    if (fresh) currentLead = fresh;
+  }
 
       const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
-        body: {
-          type: 'customer_signed',
-          phone: contractor?.contact_phone,
-          data: {
-            clientFirstName: leadData.user_name || "Customer",
-            projectTitle: leadData.estimate_data.category || "Your Project",
-            totalEstimate: leadData.estimate_data.totalCost || 0,
-            leadPageUrl:  `${window.location.origin}/leads?leadId=${leadId}`
-          }
-        }
-      });
+    body: {
+      type: 'customer_signed',
+      phone: contractor?.contact_phone,
+      data: {
+        clientFirstName: currentLead.user_name || "Customer",
+        projectTitle: currentLead.estimate_data.category || "Your Project",
+        totalEstimate: currentLead.estimate_data.totalCost || 0,
+        leadPageUrl:  `${window.location.origin}/leads?leadId=${leadId}`
+      }
+    }
+  });
 
       if (smsSendError) {
         console.error('Error sending SMS:', smsSendError);
@@ -730,6 +764,8 @@ useEffect(() => {
       title: "New Item",
       description: "",
       quantity: 1,
+      unit: "",          // ← required by the interface
+  costType: "", 
       unitAmount: 0,
       totalPrice: 0
     };

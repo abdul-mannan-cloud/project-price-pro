@@ -47,6 +47,7 @@ export const EstimateTemplateSettings = ({
 
 }: {
   contractor: any;
+ 
 
 }) => {
   const queryClient = useQueryClient();
