@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, MinusCircle, Save } from "lucide-react";
+import type { Lead } from "./LeadsTable";
 //import { Switch } from "@/components/ui/switch";
 import { useQueryClient } from '@tanstack/react-query'
 export interface LineItem {
@@ -327,16 +328,16 @@ const queryClient = useQueryClient();
     }
   })
 
-  let {
+  const {
     data: leadData,
     refetch: refetchLeadData
-  } = useQuery({
+  } = useQuery<Lead | null, Error>({
     queryKey: ['estimate-status', leadId],
     queryFn: async () => {
       if (!leadId) return null;
 
       const { data, error } = await supabase
-        .from('leads')
+        .from<Lead>('leads')
         .select('*, id, estimate_data, status, contractor_signature, contractor_signature_date,' + 
                 ' client_signature, client_signature_date, signature_enabled')
         .eq('id', leadId)
@@ -344,7 +345,7 @@ const queryClient = useQueryClient();
 
       if (error) {
         console.error('Error fetching lead:', error);
-        return null;
+        throw error;
       }
 
       return data;
@@ -567,15 +568,18 @@ useEffect(() => {
 
       if (!leadData?.user_name || !leadData?.user_email || !leadData?.user_phone) {
         console.warn('Missing leadData fields, refetching...');
-        const { data: newLeadData, error: refetchError } = await refetchLeadData();
+        const { data: freshLead, error: refetchError } = await refetchLeadData();
 
         if (refetchError) {
           console.error('Error refetching lead data:', refetchError);
           return;
         }
+        if (!freshLead) return;
 
         // Optional: update leadData reference if needed
-        leadData = newLeadData; // This only works if leadData is mutable in your scope
+       const userName = freshLead.user_name;
+  const userEmail = freshLead.user_email;
+  const userPhone = freshLead.user_phone; // This only works if leadData is mutable in your scope
       }
 
       const { error: smsSendError } = await supabase.functions.invoke('send-sms', {

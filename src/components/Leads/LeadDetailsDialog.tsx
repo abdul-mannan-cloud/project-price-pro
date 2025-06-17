@@ -1104,8 +1104,8 @@ businessEmail: emailData?.contact_email || "",   // ← drop “N/A”
       .eq("id", lead.id);
 
     // refresh cached lists
-    queryClient.invalidateQueries(["leads"]);
-    queryClient.invalidateQueries(["lead", lead.id]);
+    queryClient.invalidateQueries({ queryKey: ['lead', lead.id] });
+    queryClient.invalidateQueries({ queryKey: ['leads'] });
   }
 } catch (e) {
   console.error("Could not flip status to in-progress", e);
