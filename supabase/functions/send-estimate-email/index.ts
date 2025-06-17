@@ -114,16 +114,10 @@ serve(async (req) => {
     });
 
     // Ensure totalCost exists and is a number
-    // ── total WITH tax ────────────────────────────────────────────────
-let  totalCost = estimateData?.totalCost || 0;          // make it `let`
-const taxRate   = estimateData?.taxRate ??              // % as number
-                  estimateData?.tax_rate ?? 0;          // (both spellings)
-const taxAmount = totalCost * (taxRate / 100);
-
-// overwrite the variable so every later use sees “with-tax”
-totalCost += taxAmount;
-// keep data in-sync for the html helpers that still read estimateData
-estimateData.totalCost = totalCost;
+let totalCost = estimateData?.totalCost ?? 0;   // existing pre-tax amount
+const TAX_RATE = 0.085;                        // 8.5 % as a decimal
+totalCost += totalCost * TAX_RATE;             // add the tax
+estimateData.totalCost = totalCost;  
 
     const projectTitle = estimateData?.project_title || 'Project';
 

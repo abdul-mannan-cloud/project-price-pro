@@ -452,7 +452,7 @@ const Settings = () => {
     // otherwise after 5s force a hard refresh
     const id = setTimeout(() => {
       if (isInitialLoading) window.location.reload();
-    }, 5_000);
+    }, 2_000);
     return () => clearTimeout(id);
   }, [isInitialLoading]);
 
