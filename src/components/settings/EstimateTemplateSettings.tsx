@@ -44,9 +44,10 @@ const templates = [
 
 export const EstimateTemplateSettings = ({
   contractor,
-
+lead,
 }: {
   contractor: any;
+ lead?: any;
  
 
 }) => {
