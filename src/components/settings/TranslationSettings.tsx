@@ -1,7 +1,12 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
@@ -27,9 +32,12 @@ export const TranslationSettings = () => {
   const { data: authData, isLoading: isAuthLoading } = useQuery({
     queryKey: ["auth"],
     queryFn: async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
       if (error) {
-        console.error('Auth error:', error);
+        console.error("Auth error:", error);
         navigate("/login");
         return null;
       }
@@ -52,7 +60,7 @@ export const TranslationSettings = () => {
         if (error) throw error;
         return data;
       } catch (error) {
-        console.error('Error fetching settings:', error);
+        console.error("Error fetching settings:", error);
         return null;
       }
     },
@@ -68,12 +76,12 @@ export const TranslationSettings = () => {
         .eq("id", authData.id);
 
       if (error) throw error;
-      
+
       // Update i18n language
       i18next.changeLanguage(language);
-      
+
       // Store in localStorage for persistence
-      localStorage.setItem('preferred_language', language);
+      localStorage.setItem("preferred_language", language);
 
       // Invalidate and refetch all queries to get fresh translations
       await queryClient.invalidateQueries();
@@ -88,7 +96,7 @@ export const TranslationSettings = () => {
       });
     },
     onError: (error: any) => {
-      console.error('Language update error:', error);
+      console.error("Language update error:", error);
       toast({
         title: t("Error"),
         description: t("Failed to update language preference."),
@@ -105,26 +113,26 @@ export const TranslationSettings = () => {
           return;
         }
 
-        const storedPreference = localStorage.getItem('preferred_language');
-        const systemLanguage = navigator.language.split('-')[0];
-        
-        let preferredLanguage = 'en';
+        const storedPreference = localStorage.getItem("preferred_language");
+        const systemLanguage = navigator.language.split("-")[0];
+
+        let preferredLanguage = "en";
 
         if (settings?.preferred_language) {
           preferredLanguage = settings.preferred_language;
         } else if (storedPreference) {
           preferredLanguage = storedPreference;
-        } else if (languages.some(lang => lang.code === systemLanguage)) {
+        } else if (languages.some((lang) => lang.code === systemLanguage)) {
           preferredLanguage = systemLanguage;
           if (!storedPreference) {
-            localStorage.setItem('preferred_language', systemLanguage);
+            localStorage.setItem("preferred_language", systemLanguage);
           }
         }
 
         i18next.changeLanguage(preferredLanguage);
       } catch (error) {
-        console.error('Error setting up language:', error);
-        if (error.message?.includes('JWT')) {
+        console.error("Error setting up language:", error);
+        if (error.message?.includes("JWT")) {
           navigate("/login");
         }
       }
@@ -150,12 +158,16 @@ export const TranslationSettings = () => {
   return (
     <Card className="p-8 space-y-6">
       <div className="space-y-4">
-        <h2 className="text-3xl font-bold tracking-tight">{t("Language Settings")}</h2>
+        <h2 className="text-3xl font-bold tracking-tight">
+          {t("Language Settings")}
+        </h2>
         <p className="text-lg text-muted-foreground">
           {t("Choose your preferred language")}
         </p>
         <p className="text-sm text-muted-foreground">
-          {t("This will be the default language used throughout the application")}
+          {t(
+            "This will be the default language used throughout the application",
+          )}
         </p>
       </div>
 
@@ -165,7 +177,11 @@ export const TranslationSettings = () => {
             {t("Preferred Language")}
           </label>
           <Select
-            value={settings?.preferred_language || localStorage.getItem('preferred_language') || 'en'}
+            value={
+              settings?.preferred_language ||
+              localStorage.getItem("preferred_language") ||
+              "en"
+            }
             onValueChange={(value) => updateLanguage.mutate(value)}
           >
             <SelectTrigger className="w-full mt-2">
@@ -180,7 +196,9 @@ export const TranslationSettings = () => {
             </SelectContent>
           </Select>
           <p className="text-sm text-muted-foreground mt-2">
-            {t("Choose your preferred language. This will be used across the entire application.")}
+            {t(
+              "Choose your preferred language. This will be used across the entire application.",
+            )}
           </p>
         </div>
       </div>

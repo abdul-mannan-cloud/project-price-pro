@@ -52,7 +52,7 @@ export const SubscriptionSettings = ({ contractor }) => {
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   // State for dialogs
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -70,14 +70,14 @@ export const SubscriptionSettings = ({ contractor }) => {
 
   // State to hold the refreshed contractor data
   const [refreshedContractor, setRefreshedContractor] = useState(null);
-  
+
   // Effect to use either the refreshed data or the prop data
   useEffect(() => {
     if (!refreshedContractor && contractor) {
       setRefreshedContractor(contractor);
     }
   }, [contractor, refreshedContractor]);
-  
+
   // Function to fetch fresh contractor data
   const refreshContractorData = async () => {
     try {
@@ -89,7 +89,7 @@ export const SubscriptionSettings = ({ contractor }) => {
         .single();
 
       if (error) throw error;
-      
+
       setRefreshedContractor(data);
       return data;
     } catch (error) {
@@ -97,7 +97,7 @@ export const SubscriptionSettings = ({ contractor }) => {
       return null;
     }
   };
-  
+
   const handleOnClick = async (planKey) => {
     setSelectedPlan(planKey);
     setShowConfirmDialog(true);
@@ -130,33 +130,39 @@ export const SubscriptionSettings = ({ contractor }) => {
     try {
       await refreshContractorData();
       const currentContractor = refreshedContractor || contractor;
-      
-      const { error } = await supabase.functions.invoke("enterprise-plan-notification", {
-        body: {
-          customerInfo: {
-            fullName: currentContractor.full_name || currentContractor.business_name,
-            email: currentContractor.contact_email,
-            phone: currentContractor.contact_phone,
-            address: currentContractor.business_address,
-          }
-        }
-      });
+
+      const { error } = await supabase.functions.invoke(
+        "enterprise-plan-notification",
+        {
+          body: {
+            customerInfo: {
+              fullName:
+                currentContractor.full_name || currentContractor.business_name,
+              email: currentContractor.contact_email,
+              phone: currentContractor.contact_phone,
+              address: currentContractor.business_address,
+            },
+          },
+        },
+      );
       const { error: updateError } = await supabase
-          .from("contractors")
-          .update({ enterprise_request: true })
-          .eq("id", currentContractor.id);
+        .from("contractors")
+        .update({ enterprise_request: true })
+        .eq("id", currentContractor.id);
 
       if (error) {
         console.error("Error sending enterprise notification:", error);
         toast({
           title: "Error",
-          description: "Failed to send enterprise notification. Please try again.",
+          description:
+            "Failed to send enterprise notification. Please try again.",
           variant: "destructive",
         });
       } else {
         toast({
           title: "Request Sent",
-          description: "Our team will contact you soon about the Enterprise plan.",
+          description:
+            "Our team will contact you soon about the Enterprise plan.",
         });
       }
     } catch (err) {
@@ -178,19 +184,23 @@ export const SubscriptionSettings = ({ contractor }) => {
       // Refresh data first to ensure we have the latest
       await refreshContractorData();
       const currentContractor = refreshedContractor || contractor;
-      
+
       // Check if contractor has a Stripe customer ID
       if (!currentContractor.stripe_customer_id) {
         // Create a new Stripe customer
-        const { data, error } = await supabase.functions.invoke("create-stripe-customer", {
-          body: {
-            email: currentContractor.contact_email,
-            name: currentContractor.full_name || currentContractor.business_name,
-            metadata: {
-              contractorId: currentContractor.id
-            }
-          }
-        });
+        const { data, error } = await supabase.functions.invoke(
+          "create-stripe-customer",
+          {
+            body: {
+              email: currentContractor.contact_email,
+              name:
+                currentContractor.full_name || currentContractor.business_name,
+              metadata: {
+                contractorId: currentContractor.id,
+              },
+            },
+          },
+        );
 
         if (error) {
           throw new Error(error.message || "Failed to create Stripe customer");
@@ -211,11 +221,14 @@ export const SubscriptionSettings = ({ contractor }) => {
         await createSetupIntent(data.customer.id);
       } else {
         // Check if the customer has a payment method
-        const { data, error } = await supabase.functions.invoke('get-payment-methods', {
-          body: {
-            customer_id: currentContractor.stripe_customer_id,
+        const { data, error } = await supabase.functions.invoke(
+          "get-payment-methods",
+          {
+            body: {
+              customer_id: currentContractor.stripe_customer_id,
+            },
           },
-        });
+        );
 
         if (error) {
           throw new Error(error.message || "Failed to check payment method");
@@ -229,13 +242,20 @@ export const SubscriptionSettings = ({ contractor }) => {
           await createSetupIntent(contractor.stripe_customer_id);
         }
       }
-      await supabase.from("contractor_settings").update({ estimate_signature_enabled: true }).eq("id", currentContractor.id);
-      await supabase.from("leads").update({ signature_enabled: true}).eq("contractor_id", currentContractor.id)
+      await supabase
+        .from("contractor_settings")
+        .update({ estimate_signature_enabled: true })
+        .eq("id", currentContractor.id);
+      await supabase
+        .from("leads")
+        .update({ signature_enabled: true })
+        .eq("contractor_id", currentContractor.id);
     } catch (err) {
       console.error("Error handling Pioneer plan:", err);
       toast({
         title: "Error",
-        description: err.message || "An error occurred while processing your request",
+        description:
+          err.message || "An error occurred while processing your request",
         variant: "destructive",
       });
     } finally {
@@ -246,9 +266,12 @@ export const SubscriptionSettings = ({ contractor }) => {
   // Create a setup intent and show payment form
   const createSetupIntent = async (customerId) => {
     try {
-      const { data, error } = await supabase.functions.invoke('get-client-secret', {
-        body: { customerId: customerId }
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "get-client-secret",
+        {
+          body: { customerId: customerId },
+        },
+      );
 
       if (error) {
         throw new Error(error.message || "Failed to create setup intent");
@@ -290,7 +313,6 @@ export const SubscriptionSettings = ({ contractor }) => {
         title: "Success",
         description: "Your plan has been updated to Pioneer!",
       });
-
     } catch (err) {
       console.error("Error updating tier:", err);
       toast({
@@ -304,7 +326,7 @@ export const SubscriptionSettings = ({ contractor }) => {
   // Handle payment form submission
   const handlePaymentSubmit = async () => {
     await updateToPioneerTier();
-    
+
     // Refresh contractor data again
     await refreshContractorData();
 
@@ -339,13 +361,14 @@ export const SubscriptionSettings = ({ contractor }) => {
       <div className="flex justify-between">
         <span>
           <strong>Current Plan:</strong>{" "}
-          {(refreshedContractor || contractor)?.tier?.charAt(0).toUpperCase() + 
-           (refreshedContractor || contractor)?.tier?.slice(1)}
+          {(refreshedContractor || contractor)?.tier?.charAt(0).toUpperCase() +
+            (refreshedContractor || contractor)?.tier?.slice(1)}
         </span>
-        { 
-          contractor?.enterprise_request == true &&
-          <span className="text-white font-semibold bg-blue-200 p-2 rounded-md">Request Pending for Enterprise Plan</span>
-        }
+        {contractor?.enterprise_request == true && (
+          <span className="text-white font-semibold bg-blue-200 p-2 rounded-md">
+            Request Pending for Enterprise Plan
+          </span>
+        )}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
         {plans.map((plan) => (
@@ -400,7 +423,8 @@ export const SubscriptionSettings = ({ contractor }) => {
                 transition-colors duration-200 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-black disabled:hover:border-gray-300
                 flex items-center justify-center"
             >
-              {(plan.key === "pioneer" && isLoadingPioneer) || (plan.key === "enterprise" && isLoadingEnterprise) ? (
+              {(plan.key === "pioneer" && isLoadingPioneer) ||
+              (plan.key === "enterprise" && isLoadingEnterprise) ? (
                 <>
                   <ButtonLoader />
                   Processing...
@@ -414,28 +438,28 @@ export const SubscriptionSettings = ({ contractor }) => {
       </div>
 
       {/* Confirmation Dialog */}
-      <Dialog open={showConfirmDialog} onOpenChange={(open) => !isConfirmLoading && setShowConfirmDialog(open)}>
+      <Dialog
+        open={showConfirmDialog}
+        onOpenChange={(open) => !isConfirmLoading && setShowConfirmDialog(open)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Confirm Plan Change</DialogTitle>
             <DialogDescription>
-              {selectedPlan === "enterprise" 
-                ? "Our team will contact you to discuss enterprise options." 
+              {selectedPlan === "enterprise"
+                ? "Our team will contact you to discuss enterprise options."
                 : "You are about to switch to the Pioneer plan. You will be asked to provide payment information if not already on file."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-row justify-end gap-2 sm:justify-end">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowConfirmDialog(false)}
               disabled={isConfirmLoading}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleConfirmPlan}
-              disabled={isConfirmLoading}
-            >
+            <Button onClick={handleConfirmPlan} disabled={isConfirmLoading}>
               {isConfirmLoading ? (
                 <>
                   <ButtonLoader />
@@ -450,9 +474,11 @@ export const SubscriptionSettings = ({ contractor }) => {
       </Dialog>
 
       {/* Payment Method Dialog */}
-      <Dialog 
-        open={isPaymentModalOpen} 
-        onOpenChange={(open) => !isLoadingPioneer && setIsPaymentModalOpen(open)}
+      <Dialog
+        open={isPaymentModalOpen}
+        onOpenChange={(open) =>
+          !isLoadingPioneer && setIsPaymentModalOpen(open)
+        }
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -463,8 +489,14 @@ export const SubscriptionSettings = ({ contractor }) => {
           </DialogHeader>
           {clientSecret && (
             <AddPaymentMethod
-              customerName={(refreshedContractor || contractor).full_name || (refreshedContractor || contractor).business_name}
-              customerId={(refreshedContractor || contractor).stripe_customer_id || customerId}
+              customerName={
+                (refreshedContractor || contractor).full_name ||
+                (refreshedContractor || contractor).business_name
+              }
+              customerId={
+                (refreshedContractor || contractor).stripe_customer_id ||
+                customerId
+              }
               clientSecret={clientSecret}
               setCurrentStep={setCurrentStep}
               handleSubmit={handlePaymentSubmit}

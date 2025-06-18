@@ -26,13 +26,13 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, MinusCircle, Save } from "lucide-react";
 import { BrandingColors } from "@/types/settings";
 //import { Switch } from "@/components/ui/switch";
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from "@tanstack/react-query";
 export interface LineItem {
   title: string;
   description?: string;
   quantity: number;
   unit?: string;
- costType?: string;       
+  costType?: string;
   unitAmount: number;
   totalPrice: number;
 }
@@ -80,7 +80,6 @@ interface ContractorSettings {
   tax_rate?: number;
 }
 
-
 interface EstimateDisplayProps {
   groups: ItemGroup[];
   totalCost: number;
@@ -96,7 +95,7 @@ interface EstimateDisplayProps {
   handleRefreshEstimate: (id: string) => void;
   leadId: string;
   contractorParam?: string;
-handleContractSign?: (leadId: string) => void;
+  handleContractSign?: (leadId: string) => void;
   isLeadPage?: boolean;
   lead?: any;
   isEstimateLocked?: boolean;
@@ -136,7 +135,6 @@ interface LeadData {
 }
 // —————————————————————————————————————————————————————————————————
 
-
 export const EstimateDisplay = ({
   groups = [],
   totalCost = 0,
@@ -166,14 +164,18 @@ export const EstimateDisplay = ({
   isSaving = false,
   effectiveContractorId,
   isLoadingUser = false,
-  urlContractorId
+  urlContractorId,
 }: EstimateDisplayProps) => {
   const [editableGroups, setEditableGroups] = useState<ItemGroup[]>([]);
   const [editableTotalCost, setEditableTotalCost] = useState(totalCost);
   const [showSettings, setShowSettings] = useState(false);
   const [showAIPreferences, setShowAIPreferences] = useState(false);
-  const [contractorId, setContractorId] = useState<string>(contractorParam ?? "");
-  const [contractor, setContractor] = useState<ContractorDisplay | undefined>(contractorProp);
+  const [contractorId, setContractorId] = useState<string>(
+    contractorParam ?? "",
+  );
+  const [contractor, setContractor] = useState<ContractorDisplay | undefined>(
+    contractorProp,
+  );
   const [isContractor, setIsContractor] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
@@ -186,14 +188,13 @@ export const EstimateDisplay = ({
   // Check if the screen is mobile-sized
   const isMobile = useMediaQuery("(max-width: 640px)");
   const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)");
- const [leadSigEnabled, setLeadSigEnabled] = useState(signatureEnabled);
- // ── keep toggle state in-sync with new data ──────────────────────────
-// Are we on the stand-alone public page “/e/:id” ?
-const { id: sharePageId } = useParams<{ id?: string }>();
-const isShareLink = !!sharePageId && !isLeadPage;   // true only for the copied link
+  const [leadSigEnabled, setLeadSigEnabled] = useState(signatureEnabled);
+  // ── keep toggle state in-sync with new data ──────────────────────────
+  // Are we on the stand-alone public page “/e/:id” ?
+  const { id: sharePageId } = useParams<{ id?: string }>();
+  const isShareLink = !!sharePageId && !isLeadPage; // true only for the copied link
 
-
-const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
   const toggleLeadSignature = async (checked: boolean) => {
     if (!leadId) return;
     const patch: any = { signature_enabled: checked };
@@ -215,10 +216,10 @@ const queryClient = useQueryClient();
       });
     } else {
       setLeadSigEnabled(checked);
-      refetchLeadData()
+      refetchLeadData();
       //handleRefreshEstimate(leadId);          // re-fetch
-      queryClient.invalidateQueries({ queryKey: ['estimate-status', leadId] });
-    queryClient.invalidateQueries({ queryKey: ['lead', leadId] });
+      queryClient.invalidateQueries({ queryKey: ["estimate-status", leadId] });
+      queryClient.invalidateQueries({ queryKey: ["lead", leadId] });
       toast({
         title: "Updated",
         description: `Signature section ${
@@ -271,14 +272,14 @@ const queryClient = useQueryClient();
     if (isEditable && onEstimateChange && editableGroups.length > 0) {
       const estimate = {
         groups: editableGroups,
-        totalCost: editableTotalCost
+        totalCost: editableTotalCost,
       };
       onEstimateChange(estimate);
     }
   }, [editableGroups, editableTotalCost, isEditable, onEstimateChange]);
 
   // Get contractor ID from lead if not available
-  useEffect(() => {    
+  useEffect(() => {
     if (!contractorId && leadId) {
       getContractorId();
     }
@@ -287,33 +288,34 @@ const queryClient = useQueryClient();
   const getContractorId = async () => {
     try {
       const { data: leadData, error } = await supabase
-        .from('leads')
-        .select('contractor_id')
-        .eq('id', leadId)
+        .from("leads")
+        .select("contractor_id")
+        .eq("id", leadId)
         .single();
-      
+
       if (error) {
-        console.error('Error fetching contractor ID:', error);
+        console.error("Error fetching contractor ID:", error);
         return;
       }
-      
+
       if (leadData?.contractor_id) {
         setContractorId(leadData.contractor_id);
       }
     } catch (error) {
-      console.error('Error fetching contractor ID:', error);
+      console.error("Error fetching contractor ID:", error);
     }
   };
 
   // Fetch contractor data when contractor is undefined but we have contractorId
   const { data: fetchedContractor } = useQuery({
-    queryKey: ['contractor-data', contractorId],
+    queryKey: ["contractor-data", contractorId],
     queryFn: async () => {
       if (!contractorId) throw new Error("No contractor ID");
-      
+
       const { data, error } = await supabase
         .from("contractors")
-        .select(`
+        .select(
+          `
           id,
           business_name,
           business_logo_url,
@@ -323,7 +325,8 @@ const queryClient = useQueryClient();
           tier,
           cash_credits,
           stripe_customer_id
-        `)
+        `,
+        )
         .eq("id", contractorId)
         .single();
 
@@ -341,29 +344,32 @@ const queryClient = useQueryClient();
     }
   }, [fetchedContractor, contractor]);
 
-
-  const {data: contractorSettings} = useQuery({
-    queryKey: ['contractor-settings'],
+  const { data: contractorSettings } = useQuery({
+    queryKey: ["contractor-settings"],
     queryFn: async () => {
-      const {data, error} = await supabase.from("contractor_settings").select("*").eq("id", contractorId)
+      const { data, error } = await supabase
+        .from("contractor_settings")
+        .select("*")
+        .eq("id", contractorId);
       if (error) {
-        return null
+        return null;
       }
       return data;
-    }
-  })
+    },
+  });
 
- const {
-   data: leadData,
-   refetch: refetchLeadData
- } = useQuery<LeadData, Error>({
-    queryKey: ['estimate-status', leadId],
+  const { data: leadData, refetch: refetchLeadData } = useQuery<
+    LeadData,
+    Error
+  >({
+    queryKey: ["estimate-status", leadId],
     queryFn: async () => {
       if (!leadId) return null;
 
       const { data, error } = await supabase
-        .from('leads')
-       .select(`
+        .from("leads")
+        .select(
+          `
          id,
          estimate_data,
          status,
@@ -375,12 +381,13 @@ const queryClient = useQueryClient();
          user_name,
          user_email,
          user_phone
-       `)
-        .eq('id', leadId)
+       `,
+        )
+        .eq("id", leadId)
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching lead:', error);
+        console.error("Error fetching lead:", error);
         return null;
       }
 
@@ -391,24 +398,23 @@ const queryClient = useQueryClient();
     staleTime: 0,
   });
 
-
   // Update signature state when fetching lead data
   // ── place directly AFTER the `useQuery` that defines leadData ──────────
-useEffect(() => {
-  if (leadData?.signature_enabled !== undefined) {
-    setLeadSigEnabled(leadData.signature_enabled);
-  }
-}, [leadData?.signature_enabled]);
+  useEffect(() => {
+    if (leadData?.signature_enabled !== undefined) {
+      setLeadSigEnabled(leadData.signature_enabled);
+    }
+  }, [leadData?.signature_enabled]);
 
-useEffect(() => {
-  setLeadSigEnabled(signatureEnabled);
-}, [signatureEnabled]);
+  useEffect(() => {
+    setLeadSigEnabled(signatureEnabled);
+  }, [signatureEnabled]);
 
-  useEffect(() => {    
+  useEffect(() => {
     if (leadData?.contractor_signature) {
       setSignature(leadData.contractor_signature);
     }
-    
+
     if (leadData?.client_signature) {
       setClientSignature(leadData.client_signature);
     }
@@ -417,17 +423,20 @@ useEffect(() => {
   // Robust handleContractorSign function for EstimateDisplay.tsx
   const handleContractorSignature = async (leadId: string) => {
     if (!leadId || !contractorId) {
-      console.log('Missing required IDs for signature:', { leadId, contractorId });
+      console.log("Missing required IDs for signature:", {
+        leadId,
+        contractorId,
+      });
       return;
     }
-    
+
     try {
       toast({
         title: "Success",
         description: "Contractor signature recorded successfully",
       });
     } catch (error) {
-      console.error('Error recording contractor signature:', error);
+      console.error("Error recording contractor signature:", error);
       toast({
         title: "Error",
         description: "Failed to record signature. Please try again.",
@@ -440,7 +449,7 @@ useEffect(() => {
     queryKey: ["contractor-settings", contractorId],
     queryFn: async () => {
       if (!contractorId) throw new Error("No contractor ID");
-      
+
       const { data, error } = await supabase
         .from("contractor_settings")
         .select("*")
@@ -450,25 +459,24 @@ useEffect(() => {
       if (error) throw error;
       return data as ContractorSettings;
     },
-    enabled: !!contractorId
+    enabled: !!contractorId,
   });
 
   // Update the effect to handle the signatures correctly with null checks
   useEffect(() => {
-    
-    
     if (leadData) {
       // Get contractor signature if any
       if (leadData.contractor_signature) {
         setSignature(leadData.contractor_signature);
       }
-      
+
       // Get client signature if any
       if (leadData.client_signature) {
         setClientSignature(leadData.client_signature);
       }
-      
-      const isComplete = !!leadData?.estimate_data && leadData.estimate_data.totalCost > 0;
+
+      const isComplete =
+        !!leadData?.estimate_data && leadData.estimate_data.totalCost > 0;
       setIsEstimateReady(isComplete);
 
       if (isComplete && onEstimateChange && !isEditable) {
@@ -478,16 +486,16 @@ useEffect(() => {
   }, [leadData, isEditable]);
 
   // Safely check for signatures from estimate or lead
-    useEffect(() => {
+  useEffect(() => {
     /*  Whenever either prop changes we simply mirror the latest value.
         If the estimate was just unlocked, the signatures coming from the DB
         will now be null, so we’ll immediately clear the local state and the
         signature image disappears. */
     setClientSignature(
-      estimate?.client_signature ?? lead?.client_signature ?? null
+      estimate?.client_signature ?? lead?.client_signature ?? null,
     );
     setSignature(
-      estimate?.contractor_signature ?? lead?.contractor_signature ?? null
+      estimate?.contractor_signature ?? lead?.contractor_signature ?? null,
     );
   }, [
     estimate?.client_signature,
@@ -504,138 +512,163 @@ useEffect(() => {
   useEffect(() => {
     const checkContractorAccess = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) return;
-        
+
         const { data: contractorData } = await supabase
-          .from('contractors')
-          .select('id')
-          .eq('user_id', user.id)
+          .from("contractors")
+          .select("id")
+          .eq("user_id", user.id)
           .maybeSingle();
-          
+
         if (contractorData && contractorData.id === contractorId) {
           setIsContractor(true);
         }
       } catch (error) {
-        console.error('Error checking contractor access:', error);
+        console.error("Error checking contractor access:", error);
       }
     };
-    
+
     if (contractorId) {
       checkContractorAccess();
     }
   }, [contractorId, contractorParam]);
 
   const handleGenerateInvoice = async (contractor, totalCost) => {
-        try {        
-          const { data, error } = await supabase.functions.invoke('generate-invoice', {
-            body: {
-              customerId: contractor?.stripe_customer_id,
-              description: 'New lead service fee',
-              items: [
-                { amount: Math.round((totalCost*100) * 0.03 + 20 + 200), description: 'Service charges' },
-              ],
-              metadata: {
-                plan: 'standard',
-                source: 'website'
-              }
-            }
-          });
-          
-          if (error) {
-            throw new Error(error.message || "Failed to generate invoice");
-          }
-    
-          // const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
-          //   body: {
-          //     customerId: contractor?.stripe_customer_id,
-          //     limit: 10,
-          //     offset: 0
-          //   }
-          // });
-          
-          // if (refreshData?.success) {
-          //   setInvoices(refreshData.invoices || []);
-          // }
-          
-        } catch (error) {
-          console.error('Error generating invoice:', error);
-        }
-      };
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "generate-invoice",
+        {
+          body: {
+            customerId: contractor?.stripe_customer_id,
+            description: "New lead service fee",
+            items: [
+              {
+                amount: Math.round(totalCost * 100 * 0.03 + 20 + 200),
+                description: "Service charges",
+              },
+            ],
+            metadata: {
+              plan: "standard",
+              source: "website",
+            },
+          },
+        },
+      );
 
-      const handleUsageInvoice = async (contractor, totalCost) => {
-          try {
-            const { data, error } = await supabase.functions.invoke('generate-invoice', {
-              body: {
-                customerId: contractor?.stripe_customer_id,
-                description: 'New lead service fee',
-                items: [
-                  { amount: Math.round((totalCost * 100)), description: 'Service charges' },
-                ],
-                metadata: {
-                  plan: 'standard',
-                  source: 'website',
-                  userId: contractor.id 
-                }
-              }
-            });
-            
-            if (error) {
-              throw new Error(error.message || "Failed to generate invoice");
-              return false;
-            }
-            
-            console.log('Invoice generated successfully:', data);
-            return true;
-            
-          } catch (error) {
-            console.error('Error generating invoice:', error);
-            throw error;
-          }
-        };
+      if (error) {
+        throw new Error(error.message || "Failed to generate invoice");
+      }
+
+      // const { data: refreshData } = await supabase.functions.invoke('fetch-invoices', {
+      //   body: {
+      //     customerId: contractor?.stripe_customer_id,
+      //     limit: 10,
+      //     offset: 0
+      //   }
+      // });
+
+      // if (refreshData?.success) {
+      //   setInvoices(refreshData.invoices || []);
+      // }
+    } catch (error) {
+      console.error("Error generating invoice:", error);
+    }
+  };
+
+  const handleUsageInvoice = async (contractor, totalCost) => {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "generate-invoice",
+        {
+          body: {
+            customerId: contractor?.stripe_customer_id,
+            description: "New lead service fee",
+            items: [
+              {
+                amount: Math.round(totalCost * 100),
+                description: "Service charges",
+              },
+            ],
+            metadata: {
+              plan: "standard",
+              source: "website",
+              userId: contractor.id,
+            },
+          },
+        },
+      );
+
+      if (error) {
+        throw new Error(error.message || "Failed to generate invoice");
+        return false;
+      }
+
+      console.log("Invoice generated successfully:", data);
+      return true;
+    } catch (error) {
+      console.error("Error generating invoice:", error);
+      throw error;
+    }
+  };
 
   const handleClientSignature = async (initials: string) => {
-    console.log("Handling client signature:", lead, estimate, projectSummary, leadData);
-    
+    console.log(
+      "Handling client signature:",
+      lead,
+      estimate,
+      projectSummary,
+      leadData,
+    );
+
     setClientSignature(initials);
     if (onSignatureComplete) {
       onSignatureComplete(initials);
     }
 
-        // work with a mutable copy for fallback
-  let currentLead = leadData;
-  if (!currentLead?.user_name || !currentLead?.user_email || !currentLead?.user_phone) {
-    console.warn('Missing leadData fields, refetching...');
-    const { data: fresh, error: refetchError } = await refetchLeadData();
+    // work with a mutable copy for fallback
+    let currentLead = leadData;
+    if (
+      !currentLead?.user_name ||
+      !currentLead?.user_email ||
+      !currentLead?.user_phone
+    ) {
+      console.warn("Missing leadData fields, refetching...");
+      const { data: fresh, error: refetchError } = await refetchLeadData();
 
-    if (refetchError) {
-      console.error('Error refetching lead data:', refetchError);
-      return;
+      if (refetchError) {
+        console.error("Error refetching lead data:", refetchError);
+        return;
+      }
+
+      // use the freshly fetched data if available
+      if (fresh) currentLead = fresh;
     }
 
-    // use the freshly fetched data if available
-    if (fresh) currentLead = fresh;
-  }
+    const { error: smsSendError } = await supabase.functions.invoke(
+      "send-sms",
+      {
+        body: {
+          type: "customer_signed",
+          phone: contractor?.contact_phone,
+          data: {
+            clientFirstName: currentLead.user_name || "Customer",
+            projectTitle: currentLead.estimate_data.category || "Your Project",
+            totalEstimate: currentLead.estimate_data.totalCost || 0,
+            leadPageUrl: `${window.location.origin}/leads?leadId=${leadId}`,
+          },
+        },
+      },
+    );
 
-      const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
-    body: {
-      type: 'customer_signed',
-      phone: contractor?.contact_phone,
-      data: {
-        clientFirstName: currentLead.user_name || "Customer",
-        projectTitle: currentLead.estimate_data.category || "Your Project",
-        totalEstimate: currentLead.estimate_data.totalCost || 0,
-        leadPageUrl:  `${window.location.origin}/leads?leadId=${leadId}`
-      }
+    if (smsSendError) {
+      console.error("Error sending SMS:", smsSendError);
     }
-  });
-
-      if (smsSendError) {
-        console.error('Error sending SMS:', smsSendError);
-      }
 
     // Only proceed with billing logic if contractor is available
-    if (contractor?.tier === 'pioneer' && estimate) {
+    if (contractor?.tier === "pioneer" && estimate) {
       const totalFee = estimate.totalCost;
       const availableCredits = contractor.cash_credits || 0;
       let remainingFee = totalFee;
@@ -645,152 +678,165 @@ useEffect(() => {
         remainingFee = totalFee - creditsToUse;
 
         const { error } = await supabase
-          .from('contractors')
+          .from("contractors")
           .update({ cash_credits: availableCredits - creditsToUse * 0.3 })
-          .eq('id', contractor.id);
+          .eq("id", contractor.id);
 
         if (error) {
-          console.error('Failed to update cash credits:', error.message);
+          console.error("Failed to update cash credits:", error.message);
           return;
         }
       }
 
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-                
-        if (authError) {
-          console.error('Error checking authentication:', authError);
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError) {
+        console.error("Error checking authentication:", authError);
+      }
+
+      if (user && user !== null) {
+        console.log("User logged in, skipping invoice generation");
+
+        const { data: currentData, error: fetchError } = await supabase
+          .from("contractors")
+          .select("usage")
+          .eq("id", contractor?.id)
+          .single();
+
+        if (fetchError) {
+          console.error("Error fetching current usage:", fetchError);
+          return;
         }
-        
-        if (user && user !== null) {
-          console.log('User logged in, skipping invoice generation');
 
-          const { data: currentData, error: fetchError } = await supabase
-            .from('contractors')
-            .select('usage')
-            .eq('id', contractor?.id)
-            .single();
+        const currentUsage = currentData?.usage || 0;
+        const additionalUsage = 0.1;
+        const newUsage = currentUsage + additionalUsage;
 
-          if (fetchError) {
-            console.error('Error fetching current usage:', fetchError);
-            return;
-          }
-
-          const currentUsage = currentData?.usage || 0;
-          const additionalUsage = 0.10;
-          const newUsage = currentUsage + additionalUsage;
-
-          if (newUsage > 5) {
-            const result = handleUsageInvoice(contractor, newUsage);
-            if (result) {
-              const { data: usageData, error: updateError } = await supabase
-              .from('contractors')
-              .update({ usage: 0.00 })
-              .eq('id', contractor?.id);  
-            } else {
-              const { data: usageData, error: updateError } = await supabase
-              .from('contractors')
-              .update({ usage: newUsage })
-              .eq('id', contractor?.id);
-            }
+        if (newUsage > 5) {
+          const result = handleUsageInvoice(contractor, newUsage);
+          if (result) {
+            const { data: usageData, error: updateError } = await supabase
+              .from("contractors")
+              .update({ usage: 0.0 })
+              .eq("id", contractor?.id);
           } else {
             const { data: usageData, error: updateError } = await supabase
-              .from('contractors')
+              .from("contractors")
               .update({ usage: newUsage })
-              .eq('id', contractor?.id);
-            if (updateError) {
-              console.error('Error updating usage:', updateError);
-            }
+              .eq("id", contractor?.id);
+          }
+        } else {
+          const { data: usageData, error: updateError } = await supabase
+            .from("contractors")
+            .update({ usage: newUsage })
+            .eq("id", contractor?.id);
+          if (updateError) {
+            console.error("Error updating usage:", updateError);
           }
         }
-
-      
-        console.log('User is logged in, generating invoice for user:', user?.id);
-
-        if (remainingFee > 0 && !user) {
-          handleGenerateInvoice(contractor, remainingFee);
-        }
       }
-    };
+
+      console.log("User is logged in, generating invoice for user:", user?.id);
+
+      if (remainingFee > 0 && !user) {
+        handleGenerateInvoice(contractor, remainingFee);
+      }
+    }
+  };
 
   const handleLineItemChange = (
     groupIndex: number,
     subgroupIndex: number,
     itemIndex: number,
     field: string,
-    value: any
+    value: any,
   ) => {
-    if (!editableGroups?.[groupIndex]?.subgroups?.[subgroupIndex]?.items?.[itemIndex]) return;
-    
+    if (
+      !editableGroups?.[groupIndex]?.subgroups?.[subgroupIndex]?.items?.[
+        itemIndex
+      ]
+    )
+      return;
+
     // Create a deep copy to avoid mutating state directly
     const newGroups = JSON.parse(JSON.stringify(editableGroups));
-    const item = newGroups[groupIndex].subgroups[subgroupIndex].items[itemIndex];
-    
+    const item =
+      newGroups[groupIndex].subgroups[subgroupIndex].items[itemIndex];
+
     // Update the field
-    if (field === 'quantity') {
+    if (field === "quantity") {
       // Convert to number and ensure it's positive
       const newQuantity = Math.max(1, Number(value));
       item.quantity = newQuantity;
-      
+
       // Recalculate total price
       item.totalPrice = newQuantity * item.unitAmount;
-    } else if (field === 'unitAmount') {
+    } else if (field === "unitAmount") {
       // Convert to number and ensure it's positive
       const newUnitAmount = Math.max(0, Number(value));
       item.unitAmount = newUnitAmount;
-      
+
       // Recalculate total price
       item.totalPrice = item.quantity * newUnitAmount;
     } else {
       // For text fields like title and description
       item[field] = value;
     }
-    
+
     // Recalculate subtotals and total cost
     recalculateEstimateTotals(newGroups);
-    
+
     // Update state
     setEditableGroups(newGroups);
   };
-  
+
   // Add a new line item to a subgroup
   const handleAddLineItem = (groupIndex: number, subgroupIndex: number) => {
     if (!editableGroups?.[groupIndex]?.subgroups?.[subgroupIndex]) return;
-    
+
     const newGroups = JSON.parse(JSON.stringify(editableGroups));
-    
+
     // Create a new line item with default values
     const newItem = {
       title: "New Item",
       description: "",
       quantity: 1,
-      unit: "",          // ← required by the interface
-  costType: "", 
+      unit: "", // ← required by the interface
+      costType: "",
       unitAmount: 0,
-      totalPrice: 0
+      totalPrice: 0,
     };
-    
+
     // Add the new item to the specified subgroup
     newGroups[groupIndex].subgroups[subgroupIndex].items.push(newItem);
-    
+
     // Recalculate subtotals and total cost
     recalculateEstimateTotals(newGroups);
-    
+
     // Update state
     setEditableGroups(newGroups);
   };
-  
+
   // Delete a line item from a subgroup
-  const handleDeleteLineItem = (groupIndex: number, subgroupIndex: number, itemIndex: number) => {
-    if (!editableGroups?.[groupIndex]?.subgroups?.[subgroupIndex]?.items) return;
-    
+  const handleDeleteLineItem = (
+    groupIndex: number,
+    subgroupIndex: number,
+    itemIndex: number,
+  ) => {
+    if (!editableGroups?.[groupIndex]?.subgroups?.[subgroupIndex]?.items)
+      return;
+
     const newGroups = JSON.parse(JSON.stringify(editableGroups));
-    
+
     // Remove the item from the subgroup
     newGroups[groupIndex].subgroups[subgroupIndex].items.splice(itemIndex, 1);
-    
+
     // Recalculate subtotals and total cost
     recalculateEstimateTotals(newGroups);
-    
+
     // Update state
     setEditableGroups(newGroups);
   };
@@ -826,53 +872,57 @@ useEffect(() => {
   // Recalculate all subtotals and total cost
   const recalculateEstimateTotals = (groups: ItemGroup[]) => {
     let totalCost = 0;
-    
+
     // Recalculate each group's subtotal
-    groups.forEach(group => {
+    groups.forEach((group) => {
       let groupTotal = 0;
-      
+
       // Recalculate each subgroup's subtotal
-      group.subgroups.forEach(subgroup => {
+      group.subgroups.forEach((subgroup) => {
         let subgroupTotal = 0;
-        
+
         // Sum up all line items in the subgroup
-        subgroup.items.forEach(item => {
+        subgroup.items.forEach((item) => {
           subgroupTotal += item.totalPrice;
         });
-        
+
         subgroup.subtotal = subgroupTotal;
         groupTotal += subgroupTotal;
       });
-      
+
       group.subtotal = groupTotal;
       totalCost += groupTotal;
     });
-    
+
     // Update the total cost
     setEditableTotalCost(totalCost);
   };
 
   const templateSettings = settings || {
-    estimate_template_style: 'modern',
+    estimate_template_style: "modern",
     estimate_signature_enabled: false,
-    estimate_client_message: '',
-    estimate_footer_text: '',
+    estimate_client_message: "",
+    estimate_footer_text: "",
     estimate_hide_subtotals: false,
-    estimate_compact_view: true
+    estimate_compact_view: true,
   };
-//const perLeadSignatureEnabled = leadData?.signature_enabled ?? true;
- // const signaturesOn = templateSettings.estimate_signature_enabled && perLeadSignatureEnabled;
- //const signaturesOn = leadSigEnabled;
- //const signaturesOn = templateSettings.estimate_signature_enabled;
+  //const perLeadSignatureEnabled = leadData?.signature_enabled ?? true;
+  // const signaturesOn = templateSettings.estimate_signature_enabled && perLeadSignatureEnabled;
+  //const signaturesOn = leadSigEnabled;
+  //const signaturesOn = templateSettings.estimate_signature_enabled;
   const leadOverride = lead?.signature_enabled;
- const signaturesOn = leadOverride === true ? true : leadOverride === false ? false : templateSettings.estimate_signature_enabled;
- // true if the contractor has globally enabled signatures
-const globalSignatureEnabled = templateSettings.estimate_signature_enabled;
-// true/false the user can switch per-lead (enterprise only)
-const perLeadEnabled       = leadSigEnabled;
+  const signaturesOn =
+    leadOverride === true
+      ? true
+      : leadOverride === false
+        ? false
+        : templateSettings.estimate_signature_enabled;
+  // true if the contractor has globally enabled signatures
+  const globalSignatureEnabled = templateSettings.estimate_signature_enabled;
+  // true/false the user can switch per-lead (enterprise only)
+  const perLeadEnabled = leadSigEnabled;
 
   const styles = getTemplateStyles(templateSettings.estimate_template_style);
-
 
   const handleDeleteGroup = (groupIndex: number) => {
     const newGroups = JSON.parse(JSON.stringify(editableGroups)) as ItemGroup[];
@@ -889,8 +939,10 @@ const perLeadEnabled       = leadSigEnabled;
           <Input
             value={group.name}
             placeholder="Section name…"
-            onChange={e => {
-              const g = JSON.parse(JSON.stringify(editableGroups)) as ItemGroup[];
+            onChange={(e) => {
+              const g = JSON.parse(
+                JSON.stringify(editableGroups),
+              ) as ItemGroup[];
               g[gi].name = e.target.value;
               setEditableGroups(g);
             }}
@@ -908,17 +960,19 @@ const perLeadEnabled       = leadSigEnabled;
               <Trash2 className="h-4 w-4" /> Remove Section
             </Button>
           </div>
-          { gi === 0 &&
+          {gi === 0 && (
             <div className="md:hidden block">
               <div className="flex items-end justify-end">
-                <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse w-full gap-2">                
+                <div className="inline-flex -space-x-px rounded-lg shadow-sm shadow-black/5 rtl:space-x-reverse w-full gap-2">
                   <Button
                     variant="outline"
                     className="shadow-none  flex-1"
                     onClick={() => {
                       setIsEditing(false);
                       if (lead?.estimate_data) {
-                        setEditedEstimate(JSON.parse(JSON.stringify(lead.estimate_data)));
+                        setEditedEstimate(
+                          JSON.parse(JSON.stringify(lead.estimate_data)),
+                        );
                       }
                     }}
                   >
@@ -927,14 +981,18 @@ const perLeadEnabled       = leadSigEnabled;
                   <Button
                     className=" shadow-none flex-1"
                     onClick={handleSaveEstimate}
-                    disabled={isSaving || (!effectiveContractorId || (isLoadingUser && !urlContractorId))}
+                    disabled={
+                      isSaving ||
+                      !effectiveContractorId ||
+                      (isLoadingUser && !urlContractorId)
+                    }
                   >
                     {isSaving ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
               </div>
             </div>
-          }
+          )}
 
           {group.subgroups.map((sg, sgi) => (
             <div key={sgi} className="space-y-3 border p-3 rounded-md">
@@ -943,8 +1001,10 @@ const perLeadEnabled       = leadSigEnabled;
                 <Input
                   value={sg.name}
                   placeholder="Sub-section name…"
-                  onChange={e => {
-                    const g = JSON.parse(JSON.stringify(editableGroups)) as ItemGroup[];
+                  onChange={(e) => {
+                    const g = JSON.parse(
+                      JSON.stringify(editableGroups),
+                    ) as ItemGroup[];
                     g[gi].subgroups[sgi].name = e.target.value;
                     setEditableGroups(g);
                   }}
@@ -978,7 +1038,10 @@ const perLeadEnabled       = leadSigEnabled;
                   {/* Title */}
                   <div className="col-span-12 sm:col-span-3 space-y-1">
                     <div className="flex sm:hidden flex-row justify-between items-center">
-                      <Label htmlFor={`title-${gi}-${sgi}-${ii}`} className="text-xs">
+                      <Label
+                        htmlFor={`title-${gi}-${sgi}-${ii}`}
+                        className="text-xs"
+                      >
                         Title
                       </Label>
                       <div className="justify-end flex sm:hidden">
@@ -992,30 +1055,48 @@ const perLeadEnabled       = leadSigEnabled;
                         </Button>
                       </div>
                     </div>
-                      <Label htmlFor={`title-${gi}-${sgi}-${ii}`} className="text-xs hidden sm:block">
-                        Title
-                      </Label>
-                      <Input
-                        id={`title-${gi}-${sgi}-${ii}`}
-                        value={item.title}
-                        onChange={e =>
-                          handleLineItemChange(gi, sgi, ii, "title", e.target.value)
-                        }
-                        className="h-8"
-                      />
+                    <Label
+                      htmlFor={`title-${gi}-${sgi}-${ii}`}
+                      className="text-xs hidden sm:block"
+                    >
+                      Title
+                    </Label>
+                    <Input
+                      id={`title-${gi}-${sgi}-${ii}`}
+                      value={item.title}
+                      onChange={(e) =>
+                        handleLineItemChange(
+                          gi,
+                          sgi,
+                          ii,
+                          "title",
+                          e.target.value,
+                        )
+                      }
+                      className="h-8"
+                    />
                   </div>
 
                   {/* Description */}
                   <div className="col-span-12 sm:col-span-5 space-y-1">
-                    <Label htmlFor={`desc-${gi}-${sgi}-${ii}`} className="text-xs">
+                    <Label
+                      htmlFor={`desc-${gi}-${sgi}-${ii}`}
+                      className="text-xs"
+                    >
                       Description
                     </Label>
                     <Textarea
                       id={`desc-${gi}-${sgi}-${ii}`}
                       rows={2}
                       // value={item.description || ""}
-                      onChange={e =>
-                        handleLineItemChange(gi, sgi, ii, "description", e.target.value)
+                      onChange={(e) =>
+                        handleLineItemChange(
+                          gi,
+                          sgi,
+                          ii,
+                          "description",
+                          e.target.value,
+                        )
                       }
                       className="h-12"
                     />
@@ -1023,7 +1104,10 @@ const perLeadEnabled       = leadSigEnabled;
 
                   {/* Quantity */}
                   <div className="col-span-4 sm:col-span-1 space-y-1">
-                    <Label htmlFor={`qty-${gi}-${sgi}-${ii}`} className="text-xs">
+                    <Label
+                      htmlFor={`qty-${gi}-${sgi}-${ii}`}
+                      className="text-xs"
+                    >
                       Qty
                     </Label>
                     <Input
@@ -1031,8 +1115,14 @@ const perLeadEnabled       = leadSigEnabled;
                       type="number"
                       min="1"
                       value={item.quantity}
-                      onChange={e =>
-                        handleLineItemChange(gi, sgi, ii, "quantity", e.target.value)
+                      onChange={(e) =>
+                        handleLineItemChange(
+                          gi,
+                          sgi,
+                          ii,
+                          "quantity",
+                          e.target.value,
+                        )
                       }
                       className="h-8"
                     />
@@ -1040,7 +1130,10 @@ const perLeadEnabled       = leadSigEnabled;
 
                   {/* Unit Price */}
                   <div className="col-span-4 sm:col-span-1 space-y-1">
-                    <Label htmlFor={`price-${gi}-${sgi}-${ii}`} className="text-xs">
+                    <Label
+                      htmlFor={`price-${gi}-${sgi}-${ii}`}
+                      className="text-xs"
+                    >
                       Unit Price
                     </Label>
                     <Input
@@ -1049,8 +1142,14 @@ const perLeadEnabled       = leadSigEnabled;
                       min="0"
                       step="0.01"
                       value={item.unitAmount}
-                      onChange={e =>
-                        handleLineItemChange(gi, sgi, ii, "unitAmount", e.target.value)
+                      onChange={(e) =>
+                        handleLineItemChange(
+                          gi,
+                          sgi,
+                          ii,
+                          "unitAmount",
+                          e.target.value,
+                        )
                       }
                       className="h-8"
                     />
@@ -1119,38 +1218,49 @@ const perLeadEnabled       = leadSigEnabled;
 
   // Filter display groups
   const displayGroups = groups
-    .map(g => ({
+    .map((g) => ({
       ...g,
       // drop any sub-group with zero items
-      subgroups: (g.subgroups || []).filter(sg => sg.items?.length),
+      subgroups: (g.subgroups || []).filter((sg) => sg.items?.length),
       // hide section title if blank
       hideTitle: !g.name?.trim(),
     }))
     // then drop any group that now has zero sub-groups
-    .filter(g => g.subgroups.length);
+    .filter((g) => g.subgroups.length);
 
   return (
     <>
       {!isEstimateReady && (
         <div className="fixed top-0 left-0 right-0 bg-primary text-white p-2 sm:p-4 text-center z-50 animate-in fade-in-0">
           <div className="flex items-center justify-center gap-2">
-            <div className="w-4 h-4">
-              {/*<EstimateAnimation />*/}
-            </div>
-            <span className="text-xs sm:text-sm">Generating your estimate...</span>
+            <div className="w-4 h-4">{/*<EstimateAnimation />*/}</div>
+            <span className="text-xs sm:text-sm">
+              Generating your estimate...
+            </span>
           </div>
         </div>
       )}
 
-      <Card className={cn(styles.card, isBlurred && "blur-md pointer-events-none", "max-w-full mx-auto overflow-hidden")}>
+      <Card
+        className={cn(
+          styles.card,
+          isBlurred && "blur-md pointer-events-none",
+          "max-w-full mx-auto overflow-hidden",
+        )}
+      >
         <div id="estimate-content" className="p-2 sm:p-4 md:p-6">
-          <div className={cn("flex flex-row sm:flex-row justify-between gap-4 sm:gap-2", isMobile ? "mb-4" : "")}>
+          <div
+            className={cn(
+              "flex flex-row sm:flex-row justify-between gap-4 sm:gap-2",
+              isMobile ? "mb-4" : "",
+            )}
+          >
             <EstimateHeader contractor={contractor} styles={styles} />
 
             <div className={cn(styles.headerContent, "mt-2 sm:mt-0")}>
               <EstimateActions
                 isContractor={isContractor}
-                companyName={contractor?.business_name || 'Estimate'}
+                companyName={contractor?.business_name || "Estimate"}
                 onRefreshEstimate={async () => {
                   handleRefreshEstimate(leadId);
                 }}
@@ -1168,13 +1278,23 @@ const perLeadEnabled       = leadSigEnabled;
           </div>
 
           {estimate?.ai_generated_title && (
-            <h2 className={cn(styles.title, "mb-3 text-center text-base sm:text-lg md:text-xl")}>
+            <h2
+              className={cn(
+                styles.title,
+                "mb-3 text-center text-base sm:text-lg md:text-xl",
+              )}
+            >
               {estimate.ai_generated_title}
             </h2>
           )}
 
           {(settings?.estimate_client_message || projectSummary) && (
-            <div className={cn(styles.message, "mb-4 sm:mb-6 text-sm sm:text-base")}>
+            <div
+              className={cn(
+                styles.message,
+                "mb-4 sm:mb-6 text-sm sm:text-base",
+              )}
+            >
               <p className={styles.text}>
                 {settings?.estimate_client_message || projectSummary}
               </p>
@@ -1199,26 +1319,30 @@ const perLeadEnabled       = leadSigEnabled;
               </div>
             </div>
           )}
-          
+
           <div className="overflow-x-auto">
             {isEditable ? (
               renderEditableEstimateTable()
             ) : (
               <EstimateTable
-                groups={displayGroups} 
+                groups={displayGroups}
                 isLoading={isLoading}
                 styles={styles}
-                hideSubtotals={templateSettings.estimate_hide_subtotals || false}
+                hideSubtotals={
+                  templateSettings.estimate_hide_subtotals || false
+                }
                 isMobile={isMobile}
               />
             )}
           </div>
-          
+
           {!isEditable && (
             <EstimateTotals
               totalCost={totalCost}
               isEstimateReady={isEstimateReady}
-              templateStyle={templateSettings.estimate_template_style || 'modern'}
+              templateStyle={
+                templateSettings.estimate_template_style || "modern"
+              }
               styles={styles}
               taxRate={settings?.tax_rate ?? 0}
             />
@@ -1227,15 +1351,23 @@ const perLeadEnabled       = leadSigEnabled;
             <div className="mt-8">
               {/* ── Heading + per-lead toggle (only after expand) ── */}
               <div className="flex items-start justify-between mb-4">
-                <h2 className={cn(styles.title, "text-base sm:text-lg md:text-xl")}>
+                <h2
+                  className={cn(
+                    styles.title,
+                    "text-base sm:text-lg md:text-xl",
+                  )}
+                >
                   Signatures
                 </h2>
 
-                  {leadData?.signature_enabled && contractor?.tier === "enterprise" && (
+                {leadData?.signature_enabled &&
+                  contractor?.tier === "enterprise" && (
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {toggleLeadSignature(false);}}
+                      onClick={() => {
+                        toggleLeadSignature(false);
+                      }}
                     >
                       Remove signatures
                     </Button>
@@ -1246,9 +1378,8 @@ const perLeadEnabled       = leadSigEnabled;
               {!leadData?.signature_enabled ? (
                 <button
                   onClick={() => {
-                                  toggleLeadSignature(true);
+                    toggleLeadSignature(true);
                   }}
-
                   className="w-full border-2 border-dashed border-primary/50
                             rounded-lg py-6 text-primary/70 hover:bg-primary/5
                             transition"
@@ -1258,32 +1389,31 @@ const perLeadEnabled       = leadSigEnabled;
               ) : (
                 <>
                   {/* ── Expanded: show signature boxes only if toggle ON ── */}
-                
-                    <EstimateSignature
-                      signature={
-                        clientSignature ||
-                        estimate?.client_signature ||
-                        lead?.client_signature ||
-                        null
-                      }
-                      contractorSignature={
-                        signature ||
-                        estimate?.contractor_signature ||
-                        lead?.contractor_signature ||
-                        null
-                      }
-                      isEstimateReady={isEstimateReady}
-                      onSignatureClick={() => setShowSignatureDialog(true)}
-                      styles={styles}
-                      isLeadPage={isLeadPage}
-                      onContractorSignatureClick={
-                        isLeadPage && handleContractSign
-                          ? () => handleContractSign(leadId)
-                          : undefined
-                      }
-                      canContractorSign={isLeadPage && isContractor}
-                    />
-                  
+
+                  <EstimateSignature
+                    signature={
+                      clientSignature ||
+                      estimate?.client_signature ||
+                      lead?.client_signature ||
+                      null
+                    }
+                    contractorSignature={
+                      signature ||
+                      estimate?.contractor_signature ||
+                      lead?.contractor_signature ||
+                      null
+                    }
+                    isEstimateReady={isEstimateReady}
+                    onSignatureClick={() => setShowSignatureDialog(true)}
+                    styles={styles}
+                    isLeadPage={isLeadPage}
+                    onContractorSignatureClick={
+                      isLeadPage && handleContractSign
+                        ? () => handleContractSign(leadId)
+                        : undefined
+                    }
+                    canContractorSign={isLeadPage && isContractor}
+                  />
                 </>
               )}
             </div>
@@ -1306,31 +1436,41 @@ const perLeadEnabled       = leadSigEnabled;
           )}
 
           {templateSettings?.estimate_footer_text && (
-            <div className={cn("mt-6 sm:mt-8 pt-4 sm:pt-6 border-t", styles.text, "text-xs sm:text-sm")}>
+            <div
+              className={cn(
+                "mt-6 sm:mt-8 pt-4 sm:pt-6 border-t",
+                styles.text,
+                "text-xs sm:text-sm",
+              )}
+            >
               <p className="whitespace-pre-wrap">
                 {templateSettings.estimate_footer_text}
               </p>
             </div>
           )}
 
-
-          {!isLeadPage && leadData?.signature_enabled &&(
+          {!isLeadPage && leadData?.signature_enabled && (
             <EstimateSignature
-              signature={clientSignature || estimate?.client_signature || (lead ? lead.client_signature : null)}
-              contractorSignature={signature || estimate?.contractor_signature || (lead ? lead.contractor_signature : null)}
+              signature={
+                clientSignature ||
+                estimate?.client_signature ||
+                (lead ? lead.client_signature : null)
+              }
+              contractorSignature={
+                signature ||
+                estimate?.contractor_signature ||
+                (lead ? lead.contractor_signature : null)
+              }
               isEstimateReady={isEstimateReady}
               onSignatureClick={() => setShowSignatureDialog(true)}
               styles={styles}
               isLeadPage={isLeadPage || false}
               onContractorSignatureClick={
-                isLeadPage && handleContractSign ? 
-                () => handleContractSign(leadId) : 
-                undefined
+                isLeadPage && handleContractSign
+                  ? () => handleContractSign(leadId)
+                  : undefined
               }
-              canContractorSign={
-                isLeadPage && 
-                isContractor 
-              }
+              canContractorSign={isLeadPage && isContractor}
             />
           )}
         </div>
@@ -1355,7 +1495,10 @@ const perLeadEnabled       = leadSigEnabled;
               isOpen={showSettings}
               onClose={() => setShowSettings(false)}
             >
-              <EstimateTemplateSettings contractor={contractor} lead={lead || leadData /* <- per-lead context */} />
+              <EstimateTemplateSettings
+                contractor={contractor}
+                lead={lead || leadData /* <- per-lead context */}
+              />
             </SettingsDialog>
           )}
           {showAIPreferences && (
@@ -1365,7 +1508,9 @@ const perLeadEnabled       = leadSigEnabled;
               isOpen={showAIPreferences}
               onClose={() => setShowAIPreferences(false)}
             >
-              <AIPreferencesSettings key={`ai-preferences-${showAIPreferences}`} />
+              <AIPreferencesSettings
+                key={`ai-preferences-${showAIPreferences}`}
+              />
             </SettingsDialog>
           )}
         </>

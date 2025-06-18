@@ -1,14 +1,21 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Category, CategoryQuestions, AnswersState, EstimateConfig } from "@/types/estimate";
-import { findMatchingQuestionSets, consolidateQuestionSets } from "@/utils/questionSetMatcher";
+import {
+  Category,
+  CategoryQuestions,
+  AnswersState,
+  EstimateConfig,
+} from "@/types/estimate";
+import {
+  findMatchingQuestionSets,
+  consolidateQuestionSets,
+} from "@/utils/questionSetMatcher";
 import { Database, Json } from "@/integrations/supabase/types";
-import html2pdf from 'html2pdf.js';
+import html2pdf from "html2pdf.js";
 import { slugify } from "@/utils/string";
 
-
-type LeadInsert = Database['public']['Tables']['leads']['Insert'];
+type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
 type ContactData = {
   fullName: string;
   email: string;
@@ -22,7 +29,7 @@ type ContactData = {
 interface Lead {
   id: string;
   estimate_data: Record<string, any> | null;
-  status: 'pending' | 'complete' | 'error' | string;
+  status: "pending" | "complete" | "error" | string;
   error_message: string | null;
   user_name: string | null;
   user_email: string | null;
@@ -33,22 +40,31 @@ interface Lead {
   flexible: boolean | null;
 }
 
-export type EstimateStage = 'photo' | 'description' | 'questions' | 'contact' | 'estimate' | 'category';
+export type EstimateStage =
+  | "photo"
+  | "description"
+  | "questions"
+  | "contact"
+  | "estimate"
+  | "category";
 
 export const useEstimateFlow = (config: EstimateConfig) => {
-  const [stage, setStage] = useState<EstimateStage>('photo');
+  const [stage, setStage] = useState<EstimateStage>("photo");
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const [projectDescription, setProjectDescription] = useState<string>("");
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [completedCategories, setCompletedCategories] = useState<string[]>([]);
-  const [matchedQuestionSets, setMatchedQuestionSets] = useState<CategoryQuestions[]>([]);
+  const [matchedQuestionSets, setMatchedQuestionSets] = useState<
+    CategoryQuestions[]
+  >([]);
   const [progress, setProgress] = useState<number>(0);
   const [estimate, setEstimate] = useState<Record<string, any> | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isGeneratingEstimate, setIsGeneratingEstimate] = useState<boolean>(false);
+  const [isGeneratingEstimate, setIsGeneratingEstimate] =
+    useState<boolean>(false);
   const [answers, setAnswers] = useState<AnswersState>({});
   const { toast } = useToast();
 
@@ -57,29 +73,34 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     if (urls.length > 0) {
       setUploadedImageUrl(urls[0]);
     }
-    setStage('description');
+    setStage("description");
   };
 
   const changeProgress = (newProgress: number): void => {
     setProgress(newProgress);
   };
 
-  const handleDescriptionSubmit = async (description: string): Promise<void> => {
+  const handleDescriptionSubmit = async (
+    description: string,
+  ): Promise<void> => {
     setProjectDescription(description);
-    const categoriesForMatching = categories.map(category => ({
+    const categoriesForMatching = categories.map((category) => ({
       id: category.id,
       name: category.name,
       description: category.description,
       icon: category.icon,
       keywords: category.keywords || [],
-      questions: category.questions || []
+      questions: category.questions || [],
     }));
 
-    const matches = await findMatchingQuestionSets(description, categoriesForMatching);
+    const matches = await findMatchingQuestionSets(
+      description,
+      categoriesForMatching,
+    );
     const consolidatedSets = consolidateQuestionSets(matches, description);
 
     if (consolidatedSets.length === 0) {
-      setStage('category');
+      setStage("category");
       return;
     }
 
@@ -88,23 +109,23 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     }
 
     setMatchedQuestionSets(consolidatedSets);
-    setStage('questions');
+    setStage("questions");
   };
 
   const handleRefreshEstimate = async (leadId: string): Promise<void> => {
     try {
       setIsLoading(true);
-      console.log('Refreshing estimate with ID:', leadId);
+      console.log("Refreshing estimate with ID:", leadId);
 
       if (!leadId) {
-        throw new Error('Missing lead ID');
+        throw new Error("Missing lead ID");
       }
 
       const { data: addressData, error: addressError } = await supabase
-          .from('contractors')
-          .select('*')
-          .eq('id', config.contractorId)
-          .single();
+        .from("contractors")
+        .select("*")
+        .eq("id", config.contractorId)
+        .single();
 
       if (addressError) {
         throw addressError;
@@ -113,16 +134,20 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       let address_string = "";
       if (!addressData || !addressData.business_address) {
         try {
-          const response = await fetch('https://ipapi.co/json/?key=AzZ4jUj0F5eFNjhgWgLpikGJxYdf5IzcsfBQSiOMw69RtR8JzX');
+          const response = await fetch(
+            "https://ipapi.co/json/?key=AzZ4jUj0F5eFNjhgWgLpikGJxYdf5IzcsfBQSiOMw69RtR8JzX",
+          );
 
           if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}`);
+            throw new Error(
+              `API request failed with status ${response.status}`,
+            );
           }
 
           const ipAddressData = await response.json();
           address_string = `${ipAddressData.city}, ${ipAddressData.region}, ${ipAddressData.country_name}`;
         } catch (error) {
-          console.error('Error fetching IP address data:', error);
+          console.error("Error fetching IP address data:", error);
           throw error;
         }
       } else {
@@ -134,31 +159,34 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         description: "Your estimate will be updated shortly.",
       });
 
-      const {data, error: generateError } = await supabase.functions.invoke('generate-estimate', {
-        body: {
-          leadId,
-          contractorId: config.contractorId,
-          projectDescription,
-          category: matchedQuestionSets[0]?.category,
-          imageUrl: uploadedImageUrl,
-          projectImages: uploadedPhotos,
-          answers,
-          address: address_string
-        }
-      });
+      const { data, error: generateError } = await supabase.functions.invoke(
+        "generate-estimate",
+        {
+          body: {
+            leadId,
+            contractorId: config.contractorId,
+            projectDescription,
+            category: matchedQuestionSets[0]?.category,
+            imageUrl: uploadedImageUrl,
+            projectImages: uploadedPhotos,
+            answers,
+            address: address_string,
+          },
+        },
+      );
 
       if (generateError) throw generateError;
 
       const currentUsage = addressData?.usage || 0;
-      const newUsage = currentUsage + ((data.tokenUsage.totalTokens / 1000) * 0.01 * 2);
+      const newUsage =
+        currentUsage + (data.tokenUsage.totalTokens / 1000) * 0.01 * 2;
 
       console.log("Updating contractor usage:", data);
-      
 
       const { error: updateError } = await supabase
-        .from('contractors')
+        .from("contractors")
         .update({ usage: newUsage })
-        .eq('id', config.contractorId);
+        .eq("id", config.contractorId);
 
       // let attempts = 0;
       // const maxAttempts = 10;
@@ -191,9 +219,8 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       //     });
       //   }
       // }, 3000);
-
     } catch (error) {
-      console.error('Error refreshing estimate:', error);
+      console.error("Error refreshing estimate:", error);
       toast({
         title: "Error",
         description: "Failed to refresh the estimate. Please try again.",
@@ -215,38 +242,42 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
     setSelectedCategory(categoryIds[0]);
 
-    const questionSets: CategoryQuestions[] = categoryIds.map(categoryId => {
-      const selectedCategoryData = categories.find(cat => cat.id === categoryId);
+    const questionSets: CategoryQuestions[] = categoryIds
+      .map((categoryId) => {
+        const selectedCategoryData = categories.find(
+          (cat) => cat.id === categoryId,
+        );
 
-      if (!selectedCategoryData) {
+        if (!selectedCategoryData) {
+          return {
+            category: categoryId,
+            questions: [],
+            confidence: 1,
+            keywords: [],
+          };
+        }
+
         return {
           category: categoryId,
-          questions: [],
+          questions: selectedCategoryData.questions || [],
           confidence: 1,
-          keywords: []
+          keywords: selectedCategoryData.keywords || [],
         };
-      }
-
-      return {
-        category: categoryId,
-        questions: selectedCategoryData.questions || [],
-        confidence: 1,
-        keywords: selectedCategoryData.keywords || []
-      };
-    }).filter(set => set.questions.length > 0);
+      })
+      .filter((set) => set.questions.length > 0);
 
     setMatchedQuestionSets(questionSets);
-    setStage('questions');
+    setStage("questions");
   };
 
   const handleExportPDF = async (companyName: string): Promise<string> => {
-    const element = document.getElementById('estimate-content');
-    if (!element) throw new Error('No estimate content found');
+    const element = document.getElementById("estimate-content");
+    if (!element) throw new Error("No estimate content found");
 
     // Hide action buttons during export
-    const actionButtons = document.getElementById('estimate-actions');
+    const actionButtons = document.getElementById("estimate-actions");
     if (actionButtons) {
-      actionButtons.style.display = 'none';
+      actionButtons.style.display = "none";
     }
 
     // Create a loading toast
@@ -261,8 +292,8 @@ export const useEstimateFlow = (config: EstimateConfig) => {
         margin: [15, 15, 20, 15],
         filename: `${companyName}-estimate.pdf`,
         image: {
-          type: 'jpeg',
-          quality: 1.0
+          type: "jpeg",
+          quality: 1.0,
         },
         html2canvas: {
           scale: 2,
@@ -271,37 +302,39 @@ export const useEstimateFlow = (config: EstimateConfig) => {
           letterRendering: true,
           allowTaint: true,
           imageTimeout: 0,
-          backgroundColor: '#ffffff'
+          backgroundColor: "#ffffff",
         },
         jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'portrait',
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
           compress: true,
-          putOnlyUsedFonts: true
+          putOnlyUsedFonts: true,
         },
-        pagebreak: { mode: 'avoid-all' }
+        pagebreak: { mode: "avoid-all" },
       };
 
       // Wait for all images to load
-      const images = element.getElementsByTagName('img');
-      await Promise.all(Array.from(images).map(img => {
-        if (img.complete) return Promise.resolve();
-        return new Promise(resolve => {
-          img.onload = resolve;
-          img.onerror = resolve;
-        });
-      }));
+      const images = element.getElementsByTagName("img");
+      await Promise.all(
+        Array.from(images).map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        }),
+      );
 
       // Generate PDF and get as base64
       const pdf = await html2pdf()
-          .set(opt)
-          .from(element)
-          .outputPdf('datauristring');
+        .set(opt)
+        .from(element)
+        .outputPdf("datauristring");
 
       // Restore UI elements
       if (actionButtons) {
-        actionButtons.style.display = 'flex';
+        actionButtons.style.display = "flex";
       }
 
       // // Success notification
@@ -315,7 +348,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
       console.error("PDF generation error:", error);
       // Restore UI elements
       if (actionButtons) {
-        actionButtons.style.display = 'flex';
+        actionButtons.style.display = "flex";
       }
       // Error notification
       toast({
@@ -329,71 +362,87 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
   const handleGenerateInvoice = async (contractor, totalCost) => {
     try {
-      const { data, error } = await supabase.functions.invoke('generate-invoice', {
-        body: {
-          customerId: contractor?.stripe_customer_id,
-          description: 'New lead service fee',
-          items: [
-            { amount: Math.round((totalCost * 100) * 0.01 + 10 ), description: 'Service charges' },
-          ],
-          metadata: {
-            plan: 'standard',
-            source: 'website',
-            userId: contractor.id 
-          }
-        }
-      });
-      
+      const { data, error } = await supabase.functions.invoke(
+        "generate-invoice",
+        {
+          body: {
+            customerId: contractor?.stripe_customer_id,
+            description: "New lead service fee",
+            items: [
+              {
+                amount: Math.round(totalCost * 100 * 0.01 + 10),
+                description: "Service charges",
+              },
+            ],
+            metadata: {
+              plan: "standard",
+              source: "website",
+              userId: contractor.id,
+            },
+          },
+        },
+      );
+
       if (error) {
         throw new Error(error.message || "Failed to generate invoice");
       }
-      
-      console.log('Invoice generated successfully:', data);
+
+      console.log("Invoice generated successfully:", data);
       return data;
-      
     } catch (error) {
-      console.error('Error generating invoice:', error);
+      console.error("Error generating invoice:", error);
       throw error;
     }
   };
 
   const handleUsageInvoice = async (contractor, totalCost) => {
     try {
-      const { data, error } = await supabase.functions.invoke('generate-invoice', {
-        body: {
-          customerId: contractor?.stripe_customer_id,
-          description: 'New lead service fee',
-          items: [
-            { amount: Math.round((totalCost * 100)), description: 'Service charges' },
-          ],
-          metadata: {
-            plan: 'standard',
-            source: 'website',
-            userId: contractor.id 
-          }
-        }
-      });
-      
+      const { data, error } = await supabase.functions.invoke(
+        "generate-invoice",
+        {
+          body: {
+            customerId: contractor?.stripe_customer_id,
+            description: "New lead service fee",
+            items: [
+              {
+                amount: Math.round(totalCost * 100),
+                description: "Service charges",
+              },
+            ],
+            metadata: {
+              plan: "standard",
+              source: "website",
+              userId: contractor.id,
+            },
+          },
+        },
+      );
+
       if (error) {
         throw new Error(error.message || "Failed to generate invoice");
         return false;
       }
-      
-      console.log('Invoice generated successfully:', data);
+
+      console.log("Invoice generated successfully:", data);
       return true;
-      
     } catch (error) {
-      console.error('Error generating invoice:', error);
+      console.error("Error generating invoice:", error);
       throw error;
     }
   };
 
-  const checkEstimateStatus = async (leadId: string, skip: boolean = false, pdfBase64?: string): Promise<boolean> => {
-    const { data: lead, error } = await supabase
-        .from('leads')
-        .select('id, estimate_data, status, error_message, user_name, user_email, user_phone, project_address, available_date, available_time, flexible')
-        .eq('id', leadId)
-        .maybeSingle() as { data: Lead, error: Error };
+  const checkEstimateStatus = async (
+    leadId: string,
+    skip: boolean = false,
+    pdfBase64?: string,
+  ): Promise<boolean> => {
+    const { data: lead, error } = (await supabase
+      .from("leads")
+      .select(
+        "id, estimate_data, status, error_message, user_name, user_email, user_phone, project_address, available_date, available_time, flexible",
+      )
+      .eq("id", leadId)
+      .maybeSingle()) as { data: Lead; error: Error };
 
     if (error) {
       throw error;
@@ -401,29 +450,25 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 
     if (!lead) return false;
 
-    if (lead.status === 'error') {
-      throw new Error(lead.error_message || 'Failed to generate estimate');
+    if (lead.status === "error") {
+      throw new Error(lead.error_message || "Failed to generate estimate");
     }
 
-    if (lead.status === 'complete' && lead.estimate_data) {
+    if (lead.status === "complete" && lead.estimate_data) {
       setEstimate(lead.estimate_data);
 
-      
-
       const { data: emailData, error: emailFetchError } = await supabase
-          .from('contractors')
-          .select('*')
-          .eq('id', config.contractorId)
-          .single();
+        .from("contractors")
+        .select("*")
+        .eq("id", config.contractorId)
+        .single();
 
       if (emailFetchError) {
         throw emailFetchError;
       }
-const safeBusinessName = slugify(emailData.business_name);
+      const safeBusinessName = slugify(emailData.business_name);
 
-      if (emailData.tier === 'pioneer') {
-        
-
+      if (emailData.tier === "pioneer") {
         const totalFee = lead.estimate_data.totalCost;
         const availableCredits = emailData.cash_credits;
         let remainingFee = totalFee;
@@ -433,64 +478,67 @@ const safeBusinessName = slugify(emailData.business_name);
           remainingFee = totalFee - creditsToUse;
 
           const { error } = await supabase
-            .from('contractors')
+            .from("contractors")
             .update({ cash_credits: availableCredits - creditsToUse })
-            .eq('id', config.contractorId);
+            .eq("id", config.contractorId);
 
           if (error) {
-            console.error('Failed to update cash credits:', error.message);
+            console.error("Failed to update cash credits:", error.message);
             return;
           }
         }
 
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
 
-        
         if (authError) {
-          console.error('Error checking authentication:', authError);
+          console.error("Error checking authentication:", authError);
         }
-        
+
         if (user && user !== null) {
-          console.log('User logged in, skipping invoice generation');
+          console.log("User logged in, skipping invoice generation");
 
           // Step 1: Fetch current usage
           const { data: currentData, error: fetchError } = await supabase
-            .from('contractors')
-            .select('usage')
-            .eq('id', emailData?.id)
+            .from("contractors")
+            .select("usage")
+            .eq("id", emailData?.id)
             .single();
 
           if (fetchError) {
-            console.error('Error fetching current usage:', fetchError);
+            console.error("Error fetching current usage:", fetchError);
             return;
           }
 
           const currentUsage = currentData?.usage || 0;
-          const additionalUsage = ((lead.estimate_data.tokenUsage.totalTokens / 1000) * 2 * 0.01) + 0.10;
+          const additionalUsage =
+            (lead.estimate_data.tokenUsage.totalTokens / 1000) * 2 * 0.01 + 0.1;
           const newUsage = currentUsage + additionalUsage;
 
           if (newUsage > 5) {
             const result = handleUsageInvoice(emailData, newUsage);
             if (result) {
               const { data: usageData, error: updateError } = await supabase
-              .from('contractors')
-              .update({ usage: 0.00 })
-              .eq('id', emailData?.id);  
+                .from("contractors")
+                .update({ usage: 0.0 })
+                .eq("id", emailData?.id);
             } else {
               const { data: usageData, error: updateError } = await supabase
-              .from('contractors')
-              .update({ usage: newUsage })
-              .eq('id', emailData?.id);
+                .from("contractors")
+                .update({ usage: newUsage })
+                .eq("id", emailData?.id);
             }
           } else {
             // Step 2: Update usage
             const { data: usageData, error: updateError } = await supabase
-              .from('contractors')
+              .from("contractors")
               .update({ usage: newUsage })
-              .eq('id', emailData?.id);
+              .eq("id", emailData?.id);
 
             if (updateError) {
-              console.error('Error updating usage:', updateError);
+              console.error("Error updating usage:", updateError);
             }
           }
         }
@@ -500,29 +548,32 @@ const safeBusinessName = slugify(emailData.business_name);
         }
       }
 
-      const { error: emailError1 } = await supabase.functions.invoke('send-contractor-notification', {
-        body: {
-          estimate: {
-            totalCost: lead.estimate_data.totalCost,
+      const { error: emailError1 } = await supabase.functions.invoke(
+        "send-contractor-notification",
+        {
+          body: {
+            estimate: {
+              totalCost: lead.estimate_data.totalCost,
+            },
+            contractor: {
+              contact_email: emailData?.contact_email,
+            },
+            questions: matchedQuestionSets,
+            answers,
+            isTestEstimate: skip,
+            customerInfo: {
+              fullName: lead.user_name,
+              email: lead.user_email,
+              phone: lead.user_phone,
+              address: lead.project_address,
+              available_date: lead.available_date,
+              available_time: lead.available_time,
+              flexibility: lead.flexible,
+            },
+            leadId: leadId,
           },
-          contractor: {
-            contact_email: emailData?.contact_email,
-          },
-          questions: matchedQuestionSets,
-          answers,
-          isTestEstimate: skip,
-          customerInfo: {
-            fullName: lead.user_name,
-            email: lead.user_email,
-            phone: lead.user_phone,
-            address: lead.project_address,
-            available_date: lead.available_date,
-            available_time: lead.available_time,
-            flexibility: lead.flexible
-          },
-          leadId: leadId
-        }
-      });
+        },
+      );
 
       if (emailError1) {
         console.error("Failed to send contractor email", emailError1);
@@ -532,28 +583,33 @@ const safeBusinessName = slugify(emailData.business_name);
       if (emailData?.contact_phone && !skip) {
         try {
           // Format available appointment times
-          const availableAppointments = lead.available_date && lead.available_time 
-            ? `${lead.available_date} ${lead.available_time}${lead.flexible ? ' (flexible)' : ''}`
-            : 'Not specified';
+          const availableAppointments =
+            lead.available_date && lead.available_time
+              ? `${lead.available_date} ${lead.available_time}${lead.flexible ? " (flexible)" : ""}`
+              : "Not specified";
 
           // Format estimate categories from estimate data
-          const estimateCategories = lead.estimate_data.categories?.map(cat => ({
-            category: cat.name || cat.category,
-            amount: cat.total || cat.amount
-          })) || [];
+          const estimateCategories =
+            lead.estimate_data.categories?.map((cat) => ({
+              category: cat.name || cat.category,
+              amount: cat.total || cat.amount,
+            })) || [];
 
-          const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
-            body: {
-              type: 'new_opportunity',
-              phone: emailData.contact_phone,
-              data: {
-                clientName: lead.user_name || "Customer",
-                totalEstimate: lead.estimate_data.totalCost || "N/A",
-                leadPageUrl:  `${window.location.origin}/leads?leadId=${leadId}`
-              }
-            }
-          });
-          
+          const { error: smsSendError } = await supabase.functions.invoke(
+            "send-sms",
+            {
+              body: {
+                type: "new_opportunity",
+                phone: emailData.contact_phone,
+                data: {
+                  clientName: lead.user_name || "Customer",
+                  totalEstimate: lead.estimate_data.totalCost || "N/A",
+                  leadPageUrl: `${window.location.origin}/leads?leadId=${leadId}`,
+                },
+              },
+            },
+          );
+
           if (smsSendError) {
             console.error("Failed to send contractor SMS", smsSendError);
           } else {
@@ -565,48 +621,56 @@ const safeBusinessName = slugify(emailData.business_name);
       }
 
       // Generate PDF if not provided
-      const pdfToSend = pdfBase64 || await handleExportPDF(safeBusinessName);
+      const pdfToSend = pdfBase64 || (await handleExportPDF(safeBusinessName));
 
       // Send email to customer
-      const { error: emailError } = await supabase.functions.invoke('send-estimate-email', {
-        body: {
-          estimateId: leadId,
-          contractorEmail: emailData.contact_email || "abdulmannankhan1000@gmail.com",
-          contractorName: safeBusinessName,
-          contractorPhone: emailData.contact_phone || "N/A",
-          customerEmail: lead.user_email,
-          customerName: lead.user_name,
-          estimateData: lead.estimate_data,
-          estimateUrl: window.location.origin + `/e/${leadId}`,
-          pdfBase64: pdfToSend,
-         businessName: safeBusinessName,
-          isTestEstimate: skip
-        }
-      });
+      const { error: emailError } = await supabase.functions.invoke(
+        "send-estimate-email",
+        {
+          body: {
+            estimateId: leadId,
+            contractorEmail:
+              emailData.contact_email || "abdulmannankhan1000@gmail.com",
+            contractorName: safeBusinessName,
+            contractorPhone: emailData.contact_phone || "N/A",
+            customerEmail: lead.user_email,
+            customerName: lead.user_name,
+            estimateData: lead.estimate_data,
+            estimateUrl: window.location.origin + `/e/${leadId}`,
+            pdfBase64: pdfToSend,
+            businessName: safeBusinessName,
+            isTestEstimate: skip,
+          },
+        },
+      );
 
-      let projectTitle = '';
+      let projectTitle = "";
       for (const group in lead.estimate_data?.groups) {
         projectTitle += ` - ${lead.estimate_data?.groups[group].title}`;
       }
-      
-      const { error: smsSendError } = await supabase.functions.invoke('send-sms', {
-        body: {
-          type: 'estimate_sent',
-          phone: lead.user_phone,
-          data: {
-            businessName: emailData?.business_name || "Your Contractor",
-            // <-- wrap this entire URL in backticks:
-            estimatePageUrl: `${window.location.origin}/e/${lead?.id}`,
-           businessOwnerFullName:
-  emailData?.business_owner_name || emailData?.business_name || "",
-businessPhone: emailData?.contact_phone || "",
-businessEmail: emailData?.contact_email || "",
 
-            projectTitle
-          }
-        }
-      });
+      const { error: smsSendError } = await supabase.functions.invoke(
+        "send-sms",
+        {
+          body: {
+            type: "estimate_sent",
+            phone: lead.user_phone,
+            data: {
+              businessName: emailData?.business_name || "Your Contractor",
+              // <-- wrap this entire URL in backticks:
+              estimatePageUrl: `${window.location.origin}/e/${lead?.id}`,
+              businessOwnerFullName:
+                emailData?.business_owner_name ||
+                emailData?.business_name ||
+                "",
+              businessPhone: emailData?.contact_phone || "",
+              businessEmail: emailData?.contact_email || "",
 
+              projectTitle,
+            },
+          },
+        },
+      );
 
       if (emailError) {
         console.log("Error sending customer email");
@@ -614,7 +678,7 @@ businessEmail: emailData?.contact_email || "",
       }
 
       setIsGeneratingEstimate(false);
-      setStage('estimate');
+      setStage("estimate");
       return true;
     }
 
@@ -630,13 +694,17 @@ businessEmail: emailData?.contact_email || "",
   // };
 
   const formatAnswersForJson = (answers: AnswersState): Json => {
-    const formattedAnswers = Object.entries(answers).reduce<Record<string, Record<string, unknown>>>((acc, [category, categoryAnswers]) => {
-      acc[category] = Object.entries(categoryAnswers || {}).reduce<Record<string, unknown>>((catAcc, [questionId, answer]) => {
+    const formattedAnswers = Object.entries(answers).reduce<
+      Record<string, Record<string, unknown>>
+    >((acc, [category, categoryAnswers]) => {
+      acc[category] = Object.entries(categoryAnswers || {}).reduce<
+        Record<string, unknown>
+      >((catAcc, [questionId, answer]) => {
         catAcc[questionId] = {
           question: answer.question,
           type: answer.type,
           answers: answer.answers,
-          options: answer.options
+          options: answer.options,
         };
         return catAcc;
       }, {});
@@ -646,9 +714,12 @@ businessEmail: emailData?.contact_email || "",
     return formattedAnswers as Json;
   };
 
-  const handleQuestionComplete = async (answers: AnswersState, leadId: string): Promise<void> => {
+  const handleQuestionComplete = async (
+    answers: AnswersState,
+    leadId: string,
+  ): Promise<void> => {
     if (!config.contractorId) {
-      console.error('Missing contractor ID in config:', config);
+      console.error("Missing contractor ID in config:", config);
       toast({
         title: "Error",
         description: "Contractor ID is required",
@@ -659,24 +730,27 @@ businessEmail: emailData?.contact_email || "",
 
     setAnswers(answers);
     setCurrentLeadId(leadId);
-    setStage('contact');
+    setStage("contact");
   };
 
-  const handleContactSubmit = async (contactData: Partial<ContactData> = {}, skip: boolean = false): Promise<void> => {
+  const handleContactSubmit = async (
+    contactData: Partial<ContactData> = {},
+    skip: boolean = false,
+  ): Promise<void> => {
     try {
       if (!currentLeadId) {
-        throw new Error('No lead ID available');
+        throw new Error("No lead ID available");
       }
 
       const isComplete = await checkEstimateStatus(currentLeadId, skip);
       setIsGeneratingEstimate(false);
-
     } catch (error) {
-      console.error('Error saving contact information:', error);
+      console.error("Error saving contact information:", error);
       setIsGeneratingEstimate(false);
       toast({
         title: "Error",
-        description: "Failed to save your contact information. Please try again.",
+        description:
+          "Failed to save your contact information. Please try again.",
         variant: "destructive",
       });
     }
@@ -685,38 +759,42 @@ businessEmail: emailData?.contact_email || "",
   const handleContractSign = async (leadId: string): Promise<void> => {
     try {
       if (!currentLeadId) {
-        throw new Error('No lead ID available');
+        throw new Error("No lead ID available");
       }
 
       // Get the current date in a readable format
-      const signatureDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+      const signatureDate = new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
 
       // Fetch lead data
       const { data: lead, error: leadError } = await supabase
-          .from('leads')
-          .select('estimate_data, user_name, user_email, user_phone, project_address')
-          .eq('id', leadId)
-          .single();
+        .from("leads")
+        .select(
+          "estimate_data, user_name, user_email, user_phone, project_address",
+        )
+        .eq("id", leadId)
+        .single();
 
       if (leadError) throw leadError;
-      if (!lead) throw new Error('Lead not found');
+      if (!lead) throw new Error("Lead not found");
 
       // Fetch contractor data
       const { data: contractor, error: contractorError } = await supabase
-          .from('contractors')
-          .select('business_name, contact_email, contact_phone')
-          .eq('id', config.contractorId)
-          .single();
+        .from("contractors")
+        .select("business_name, contact_email, contact_phone")
+        .eq("id", config.contractorId)
+        .single();
 
       if (contractorError) throw contractorError;
-      if (!contractor) throw new Error('Contractor not found');
+      if (!contractor) throw new Error("Contractor not found");
 
       // Generate PDF (if needed)
-      const pdfBase64 = await handleExportPDF(contractor.business_name || "Estimate");
+      const pdfBase64 = await handleExportPDF(
+        contractor.business_name || "Estimate",
+      );
 
       // Prepare the request data
       const requestData = {
@@ -724,25 +802,28 @@ businessEmail: emailData?.contact_email || "",
         estimateUrl: `${window.location.origin}/e/${leadId}`,
         estimateData: lead.estimate_data,
         customerInfo: {
-          fullName: lead.user_name || '',
-          email: lead.user_email || '',
-          phone: lead.user_phone || '',
-          address: lead.project_address || ''
+          fullName: lead.user_name || "",
+          email: lead.user_email || "",
+          phone: lead.user_phone || "",
+          address: lead.project_address || "",
         },
         contractorInfo: {
-          name:contractor.business_name || '',
-          businessName: contractor.business_name || '',
-          email: contractor.contact_email || '',
-          phone: contractor.contact_phone || ''
+          name: contractor.business_name || "",
+          businessName: contractor.business_name || "",
+          email: contractor.contact_email || "",
+          phone: contractor.contact_phone || "",
         },
         signatureDate,
-        pdfBase64
+        pdfBase64,
       };
 
       // Call the Supabase function
-      const { error } = await supabase.functions.invoke('send-signature-email', {
-        body: requestData
-      });
+      const { error } = await supabase.functions.invoke(
+        "send-signature-email",
+        {
+          body: requestData,
+        },
+      );
 
       if (error) throw error;
 
@@ -750,9 +831,8 @@ businessEmail: emailData?.contact_email || "",
         title: "Success",
         description: "Contract signed and notifications sent successfully!",
       });
-
     } catch (error) {
-      console.error('Error signing contract:', error);
+      console.error("Error signing contract:", error);
       toast({
         title: "Error",
         description: "Failed to sign contract. Please try again.",
@@ -787,6 +867,6 @@ businessEmail: emailData?.contact_email || "",
     changeProgress,
     handleExportPDF,
     handleContractSign,
-    handleGenerateInvoice
+    handleGenerateInvoice,
   };
 };

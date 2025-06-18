@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Copy, FileDown, RefreshCw, Settings, Menu,Bot } from "lucide-react";
+import { Copy, FileDown, RefreshCw, Settings, Menu, Bot } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import html2pdf from 'html2pdf.js';
+import html2pdf from "html2pdf.js";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
@@ -9,7 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuItem
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
 interface EstimateActionsProps {
@@ -39,24 +39,24 @@ export const EstimateActions = ({
   groups,
   totalCost,
   leadId,
-  isEditable = false // Default to not in edit mode
+  isEditable = false, // Default to not in edit mode
 }: EstimateActionsProps) => {
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 640px)");
   const [isExporting, setIsExporting] = useState(false);
-const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
+  const isEnterprise = contractor?.tier === "enterprise"; // <- ADD THIS LINE
 
   const handleExportPDF = () => {
-    const element = document.getElementById('estimate-content');
+    const element = document.getElementById("estimate-content");
     if (!element) return;
 
     // Set exporting state
     setIsExporting(true);
 
     // Hide action buttons during export
-    const actionButtons = document.getElementById('estimate-actions');
+    const actionButtons = document.getElementById("estimate-actions");
     if (actionButtons) {
-      actionButtons.style.display = 'none';
+      actionButtons.style.display = "none";
     }
 
     // Create a loading toast
@@ -72,8 +72,8 @@ const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
         margin: [15, 15, 20, 15], // [top, right, bottom, left] - extra bottom margin to prevent cutoff
         filename: `${companyName}-estimate.pdf`,
         image: {
-          type: 'jpeg',
-          quality: 1.0 // Maximum image quality
+          type: "jpeg",
+          quality: 1.0, // Maximum image quality
         },
         html2canvas: {
           scale: 2,
@@ -82,23 +82,23 @@ const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
           letterRendering: true,
           allowTaint: true, // Important for including images
           imageTimeout: 0, // No timeout for images
-          backgroundColor: '#ffffff' // Ensure white background
+          backgroundColor: "#ffffff", // Ensure white background
         },
         jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'portrait',
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
           compress: true,
-          putOnlyUsedFonts: true
+          putOnlyUsedFonts: true,
         },
-        pagebreak: { mode: 'avoid-all' } // Try to avoid breaking elements across pages
+        pagebreak: { mode: "avoid-all" }, // Try to avoid breaking elements across pages
       };
 
       // Wait for all images to load before generating PDF
-      const images = element.getElementsByTagName('img');
-      const imagePromises = Array.from(images).map(img => {
+      const images = element.getElementsByTagName("img");
+      const imagePromises = Array.from(images).map((img) => {
         if (img.complete) return Promise.resolve();
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
           img.onload = resolve;
           img.onerror = resolve; // Continue even if image fails to load
         });
@@ -110,14 +110,14 @@ const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
             .set(opt)
             .from(element)
             .toPdf() // Convert to PDF
-            .get('pdf') // Get the PDF object
-            .then(pdf => {
+            .get("pdf") // Get the PDF object
+            .then((pdf) => {
               // Add metadata
               pdf.setProperties({
                 title: `${companyName} Estimate`,
-                subject: 'Project Estimate',
+                subject: "Project Estimate",
                 creator: companyName,
-                author: companyName
+                author: companyName,
               });
               return pdf;
             })
@@ -126,7 +126,7 @@ const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
         .then(() => {
           // Restore UI elements
           if (actionButtons) {
-            actionButtons.style.display = 'flex';
+            actionButtons.style.display = "flex";
           }
 
           // Success notification
@@ -136,12 +136,12 @@ const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
           });
           setIsExporting(false);
         })
-        .catch(error => {
+        .catch((error) => {
           console.error("PDF generation error:", error);
 
           // Restore UI elements
           if (actionButtons) {
-            actionButtons.style.display = 'flex';
+            actionButtons.style.display = "flex";
           }
 
           // Error notification
@@ -167,7 +167,8 @@ const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
 
     const estimateLink = `${window.location.origin}/e/${leadId}`;
 
-    navigator.clipboard.writeText(estimateLink)
+    navigator.clipboard
+      .writeText(estimateLink)
       .then(() => {
         toast({
           title: "Success",
@@ -187,7 +188,10 @@ const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
   // Mobile dropdown menu version
   if (isMobile) {
     return (
-      <div className={cn(styles.buttonsContainer, "flex justify-end")} id="estimate-actions">
+      <div
+        className={cn(styles.buttonsContainer, "flex justify-end")}
+        id="estimate-actions"
+      >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -207,12 +211,12 @@ const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh Results
                 </DropdownMenuItem>
-                {isEnterprise && (                       // <- ADD WRAPPER
-  <DropdownMenuItem onClick={onShowAIPreferences}>
-    <Bot className="h-4 w-4 mr-2" />
-    AI Preferences
-  </DropdownMenuItem>
-)}
+                {isEnterprise && ( // <- ADD WRAPPER
+                  <DropdownMenuItem onClick={onShowAIPreferences}>
+                    <Bot className="h-4 w-4 mr-2" />
+                    AI Preferences
+                  </DropdownMenuItem>
+                )}
 
                 <DropdownMenuItem onClick={onShowSettings}>
                   <Settings className="h-4 w-4 mr-2" />
@@ -250,18 +254,18 @@ const isEnterprise = contractor?.tier === "enterprise";   // <- ADD THIS LINE
             <RefreshCw className="h-4 w-4 mr-1" />
             Refresh
           </Button>
-        {isEnterprise && (                       // <- ADD WRAPPER
-  <Button
-    variant="ghost"
-    size="sm"
-    onClick={onShowAIPreferences}
-    className={styles.button}
-    title="AI Preferences"
-  >
-    <Bot className="h-4 w-4 mr-1" />
-    AI Preferences
-  </Button>
-)}
+          {isEnterprise && ( // <- ADD WRAPPER
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onShowAIPreferences}
+              className={styles.button}
+              title="AI Preferences"
+            >
+              <Bot className="h-4 w-4 mr-1" />
+              AI Preferences
+            </Button>
+          )}
 
           <Button
             variant="ghost"

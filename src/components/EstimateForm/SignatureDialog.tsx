@@ -34,7 +34,7 @@ export const SignatureDialog = ({
   isContractorSignature = false,
 }: SignatureDialogProps) => {
   const [signature, setSignature] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);  
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -49,19 +49,18 @@ export const SignatureDialog = ({
       }
 
       console.log(user);
-      
 
-      const userName =
-        user?.user_metadata?.first_name || "";
+      const userName = user?.user_metadata?.first_name || "";
 
-       setSignature(userName);
+      setSignature(userName);
     };
 
     const fetchLead = async () => {
-      const {
-        data: lead,
-        error,
-      } = await supabase.from("leads").select("*").eq("id", leadId).single();
+      const { data: lead, error } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("id", leadId)
+        .single();
 
       if (error) {
         console.error("Failed to fetch user:", error.message);
@@ -69,16 +68,15 @@ export const SignatureDialog = ({
       }
 
       console.log(lead.user_name);
-      
 
-      const userName = lead.user_name || ""
-       setSignature(userName);
+      const userName = lead.user_name || "";
+      setSignature(userName);
     };
 
     if (isOpen && isContractorSignature) {
       fetchUser();
     } else {
-      fetchLead()
+      fetchLead();
     }
   }, [isOpen]);
 
@@ -98,7 +96,7 @@ export const SignatureDialog = ({
 
     try {
       if (leadId && contractorId) {
-      const updatePayload = isContractorSignature
+        const updatePayload = isContractorSignature
           ? {
               contractor_signature: signature,
               contractor_signature_date: new Date().toISOString(),
@@ -107,7 +105,7 @@ export const SignatureDialog = ({
           : {
               client_signature: signature,
               client_signature_date: new Date().toISOString(),
-              status: "action_required",   // ← new rule
+              status: "action_required", // ← new rule
             };
 
         const { error: dbError } = await supabase
@@ -145,7 +143,9 @@ export const SignatureDialog = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isContractorSignature ? "Add Contractor Signature" : "Add Signature"}
+            {isContractorSignature
+              ? "Add Contractor Signature"
+              : "Add Signature"}
           </DialogTitle>
           <DialogDescription>
             {isContractorSignature
@@ -168,7 +168,12 @@ export const SignatureDialog = ({
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting || !signature.trim()}>

@@ -6,7 +6,7 @@ interface CaptchaVerificationProps {
   onVerify: () => void;
 }
 
-const VERIFICATION_KEY = 'estimate_verification_status';
+const VERIFICATION_KEY = "estimate_verification_status";
 const VERIFICATION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 export const CaptchaVerification = ({ onVerify }: CaptchaVerificationProps) => {
@@ -19,7 +19,7 @@ export const CaptchaVerification = ({ onVerify }: CaptchaVerificationProps) => {
     if (storedVerification) {
       const { timestamp } = JSON.parse(storedVerification);
       const isExpired = Date.now() - timestamp > VERIFICATION_EXPIRY;
-      
+
       if (!isExpired) {
         console.log("Using existing verification");
         setIsVerified(true);
@@ -36,12 +36,15 @@ export const CaptchaVerification = ({ onVerify }: CaptchaVerificationProps) => {
     if (token) {
       console.log("New verification successful");
       setIsVerified(true);
-      
-      localStorage.setItem(VERIFICATION_KEY, JSON.stringify({
-        verified: true,
-        timestamp: Date.now()
-      }));
-      
+
+      localStorage.setItem(
+        VERIFICATION_KEY,
+        JSON.stringify({
+          verified: true,
+          timestamp: Date.now(),
+        }),
+      );
+
       onVerify();
     }
   };
@@ -70,7 +73,7 @@ export const CaptchaVerification = ({ onVerify }: CaptchaVerificationProps) => {
           theme: "light",
           appearance: "always",
           retry: "auto",
-          refreshExpired: "auto"
+          refreshExpired: "auto",
         }}
       />
     </div>

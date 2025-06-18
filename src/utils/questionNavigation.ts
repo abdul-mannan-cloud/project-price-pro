@@ -4,19 +4,21 @@ import { Question, Option, QuestionAnswer } from "@/types/estimate";
  * Finds the next question ID based on the current question and selected answer
  */
 export const findNextQuestionId = (
-    questions: Question[],
-    currentQuestion: Question,
-    selectedValue: string
+  questions: Question[],
+  currentQuestion: Question,
+  selectedValue: string,
 ): string | null => {
   // Handle measurement_input type questions which might not have traditional options
-  if (currentQuestion.type === 'measurement_input') {
+  if (currentQuestion.type === "measurement_input") {
     // If the current question has a next property, use that
     if (currentQuestion.next) {
       return currentQuestion.next;
     }
 
     // Move to the next question in order
-    const currentIndex = questions.findIndex((q) => q.id === currentQuestion.id);
+    const currentIndex = questions.findIndex(
+      (q) => q.id === currentQuestion.id,
+    );
     if (currentIndex < questions.length - 1) {
       return questions[currentIndex + 1].id;
     }
@@ -26,7 +28,9 @@ export const findNextQuestionId = (
 
   // Safety check for options array
   if (!currentQuestion.options || !Array.isArray(currentQuestion.options)) {
-    console.warn(`Question ${currentQuestion.id} has no options array in findNextQuestionId`);
+    console.warn(
+      `Question ${currentQuestion.id} has no options array in findNextQuestionId`,
+    );
 
     // If the current question has a next property, use that
     if (currentQuestion.next) {
@@ -34,7 +38,9 @@ export const findNextQuestionId = (
     }
 
     // Move to the next question in order
-    const currentIndex = questions.findIndex((q) => q.id === currentQuestion.id);
+    const currentIndex = questions.findIndex(
+      (q) => q.id === currentQuestion.id,
+    );
     if (currentIndex < questions.length - 1) {
       return questions[currentIndex + 1].id;
     }
@@ -44,7 +50,7 @@ export const findNextQuestionId = (
 
   // First check if the selected option has a next question specified
   const selectedOption = currentQuestion.options.find(
-      (opt) => opt && opt.value === selectedValue
+    (opt) => opt && opt.value === selectedValue,
   );
 
   if (selectedOption?.next) {
@@ -77,17 +83,20 @@ export const findNextQuestionId = (
  * @returns Progress as a percentage (0-100)
  */
 export const calculateQuestionProgress = (
-    questions: Question[],
-    currentQuestionId: string,
-    answers: Record<string, QuestionAnswer>,
-    totalQuestionSets: number,
-    currentSetIndex: number = 0
+  questions: Question[],
+  currentQuestionId: string,
+  answers: Record<string, QuestionAnswer>,
+  totalQuestionSets: number,
+  currentSetIndex: number = 0,
 ): number => {
   // Graph-based approach for dynamic question paths
   const answeredQuestionIds = Object.keys(answers);
 
   // Estimate total questions that will be answered in this path
-  const estimatedTotalQuestions = estimateTotalQuestionsInPath(questions, answers);
+  const estimatedTotalQuestions = estimateTotalQuestionsInPath(
+    questions,
+    answers,
+  );
 
   // Count answered questions plus the current one if not already answered
   let completedQuestions = answeredQuestionIds.length;
@@ -97,8 +106,8 @@ export const calculateQuestionProgress = (
 
   // Calculate progress within the current set
   const currentSetProgress = Math.min(
-      completedQuestions / Math.max(estimatedTotalQuestions, 1),
-      1.0
+    completedQuestions / Math.max(estimatedTotalQuestions, 1),
+    1.0,
   );
 
   // Calculate overall progress including completed sets
@@ -114,8 +123,8 @@ export const calculateQuestionProgress = (
  * Estimates the total number of questions in the dynamic path based on current answers
  */
 function estimateTotalQuestionsInPath(
-    questions: Question[],
-    answers: Record<string, QuestionAnswer>
+  questions: Question[],
+  answers: Record<string, QuestionAnswer>,
 ): number {
   if (!questions.length) return 1;
 
@@ -128,11 +137,11 @@ function estimateTotalQuestionsInPath(
 
   // Simulate the question path based on current answers
   simulatePath(
-      startQuestionId,
-      questions,
-      answers,
-      visitedQuestionIds,
-      estimatedPath
+    startQuestionId,
+    questions,
+    answers,
+    visitedQuestionIds,
+    estimatedPath,
   );
 
   // To avoid weird edge cases where no paths are found, ensure at least 1 question
@@ -143,40 +152,52 @@ function estimateTotalQuestionsInPath(
  * Simulates the path a user would take through questions based on their answers
  */
 function simulatePath(
-    questionId: string,
-    questions: Question[],
-    answers: Record<string, QuestionAnswer>,
-    visitedQuestionIds: Set<string>,
-    estimatedPath: string[]
+  questionId: string,
+  questions: Question[],
+  answers: Record<string, QuestionAnswer>,
+  visitedQuestionIds: Set<string>,
+  estimatedPath: string[],
 ): void {
   // Prevent infinite loops
   if (visitedQuestionIds.has(questionId)) return;
   visitedQuestionIds.add(questionId);
   estimatedPath.push(questionId);
 
-  const question = questions.find(q => q.id === questionId);
+  const question = questions.find((q) => q.id === questionId);
   if (!question) return;
 
   // Handle measurement_input type questions which might have different structure
-  if (question.type === 'measurement_input') {
+  if (question.type === "measurement_input") {
     // If there's an explicit next question defined for the measurement input
     if (question.next) {
-      if (question.next === 'NEXT_BRANCH') {
+      if (question.next === "NEXT_BRANCH") {
         // If there's a branch transition, estimate remaining questions
         const avgQuestionsPerBranch = Math.ceil(questions.length / 2);
         for (let i = 0; i < avgQuestionsPerBranch; i++) {
           estimatedPath.push(`estimated_q_${i}`);
         }
-      } else if (question.next !== 'END') {
-        simulatePath(question.next, questions, answers, visitedQuestionIds, estimatedPath);
+      } else if (question.next !== "END") {
+        simulatePath(
+          question.next,
+          questions,
+          answers,
+          visitedQuestionIds,
+          estimatedPath,
+        );
       }
       return;
     }
 
     // Otherwise follow the default order
-    const nextIndex = questions.findIndex(q => q.id === questionId) + 1;
+    const nextIndex = questions.findIndex((q) => q.id === questionId) + 1;
     if (nextIndex < questions.length) {
-      simulatePath(questions[nextIndex].id, questions, answers, visitedQuestionIds, estimatedPath);
+      simulatePath(
+        questions[nextIndex].id,
+        questions,
+        answers,
+        visitedQuestionIds,
+        estimatedPath,
+      );
     }
     return;
   }
@@ -184,9 +205,15 @@ function simulatePath(
   // Skip if question doesn't have valid options
   if (!question.options || !Array.isArray(question.options)) {
     // Follow default order if no options available
-    const nextIndex = questions.findIndex(q => q.id === questionId) + 1;
+    const nextIndex = questions.findIndex((q) => q.id === questionId) + 1;
     if (nextIndex < questions.length) {
-      simulatePath(questions[nextIndex].id, questions, answers, visitedQuestionIds, estimatedPath);
+      simulatePath(
+        questions[nextIndex].id,
+        questions,
+        answers,
+        visitedQuestionIds,
+        estimatedPath,
+      );
     }
     return;
   }
@@ -195,15 +222,17 @@ function simulatePath(
   if (answers[questionId]) {
     const userAnswer = answers[questionId];
 
-    if (question.type === 'multiple_choice') {
+    if (question.type === "multiple_choice") {
       // For multiple choice, check if any selected options lead to special navigation
       const selectedValues = userAnswer.answers || [];
 
       // Check if any selected option has a 'NEXT_BRANCH' next value
-      const hasNextBranch = selectedValues.some(value => {
+      const hasNextBranch = selectedValues.some((value) => {
         // Find the option safely with null checks
-        const option = question.options?.find(opt => opt && opt.value === value);
-        return option?.next === 'NEXT_BRANCH';
+        const option = question.options?.find(
+          (opt) => opt && opt.value === value,
+        );
+        return option?.next === "NEXT_BRANCH";
       });
 
       if (hasNextBranch) {
@@ -218,17 +247,27 @@ function simulatePath(
 
       // Check for explicit next questions from selected options
       const nextQuestions = selectedValues
-          .map(value => {
-            // Find the option safely with null checks
-            const option = question.options?.find(opt => opt && opt.value === value);
-            return option?.next;
-          })
-          .filter(next => next && next !== 'END' && next !== 'NEXT_BRANCH') as string[];
+        .map((value) => {
+          // Find the option safely with null checks
+          const option = question.options?.find(
+            (opt) => opt && opt.value === value,
+          );
+          return option?.next;
+        })
+        .filter(
+          (next) => next && next !== "END" && next !== "NEXT_BRANCH",
+        ) as string[];
 
       if (nextQuestions.length > 0) {
         // Follow each possible next path
         for (const nextId of nextQuestions) {
-          simulatePath(nextId, questions, answers, visitedQuestionIds, estimatedPath);
+          simulatePath(
+            nextId,
+            questions,
+            answers,
+            visitedQuestionIds,
+            estimatedPath,
+          );
         }
         return;
       }
@@ -237,21 +276,29 @@ function simulatePath(
       const selectedValue = userAnswer.answers?.[0];
       if (selectedValue) {
         // Find the option safely with null checks
-        const selectedOption = question.options?.find(opt => opt && opt.value === selectedValue);
+        const selectedOption = question.options?.find(
+          (opt) => opt && opt.value === selectedValue,
+        );
 
-        if (selectedOption?.next === 'NEXT_BRANCH') {
+        if (selectedOption?.next === "NEXT_BRANCH") {
           // If there's a branch transition, estimate remaining questions
           const avgQuestionsPerBranch = Math.ceil(questions.length / 2);
           for (let i = 0; i < avgQuestionsPerBranch; i++) {
             estimatedPath.push(`estimated_q_${i}`);
           }
           return;
-        } else if (selectedOption?.next === 'END') {
+        } else if (selectedOption?.next === "END") {
           // End of questions
           return;
         } else if (selectedOption?.next) {
           // Follow the explicit next question
-          simulatePath(selectedOption.next, questions, answers, visitedQuestionIds, estimatedPath);
+          simulatePath(
+            selectedOption.next,
+            questions,
+            answers,
+            visitedQuestionIds,
+            estimatedPath,
+          );
           return;
         }
       }
@@ -263,14 +310,26 @@ function simulatePath(
 
   // If there's an explicit next question defined
   if (question.next) {
-    simulatePath(question.next, questions, answers, visitedQuestionIds, estimatedPath);
+    simulatePath(
+      question.next,
+      questions,
+      answers,
+      visitedQuestionIds,
+      estimatedPath,
+    );
     return;
   }
 
   // Otherwise follow the default order
-  const nextIndex = questions.findIndex(q => q.id === questionId) + 1;
+  const nextIndex = questions.findIndex((q) => q.id === questionId) + 1;
   if (nextIndex < questions.length) {
-    simulatePath(questions[nextIndex].id, questions, answers, visitedQuestionIds, estimatedPath);
+    simulatePath(
+      questions[nextIndex].id,
+      questions,
+      answers,
+      visitedQuestionIds,
+      estimatedPath,
+    );
   }
 }
 
@@ -280,13 +339,13 @@ function simulatePath(
  */
 export const smoothProgress = (current: number, target: number): number => {
   // Don't decrease progress unless it's a significant change (avoids small fluctuations)
-  if (target < current && (current - target) < 10) {
+  if (target < current && current - target < 10) {
     return current;
   }
 
   // For increases, move smoothly by limiting the maximum increase
   const maxIncrease = 5; // Maximum percentage points to increase at once
-  if (target > current && (target - current) > maxIncrease) {
+  if (target > current && target - current > maxIncrease) {
     return current + maxIncrease;
   }
 

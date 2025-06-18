@@ -12,13 +12,17 @@ export function Header1() {
   // First check if user is authenticated
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
     };
     checkAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session);
     });
 
@@ -29,7 +33,9 @@ export function Header1() {
   const { data: contractor } = useQuery({
     queryKey: ["contractor"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return null;
 
       const { data, error } = await supabase
@@ -41,7 +47,7 @@ export function Header1() {
       if (error) throw error;
       return data;
     },
-    enabled: isAuthenticated // Only run query if authenticated
+    enabled: isAuthenticated, // Only run query if authenticated
   });
 
   return (
@@ -53,7 +59,12 @@ export function Header1() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 onClick={() => navigate('/')} className="text-xl font-bold text-primary cursor-pointer">Estimatrix.io</h1>
+            <h1
+              onClick={() => navigate("/")}
+              className="text-xl font-bold text-primary cursor-pointer"
+            >
+              Estimatrix.io
+            </h1>
           </motion.div>
           <div className="flex items-center gap-4">
             {!isAuthenticated ? (

@@ -19,20 +19,22 @@ const Leads = () => {
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { name: "Leads", url: "/leads", icon: Users },
-    { name: "Settings", url: "/settings", icon: Settings }
+    { name: "Settings", url: "/settings", icon: Settings },
   ];
 
   // Check authentication status and get contractor ID
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) {
           navigate("/login");
           toast({
             title: "Authentication required",
             description: "Please log in to view leads.",
-            variant: "destructive"
+            variant: "destructive",
           });
         } else {
           const contractor = await supabase
@@ -41,7 +43,7 @@ const Leads = () => {
             .eq("user_id", user.id)
             .single();
           setContractorId(contractor.data.id);
-          console.log('Set contractor ID:', user.id);
+          console.log("Set contractor ID:", user.id);
         }
       } catch (error) {
         console.error("Auth error:", error);
@@ -65,15 +67,14 @@ const Leads = () => {
 
       if (error) throw error;
 
-      return (data || []).map(lead => ({
+      return (data || []).map((lead) => ({
         ...lead,
         answers: lead.answers as { answers: Record<string, any> },
-        estimate_data: lead.estimate_data as EstimateData
+        estimate_data: lead.estimate_data as EstimateData,
       })) as Lead[];
     },
     enabled: !!contractorId,
   });
-
 
   const deleteLead = useMutation({
     mutationFn: async (leadIds: string[]) => {
@@ -95,7 +96,7 @@ const Leads = () => {
       });
     },
     onError: (error) => {
-      console.error('Delete error:', error);
+      console.error("Delete error:", error);
       toast({
         title: "Error",
         description: "Failed to delete leads. Please try again.",
@@ -124,14 +125,14 @@ const Leads = () => {
       });
     },
     onError: (error) => {
-      console.error('Update error:', error);
+      console.error("Update error:", error);
       toast({
         title: "Error",
         description: "Failed to update lead. Please try again.",
         variant: "destructive",
       });
     },
-  })
+  });
 
   const handleLeadClick = async (lead: Lead) => {
     if (!contractorId) {
@@ -151,7 +152,7 @@ const Leads = () => {
         .eq("id", lead.id);
 
       if (updateError) {
-        console.error('Error updating lead with contractor_id:', updateError);
+        console.error("Error updating lead with contractor_id:", updateError);
       }
     }
 
@@ -187,14 +188,16 @@ const Leads = () => {
         ) : leads.length > 0 ? (
           <LeadsTable
             leads={leads}
-            updateLead={(lead)=> updateLead.mutate(lead)}
+            updateLead={(lead) => updateLead.mutate(lead)}
             onLeadClick={handleLeadClick}
             onDeleteLeads={(leadIds) => deleteLead.mutate(leadIds)}
             onExport={handleExport}
           />
         ) : (
           <div className="w-full h-full flex text-center justify-center items-center align-middle">
-            <p className="text-primary text-xl font-semibold">There are no leads yet!</p>
+            <p className="text-primary text-xl font-semibold">
+              There are no leads yet!
+            </p>
           </div>
         )}
       </div>

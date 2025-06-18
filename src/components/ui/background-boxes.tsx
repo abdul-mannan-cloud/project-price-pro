@@ -6,13 +6,13 @@ import { cn } from "@/lib/utils";
 export const BoxesCore = ({ className, ...rest }: { className?: string }) => {
   const rows = new Array(150).fill(1);
   const cols = new Array(100).fill(1);
-  
+
   // Using direct color values instead of CSS variables
   const colors = [
     "rgb(125 211 252)", // sky-300
     "rgb(249 168 212)", // pink-300
     "rgb(134 239 172)", // green-300
-    "rgb(253 224 71)",  // yellow-300
+    "rgb(253 224 71)", // yellow-300
     "rgb(252 165 165)", // red-300
     "rgb(216 180 254)", // purple-300
     "rgb(147 197 253)", // blue-300
@@ -31,7 +31,7 @@ export const BoxesCore = ({ className, ...rest }: { className?: string }) => {
       }}
       className={cn(
         "absolute left-1/4 p-4 -top-1/4 flex -translate-x-1/2 -translate-y-1/2 w-full h-full z-0",
-        className
+        className,
       )}
       {...rest}
     >

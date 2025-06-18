@@ -7,7 +7,8 @@ import { Database } from "@/integrations/supabase/types";
 import Spinner from "../ui/spinner";
 import { Button } from "@/components/ui/button"; // Add this if you have a button component
 
-type ContractorSettings = Database["public"]["Tables"]["contractor_settings"]["Row"];
+type ContractorSettings =
+  Database["public"]["Tables"]["contractor_settings"]["Row"];
 
 export const ServiceCategoriesSettings = () => {
   const { toast } = useToast();
@@ -16,30 +17,33 @@ export const ServiceCategoriesSettings = () => {
   const [localExcluded, setLocalExcluded] = useState<string[]>([]);
   const [initialExcluded, setInitialExcluded] = useState<string[]>([]);
 
-  const { data: optionsCategories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ["options"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("Options")
-        .select("*")
-        .single();
+  const { data: optionsCategories = [], isLoading: categoriesLoading } =
+    useQuery({
+      queryKey: ["options"],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("Options")
+          .select("*")
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      return Object.entries(data)
-        .filter(([key]) => key !== "Key Options")
-        .map(([name]) => ({
-          id: name,
-          name,
-          description: `Projects related to ${name.toLowerCase()}`,
-        }));
-    }
-  });
+        return Object.entries(data)
+          .filter(([key]) => key !== "Key Options")
+          .map(([name]) => ({
+            id: name,
+            name,
+            description: `Projects related to ${name.toLowerCase()}`,
+          }));
+      },
+    });
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["contractor_settings"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       const contractor_id = await supabase
@@ -61,7 +65,9 @@ export const ServiceCategoriesSettings = () => {
 
   const updateExcludedCategories = useMutation({
     mutationFn: async (excludedCategories: string[]) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       const contractor_id = await supabase
@@ -112,28 +118,30 @@ export const ServiceCategoriesSettings = () => {
 
   const toggleCategory = (categoryId: string, isEnabled: boolean) => {
     const updated = isEnabled
-      ? localExcluded.filter(id => id !== categoryId)
+      ? localExcluded.filter((id) => id !== categoryId)
       : [...localExcluded, categoryId];
 
     setLocalExcluded(updated);
   };
 
-  const isSaveDisabled = JSON.stringify(localExcluded.sort()) === JSON.stringify(initialExcluded.sort());
+  const isSaveDisabled =
+    JSON.stringify(localExcluded.sort()) ===
+    JSON.stringify(initialExcluded.sort());
 
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-medium">Service Categories</h3>
         <p className="text-sm text-muted-foreground">
-          Select which service categories you want to offer to your customers. 
+          Select which service categories you want to offer to your customers.
           Unchecked categories will not appear in your estimator.
         </p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {optionsCategories.map((category) => (
-          <div 
-            key={category.id} 
+          <div
+            key={category.id}
             className="flex items-start space-x-2 p-2 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
           >
             <Checkbox
@@ -145,8 +153,8 @@ export const ServiceCategoriesSettings = () => {
               className="mt-1"
             />
             <div>
-              <label 
-                htmlFor={category.id} 
+              <label
+                htmlFor={category.id}
                 className="text-sm font-medium leading-none cursor-pointer"
               >
                 {category.name}

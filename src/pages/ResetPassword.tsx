@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/3d-button";
@@ -19,7 +18,7 @@ const ResetPassword = () => {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       toast({
         title: "Error",
@@ -83,7 +82,8 @@ const ResetPassword = () => {
       console.error("Reset password error:", error);
       toast({
         title: "Error",
-        description: error.message || "An error occurred while resetting your password",
+        description:
+          error.message || "An error occurred while resetting your password",
         variant: "destructive",
       });
     } finally {
@@ -95,7 +95,7 @@ const ResetPassword = () => {
     <div className="min-h-screen flex items-center justify-center bg-black p-4 relative overflow-hidden">
       <div className="absolute inset-0 w-full h-full bg-black z-20 [mask-image:radial-gradient(transparent,white)] pointer-events-none opacity-90" />
       <Boxes className="!opacity-10 filter contrast-150 saturate-0" />
-      
+
       <Card className="w-full max-w-md p-8 relative z-30 bg-white/10 backdrop-blur-xl border border-white/20">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-white">Reset Password</h1>

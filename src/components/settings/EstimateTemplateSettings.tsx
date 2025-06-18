@@ -26,7 +26,8 @@ const templates = [
   {
     id: "minimal",
     name: "Minimal",
-    description: "Streamlined design with crisp lines and essential information",
+    description:
+      "Streamlined design with crisp lines and essential information",
   },
   {
     id: "bold",
@@ -44,21 +45,16 @@ const templates = [
 
 export const EstimateTemplateSettings = ({
   contractor,
-lead,
+  lead,
 }: {
   contractor: any;
- lead?: any;
- 
-
+  lead?: any;
 }) => {
   const queryClient = useQueryClient();
   const [clientMessage, setClientMessage] = useState("");
   const [footerText, setFooterText] = useState("");
   const [hasClientMessageChanges, setHasClientMessageChanges] = useState(false);
   const [hasFooterTextChanges, setHasFooterTextChanges] = useState(false);
-
-
-  
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["contractor-settings", contractor?.id],
@@ -115,7 +111,6 @@ lead,
     );
   }
 
-
   const handleClientMessageChange = (value: string) => {
     setClientMessage(value);
     setHasClientMessageChanges(value !== settings?.estimate_client_message);
@@ -134,7 +129,7 @@ lead,
     updateSettings.mutate({ estimate_footer_text: footerText });
   };
 
- // const signatureEnabledLead = lead?.signature_enabled ?? true;
+  // const signatureEnabledLead = lead?.signature_enabled ?? true;
 
   return (
     <div className="space-y-6">
@@ -156,7 +151,9 @@ lead,
         className="space-y-4"
       >
         <div>
-          <label className="text-sm font-medium">Minimum Project Cost ($)</label>
+          <label className="text-sm font-medium">
+            Minimum Project Cost ($)
+          </label>
           <Input
             name="minimum_project_cost"
             type="number"

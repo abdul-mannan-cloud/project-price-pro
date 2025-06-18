@@ -4,7 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { LayoutDashboard, Users, Settings, Copy, LineChart, FileText, Bell, History, ChevronRight } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Settings,
+  Copy,
+  LineChart,
+  FileText,
+  Bell,
+  History,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -23,14 +33,17 @@ const Dashboard = () => {
   const navItems = [
     { name: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { name: "Leads", url: "/leads", icon: Users },
-    { name: "Settings", url: "/settings", icon: Settings }
+    { name: "Settings", url: "/settings", icon: Settings },
   ];
 
   // First check authentication
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
       if (authError || !user) {
         toast({
           title: "Authentication required",
@@ -41,20 +54,22 @@ const Dashboard = () => {
         return;
       }
 
-      try{
-
-      const contractorId = await supabase.from("contractors").select("id").eq("user_id", user.id).single();
-      setContractorId(contractorId?.data.id);
-
-        } catch (error) {
-            console.error('Error fetching contractor:', error); // Debug log
-            throw error;
+      try {
+        const contractorId = await supabase
+          .from("contractors")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+        setContractorId(contractorId?.data.id);
+      } catch (error) {
+        console.error("Error fetching contractor:", error); // Debug log
+        throw error;
       }
 
       setUserId(user.id);
-      console.log('Set user ID:', user.id); // Debug log
+      console.log("Set user ID:", user.id); // Debug log
     };
-    
+
     checkAuth();
   }, [navigate, toast]);
 
@@ -62,7 +77,7 @@ const Dashboard = () => {
     queryKey: ["contractor", userId],
     queryFn: async () => {
       if (!userId) return null;
-      console.log('Fetching contractor data for ID:', userId); // Debug log
+      console.log("Fetching contractor data for ID:", userId); // Debug log
 
       const { data, error } = await supabase
         .from("contractors")
@@ -71,11 +86,11 @@ const Dashboard = () => {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching contractor:', error); // Debug log
+        console.error("Error fetching contractor:", error); // Debug log
         throw error;
       }
       if (!data) {
-        console.log('No contractor data found, redirecting to onboarding'); // Debug log
+        console.log("No contractor data found, redirecting to onboarding"); // Debug log
         navigate("/onboarding");
         return null;
       }
@@ -92,7 +107,7 @@ const Dashboard = () => {
     queryKey: ["leads", userId],
     queryFn: async () => {
       if (!userId) {
-        console.error('No user ID available for leads query'); // Debug log
+        console.error("No user ID available for leads query"); // Debug log
         throw new Error("No user ID available");
       }
 
@@ -128,30 +143,31 @@ const Dashboard = () => {
       const baseUrl = window.location.origin;
       const effectiveContractorId = userId;
       if (!effectiveContractorId) {
-        throw new Error('No contractor ID available');
+        throw new Error("No contractor ID available");
       }
-      console.log('Using contractor ID for link:', effectiveContractorId); // Debug log
+      console.log("Using contractor ID for link:", effectiveContractorId); // Debug log
       const longUrl = `${baseUrl}/estimate/${effectiveContractorId}`;
-      
-      const { data, error } = await supabase.functions.invoke('shorten-url', {
-        body: { 
+
+      const { data, error } = await supabase.functions.invoke("shorten-url", {
+        body: {
           longUrl,
-          contractorId: effectiveContractorId // Pass contractor ID explicitly
-        }
+          contractorId: effectiveContractorId, // Pass contractor ID explicitly
+        },
       });
 
       if (error) throw error;
-      
+
       const shortUrl = data.shortURL;
       await navigator.clipboard.writeText(shortUrl);
-      
+
       toast({
         title: "Link copied!",
-        description: "The shortened estimator link has been copied to your clipboard.",
+        description:
+          "The shortened estimator link has been copied to your clipboard.",
         duration: 2000,
       });
     } catch (error) {
-      console.error('Error shortening URL:', error);
+      console.error("Error shortening URL:", error);
       if (contractorId) {
         const baseUrl = window.location.origin;
         const longUrl = `${baseUrl}/estimate/${contractorId}`;
@@ -185,29 +201,37 @@ const Dashboard = () => {
   if (!contractor) return null;
 
   const totalLeads = leads.length;
-  const totalEstimatedValue = leads.reduce((sum, lead) => sum + (lead.estimate_data.totalCost || 0), 0);
+  const totalEstimatedValue = leads.reduce(
+    (sum, lead) => sum + (lead.estimate_data.totalCost || 0),
+    0,
+  );
 
   const features = [
     {
       Icon: Copy,
       name: "Preview Estimator",
       description: "Preview your estimator or copy the link to share",
-      href: `/estimate/${contractorId || ''}`,
+      href: `/estimate/${contractorId || ""}`,
       cta: "Preview",
       background: <div className="absolute -right-20 -top-20 opacity-60" />,
-      className: "lg:col-span-3 bg-primary text-white hover:scale-[1.02] transition-transform",
+      className:
+        "lg:col-span-3 bg-primary text-white hover:scale-[1.02] transition-transform",
       detailContent: (
         <div className="space-y-4">
           <h3 className="text-xl font-semibold">Estimator Preview</h3>
-          <p>View your estimator as your clients will see it, or copy the link to share.</p>
+          <p>
+            View your estimator as your clients will see it, or copy the link to
+            share.
+          </p>
           <div className="flex gap-2">
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               onClick={() => {
                 if (!userId) {
                   toast({
                     title: "Error",
-                    description: "Unable to preview estimator. Please try logging in again.",
+                    description:
+                      "Unable to preview estimator. Please try logging in again.",
                     variant: "destructive",
                   });
                   return;
@@ -217,7 +241,7 @@ const Dashboard = () => {
             >
               Open Preview
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={copyEstimatorLink}
               disabled={isCopyingUrl || !userId}
@@ -229,7 +253,7 @@ const Dashboard = () => {
       ),
       actions: (
         <div className="flex gap-2 mt-2">
-          <Button 
+          <Button
             variant="ghost"
             size="sm"
             onClick={(e) => {
@@ -262,7 +286,7 @@ const Dashboard = () => {
               <span>Total Leads:</span>
               <span className="font-semibold">{totalLeads}</span>
             </div>
-            <Button onClick={() => navigate('/leads')} className="w-full">
+            <Button onClick={() => navigate("/leads")} className="w-full">
               View All Leads
             </Button>
           </div>
@@ -284,9 +308,11 @@ const Dashboard = () => {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span>Total Value:</span>
-              <span className="font-semibold">${totalEstimatedValue.toLocaleString()}</span>
+              <span className="font-semibold">
+                ${totalEstimatedValue.toLocaleString()}
+              </span>
             </div>
-            <Button onClick={() => navigate('/leads')} className="w-full">
+            <Button onClick={() => navigate("/leads")} className="w-full">
               View Details
             </Button>
           </div>
@@ -312,7 +338,7 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
-          <Button onClick={() => navigate('/leads')} className="w-full">
+          <Button onClick={() => navigate("/leads")} className="w-full">
             View All Activity
           </Button>
         </div>
@@ -320,7 +346,10 @@ const Dashboard = () => {
       content: (
         <div className="mt-4 space-y-3">
           {leads.slice(0, 3).map((lead) => (
-            <div key={lead.id} className="flex items-center gap-2 text-sm text-gray-600">
+            <div
+              key={lead.id}
+              className="flex items-center gap-2 text-sm text-gray-600"
+            >
               <Bell className="w-4 h-4" />
               <span>New lead: {lead.project_title}</span>
             </div>
@@ -334,7 +363,7 @@ const Dashboard = () => {
     <>
       <div className="min-h-screen bg-secondary">
         <NavBar items={navItems} />
-        
+
         <main className="container mx-auto px-4 py-8 max-w-7xl">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-semibold mb-2">
@@ -346,13 +375,13 @@ const Dashboard = () => {
           </div>
 
           <div className="max-w-6xl mx-auto">
-            <BentoGrid 
-              className={`grid-cols-1 md:grid-cols-3 gap-6 ${isMobile ? 'auto-rows-[16rem]' : ''}`}
+            <BentoGrid
+              className={`grid-cols-1 md:grid-cols-3 gap-6 ${isMobile ? "auto-rows-[16rem]" : ""}`}
             >
               {features.map((feature) => (
-                <BentoCard 
-                  key={feature.name} 
-                  {...feature} 
+                <BentoCard
+                  key={feature.name}
+                  {...feature}
                   onClick={() => setSelectedFeature(feature.name)}
                   showActions={isMobile}
                   actionIcon={<ChevronRight className="w-4 h-4" />}
@@ -364,14 +393,16 @@ const Dashboard = () => {
         </main>
       </div>
 
-      <Dialog 
-        open={!!selectedFeature} 
+      <Dialog
+        open={!!selectedFeature}
         onOpenChange={(open) => {
           if (!open) setSelectedFeature(null);
         }}
       >
         <DialogContent className="sm:max-w-[600px]">
-          {selectedFeature ? features.find(f => f.name === selectedFeature)?.detailContent : null}
+          {selectedFeature
+            ? features.find((f) => f.name === selectedFeature)?.detailContent
+            : null}
         </DialogContent>
       </Dialog>
     </>

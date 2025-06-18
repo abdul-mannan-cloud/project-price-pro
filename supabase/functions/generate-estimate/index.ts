@@ -1,20 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { generateEstimate, formatAnswersForContext } from "./ai-service.ts";
-import { createEstimate, updateLeadWithEstimate, updateLeadWithError } from "./estimate-service.ts";
+import {
+  createEstimate,
+  updateLeadWithEstimate,
+  updateLeadWithError,
+} from "./estimate-service.ts";
 import { EstimateRequest, DEFAULT_CONTRACTOR_ID } from "./types.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-
-
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -22,116 +25,123 @@ serve(async (req) => {
   const { signal } = controller;
 
   try {
-    console.log('Starting estimate generation process...');
-    
+    console.log("Starting estimate generation process...");
+
     // Clone the request before reading it
     const clonedReq = req.clone();
     const requestData: EstimateRequest = await clonedReq.json();
-    console.log('Received request data:', JSON.stringify(requestData, null, 2));
+    console.log("Received request data:", JSON.stringify(requestData, null, 2));
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase configuration');
+      throw new Error("Missing Supabase configuration");
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     if (!requestData.leadId) {
-      throw new Error('leadId is required');
+      throw new Error("leadId is required");
     }
 
     const address = requestData.address;
 
     // Get lead data first to find contractor_id if not provided
     const { data: lead, error: leadError } = await supabase
-      .from('leads')
-      .select('contractor_id, project_description, category')
-      .eq('id', requestData.leadId)
+      .from("leads")
+      .select("contractor_id, project_description, category")
+      .eq("id", requestData.leadId)
       .maybeSingle();
 
     if (leadError) {
-      console.error('Error fetching lead:', leadError);
-      throw new Error('Could not fetch lead data');
+      console.error("Error fetching lead:", leadError);
+      throw new Error("Could not fetch lead data");
     }
 
     if (!lead) {
-      console.error('No lead found with id:', requestData.leadId);
-      throw new Error('Lead not found');
+      console.error("No lead found with id:", requestData.leadId);
+      throw new Error("Lead not found");
     }
 
-    console.log('Found lead:', JSON.stringify(lead, null, 2));
+    console.log("Found lead:", JSON.stringify(lead, null, 2));
 
     // Use provided contractorId, fall back to lead's contractor_id, or use default
-    const contractorId = requestData.contractorId || lead.contractor_id || DEFAULT_CONTRACTOR_ID;
+    const contractorId =
+      requestData.contractorId || lead.contractor_id || DEFAULT_CONTRACTOR_ID;
 
     // Get contractor data
     const { data: contractor, error: contractorError } = await supabase
-      .from('contractors')
-      .select(`
+      .from("contractors")
+      .select(
+        `
         *,
         contractor_settings(*),
         ai_instructions(*)
-      `)
-      .eq('id', contractorId)
+      `,
+      )
+      .eq("id", contractorId)
       .maybeSingle();
 
     if (contractorError) {
-      console.error('Error fetching contractor:', contractorError);
-      throw new Error('Failed to fetch contractor data');
+      console.error("Error fetching contractor:", contractorError);
+      throw new Error("Failed to fetch contractor data");
     }
 
     if (!contractor) {
-      console.error('No contractor found with id:', contractorId);
-      throw new Error('Contractor not found');
+      console.error("No contractor found with id:", contractorId);
+      throw new Error("Contractor not found");
     }
 
     // Get AI rates
     const { data: aiRates, error: ratesError } = await supabase
-      .from('ai_rates')
-      .select('*')
-      .eq('contractor_id', contractorId);
+      .from("ai_rates")
+      .select("*")
+      .eq("contractor_id", contractorId);
 
     if (ratesError) {
-      console.error('Error fetching AI rates:', ratesError);
+      console.error("Error fetching AI rates:", ratesError);
       // Continue without rates as they're optional
     }
 
     // Prepare context for AI
     const context = JSON.stringify({
       answers: formatAnswersForContext(requestData.answers || {}),
-      projectDescription: requestData.projectDescription || lead.project_description,
+      projectDescription:
+        requestData.projectDescription || lead.project_description,
       category: requestData.category || lead.category,
       address: requestData.address,
       aiRates: aiRates || [],
       contractor: {
         settings: contractor.contractor_settings,
-        businessAddress: contractor.business_address == "" ? requestData.address : contractor.business_address,
-        aiInstructions: contractor.ai_instructions || []
-      }
+        businessAddress:
+          contractor.business_address == ""
+            ? requestData.address
+            : contractor.business_address,
+        aiInstructions: contractor.ai_instructions || [],
+      },
     });
 
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+      throw new Error("OpenAI API key not configured");
     }
 
-    console.log('Generating estimate with AI...');
+    console.log("Generating estimate with AI...");
     const aiResponse = await generateEstimate(
       context,
       requestData.imageUrl,
       openAIApiKey,
       signal,
       requestData.projectDescription || lead.project_description,
-      requestData.category || lead.category
+      requestData.category || lead.category,
     );
 
-    console.log('Processing AI response...');
+    console.log("Processing AI response...");
     const estimate = createEstimate(
       aiResponse,
       requestData.category || lead.category,
-      requestData.projectDescription || lead.project_description
+      requestData.projectDescription || lead.project_description,
     );
 
     // Parse the AI response to extract token usage
@@ -139,65 +149,69 @@ serve(async (req) => {
     const tokenUsage = aiResponseParsed.tokenUsage;
 
     if (tokenUsage) {
-      console.log('Total token usage for this request:', tokenUsage);
-      
+      console.log("Total token usage for this request:", tokenUsage);
+
       // Add token usage to the estimate response
       estimate.tokenUsage = tokenUsage;
     }
 
-    console.log('Updating lead with estimate...');
+    console.log("Updating lead with estimate...");
     await updateLeadWithEstimate(
       requestData.leadId,
       estimate,
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
 
-    console.log('Estimate generation completed successfully');
-    return new Response(
-      JSON.stringify(estimate),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
+    console.log("Estimate generation completed successfully");
+    return new Response(JSON.stringify(estimate), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error('Error in generate-estimate function:', error);
-    
+    console.error("Error in generate-estimate function:", error);
+
     let requestData: EstimateRequest | null = null;
     try {
       // Try to read the request body again if needed
       const clonedReq = req.clone();
       requestData = await clonedReq.json();
     } catch (jsonError) {
-      console.error('Could not parse request data in error handler:', jsonError);
+      console.error(
+        "Could not parse request data in error handler:",
+        jsonError,
+      );
     }
 
     if (requestData?.leadId) {
       try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL');
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-        
+        const supabaseUrl = Deno.env.get("SUPABASE_URL");
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
         if (supabaseUrl && supabaseKey) {
           await updateLeadWithError(
             requestData.leadId,
-            error instanceof Error ? error.message : 'Unknown error',
+            error instanceof Error ? error.message : "Unknown error",
             supabaseUrl,
-            supabaseKey
+            supabaseKey,
           );
         }
       } catch (updateError) {
-        console.error('Failed to update lead with error:', updateError);
+        console.error("Failed to update lead with error:", updateError);
       }
     }
 
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'An unexpected error occurred',
-        details: error instanceof Error ? error.stack : undefined
+        error:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred",
+        details: error instanceof Error ? error.stack : undefined,
       }),
-      { 
+      {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   } finally {
     controller.abort();

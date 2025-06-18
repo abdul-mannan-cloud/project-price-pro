@@ -11,7 +11,9 @@ const Verification = () => {
   useEffect(() => {
     // Check if user is logged in
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         navigate("/login");
         return;
@@ -47,7 +49,7 @@ const Verification = () => {
     // This could involve updating the user's tier in the database
     // and redirecting them to the appropriate page.
     navigate("/onboarding");
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -56,36 +58,44 @@ const Verification = () => {
           <div className="flex justify-center mb-4">
             <IconAlertTriangle size={48} className="text-amber-500" />
           </div>
-          <CardTitle className="text-2xl font-bold">Hang Tight — We're On It!</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            Hang Tight — We're On It!
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="text-center text-gray-700">
             <p className="mb-4">
-              We got your request for the Unlimited Enterprise plan, and an Estimatrix team member has been notified. We’ll be in touch within 1–2 business days to get everything set up for you.
+              We got your request for the Unlimited Enterprise plan, and an
+              Estimatrix team member has been notified. We’ll be in touch within
+              1–2 business days to get everything set up for you.
             </p>
             <p className="mb-4">
-              In the meantime, why not jump in with the Pioneer Plan and enjoy $1,000 in free credits while you wait? It's on us!
+              In the meantime, why not jump in with the Pioneer Plan and enjoy
+              $1,000 in free credits while you wait? It's on us!
             </p>
             <p>
               Got questions? Just give us a shout at{" "}
-              <a href="support@estimatrix.io" className="text-blue-600 hover:underline">
-                support@estimatrix.io 
-              </a>
-               {" "}— we’ve got your back.
+              <a
+                href="support@estimatrix.io"
+                className="text-blue-600 hover:underline"
+              >
+                support@estimatrix.io
+              </a>{" "}
+              — we’ve got your back.
             </p>
           </div>
 
           <div className="pt-4 border-t border-gray-200 flex flex-col gap-2">
-            <Button 
-              variant="outline" 
-              className="w-full" 
+            <Button
+              variant="outline"
+              className="w-full"
               onClick={handleSwitchToPioneer}
             >
               Switch to Pioneer
             </Button>
-            <Button 
-              variant="outline" 
-              className="w-full" 
+            <Button
+              variant="outline"
+              className="w-full"
               onClick={handleSignOut}
             >
               Sign Out

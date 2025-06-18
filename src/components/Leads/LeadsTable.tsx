@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo  } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -13,7 +13,22 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { formatDistanceToNow, format } from "date-fns";
-import { MapPin, ArrowUp, ArrowDown, Search, Download, Trash2, Filter, Phone, Mail, User, Calendar, DollarSign, Check, X } from "lucide-react";
+import {
+  MapPin,
+  ArrowUp,
+  ArrowDown,
+  Search,
+  Download,
+  Trash2,
+  Filter,
+  Phone,
+  Mail,
+  User,
+  Calendar,
+  DollarSign,
+  Check,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Json } from "@/integrations/supabase/types";
 import { startOfToday, startOfWeek, startOfMonth } from "date-fns";
@@ -31,8 +46,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Status = keyof typeof statusColors;
 
-type SortField = 'projectTitle' | 'address' | 'estimatedCost' | 'status' | 'createdAt' | 'userName' | 'userEmail' | 'userPhone';
-type SortDirection = 'asc' | 'desc';
+type SortField =
+  | "projectTitle"
+  | "address"
+  | "estimatedCost"
+  | "status"
+  | "createdAt"
+  | "userName"
+  | "userEmail"
+  | "userPhone";
+type SortDirection = "asc" | "desc";
 
 export interface EstimateGroup {
   name: string;
@@ -95,162 +118,168 @@ interface LeadsTableProps {
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
   "in-progress": "bg-blue-100 text-blue-800",
-  approved: "bg-purple-100 text-purple-800",   // NEW
+  approved: "bg-purple-100 text-purple-800", // NEW
   //completed: "bg-green-100 text-green-800",
   complete: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
 } as const;
-export const LeadsTable = ({ leads,updateLead, onLeadClick, onDeleteLeads, onExport }: LeadsTableProps) => {
+export const LeadsTable = ({
+  leads,
+  updateLead,
+  onLeadClick,
+  onDeleteLeads,
+  onExport,
+}: LeadsTableProps) => {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortField, setSortField] = useState<SortField>('createdAt');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [selectedMobileLead, setSelectedMobileLead] = useState<Lead | null>(null);
+  const [sortField, setSortField] = useState<SortField>("createdAt");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [selectedMobileLead, setSelectedMobileLead] = useState<Lead | null>(
+    null,
+  );
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [filters, setFilters] = useState({
     status: [] as string[],
-    dateRange: 'all',
-    costRange: 'all',
+    dateRange: "all",
+    costRange: "all",
   });
 
   useEffect(() => {
     const cleanupIncompleteLeads = async () => {
-  try {
-    // ── guard ────────────────────────────────────────────────
-    if (leads.length === 0 || !leads[0]?.contractor_id) {
-      console.log("No contractor ID available, skipping cleanup");
-      return;
-    }
-    const contractorId = leads[0].contractor_id;
+      try {
+        // ── guard ────────────────────────────────────────────────
+        if (leads.length === 0 || !leads[0]?.contractor_id) {
+          console.log("No contractor ID available, skipping cleanup");
+          return;
+        }
+        const contractorId = leads[0].contractor_id;
 
-    // ── 1. delete truly incomplete leads (no email / phone) ─
-    const { data: incompleteLeads, error: fetchError } = await supabase
-      .from("leads")
-      .select("id")
-      .eq("contractor_id", contractorId)
-      .or("user_email.is.null,user_email.eq.")
-      .or("user_phone.is.null,user_phone.eq.");
+        // ── 1. delete truly incomplete leads (no email / phone) ─
+        const { data: incompleteLeads, error: fetchError } = await supabase
+          .from("leads")
+          .select("id")
+          .eq("contractor_id", contractorId)
+          .or("user_email.is.null,user_email.eq.")
+          .or("user_phone.is.null,user_phone.eq.");
 
-    if (fetchError) {
-      console.error("Error fetching incomplete leads:", fetchError);
-      return;
-    }
+        if (fetchError) {
+          console.error("Error fetching incomplete leads:", fetchError);
+          return;
+        }
 
-    if (incompleteLeads && incompleteLeads.length) {
-      const leadIdsToDelete = incompleteLeads.map((l) => l.id);
-      console.log(`Deleting ${leadIdsToDelete.length} incomplete leads`);
+        if (incompleteLeads && incompleteLeads.length) {
+          const leadIdsToDelete = incompleteLeads.map((l) => l.id);
+          console.log(`Deleting ${leadIdsToDelete.length} incomplete leads`);
 
-      const { error: deleteError } = await supabase
-        .from("leads")
-        .delete()
-        .in("id", leadIdsToDelete);
+          const { error: deleteError } = await supabase
+            .from("leads")
+            .delete()
+            .in("id", leadIdsToDelete);
 
-      if (deleteError) {
-        console.error("Error deleting incomplete leads:", deleteError);
-        return;
+          if (deleteError) {
+            console.error("Error deleting incomplete leads:", deleteError);
+            return;
+          }
+          console.log(
+            `Successfully deleted ${leadIdsToDelete.length} incomplete leads`,
+          );
+        } else {
+          console.log("No incomplete leads found");
+        }
+
+        // ── 2. auto‑cancel stale leads (older than 7days, no contractor sig) ─
+        const sevenDaysAgoISO = new Date(
+          Date.now() - 7 * 24 * 60 * 60 * 1000,
+        ).toISOString();
+
+        const { data: autoCancelled, error: autoCancelError } = await supabase
+          .from("leads")
+          .update({ status: "cancelled" })
+          .eq("contractor_id", contractorId)
+          .is("contractor_signature", null) // contractor hasn't signed
+          .lt("created_at", sevenDaysAgoISO) // older than 7days
+          .not("status", "in", "(cancelled,archived,completed)") // still active
+          .select("id");
+
+        if (autoCancelError) {
+          console.error("Error auto‑cancelling stale leads:", autoCancelError);
+        } else if (autoCancelled && autoCancelled.length) {
+          console.log(`Auto‑cancelled ${autoCancelled.length} stale leads`);
+          // toast({
+          //   title: "Leads auto‑cancelled",
+          //   description: `${autoCancelled.length} lead${
+          //     autoCancelled.length > 1 ? "s were" : " was"
+          //   } cancelled (no contractor signature within 7days).`,
+          // });
+        }
+      } catch (error) {
+        console.error("Unexpected error during leads cleanup:", error);
       }
-      console.log(
-        `Successfully deleted ${leadIdsToDelete.length} incomplete leads`
-      );
-    } else {
-      console.log("No incomplete leads found");
-    }
+    };
 
-    // ── 2. auto‑cancel stale leads (older than 7days, no contractor sig) ─
-    const sevenDaysAgoISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-
-
-    const { data: autoCancelled, error: autoCancelError } = await supabase
-      .from("leads")
-      .update({ status: "cancelled" })
-      .eq("contractor_id", contractorId)
-      .is("contractor_signature", null) // contractor hasn't signed
-      .lt("created_at", sevenDaysAgoISO) // older than 7days
-      .not("status", "in", "(cancelled,archived,completed)") // still active
-      .select("id");
-
-    if (autoCancelError) {
-      console.error("Error auto‑cancelling stale leads:", autoCancelError);
-    } else if (autoCancelled && autoCancelled.length) {
-      console.log(`Auto‑cancelled ${autoCancelled.length} stale leads`);
-      // toast({
-      //   title: "Leads auto‑cancelled",
-      //   description: `${autoCancelled.length} lead${
-      //     autoCancelled.length > 1 ? "s were" : " was"
-      //   } cancelled (no contractor signature within 7days).`,
-      // });
-    }
-  } catch (error) {
-    console.error("Unexpected error during leads cleanup:", error);
-  }
-};
-
-cleanupIncompleteLeads(); 
+    cleanupIncompleteLeads();
   }, []);
   // ── FIX bad “complete” statuses immediately ────────────────────────────────
-useEffect(() => {
-  if (!leads?.length) return;
+  useEffect(() => {
+    if (!leads?.length) return;
 
-  // any lead marked “complete” but lacking a client signature
-  const toFix = leads
-    .filter(l => !l.client_signature)
-    .map(l => l.id);
+    // any lead marked “complete” but lacking a client signature
+    const toFix = leads.filter((l) => !l.client_signature).map((l) => l.id);
 
-  if (!toFix.length) return;
+    if (!toFix.length) return;
 
-  // update once in Supabase, then let React-Query refetch
-  (async () => {
-    const { error } = await supabase
-      .from("leads")
-      .update({ status: "in-progress" })
-      .in("id", toFix);
+    // update once in Supabase, then let React-Query refetch
+    (async () => {
+      const { error } = await supabase
+        .from("leads")
+        .update({ status: "in-progress" })
+        .in("id", toFix);
 
-    if (error) {
-      console.error("Failed to normalise lead status", error);
-    }
-  })();
-}, [leads]);
-
+      if (error) {
+        console.error("Failed to normalise lead status", error);
+      }
+    })();
+  }, [leads]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortDirection('asc');
+      setSortDirection("asc");
     }
   };
 
-
-
   const handleSelectLead = (leadId: string) => {
-    setSelectedLeads(prev => 
-      prev.includes(leadId) 
-        ? prev.filter(id => id !== leadId)
-        : [...prev, leadId]
+    setSelectedLeads((prev) =>
+      prev.includes(leadId)
+        ? prev.filter((id) => id !== leadId)
+        : [...prev, leadId],
     );
   };
 
   const openGoogleMaps = (address: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const encodedAddress = encodeURIComponent(address);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`,
+      "_blank",
+    );
   };
 
   const formatDate = (date: string) => {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     const leadDate = new Date(date);
-    
+
     if (leadDate.toDateString() === today.toDateString()) {
-      return 'Today';
+      return "Today";
     } else if (leadDate.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
+      return "Yesterday";
     } else {
-      return format(leadDate, 'MMM d, yyyy');
+      return format(leadDate, "MMM d, yyyy");
     }
   };
 
@@ -272,7 +301,7 @@ useEffect(() => {
         description: `Lead status has been changed to ${newStatus}`,
       });
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error("Error updating status:", error);
       toast({
         title: "Error",
         description: "Failed to update lead status",
@@ -280,148 +309,147 @@ useEffect(() => {
       });
     }
   };
-// treat unsigned “complete” leads as “in-progress” right away
-// treat unsigned “complete” leads as “in-progress” right away
-const computedLeads = useMemo(
-  () =>
-    leads.map(l => {
-      // 1) pick the base cost (DB field or fallback)
-      const baseCost =
-        l.estimated_cost && l.estimated_cost > 0
-          ? l.estimated_cost
-          : l.estimate_data?.totalCost ?? 0;
+  // treat unsigned “complete” leads as “in-progress” right away
+  // treat unsigned “complete” leads as “in-progress” right away
+  const computedLeads = useMemo(
+    () =>
+      leads.map((l) => {
+        // 1) pick the base cost (DB field or fallback)
+        const baseCost =
+          l.estimated_cost && l.estimated_cost > 0
+            ? l.estimated_cost
+            : (l.estimate_data?.totalCost ?? 0);
 
-      // 2) apply 8.6% tax and round to cents
-      const TAX_RATE = 0.085;
-      const costWithTax = Math.round((baseCost * (1 + TAX_RATE)) * 100) / 100;
+        // 2) apply 8.6% tax and round to cents
+        const TAX_RATE = 0.085;
+        const costWithTax = Math.round(baseCost * (1 + TAX_RATE) * 100) / 100;
 
-      return {
-        ...l,
-        // overwrite estimated_cost with the tax-included total
-        estimated_cost: costWithTax,
-        status:
-          l.status === "complete" && !l.client_signature
-            ? "in-progress"
-            : l.status,
-      };
-    }),
-   [leads]
- );
-
+        return {
+          ...l,
+          // overwrite estimated_cost with the tax-included total
+          estimated_cost: costWithTax,
+          status:
+            l.status === "complete" && !l.client_signature
+              ? "in-progress"
+              : l.status,
+        };
+      }),
+    [leads],
+  );
 
   /* --------------------------------------------------------------------------
- *  Filtering  +  Sorting  +  Select-all helpers
- * ------------------------------------------------------------------------ */
+   *  Filtering  +  Sorting  +  Select-all helpers
+   * ------------------------------------------------------------------------ */
 
+  /* helper: true when lead.created_at falls inside active date-range filter */
+  const matchesDateRange = (lead: Lead, range: string) => {
+    if (range === "all" || !lead.created_at) return true;
+    const created = new Date(lead.created_at);
 
-/* helper: true when lead.created_at falls inside active date-range filter */
-const matchesDateRange = (lead: Lead, range: string) => {
-  if (range === "all" || !lead.created_at) return true;
-  const created = new Date(lead.created_at);
+    switch (range) {
+      case "today":
+        return created >= startOfToday();
+      case "week":
+        return created >= startOfWeek(new Date(), { weekStartsOn: 1 }); // Monday-start
+      case "month":
+        return created >= startOfMonth(new Date());
+      default:
+        return true;
+    }
+  };
 
-  switch (range) {
-    case "today":
-      return created >= startOfToday();
-    case "week":
-      return created >= startOfWeek(new Date(), { weekStartsOn: 1 }); // Monday-start
-    case "month":
-      return created >= startOfMonth(new Date());
-    default:
-      return true;
-  }
-};
+  /* helper: true when lead’s cost falls inside active cost filter */
+  const matchesCostRange = (lead: Lead, range: string) => {
+    const cost = lead.estimate_data?.totalCost ?? 0;
+    switch (range) {
+      case "under1k":
+        return cost < 1_000;
+      case "1k-5k":
+        return cost >= 1_000 && cost < 5_000;
+      case "5k-10k":
+        return cost >= 5_000 && cost < 10_000;
+      case "over10k":
+        return cost >= 10_000;
+      default: // "all"
+        return true;
+    }
+  };
 
-/* helper: true when lead’s cost falls inside active cost filter */
-const matchesCostRange = (lead: Lead, range: string) => {
-  const cost = lead.estimate_data?.totalCost ?? 0;
-  switch (range) {
-    case "under1k":
-      return cost < 1_000;
-    case "1k-5k":
-      return cost >= 1_000 && cost < 5_000;
-    case "5k-10k":
-      return cost >= 5_000 && cost < 10_000;
-    case "over10k":
-      return cost >= 10_000;
-    default: // "all"
-      return true;
-  }
-};
+  /* ---------- MAIN  filteredLeads  ---------------------------------------- */
+  const filteredLeads = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase();
 
-/* ---------- MAIN  filteredLeads  ---------------------------------------- */
-const filteredLeads = useMemo(() => {
-  const searchLower = searchTerm.toLowerCase();
+    return (
+      computedLeads
+        /* ─ search text ─ */
+        .filter((lead) =>
+          [
+            lead.project_title,
+            lead.project_address,
+            lead.user_name,
+            lead.user_email,
+            lead.user_phone,
+          ]
+            .filter(Boolean)
+            .some((field) => field!.toLowerCase().includes(searchLower)),
+        )
+        /* ─ status filter ─ */
+        .filter(
+          (lead) =>
+            filters.status.length === 0 || filters.status.includes(lead.status),
+        )
+        /* ─ date-range filter ─ */
+        .filter((lead) => matchesDateRange(lead, filters.dateRange))
+        /* ─ cost-range filter ─ */
+        .filter((lead) => matchesCostRange(lead, filters.costRange))
+        /* ─ sorting ─ */
+        .sort((a, b) => {
+          let cmp = 0;
+          switch (sortField) {
+            case "projectTitle":
+              cmp = (a.project_title || "").localeCompare(
+                b.project_title || "",
+              );
+              break;
+            case "address":
+              cmp = (a.project_address || "").localeCompare(
+                b.project_address || "",
+              );
+              break;
+            case "estimatedCost":
+              cmp = (a.estimated_cost || 0) - (b.estimated_cost || 0);
+              break;
+            case "status":
+              cmp = (a.status || "").localeCompare(b.status || "");
+              break;
+            case "createdAt":
+              cmp =
+                new Date(a.created_at || 0).getTime() -
+                new Date(b.created_at || 0).getTime();
+              break;
+            case "userName":
+              cmp = (a.user_name || "").localeCompare(b.user_name || "");
+              break;
+            case "userEmail":
+              cmp = (a.user_email || "").localeCompare(b.user_email || "");
+              break;
+            case "userPhone":
+              cmp = (a.user_phone || "").localeCompare(b.user_phone || "");
+              break;
+          }
+          return sortDirection === "asc" ? cmp : -cmp;
+        })
+    );
+  }, [computedLeads, searchTerm, filters, sortField, sortDirection]);
 
-  return (
-    computedLeads
-      /* ─ search text ─ */
-      .filter((lead) =>
-        [
-          lead.project_title,
-          lead.project_address,
-          lead.user_name,
-          lead.user_email,
-          lead.user_phone,
-        ]
-          .filter(Boolean)
-          .some((field) => field!.toLowerCase().includes(searchLower))
-      )
-      /* ─ status filter ─ */
-      .filter(
-        (lead) =>
-          filters.status.length === 0 || filters.status.includes(lead.status)
-      )
-      /* ─ date-range filter ─ */
-      .filter((lead) => matchesDateRange(lead, filters.dateRange))
-      /* ─ cost-range filter ─ */
-      .filter((lead) => matchesCostRange(lead, filters.costRange))
-      /* ─ sorting ─ */
-      .sort((a, b) => {
-        let cmp = 0;
-        switch (sortField) {
-          case "projectTitle":
-            cmp = (a.project_title || "").localeCompare(b.project_title || "");
-            break;
-          case "address":
-            cmp = (a.project_address || "").localeCompare(
-              b.project_address || ""
-            );
-            break;
-          case "estimatedCost":
-            cmp = (a.estimated_cost || 0) - (b.estimated_cost || 0);
-            break;
-          case "status":
-            cmp = (a.status || "").localeCompare(b.status || "");
-            break;
-          case "createdAt":
-            cmp =
-              new Date(a.created_at || 0).getTime() -
-              new Date(b.created_at || 0).getTime();
-            break;
-          case "userName":
-            cmp = (a.user_name || "").localeCompare(b.user_name || "");
-            break;
-          case "userEmail":
-            cmp = (a.user_email || "").localeCompare(b.user_email || "");
-            break;
-          case "userPhone":
-            cmp = (a.user_phone || "").localeCompare(b.user_phone || "");
-            break;
-        }
-        return sortDirection === "asc" ? cmp : -cmp;
-      })
-  );
-}, [computedLeads, searchTerm, filters, sortField, sortDirection]);
-
-/* keep “select-all” in-sync with the **filtered** list */
-const handleSelectAll = () => {
-  if (selectedLeads.length === filteredLeads.length) {
-    setSelectedLeads([]);
-  } else {
-    setSelectedLeads(filteredLeads.map((l) => l.id));
-  }
-};
-
+  /* keep “select-all” in-sync with the **filtered** list */
+  const handleSelectAll = () => {
+    if (selectedLeads.length === filteredLeads.length) {
+      setSelectedLeads([]);
+    } else {
+      setSelectedLeads(filteredLeads.map((l) => l.id));
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -451,16 +479,23 @@ const handleSelectAll = () => {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Status</DropdownMenuLabel>
               <DropdownMenuSeparator />
-             {['pending','in-progress','approved','completed', 'cancelled','archived'].map((status) => (
+              {[
+                "pending",
+                "in-progress",
+                "approved",
+                "completed",
+                "cancelled",
+                "archived",
+              ].map((status) => (
                 <DropdownMenuCheckboxItem
                   key={status}
                   checked={filters.status.includes(status)}
                   onCheckedChange={(checked) => {
-                    setFilters(prev => ({
+                    setFilters((prev) => ({
                       ...prev,
-                      status: checked 
+                      status: checked
                         ? [...prev.status, status]
-                        : prev.status.filter(s => s !== status)
+                        : prev.status.filter((s) => s !== status),
                     }));
                   }}
                 >
@@ -471,17 +506,20 @@ const handleSelectAll = () => {
               <DropdownMenuLabel>Date Range</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {[
-                { value: 'all', label: 'All Time' },
-                { value: 'today', label: 'Today' },
-                { value: 'week', label: 'This Week' },
-                { value: 'month', label: 'This Month' }
+                { value: "all", label: "All Time" },
+                { value: "today", label: "Today" },
+                { value: "week", label: "This Week" },
+                { value: "month", label: "This Month" },
               ].map((option) => (
                 <DropdownMenuCheckboxItem
                   key={option.value}
                   checked={filters.dateRange === option.value}
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      setFilters(prev => ({ ...prev, dateRange: option.value }));
+                      setFilters((prev) => ({
+                        ...prev,
+                        dateRange: option.value,
+                      }));
                     }
                   }}
                 >
@@ -492,18 +530,21 @@ const handleSelectAll = () => {
               <DropdownMenuLabel>Cost Range</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {[
-                { value: 'all', label: 'All' },
-                { value: 'under1k', label: 'Under $1,000' },
-                { value: '1k-5k', label: '$1,000 - $5,000' },
-                { value: '5k-10k', label: '$5,000 - $10,000' },
-                { value: 'over10k', label: 'Over $10,000' }
+                { value: "all", label: "All" },
+                { value: "under1k", label: "Under $1,000" },
+                { value: "1k-5k", label: "$1,000 - $5,000" },
+                { value: "5k-10k", label: "$5,000 - $10,000" },
+                { value: "over10k", label: "Over $10,000" },
               ].map((option) => (
                 <DropdownMenuCheckboxItem
                   key={option.value}
                   checked={filters.costRange === option.value}
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      setFilters(prev => ({ ...prev, costRange: option.value }));
+                      setFilters((prev) => ({
+                        ...prev,
+                        costRange: option.value,
+                      }));
                     }
                   }}
                 >
@@ -546,41 +587,77 @@ const handleSelectAll = () => {
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
-              <TableHead onClick={() => handleSort('projectTitle')} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("projectTitle")}
+                className="cursor-pointer"
+              >
                 Project Groups
-                {sortField === 'projectTitle' && (
-                  sortDirection === 'asc' ? <ArrowUp className="inline ml-1 w-4 h-4" /> : <ArrowDown className="inline ml-1 w-4 h-4" />
-                )}
+                {sortField === "projectTitle" &&
+                  (sortDirection === "asc" ? (
+                    <ArrowUp className="inline ml-1 w-4 h-4" />
+                  ) : (
+                    <ArrowDown className="inline ml-1 w-4 h-4" />
+                  ))}
               </TableHead>
-              <TableHead onClick={() => handleSort('userName')} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("userName")}
+                className="cursor-pointer"
+              >
                 Customer
-                {sortField === 'userName' && (
-                  sortDirection === 'asc' ? <ArrowUp className="inline ml-1 w-4 h-4" /> : <ArrowDown className="inline ml-1 w-4 h-4" />
-                )}
+                {sortField === "userName" &&
+                  (sortDirection === "asc" ? (
+                    <ArrowUp className="inline ml-1 w-4 h-4" />
+                  ) : (
+                    <ArrowDown className="inline ml-1 w-4 h-4" />
+                  ))}
               </TableHead>
-              <TableHead onClick={() => handleSort('address')} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("address")}
+                className="cursor-pointer"
+              >
                 Address
-                {sortField === 'address' && (
-                  sortDirection === 'asc' ? <ArrowUp className="inline ml-1 w-4 h-4" /> : <ArrowDown className="inline ml-1 w-4 h-4" />
-                )}
+                {sortField === "address" &&
+                  (sortDirection === "asc" ? (
+                    <ArrowUp className="inline ml-1 w-4 h-4" />
+                  ) : (
+                    <ArrowDown className="inline ml-1 w-4 h-4" />
+                  ))}
               </TableHead>
-              <TableHead onClick={() => handleSort('estimatedCost')} className="cursor-pointer text-right">
+              <TableHead
+                onClick={() => handleSort("estimatedCost")}
+                className="cursor-pointer text-right"
+              >
                 Estimated Cost
-                {sortField === 'estimatedCost' && (
-                  sortDirection === 'asc' ? <ArrowUp className="inline ml-1 w-4 h-4" /> : <ArrowDown className="inline ml-1 w-4 h-4" />
-                )}
+                {sortField === "estimatedCost" &&
+                  (sortDirection === "asc" ? (
+                    <ArrowUp className="inline ml-1 w-4 h-4" />
+                  ) : (
+                    <ArrowDown className="inline ml-1 w-4 h-4" />
+                  ))}
               </TableHead>
-              <TableHead onClick={() => handleSort('status')} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("status")}
+                className="cursor-pointer"
+              >
                 Status
-                {sortField === 'status' && (
-                  sortDirection === 'asc' ? <ArrowUp className="inline ml-1 w-4 h-4" /> : <ArrowDown className="inline ml-1 w-4 h-4" />
-                )}
+                {sortField === "status" &&
+                  (sortDirection === "asc" ? (
+                    <ArrowUp className="inline ml-1 w-4 h-4" />
+                  ) : (
+                    <ArrowDown className="inline ml-1 w-4 h-4" />
+                  ))}
               </TableHead>
-              <TableHead onClick={() => handleSort('createdAt')} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("createdAt")}
+                className="cursor-pointer"
+              >
                 Created
-                {sortField === 'createdAt' && (
-                  sortDirection === 'asc' ? <ArrowUp className="inline ml-1 w-4 h-4" /> : <ArrowDown className="inline ml-1 w-4 h-4" />
-                )}
+                {sortField === "createdAt" &&
+                  (sortDirection === "asc" ? (
+                    <ArrowUp className="inline ml-1 w-4 h-4" />
+                  ) : (
+                    <ArrowDown className="inline ml-1 w-4 h-4" />
+                  ))}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -591,27 +668,40 @@ const handleSelectAll = () => {
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => onLeadClick(lead)}
               >
-                <TableCell className="w-[30px]" onClick={(e) => e.stopPropagation()}>
+                <TableCell
+                  className="w-[30px]"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Checkbox
                     checked={selectedLeads.includes(lead.id)}
                     onCheckedChange={() => handleSelectLead(lead.id)}
                   />
                 </TableCell>
                 <TableCell className="font-medium">
-                  {lead.estimate_data?.groups?.map(group => group.name).join(", ") || lead.project_title}
+                  {lead.estimate_data?.groups
+                    ?.map((group) => group.name)
+                    .join(", ") || lead.project_title}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-medium">{lead.user_name}</span>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Mail className="w-3 h-3" />
-                      <a href={`mailto:${lead.user_email}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
+                      <a
+                        href={`mailto:${lead.user_email}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="hover:underline"
+                      >
                         {lead.user_email}
                       </a>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Phone className="w-3 h-3" />
-                      <a href={`tel:${lead.user_phone}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
+                      <a
+                        href={`tel:${lead.user_phone}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="hover:underline"
+                      >
                         {lead.user_phone}
                       </a>
                     </div>
@@ -634,16 +724,20 @@ const handleSelectAll = () => {
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenuTrigger
+                      asChild
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Button
                         variant="ghost"
                         className="p-0 h-auto hover:bg-transparent"
                       >
-                        <Badge 
+                        <Badge
                           variant="outline"
                           className={cn(
                             "font-normal cursor-pointer",
-                            statusColors[lead.status as Status] || statusColors.pending
+                            statusColors[lead.status as Status] ||
+                              statusColors.pending,
                           )}
                         >
                           {lead.status || "pending"}
@@ -665,11 +759,11 @@ const handleSelectAll = () => {
                           {lead.status === status && (
                             <Check className="h-4 w-4" />
                           )}
-                          <Badge 
+                          <Badge
                             variant="outline"
                             className={cn(
                               "font-normal",
-                              statusColors[status as Status]
+                              statusColors[status as Status],
                             )}
                           >
                             {status}
@@ -699,15 +793,19 @@ const handleSelectAll = () => {
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="font-medium">
-                  {lead.estimate_data?.groups?.map(group => group.name).join(", ") || lead.project_title}
+                  {lead.estimate_data?.groups
+                    ?.map((group) => group.name)
+                    .join(", ") || lead.project_title}
                 </h3>
-                <p className="text-sm text-muted-foreground">{lead.user_name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {lead.user_name}
+                </p>
               </div>
-              <Badge 
+              <Badge
                 variant="outline"
                 className={cn(
                   "font-normal",
-                  statusColors[lead.status as Status] || statusColors.pending
+                  statusColors[lead.status as Status] || statusColors.pending,
                 )}
               >
                 {lead.status || "pending"}
@@ -721,13 +819,18 @@ const handleSelectAll = () => {
       </div>
 
       {/* Mobile Lead Dialog */}
-      <Dialog open={!!selectedMobileLead} onOpenChange={() => setSelectedMobileLead(null)}>
+      <Dialog
+        open={!!selectedMobileLead}
+        onOpenChange={() => setSelectedMobileLead(null)}
+      >
         <DialogContent className="w-[90vw] max-w-sm mx-auto p-4">
           {selectedMobileLead && (
             <div className="space-y-4">
               <div className="flex flex-row gap-20 justify-between">
                 <h2 className="text-lg font-semibold">
-                  {selectedMobileLead.estimate_data?.groups?.map(group => group.name).join(", ") || selectedMobileLead.project_title}
+                  {selectedMobileLead.estimate_data?.groups
+                    ?.map((group) => group.name)
+                    .join(", ") || selectedMobileLead.project_title}
                 </h2>
                 {/* Add close button */}
                 <button
@@ -745,13 +848,19 @@ const handleSelectAll = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  <a href={`mailto:${selectedMobileLead.user_email}`} className="text-primary hover:underline">
+                  <a
+                    href={`mailto:${selectedMobileLead.user_email}`}
+                    className="text-primary hover:underline"
+                  >
                     {selectedMobileLead.user_email}
                   </a>
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
-                  <a href={`tel:${selectedMobileLead.user_phone}`} className="text-primary hover:underline">
+                  <a
+                    href={`tel:${selectedMobileLead.user_phone}`}
+                    className="text-primary hover:underline"
+                  >
                     {selectedMobileLead.user_phone}
                   </a>
                 </div>
@@ -761,38 +870,44 @@ const handleSelectAll = () => {
                     <Button
                       variant="ghost"
                       className="p-0 h-auto hover:bg-transparent"
-                      onClick={(e) => openGoogleMaps(selectedMobileLead.project_address!, e)}
+                      onClick={(e) =>
+                        openGoogleMaps(selectedMobileLead.project_address!, e)
+                      }
                     >
                       {selectedMobileLead.project_address}
                     </Button>
                   </div>
                 )}
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-sm text-muted-foreground">Estimated Cost</p>
+                  <p className="text-sm text-muted-foreground">
+                    Estimated Cost
+                  </p>
                   <p className="font-medium">
-  $
-  {(selectedMobileLead.estimated_cost ??
-    selectedMobileLead.estimate_data?.totalCost ??
-    0
-  ).toLocaleString()}
-</p>
+                    $
+                    {(
+                      selectedMobileLead.estimated_cost ??
+                      selectedMobileLead.estimate_data?.totalCost ??
+                      0
+                    ).toLocaleString()}
+                  </p>
                 </div>
-                <Badge 
+                <Badge
                   variant="outline"
                   className={cn(
                     "font-normal",
-                    statusColors[selectedMobileLead.status as Status] || statusColors.pending
+                    statusColors[selectedMobileLead.status as Status] ||
+                      statusColors.pending,
                   )}
                 >
                   {selectedMobileLead.status || "pending"}
                 </Badge>
               </div>
-              
-              <Button 
-                className="w-full" 
+
+              <Button
+                className="w-full"
                 onClick={() => {
                   onLeadClick(selectedMobileLead);
                   setSelectedMobileLead(null);
@@ -812,14 +927,18 @@ const handleSelectAll = () => {
             <h2 className="text-lg font-semibold">Export Options</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Export Format</label>
+                <label className="block text-sm font-medium mb-1">
+                  Export Format
+                </label>
                 <select className="w-full border rounded-md p-2">
                   <option value="csv">CSV</option>
                   <option value="excel">Excel</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Date Range</label>
+                <label className="block text-sm font-medium mb-1">
+                  Date Range
+                </label>
                 <select className="w-full border rounded-md p-2">
                   <option value="all">All Time</option>
                   <option value="today">Today</option>
@@ -829,7 +948,12 @@ const handleSelectAll = () => {
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowExportDialog(false)}>Cancel</Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowExportDialog(false)}
+              >
+                Cancel
+              </Button>
               <Button onClick={handleExportConfirm}>Export</Button>
             </div>
           </div>

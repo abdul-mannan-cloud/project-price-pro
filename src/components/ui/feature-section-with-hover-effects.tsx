@@ -17,7 +17,9 @@ interface FeaturesSectionProps {
   setActiveDialog: (dialog: string | null) => void;
 }
 
-export function FeaturesSectionWithHoverEffects({ setActiveDialog }: FeaturesSectionProps) {
+export function FeaturesSectionWithHoverEffects({
+  setActiveDialog,
+}: FeaturesSectionProps) {
   const features = [
     {
       title: "Business Information",
@@ -57,7 +59,8 @@ export function FeaturesSectionWithHoverEffects({ setActiveDialog }: FeaturesSec
     },
     {
       title: "Service Categories",
-      description: "Select which services you offer and customize your estimate workflow",
+      description:
+        "Select which services you offer and customize your estimate workflow",
       icon: <Grid className="h-6 w-6" />,
       onClick: () => setActiveDialog("categories"),
     },
@@ -114,8 +117,9 @@ const Feature = ({
       onClick={onClick}
       className={cn(
         "flex flex-col lg:border-r py-10 relative group/feature dark:border-neutral-800 cursor-pointer",
-        (index === 0 || index === 4 || index === 8) && "lg:border-l dark:border-neutral-800",
-        index < 4 && "lg:border-b dark:border-neutral-800"
+        (index === 0 || index === 4 || index === 8) &&
+          "lg:border-l dark:border-neutral-800",
+        index < 4 && "lg:border-b dark:border-neutral-800",
       )}
     >
       {index < 4 && (

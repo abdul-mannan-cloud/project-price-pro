@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/3d-button";
 
 interface ContactFormButtonsProps {
@@ -8,18 +7,17 @@ interface ContactFormButtonsProps {
   onSkip?: () => Promise<void>;
 }
 
-export const ContactFormButtons = ({ 
-  isSubmitting, 
-  buttonStyle, 
+export const ContactFormButtons = ({
+  isSubmitting,
+  buttonStyle,
   isCurrentUserContractor,
-  onSkip 
+  onSkip,
 }: ContactFormButtonsProps) => {
-
   return (
     <>
-      <Button 
-        type="submit" 
-        className="w-full mt-6" 
+      <Button
+        type="submit"
+        className="w-full mt-6"
         disabled={isSubmitting}
         style={buttonStyle}
       >

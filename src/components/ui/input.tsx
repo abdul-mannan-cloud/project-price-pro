@@ -1,5 +1,5 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -13,23 +13,18 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <div className="form-group flex">
         <input
           type={type}
-          className={cn(
-            "form-input",
-            className
-          )}
+          className={cn("form-input", className)}
           ref={ref}
           placeholder=" "
           {...props}
         />
         {label && (
-          <label className={cn("form-label",labelClassName)} >
-            {label}
-          </label>
+          <label className={cn("form-label", labelClassName)}>{label}</label>
         )}
       </div>
-    )
-  }
-)
-Input.displayName = "Input"
+    );
+  },
+);
+Input.displayName = "Input";
 
-export { Input }
+export { Input };

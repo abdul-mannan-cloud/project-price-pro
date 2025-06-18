@@ -1,12 +1,12 @@
-import * as React from "react"
+import * as React from "react";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 interface Option {
   value: string;
@@ -48,7 +48,7 @@ const CustomSelect = ({
         </SelectContent>
       </Select>
     </div>
-  )
-}
+  );
+};
 
-export { CustomSelect }
+export { CustomSelect };

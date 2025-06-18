@@ -18,10 +18,11 @@ export interface PricingTier {
   description: string;
   features: PricingFeature[];
   highlight?: boolean;
-  cta?: { text: string; href?: string; onClick?: ()=>void };
+  cta?: { text: string; href?: string; onClick?: () => void };
 }
 
-export interface PricingCardsProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface PricingCardsProps
+  extends React.HTMLAttributes<HTMLDivElement> {
   tiers: PricingTier[];
   containerClassName?: string;
   cardClassName?: string;
@@ -40,10 +41,13 @@ export function PricingCards({
     <section
       className={cn(
         "bg-background text-foreground py-12 sm:py-24 md:py-32 px-4 fade-bottom overflow-hidden pb-0",
-        sectionClassName
+        sectionClassName,
       )}
     >
-      <div className={cn("w-full max-w-5xl mx-auto px-4", containerClassName)} {...props}>
+      <div
+        className={cn("w-full max-w-5xl mx-auto px-4", containerClassName)}
+        {...props}
+      >
         <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-8", className)}>
           {tiers.map((tier) => (
             <div
@@ -54,27 +58,47 @@ export function PricingCards({
                   ? "bg-gradient-to-b from-neutral-950 to-neutral-900"
                   : "bg-white",
                 "border border-neutral-200 hover:border-neutral-300 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)]",
-                cardClassName
+                cardClassName,
               )}
             >
               <div className="p-10 flex flex-col h-full">
                 <div className="space-y-4">
-                  <h3 className={cn("text-lg uppercase tracking-wider font-medium",
-                       tier.highlight ? "text-white" : "text-neutral-900")}>
+                  <h3
+                    className={cn(
+                      "text-lg uppercase tracking-wider font-medium",
+                      tier.highlight ? "text-white" : "text-neutral-900",
+                    )}
+                  >
                     {tier.name}
                   </h3>
                   <div className="flex items-baseline gap-2">
-                    <span className={cn("text-5xl font-light",
-                         tier.highlight ? "text-white" : "text-neutral-900")}>
+                    <span
+                      className={cn(
+                        "text-5xl font-light",
+                        tier.highlight ? "text-white" : "text-neutral-900",
+                      )}
+                    >
                       ${tier.price}
                     </span>
-                    <span className={cn("text-sm",
-                         tier.highlight ? "text-neutral-400" : "text-neutral-500")}>
-                      {tier.interval||"one-time"}
+                    <span
+                      className={cn(
+                        "text-sm",
+                        tier.highlight
+                          ? "text-neutral-400"
+                          : "text-neutral-500",
+                      )}
+                    >
+                      {tier.interval || "one-time"}
                     </span>
                   </div>
-                  <p className={cn("text-sm pb-6 border-b",
-                       tier.highlight ? "text-neutral-400 border-neutral-800" : "text-neutral-500 border-neutral-200")}>
+                  <p
+                    className={cn(
+                      "text-sm pb-6 border-b",
+                      tier.highlight
+                        ? "text-neutral-400 border-neutral-800"
+                        : "text-neutral-500 border-neutral-200",
+                    )}
+                  >
                     {tier.description}
                   </p>
                 </div>
@@ -82,18 +106,26 @@ export function PricingCards({
                 <div className="mt-8 space-y-4 flex-grow">
                   {tier.features.map((feature) => (
                     <div key={feature.name} className="flex items-center gap-3">
-                      <div className={cn(
-                        "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center",
-                        feature.included
-                          ? tier.highlight ? "text-white" : "text-neutral-900"
-                          : "text-neutral-300"
-                      )}>
+                      <div
+                        className={cn(
+                          "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center",
+                          feature.included
+                            ? tier.highlight
+                              ? "text-white"
+                              : "text-neutral-900"
+                            : "text-neutral-300",
+                        )}
+                      >
                         <CheckIcon className="w-3.5 h-3.5" />
                       </div>
-                      <span className={cn(
-                        "text-sm",
-                        tier.highlight ? "text-neutral-300" : "text-neutral-600"
-                      )}>
+                      <span
+                        className={cn(
+                          "text-sm",
+                          tier.highlight
+                            ? "text-neutral-300"
+                            : "text-neutral-600",
+                        )}
+                      >
                         {feature.name}
                       </span>
                     </div>
@@ -108,7 +140,7 @@ export function PricingCards({
                         tier.highlight
                           ? "bg-white hover:bg-neutral-100 text-neutral-900"
                           : "bg-neutral-900 hover:bg-neutral-800 text-white",
-                        "transition-all duration-300"
+                        "transition-all duration-300",
                       )}
                       onClick={tier.cta.onClick}
                       asChild={Boolean(tier.cta.href)}

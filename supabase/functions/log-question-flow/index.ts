@@ -1,27 +1,28 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      status: 204, 
-      headers: corsHeaders 
-    })
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
   }
 
   try {
-    if (req.method !== 'POST') {
-      throw new Error('Method not allowed')
+    if (req.method !== "POST") {
+      throw new Error("Method not allowed");
     }
 
-    const body = await req.json()
-    const { 
+    const body = await req.json();
+    const {
       event,
       questionId,
       questionOrder,
@@ -33,11 +34,11 @@ serve(async (req) => {
       category,
       options,
       selectedOption,
-      navigationSource
-    } = body
+      navigationSource,
+    } = body;
 
     // Log the question flow event with enhanced details
-    console.log('Question Flow Event:', {
+    console.log("Question Flow Event:", {
       timestamp: new Date().toISOString(),
       event,
       category,
@@ -45,12 +46,12 @@ serve(async (req) => {
         id: questionId,
         order: questionOrder,
         text: question,
-        type
+        type,
       },
       selection: {
         value: selectedValue,
         label: selectedLabel,
-        option: selectedOption
+        option: selectedOption,
       },
       navigation: {
         nextQuestionId,
@@ -58,36 +59,33 @@ serve(async (req) => {
         availableOptions: options?.map((opt: any) => ({
           label: opt.label,
           value: opt.value,
-          next: opt.next
-        }))
-      }
-    })
+          next: opt.next,
+        })),
+      },
+    });
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (error) {
+    console.error("Error logging question flow:", error);
 
     return new Response(
-      JSON.stringify({ success: true }),
-      { 
-        status: 200,
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
-    )
-  } catch (error) {
-    console.error('Error logging question flow:', error)
-    
-    return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message,
-        details: error.stack 
+        details: error.stack,
       }),
-      { 
+      {
         status: 500,
-        headers: { 
+        headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
-    )
+          "Content-Type": "application/json",
+        },
+      },
+    );
   }
-})
+});

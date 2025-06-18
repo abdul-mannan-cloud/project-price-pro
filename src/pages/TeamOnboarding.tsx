@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +20,10 @@ const TeamOnboarding = () => {
   useEffect(() => {
     const verifyInvitation = async () => {
       if (!contractorId || !invitedEmail) {
-        console.error("Missing required params:", { contractorId, invitedEmail });
+        console.error("Missing required params:", {
+          contractorId,
+          invitedEmail,
+        });
         toast({
           title: "Invalid invitation link",
           description: "The invitation link is missing required parameters.",
@@ -32,8 +34,11 @@ const TeamOnboarding = () => {
       }
 
       try {
-        console.log("Verifying invitation for:", { contractorId, invitedEmail });
-        
+        console.log("Verifying invitation for:", {
+          contractorId,
+          invitedEmail,
+        });
+
         // Query the teammates table to verify the invitation
         const { data: invitation, error } = await supabase
           .from("teammates")
@@ -46,10 +51,14 @@ const TeamOnboarding = () => {
         console.log("Invitation verification result:", { invitation, error });
 
         if (error || !invitation) {
-          console.error("Invitation verification failed:", error || "No invitation found");
+          console.error(
+            "Invitation verification failed:",
+            error || "No invitation found",
+          );
           toast({
             title: "Invalid invitation",
-            description: "This invitation link is invalid or has expired. Please request a new invitation.",
+            description:
+              "This invitation link is invalid or has expired. Please request a new invitation.",
             variant: "destructive",
           });
           navigate("/");
@@ -62,7 +71,8 @@ const TeamOnboarding = () => {
         console.error("Error during invitation verification:", error);
         toast({
           title: "Verification error",
-          description: "An error occurred while verifying your invitation. Please try again.",
+          description:
+            "An error occurred while verifying your invitation. Please try again.",
           variant: "destructive",
         });
         navigate("/");
@@ -103,10 +113,11 @@ const TeamOnboarding = () => {
       if (updateError) throw updateError;
 
       console.log("Account created successfully");
-      
+
       toast({
         title: "Account created",
-        description: "Welcome to the team! Please check your email to verify your account before logging in.",
+        description:
+          "Welcome to the team! Please check your email to verify your account before logging in.",
       });
 
       // Redirect to login page instead of dashboard since they need to verify email first
@@ -146,12 +157,7 @@ const TeamOnboarding = () => {
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               Email
             </label>
-            <Input
-              type="email"
-              value={email}
-              disabled
-              className="bg-muted"
-            />
+            <Input type="email" value={email} disabled className="bg-muted" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">

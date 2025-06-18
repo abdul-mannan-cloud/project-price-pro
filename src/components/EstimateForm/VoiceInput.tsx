@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, Square } from "lucide-react";
@@ -16,13 +15,14 @@ export const VoiceInput = ({ question, onSelect }: VoiceInputProps) => {
   const { toast } = useToast();
 
   const startListening = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+      const SpeechRecognition =
+        window.webkitSpeechRecognition || window.SpeechRecognition;
       const recognition = new SpeechRecognition();
-      
+
       recognition.continuous = false;
       recognition.interimResults = false;
-      
+
       recognition.onstart = () => {
         setIsListening(true);
         toast({
@@ -30,13 +30,13 @@ export const VoiceInput = ({ question, onSelect }: VoiceInputProps) => {
           description: "Speak now",
         });
       };
-      
+
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
-        const matchingOption = question.options.find(
-          option => option.label.toLowerCase().includes(transcript.toLowerCase())
+        const matchingOption = question.options.find((option) =>
+          option.label.toLowerCase().includes(transcript.toLowerCase()),
         );
-        
+
         if (matchingOption) {
           onSelect(matchingOption.value);
           toast({
@@ -51,9 +51,9 @@ export const VoiceInput = ({ question, onSelect }: VoiceInputProps) => {
           });
         }
       };
-      
+
       recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
+        console.error("Speech recognition error:", event.error);
         setIsListening(false);
         toast({
           title: "Error",
@@ -61,11 +61,11 @@ export const VoiceInput = ({ question, onSelect }: VoiceInputProps) => {
           variant: "destructive",
         });
       };
-      
+
       recognition.onend = () => {
         setIsListening(false);
       };
-      
+
       recognition.start();
     } else {
       toast({
@@ -81,16 +81,18 @@ export const VoiceInput = ({ question, onSelect }: VoiceInputProps) => {
       size="icon"
       variant={isListening ? "destructive" : "outline"}
       className="rounded-full"
-      onClick={() => isListening ? setIsListening(false) : startListening()}
+      onClick={() => (isListening ? setIsListening(false) : startListening())}
     >
       {isListening ? (
         <Square className="h-4 w-4" />
       ) : (
         <div className="relative">
-          <div className={cn(
-            "absolute inset-0 rounded-full",
-            isListening ? "animate-ping bg-red-400" : ""
-          )} />
+          <div
+            className={cn(
+              "absolute inset-0 rounded-full",
+              isListening ? "animate-ping bg-red-400" : "",
+            )}
+          />
           <Mic className="h-4 w-4" />
         </div>
       )}

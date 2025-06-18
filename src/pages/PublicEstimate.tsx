@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,9 +26,10 @@ type EstimateData = {
   }>;
 };
 
-type ContractorWithSettings = Database["public"]["Tables"]["contractors"]["Row"] & {
-  contractor_settings: Database["public"]["Tables"]["contractor_settings"]["Row"];
-};
+type ContractorWithSettings =
+  Database["public"]["Tables"]["contractors"]["Row"] & {
+    contractor_settings: Database["public"]["Tables"]["contractor_settings"]["Row"];
+  };
 
 const DEFAULT_CONTRACTOR_ID = "82499c2f-960f-4042-b277-f86ea2d99929";
 
@@ -41,7 +41,8 @@ const PublicEstimate = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leads")
-        .select(`
+        .select(
+          `
           *,
           contractors (
             id,
@@ -58,7 +59,8 @@ const PublicEstimate = () => {
             updated_at,
             contractor_settings (*)
           )
-        `)
+        `,
+        )
         .eq("id", id)
         .maybeSingle();
 
@@ -72,7 +74,7 @@ const PublicEstimate = () => {
           project_description: "",
           status: "pending",
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         };
       }
 
@@ -80,17 +82,18 @@ const PublicEstimate = () => {
     },
   });
 
-
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor", lead?.contractor_id || DEFAULT_CONTRACTOR_ID],
     queryFn: async () => {
       const contractorId = lead?.contractor_id || DEFAULT_CONTRACTOR_ID;
       const { data, error } = await supabase
         .from("contractors")
-        .select(`
+        .select(
+          `
           *,
           contractor_settings (*)
-        `)
+        `,
+        )
         .eq("id", contractorId)
         .single();
 
@@ -105,29 +108,59 @@ const PublicEstimate = () => {
   useEffect(() => {
     if (contractor?.branding_colors) {
       const colors = contractor.branding_colors as BrandingColors;
-      
+
       // Apply primary color and its variations
-      document.documentElement.style.setProperty('--primary', colors.primary);
-      document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
+      document.documentElement.style.setProperty("--primary", colors.primary);
+      document.documentElement.style.setProperty(
+        "--primary-foreground",
+        "#FFFFFF",
+      );
 
       // Convert hex to RGB for creating variations
-      const primaryHex = colors.primary.replace('#', '');
+      const primaryHex = colors.primary.replace("#", "");
       const r = parseInt(primaryHex.slice(0, 2), 16);
       const g = parseInt(primaryHex.slice(2, 4), 16);
       const b = parseInt(primaryHex.slice(4, 6), 16);
 
       // Set all primary color variations
-      document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
-      document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
-      document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
-      document.documentElement.style.setProperty('--primary-400', `rgba(${r}, ${g}, ${b}, 0.6)`);
-      document.documentElement.style.setProperty('--primary-500', `rgba(${r}, ${g}, ${b}, 0.8)`);
-      document.documentElement.style.setProperty('--primary-600', colors.primary);
-      document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
+      document.documentElement.style.setProperty(
+        "--primary-100",
+        `rgba(${r}, ${g}, ${b}, 0.1)`,
+      );
+      document.documentElement.style.setProperty(
+        "--primary-200",
+        `rgba(${r}, ${g}, ${b}, 0.2)`,
+      );
+      document.documentElement.style.setProperty(
+        "--primary-300",
+        `rgba(${r}, ${g}, ${b}, 0.4)`,
+      );
+      document.documentElement.style.setProperty(
+        "--primary-400",
+        `rgba(${r}, ${g}, ${b}, 0.6)`,
+      );
+      document.documentElement.style.setProperty(
+        "--primary-500",
+        `rgba(${r}, ${g}, ${b}, 0.8)`,
+      );
+      document.documentElement.style.setProperty(
+        "--primary-600",
+        colors.primary,
+      );
+      document.documentElement.style.setProperty(
+        "--primary-700",
+        `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`,
+      );
 
       // Set secondary color
-      document.documentElement.style.setProperty('--secondary', colors.secondary);
-      document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
+      document.documentElement.style.setProperty(
+        "--secondary",
+        colors.secondary,
+      );
+      document.documentElement.style.setProperty(
+        "--secondary-foreground",
+        "#1d1d1f",
+      );
     }
   }, [contractor]);
 
@@ -154,17 +187,21 @@ const PublicEstimate = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8">
         <EstimateDisplay
-            leadId={id}
-            groups={estimateData?.groups || []}
-            totalCost={lead?.estimate_data.totalCost || 0}
-            projectSummary={lead?.project_description}
-            contractor={{
-              business_name: contractor?.business_name,
-              business_logo_url: contractor?.business_logo_url || undefined,
-              branding_colors: contractor?.branding_colors as BrandingColors | undefined
-            }} handleRefreshEstimate={function (id: string): void {
-          throw new Error("Function not implemented.");
-        }}        />
+          leadId={id}
+          groups={estimateData?.groups || []}
+          totalCost={lead?.estimate_data.totalCost || 0}
+          projectSummary={lead?.project_description}
+          contractor={{
+            business_name: contractor?.business_name,
+            business_logo_url: contractor?.business_logo_url || undefined,
+            branding_colors: contractor?.branding_colors as
+              | BrandingColors
+              | undefined,
+          }}
+          handleRefreshEstimate={function (id: string): void {
+            throw new Error("Function not implemented.");
+          }}
+        />
       </div>
     </div>
   );

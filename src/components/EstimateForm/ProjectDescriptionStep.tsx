@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +9,10 @@ interface ProjectDescriptionStepProps {
   isSpeechSupported?: boolean;
 }
 
-export const ProjectDescriptionStep = ({ onSubmit, isSpeechSupported = false }: ProjectDescriptionStepProps) => {
+export const ProjectDescriptionStep = ({
+  onSubmit,
+  isSpeechSupported = false,
+}: ProjectDescriptionStepProps) => {
   const [projectDescription, setProjectDescription] = useState("");
   const [isRecording, setIsRecording] = useState(false);
 
@@ -27,26 +29,27 @@ export const ProjectDescriptionStep = ({ onSubmit, isSpeechSupported = false }: 
     }
 
     try {
-      const recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
+      const recognition = new (window.webkitSpeechRecognition ||
+        window.SpeechRecognition)();
       recognition.continuous = true;
       recognition.interimResults = true;
-      
+
       recognition.onstart = () => {
         setIsRecording(true);
       };
-      
+
       recognition.onresult = (event: any) => {
         const transcript = Array.from(event.results)
           .map((result: any) => result[0])
           .map((result: any) => result.transcript)
-          .join('');
-        
+          .join("");
+
         setProjectDescription(transcript);
       };
-      
+
       recognition.start();
     } catch (error) {
-      console.error('Error accessing microphone:', error);
+      console.error("Error accessing microphone:", error);
     }
   };
 
@@ -61,7 +64,7 @@ export const ProjectDescriptionStep = ({ onSubmit, isSpeechSupported = false }: 
               "p-2 rounded-full transition-all duration-200",
               isRecording
                 ? "bg-red-100 text-red-600 hover:bg-red-200"
-                : "bg-gray-100 hover:bg-gray-200"
+                : "bg-gray-100 hover:bg-gray-200",
             )}
           >
             {isRecording ? (
@@ -80,7 +83,7 @@ export const ProjectDescriptionStep = ({ onSubmit, isSpeechSupported = false }: 
           className="min-h-[150px] pr-12"
         />
       </div>
-      <Button 
+      <Button
         className="w-full mt-6"
         onClick={handleSubmit}
         disabled={projectDescription.trim().length < 30}

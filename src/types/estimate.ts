@@ -2,7 +2,7 @@ export interface Option {
   unit?: string;
   label: string;
   value: string;
-  type?: 'text_input' | 'number_input' | 'camera_measurement';
+  type?: "text_input" | "number_input" | "camera_measurement";
   tooltip?: string;
   placeholder?: string;
   min?: number;
@@ -18,11 +18,19 @@ export interface Option {
 export interface Question {
   id: string;
   question: string;
-  type: 'yes_no' | 'single_choice' | 'multiple_choice' | 'measurement_input' | 'text_input' | 'image_input' | 'camera_measurement' | 'number_input';
+  type:
+    | "yes_no"
+    | "single_choice"
+    | "multiple_choice"
+    | "measurement_input"
+    | "text_input"
+    | "image_input"
+    | "camera_measurement"
+    | "number_input";
   order: number;
   options: Option[];
   next?: string;
-character_limit?: string;
+  character_limit?: string;
   // New properties for measurement_input type
   unit?: string; // e.g., "LF" (linear feet), "SF" (square feet)
   placeholder?: string;
@@ -35,12 +43,19 @@ character_limit?: string;
   helper_text?: string;
   tooltip?: string;
   video_guide?: string;
-
 }
 
 export interface QuestionAnswer {
   question: string;
-  type: 'yes_no' | 'single_choice' | 'multiple_choice' | 'measurement_input' | 'text_input' | 'image_input' | 'camera_measurement' | 'number_input';
+  type:
+    | "yes_no"
+    | "single_choice"
+    | "multiple_choice"
+    | "measurement_input"
+    | "text_input"
+    | "image_input"
+    | "camera_measurement"
+    | "number_input";
   answers: string[];
   options: {
     label: string;
@@ -49,7 +64,7 @@ export interface QuestionAnswer {
   }[];
   // For measurement inputs, additional response data
   unit?: string;
-  measurement_method?: 'manual' | 'camera';
+  measurement_method?: "manual" | "camera";
 }
 
 export interface CategoryAnswers {
@@ -92,7 +107,7 @@ export interface EstimateResponse {
   estimate: any;
   leadId: string;
   contractorId: string;
-  status: 'pending' | 'complete' | 'error';
+  status: "pending" | "complete" | "error";
   error?: string;
 }
 
@@ -102,16 +117,19 @@ export interface CategoryWithQuestions extends Category {
 }
 
 // Helper function to check if a category has questions
-export function isCategoryWithQuestions(category: Category): category is CategoryWithQuestions {
+export function isCategoryWithQuestions(
+  category: Category,
+): category is CategoryWithQuestions {
   return Array.isArray(category.questions) && category.questions.length > 0;
 }
 
 // Helper function to convert Category to CategoryQuestions
-export function categoryToQuestionSet(category: CategoryWithQuestions): CategoryQuestions {
+export function categoryToQuestionSet(
+  category: CategoryWithQuestions,
+): CategoryQuestions {
   return {
     category: category.id,
     keywords: category.keywords,
-    questions: category.questions
+    questions: category.questions,
   };
 }
-

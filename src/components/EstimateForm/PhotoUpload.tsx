@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, X, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -12,10 +11,16 @@ interface PhotoUploadProps {
   uploadedPhotos: string[];
 }
 
-export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoUploadProps) => {
+export const PhotoUpload = ({
+  onPhotosSelected,
+  onNext,
+  uploadedPhotos,
+}: PhotoUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
 
@@ -29,7 +34,7 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
 
     try {
       for (const file of files) {
-        if (!file.type.startsWith('image/')) {
+        if (!file.type.startsWith("image/")) {
           toast.error(`${file.name} is not an image file`);
           continue;
         }
@@ -40,18 +45,18 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
         }
 
         const compressedFile = await compressImage(file);
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.split(".").pop();
         const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('project_images')
+          .from("project_images")
           .upload(fileName, compressedFile);
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('project_images')
-          .getPublicUrl(fileName);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("project_images").getPublicUrl(fileName);
 
         uploadedUrls.push(publicUrl);
       }
@@ -59,7 +64,7 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
       onPhotosSelected([...uploadedPhotos, ...uploadedUrls]);
       toast.success("Photos uploaded successfully");
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
       toast.error("Failed to upload some photos");
     } finally {
       setIsUploading(false);
@@ -78,8 +83,8 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d')!;
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d")!;
 
           let width = img.width;
           let height = img.height;
@@ -95,11 +100,7 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
           canvas.height = height;
           ctx.drawImage(img, 0, 0, width, height);
 
-          canvas.toBlob(
-            (blob) => resolve(blob!),
-            'image/jpeg',
-            0.8
-          );
+          canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.8);
         };
         img.src = e.target?.result as string;
       };
@@ -127,10 +128,12 @@ export const PhotoUpload = ({ onPhotosSelected, onNext, uploadedPhotos }: PhotoU
             </div>
           ))}
           {uploadedPhotos.length < 12 && (
-            <label className={cn(
-              "cursor-pointer aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg hover:border-primary transition-colors w-full",
-              isUploading && "opacity-50 cursor-not-allowed"
-            )}>
+            <label
+              className={cn(
+                "cursor-pointer aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg hover:border-primary transition-colors w-full",
+                isUploading && "opacity-50 cursor-not-allowed",
+              )}
+            >
               <input
                 type="file"
                 accept="image/*"

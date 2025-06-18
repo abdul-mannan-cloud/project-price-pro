@@ -13,7 +13,10 @@ interface LeadQuestionsViewProps {
   refetchLead?: () => void;
 }
 
-export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps) => {
+export const LeadQuestionsView = ({
+  lead,
+  refetchLead,
+}: LeadQuestionsViewProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedData, setEditedData] = useState({
@@ -21,7 +24,7 @@ export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps)
     user_email: lead?.user_email || "",
     user_phone: lead?.user_phone || "",
     project_address: lead?.project_address || "",
-    project_title: lead?.project_title || ""
+    project_title: lead?.project_title || "",
   });
   const queryClient = useQueryClient();
 
@@ -39,51 +42,51 @@ export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setEditedData(prev => ({
+    setEditedData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSave = async () => {
     if (!lead?.id) return;
-    
+
     setIsSaving(true);
-    
+
     try {
       // Update lead in database
       const { data, error } = await supabase
-        .from('leads')
+        .from("leads")
         .update({
           user_name: editedData.user_name,
           user_email: editedData.user_email,
           user_phone: editedData.user_phone,
           project_address: editedData.project_address,
-          project_title: editedData.project_title
+          project_title: editedData.project_title,
         })
-        .eq('id', lead.id);
-      
+        .eq("id", lead.id);
+
       if (error) throw error;
-      
+
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['lead', lead.id] });
-     queryClient.invalidateQueries({ queryKey: ['leads'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["lead", lead.id] });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+
       // Refetch lead data if callback provided
       if (refetchLead) {
         refetchLead();
       }
-      
+
       // Show success toast
       toast({
         title: "Success",
         description: "Customer information updated successfully.",
       });
-      
+
       // Exit edit mode
       setIsEditing(false);
     } catch (error) {
-      console.error('Error updating lead:', error);
+      console.error("Error updating lead:", error);
       toast({
         title: "Error",
         description: "Failed to update customer information. Please try again.",
@@ -101,7 +104,7 @@ export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps)
       user_email: lead.user_email || "",
       user_phone: lead.user_phone || "",
       project_address: lead.project_address || "",
-      project_title: lead.project_title || ""
+      project_title: lead.project_title || "",
     });
     setIsEditing(false);
   };
@@ -114,17 +117,17 @@ export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps)
           <h3 className="text-lg font-semibold">Customer Information</h3>
           {isEditing ? (
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleCancel}
                 className="gap-1"
               >
                 <X className="h-4 w-4" />
                 Cancel
               </Button>
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 onClick={handleSave}
                 disabled={isSaving}
                 className="gap-1"
@@ -134,9 +137,9 @@ export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps)
               </Button>
             </div>
           ) : (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setIsEditing(true)}
               className="gap-1"
             >
@@ -145,7 +148,7 @@ export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps)
             </Button>
           )}
         </div>
-        
+
         <div className="grid gap-4 bg-muted/30 p-6 rounded-lg">
           <div>
             <p className="text-sm text-muted-foreground">Name</p>
@@ -172,18 +175,16 @@ export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps)
                 className="mt-1"
                 placeholder="Enter email address"
               />
+            ) : lead?.user_email ? (
+              <button
+                onClick={() => handleEmailClick(lead.user_email!)}
+                className="font-medium text-primary hover:underline inline-flex items-center gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                {lead.user_email}
+              </button>
             ) : (
-              lead?.user_email ? (
-                <button
-                  onClick={() => handleEmailClick(lead.user_email!)}
-                  className="font-medium text-primary hover:underline inline-flex items-center gap-2"
-                >
-                  <Mail className="h-4 w-4" />
-                  {lead.user_email}
-                </button>
-              ) : (
-                <p className="font-medium">Not provided</p>
-              )
+              <p className="font-medium">Not provided</p>
             )}
           </div>
           <div>
@@ -197,18 +198,16 @@ export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps)
                 className="mt-1"
                 placeholder="Enter phone number"
               />
+            ) : lead?.user_phone ? (
+              <button
+                onClick={() => handlePhoneClick(lead.user_phone!)}
+                className="font-medium text-primary hover:underline inline-flex items-center gap-2"
+              >
+                <Phone className="h-4 w-4" />
+                {lead.user_phone}
+              </button>
             ) : (
-              lead?.user_phone ? (
-                <button
-                  onClick={() => handlePhoneClick(lead.user_phone!)}
-                  className="font-medium text-primary hover:underline inline-flex items-center gap-2"
-                >
-                  <Phone className="h-4 w-4" />
-                  {lead.user_phone}
-                </button>
-              ) : (
-                <p className="font-medium">Not provided</p>
-              )
+              <p className="font-medium">Not provided</p>
             )}
           </div>
           <div>
@@ -222,7 +221,9 @@ export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps)
                 placeholder="Enter project address"
               />
             ) : (
-              <p className="font-medium">{lead?.project_address || "Not provided"}</p>
+              <p className="font-medium">
+                {lead?.project_address || "Not provided"}
+              </p>
             )}
           </div>
         </div>
@@ -245,7 +246,9 @@ export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps)
                 placeholder="Enter project title"
               />
             ) : (
-              <p className="font-medium">{lead?.project_title || "Not provided"}</p>
+              <p className="font-medium">
+                {lead?.project_title || "Not provided"}
+              </p>
             )}
           </div>
           {lead?.project_description && (
@@ -263,45 +266,57 @@ export const LeadQuestionsView = ({ lead, refetchLead }: LeadQuestionsViewProps)
       <div>
         <h3 className="text-lg font-semibold mb-4">Questions & Answers</h3>
         <p className="text-sm text-muted-foreground mb-6">
-          Below is a detailed breakdown of the customer's responses to each question in the estimate form.
-          Each category contains specific questions and their corresponding answers.
+          Below is a detailed breakdown of the customer's responses to each
+          question in the estimate form. Each category contains specific
+          questions and their corresponding answers.
         </p>
         <div className="space-y-6">
-          {lead?.answers && Object.entries(lead.answers).map(([category, answers]) => (
-            <div key={category} className="space-y-4">
-              <h4 className="font-medium text-primary text-lg">{category}</h4>
-              <div className="space-y-6">
-                {Object.values(answers).map((qa: any, index: number) => (
-                  <div key={index} className="bg-muted/30 p-6 rounded-lg border border-border/50">
-                    <p className="font-medium text-lg mb-4 text-foreground/90">{qa.question}</p>
-                    <div className="space-y-3">
-                      {qa.answers?.map((answer: string, i: number) => {
-                        const option = qa.options?.find((opt: any) => opt.value === answer);
-                        return (
-                          <div key={i} className="flex items-start gap-3 bg-background/50 p-4 rounded-md border border-border/30">
-                            <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
-                            <div className="space-y-2">
-                              <p className="text-foreground font-medium">
-                                {option?.label || answer}
-                              </p>
-                              {option?.description && (
-                                <p className="text-sm text-muted-foreground">
-                                  {option.description}
+          {lead?.answers &&
+            Object.entries(lead.answers).map(([category, answers]) => (
+              <div key={category} className="space-y-4">
+                <h4 className="font-medium text-primary text-lg">{category}</h4>
+                <div className="space-y-6">
+                  {Object.values(answers).map((qa: any, index: number) => (
+                    <div
+                      key={index}
+                      className="bg-muted/30 p-6 rounded-lg border border-border/50"
+                    >
+                      <p className="font-medium text-lg mb-4 text-foreground/90">
+                        {qa.question}
+                      </p>
+                      <div className="space-y-3">
+                        {qa.answers?.map((answer: string, i: number) => {
+                          const option = qa.options?.find(
+                            (opt: any) => opt.value === answer,
+                          );
+                          return (
+                            <div
+                              key={i}
+                              className="flex items-start gap-3 bg-background/50 p-4 rounded-md border border-border/30"
+                            >
+                              <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
+                              <div className="space-y-2">
+                                <p className="text-foreground font-medium">
+                                  {option?.label || answer}
                                 </p>
-                              )}
+                                {option?.description && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {option.description}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
+                      {index < Object.values(answers).length - 1 && (
+                        <Separator className="my-6" />
+                      )}
                     </div>
-                    {index < Object.values(answers).length - 1 && (
-                      <Separator className="my-6" />
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
     </div>

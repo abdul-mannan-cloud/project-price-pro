@@ -24,7 +24,7 @@ serve(async (req) => {
         {
           headers: { "Content-Type": "application/json", ...corsHeaders },
           status: 400,
-        }
+        },
       );
     }
 
@@ -48,7 +48,7 @@ serve(async (req) => {
       {
         headers: { "Content-Type": "application/json", ...corsHeaders },
         status: 200,
-      }
+      },
     );
   } catch (error) {
     console.error("Error creating customer or setup intent:", error);
@@ -57,7 +57,7 @@ serve(async (req) => {
       {
         headers: { "Content-Type": "application/json", ...corsHeaders },
         status: 500,
-      }
+      },
     );
   }
 });

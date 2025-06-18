@@ -8,11 +8,13 @@ const ProtectedRoute = () => {
   const { data: session, isLoading: sessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       return session;
     },
   });
-    // If we have a session, check if contractor is verified and get tier
+  // If we have a session, check if contractor is verified and get tier
   const { data: contractor, isLoading: contractorLoading } = useQuery({
     queryKey: ["contractor-verification", session?.user?.id],
     enabled: !!session?.user?.id,
@@ -36,8 +38,6 @@ const ProtectedRoute = () => {
   if (!sessionLoading && !session) {
     return <Navigate to="/login" replace />;
   }
-
-
 
   // Show loading spinner while checking authentication and verification
   if (sessionLoading || contractorLoading) {

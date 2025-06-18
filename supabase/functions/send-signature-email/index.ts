@@ -4,67 +4,68 @@ import { Resend } from "npm:resend@2.0.0";
 // Initialize Resend with API key
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 if (!RESEND_API_KEY) {
-    console.error("RESEND_API_KEY environment variable is not set");
-    Deno.exit(1);
+  console.error("RESEND_API_KEY environment variable is not set");
+  Deno.exit(1);
 }
 
 const resend = new Resend(RESEND_API_KEY);
 
 // CORS headers
 const CORS_HEADERS = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Content-Type": "application/json",
 };
 
 // Type Definitions
 interface EstimateItem {
-    title: string;
-    description: string;
-    quantity: number;
-    unitAmount: number;
-    totalPrice: number;
+  title: string;
+  description: string;
+  quantity: number;
+  unitAmount: number;
+  totalPrice: number;
 }
 
 interface Subgroup {
-    name: string;
-    items: EstimateItem[];
+  name: string;
+  items: EstimateItem[];
 }
 
 interface Group {
-    name: string;
-    subgroups: Subgroup[];
+  name: string;
+  subgroups: Subgroup[];
 }
 
 interface EstimateData {
-    totalCost: number;
-    groups: Group[];
-    [key: string]: any;
+  totalCost: number;
+  groups: Group[];
+  [key: string]: any;
 }
 
 interface CustomerInfo {
-    fullName: string;
-    email: string;
-    phone: string;
-    address: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  address: string;
 }
 
 interface ContractorInfo {
-    businessName: string;
-    name: string;
-    email: string;
-    phone: string;
+  businessName: string;
+  name: string;
+  email: string;
+  phone: string;
 }
 
 interface SignedEstimateRequest {
-    estimateId: string;
-    estimateUrl: string;
-    estimateData: EstimateData;
-    customerInfo: CustomerInfo;
-    contractorInfo: ContractorInfo;
-    signatureDate: string;
-    pdfBase64?: string;
-    isTest?: boolean;
+  estimateId: string;
+  estimateUrl: string;
+  estimateData: EstimateData;
+  customerInfo: CustomerInfo;
+  contractorInfo: ContractorInfo;
+  signatureDate: string;
+  pdfBase64?: string;
+  isTest?: boolean;
 }
 
 /**
@@ -73,10 +74,10 @@ interface SignedEstimateRequest {
  * @returns Formatted currency string
  */
 function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    }).format(amount);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
 }
 
 /**
@@ -85,17 +86,17 @@ function formatCurrency(amount: number): string {
  * @returns Uint8Array
  */
 function base64ToUint8Array(base64: string): Uint8Array {
-    // Remove data URI prefix if present
-    const base64Data = base64.startsWith('data:application/pdf;base64,')
-        ? base64.split(',')[1]
-        : base64;
+  // Remove data URI prefix if present
+  const base64Data = base64.startsWith("data:application/pdf;base64,")
+    ? base64.split(",")[1]
+    : base64;
 
-    const binaryString = atob(base64Data);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes;
+  const binaryString = atob(base64Data);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
 }
 
 /**
@@ -104,7 +105,7 @@ function base64ToUint8Array(base64: string): Uint8Array {
  * @returns HTML string
  */
 function generateEstimateItemsHtml(estimateData: EstimateData): string {
-    let html = `
+  let html = `
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
       <tr style="background-color: #f2f2f2;">
         <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item</th>
@@ -115,35 +116,35 @@ function generateEstimateItemsHtml(estimateData: EstimateData): string {
       </tr>
   `;
 
-    // Iterate through groups
-    estimateData.groups.forEach((group) => {
-        // Add group name if needed
-        if (estimateData.groups.length > 1) {
-            html += `
+  // Iterate through groups
+  estimateData.groups.forEach((group) => {
+    // Add group name if needed
+    if (estimateData.groups.length > 1) {
+      html += `
         <tr>
           <td colspan="5" style="padding: 10px; background-color: #f9f9f9; font-weight: bold; border: 1px solid #ddd;">
             ${group.name}
           </td>
         </tr>
       `;
-        }
+    }
 
-        // Iterate through subgroups
-        group.subgroups.forEach((subgroup) => {
-            // Add subgroup name if needed
-            if (group.subgroups.length > 1) {
-                html += `
+    // Iterate through subgroups
+    group.subgroups.forEach((subgroup) => {
+      // Add subgroup name if needed
+      if (group.subgroups.length > 1) {
+        html += `
           <tr>
             <td colspan="5" style="padding: 10px; background-color: #f5f5f5; font-style: italic; border: 1px solid #ddd;">
               ${subgroup.name}
             </td>
           </tr>
         `;
-            }
+      }
 
-            // Iterate through items
-            subgroup.items.forEach((item) => {
-                html += `
+      // Iterate through items
+      subgroup.items.forEach((item) => {
+        html += `
           <tr>
             <td style="padding: 10px; border: 1px solid #ddd;">${item.title}</td>
             <td style="padding: 10px; border: 1px solid #ddd;">${item.description}</td>
@@ -152,20 +153,20 @@ function generateEstimateItemsHtml(estimateData: EstimateData): string {
             <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${formatCurrency(item.totalPrice)}</td>
           </tr>
         `;
-            });
-        });
+      });
     });
+  });
 
-    // Add total row
-    html += `
+  // Add total row
+  html += `
     <tr style="background-color: #f2f2f2; font-weight: bold;">
       <td colspan="4" style="padding: 10px; text-align: right; border: 1px solid #ddd;">Total:</td>
       <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">${formatCurrency(estimateData.totalCost)}</td>
     </tr>
   `;
 
-    html += `</table>`;
-    return html;
+  html += `</table>`;
+  return html;
 }
 
 /**
@@ -174,30 +175,30 @@ function generateEstimateItemsHtml(estimateData: EstimateData): string {
  * @returns HTML string
  */
 function generateCustomerEmail(params: {
-    estimateId: string;
-    customerName: string;
-    contractorName: string;
-    businessName: string;
-    signatureDate: string;
-    estimateData: EstimateData;
-    isTest: boolean;
+  estimateId: string;
+  customerName: string;
+  contractorName: string;
+  businessName: string;
+  signatureDate: string;
+  estimateData: EstimateData;
+  isTest: boolean;
 }): string {
-    const {
-        estimateId,
-        customerName,
-        contractorName,
-        businessName,
-        signatureDate,
-        estimateData,
-        isTest
-    } = params;
+  const {
+    estimateId,
+    customerName,
+    contractorName,
+    businessName,
+    signatureDate,
+    estimateData,
+    isTest,
+  } = params;
 
-    return `
+  return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <title>${isTest ? '[TEST] ' : ''}Estimate Signed Confirmation</title>
+      <title>${isTest ? "[TEST] " : ""}Estimate Signed Confirmation</title>
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 650px; margin: 0 auto; padding: 20px; }
@@ -233,7 +234,7 @@ function generateCustomerEmail(params: {
     <body>
       <div class="container">
         <div class="header">
-          <h1>${isTest ? '[TEST] ' : ''}Estimate Signed Confirmation</h1>
+          <h1>${isTest ? "[TEST] " : ""}Estimate Signed Confirmation</h1>
         </div>
         
         <p>Dear ${customerName},</p>
@@ -265,7 +266,7 @@ function generateCustomerEmail(params: {
         <p>Thank you for your business!</p>
         
         <div class="footer">
-          ${isTest ? '<p><em>Note: This is a test email sent for demonstration purposes only.</em></p>' : ''}
+          ${isTest ? "<p><em>Note: This is a test email sent for demonstration purposes only.</em></p>" : ""}
           <p>This confirmation was sent via Estimatrix - Professional Estimation Software</p>
         </div>
       </div>
@@ -280,32 +281,32 @@ function generateCustomerEmail(params: {
  * @returns HTML string
  */
 function generateContractorEmail(params: {
-    estimateId: string;
-    estimateUrl: string;
-    customerName: string;
-    customerInfo: CustomerInfo;
-    businessName: string;
-    estimateData: EstimateData;
-    signatureDate: string;
-    isTest: boolean;
+  estimateId: string;
+  estimateUrl: string;
+  customerName: string;
+  customerInfo: CustomerInfo;
+  businessName: string;
+  estimateData: EstimateData;
+  signatureDate: string;
+  isTest: boolean;
 }): string {
-    const {
-        estimateId,
-        estimateUrl,
-        customerName,
-        customerInfo,
-        businessName,
-        estimateData,
-        signatureDate,
-        isTest
-    } = params;
+  const {
+    estimateId,
+    estimateUrl,
+    customerName,
+    customerInfo,
+    businessName,
+    estimateData,
+    signatureDate,
+    isTest,
+  } = params;
 
-    return `
+  return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <title>${isTest ? '[TEST] ' : ''}Estimate Signed - Action Required</title>
+      <title>${isTest ? "[TEST] " : ""}Estimate Signed - Action Required</title>
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 650px; margin: 0 auto; padding: 20px; }
@@ -351,7 +352,7 @@ function generateContractorEmail(params: {
     <body>
       <div class="container">
         <div class="header">
-          <h1>${isTest ? '[TEST] ' : ''}🎉 Estimate Signed - Action Required</h1>
+          <h1>${isTest ? "[TEST] " : ""}🎉 Estimate Signed - Action Required</h1>
         </div>
         
         <div class="notification-box">
@@ -382,7 +383,7 @@ function generateContractorEmail(params: {
         <p>After countersigning, a final confirmation will be sent to both you and the customer.</p>
         
         <div class="footer">
-          ${isTest ? '<p><em>Note: This is a test email sent for demonstration purposes only.</em></p>' : ''}
+          ${isTest ? "<p><em>Note: This is a test email sent for demonstration purposes only.</em></p>" : ""}
           <p>This notification was sent via Estimatrix - Professional Estimation Software</p>
         </div>
       </div>
@@ -392,117 +393,126 @@ function generateContractorEmail(params: {
 }
 
 serve(async (req: Request): Promise<Response> => {
-    // Handle preflight CORS requests
-    if (req.method === "OPTIONS") {
-        return new Response(null, { headers: CORS_HEADERS });
+  // Handle preflight CORS requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: CORS_HEADERS });
+  }
+
+  try {
+    const requestData: SignedEstimateRequest = await req.json();
+    const {
+      estimateId,
+      estimateUrl,
+      estimateData,
+      customerInfo,
+      contractorInfo,
+      signatureDate,
+      pdfBase64,
+      isTest = false,
+    } = requestData;
+
+    console.log("Processing signed estimate notifications for:", {
+      estimateId,
+      customer: customerInfo.fullName,
+      contractor: contractorInfo.businessName,
+      isTest,
+    });
+
+    // Validate required fields
+    if (!customerInfo?.email || !contractorInfo?.email) {
+      throw new Error("Customer or contractor email not provided");
     }
 
-    try {
-        const requestData: SignedEstimateRequest = await req.json();
-        const {
-            estimateId,
-            estimateUrl,
-            estimateData,
-            customerInfo,
-            contractorInfo,
-            signatureDate,
-            pdfBase64,
-            isTest = false
-        } = requestData;
-
-        console.log("Processing signed estimate notifications for:", {
-            estimateId,
-            customer: customerInfo.fullName,
-            contractor: contractorInfo.businessName,
-            isTest
+    // Prepare attachments if PDF is provided
+    const attachments = [];
+    if (pdfBase64) {
+      try {
+        attachments.push({
+          filename: `Signed_Estimate_${estimateId}.pdf`,
+          content: base64ToUint8Array(pdfBase64),
         });
-
-        // Validate required fields
-        if (!customerInfo?.email || !contractorInfo?.email) {
-            throw new Error("Customer or contractor email not provided");
-        }
-
-        // Prepare attachments if PDF is provided
-        const attachments = [];
-        if (pdfBase64) {
-            try {
-                attachments.push({
-                    filename: `Signed_Estimate_${estimateId}.pdf`,
-                    content: base64ToUint8Array(pdfBase64)
-                });
-            } catch (error) {
-                console.error("Error processing PDF base64:", error);
-            }
-        }
-
-        // 1. Send confirmation email to customer
-        const customerEmailSubject = isTest
-            ? `[TEST] Confirmation of Your Signed Estimate - ${contractorInfo.businessName}`
-            : `Confirmation of Your Signed Estimate - ${contractorInfo.businessName}`;
-
-        const customerEmailResponse = await resend.emails.send({
-            from: `${contractorInfo.businessName} <no-reply@estimatrix.io>`,
-            to: [customerInfo.email],
-            subject: customerEmailSubject,
-            attachments: attachments,
-            html: generateCustomerEmail({
-                estimateId,
-                customerName: customerInfo.fullName,
-                contractorName: contractorInfo.name,
-                businessName: contractorInfo.businessName,
-                signatureDate,
-                estimateData,
-                isTest
-            })
-        });
-
-        console.log("Customer confirmation email sent successfully:", customerEmailResponse);
-
-        // 2. Send notification email to contractor
-        const contractorEmailSubject = isTest
-            ? `[TEST] ${customerInfo.fullName} has signed your estimate - Action Required`
-            : `${customerInfo.fullName} has signed your estimate - Action Required`;
-
-        const contractorEmailResponse = await resend.emails.send({
-            from: `Estimatrix <notifications@estimatrix.io>`,
-            to: [contractorInfo.email],
-            subject: contractorEmailSubject,
-            attachments: attachments,
-            html: generateContractorEmail({
-                estimateId,
-                estimateUrl,
-                customerName: customerInfo.fullName,
-                customerInfo,
-                businessName: contractorInfo.businessName,
-                estimateData,
-                signatureDate,
-                isTest
-            })
-        });
-
-        console.log("Contractor notification email sent successfully:", contractorEmailResponse);
-
-        return new Response(
-            JSON.stringify({
-                success: true,
-                customerEmail: customerEmailResponse,
-                contractorEmail: contractorEmailResponse
-            }),
-            {
-                status: 200,
-                headers: CORS_HEADERS,
-            }
-        );
-    } catch (error) {
-        console.error("Error in send-signed-estimate-notifications function:", error);
-        return new Response(
-            JSON.stringify({
-                error: error instanceof Error ? error.message : "Unknown error"
-            }),
-            {
-                status: 500,
-                headers: CORS_HEADERS,
-            }
-        );
+      } catch (error) {
+        console.error("Error processing PDF base64:", error);
+      }
     }
+
+    // 1. Send confirmation email to customer
+    const customerEmailSubject = isTest
+      ? `[TEST] Confirmation of Your Signed Estimate - ${contractorInfo.businessName}`
+      : `Confirmation of Your Signed Estimate - ${contractorInfo.businessName}`;
+
+    const customerEmailResponse = await resend.emails.send({
+      from: `${contractorInfo.businessName} <no-reply@estimatrix.io>`,
+      to: [customerInfo.email],
+      subject: customerEmailSubject,
+      attachments: attachments,
+      html: generateCustomerEmail({
+        estimateId,
+        customerName: customerInfo.fullName,
+        contractorName: contractorInfo.name,
+        businessName: contractorInfo.businessName,
+        signatureDate,
+        estimateData,
+        isTest,
+      }),
+    });
+
+    console.log(
+      "Customer confirmation email sent successfully:",
+      customerEmailResponse,
+    );
+
+    // 2. Send notification email to contractor
+    const contractorEmailSubject = isTest
+      ? `[TEST] ${customerInfo.fullName} has signed your estimate - Action Required`
+      : `${customerInfo.fullName} has signed your estimate - Action Required`;
+
+    const contractorEmailResponse = await resend.emails.send({
+      from: `Estimatrix <notifications@estimatrix.io>`,
+      to: [contractorInfo.email],
+      subject: contractorEmailSubject,
+      attachments: attachments,
+      html: generateContractorEmail({
+        estimateId,
+        estimateUrl,
+        customerName: customerInfo.fullName,
+        customerInfo,
+        businessName: contractorInfo.businessName,
+        estimateData,
+        signatureDate,
+        isTest,
+      }),
+    });
+
+    console.log(
+      "Contractor notification email sent successfully:",
+      contractorEmailResponse,
+    );
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        customerEmail: customerEmailResponse,
+        contractorEmail: contractorEmailResponse,
+      }),
+      {
+        status: 200,
+        headers: CORS_HEADERS,
+      },
+    );
+  } catch (error) {
+    console.error(
+      "Error in send-signed-estimate-notifications function:",
+      error,
+    );
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: CORS_HEADERS,
+      },
+    );
+  }
 });

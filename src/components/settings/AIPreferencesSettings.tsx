@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Json } from "@/integrations/supabase/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Info, Plus, DollarSign } from "lucide-react";
 import {
   Table,
@@ -58,7 +69,7 @@ interface AIRate {
 const defaultPreferences: AIPreferences = {
   rate: "HR",
   type: "material_labor",
-  instructions: ""
+  instructions: "",
 };
 
 const UNIT_OPTIONS = [
@@ -99,7 +110,7 @@ export const AIPreferencesSettings = () => {
   const [newInstruction, setNewInstruction] = useState<AIInstruction>({
     title: "",
     description: "",
-    instructions: ""
+    instructions: "",
   });
 
   // State for AI rates
@@ -111,21 +122,23 @@ export const AIPreferencesSettings = () => {
     rate: 0,
     unit: "",
     type: "material_labor",
-    instructions: ""
+    instructions: "",
   });
 
   // Get contractor data for ID reference
   const { data: contractor, isLoading: isContractorLoading } = useQuery({
     queryKey: ["contractor-data"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       const { data, error } = await supabase
-          .from("contractors")
-          .select("id")
-          .eq("user_id", user.id)
-          .single();
+        .from("contractors")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
 
       if (error) throw error;
       return data;
@@ -136,24 +149,26 @@ export const AIPreferencesSettings = () => {
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ["ai-preferences"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       const contractor = await supabase
-          .from("contractors")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
+        .from("contractors")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
 
       const { data, error } = await supabase
-          .from("contractor_settings")
-          .select("*")
-          .eq("id", contractor.data.id);
+        .from("contractor_settings")
+        .select("*")
+        .eq("id", contractor.data.id);
 
       const contractors = data[0];
 
       if (error) {
-        console.log('supabase Ai preferences error:', error);
+        console.log("supabase Ai preferences error:", error);
         throw error;
       }
 
@@ -162,14 +177,23 @@ export const AIPreferencesSettings = () => {
 
       // Ensure we have all required fields with proper types
       const aiPreferences: AIPreferences = {
-        rate: typeof preferences?.rate === 'string' ? preferences.rate : defaultPreferences.rate,
-        type: typeof preferences?.type === 'string' ? preferences.type : defaultPreferences.type,
-        instructions: typeof preferences?.instructions === 'string' ? preferences.instructions : defaultPreferences.instructions
+        rate:
+          typeof preferences?.rate === "string"
+            ? preferences.rate
+            : defaultPreferences.rate,
+        type:
+          typeof preferences?.type === "string"
+            ? preferences.type
+            : defaultPreferences.type,
+        instructions:
+          typeof preferences?.instructions === "string"
+            ? preferences.instructions
+            : defaultPreferences.instructions,
       };
 
       return {
         ai_preferences: aiPreferences,
-        ai_instructions: supabaseData.ai_instructions || ""
+        ai_instructions: supabaseData.ai_instructions || "",
       } as ContractorSettings;
     },
   });
@@ -181,16 +205,16 @@ export const AIPreferencesSettings = () => {
       if (!contractor?.id) return [];
 
       const { data, error } = await supabase
-          .from("ai_instructions")
-          .select("*")
-          .eq("contractor_id", contractor.id);
+        .from("ai_instructions")
+        .select("*")
+        .eq("contractor_id", contractor.id);
 
       if (error) throw error;
 
-      const instructions = data.map(instruction => ({
+      const instructions = data.map((instruction) => ({
         title: instruction.title,
         description: instruction.description,
-        instructions: instruction.instructions
+        instructions: instruction.instructions,
       }));
 
       setAiInstructions(instructions);
@@ -206,19 +230,19 @@ export const AIPreferencesSettings = () => {
       if (!contractor?.id) return [];
 
       const { data, error } = await supabase
-          .from("ai_rates")
-          .select("*")
-          .eq("contractor_id", contractor.id);
+        .from("ai_rates")
+        .select("*")
+        .eq("contractor_id", contractor.id);
 
       if (error) throw error;
 
-      const rates = data.map(rate => ({
+      const rates = data.map((rate) => ({
         title: rate.title,
         description: rate.description,
         rate: rate.rate,
         unit: rate.unit,
         type: rate.type,
-        instructions: rate.instructions
+        instructions: rate.instructions,
       }));
 
       setAiRates(rates);
@@ -230,29 +254,31 @@ export const AIPreferencesSettings = () => {
   // Update general settings
   const updateSettings = useMutation({
     mutationFn: async (formData: ContractorSettings) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       // Convert AIPreferences to a plain object that matches Json type
       const aiPreferencesJson: { [key: string]: string } = {
         rate: formData.ai_preferences.rate,
         type: formData.ai_preferences.type,
-        instructions: formData.ai_preferences.instructions
+        instructions: formData.ai_preferences.instructions,
       };
 
       const contractor = await supabase
-          .from("contractors")
-          .select("id")
-          .eq("user_id", user.id)
-          .single();
+        .from("contractors")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
 
       const { error } = await supabase
-          .from("contractor_settings")
-          .update({
-            ai_preferences: aiPreferencesJson as Json,
-            ai_instructions: formData.ai_instructions
-          })
-          .eq("id", contractor.data.id);
+        .from("contractor_settings")
+        .update({
+          ai_preferences: aiPreferencesJson as Json,
+          ai_instructions: formData.ai_instructions,
+        })
+        .eq("id", contractor.data.id);
 
       if (error) throw error;
     },
@@ -279,24 +305,24 @@ export const AIPreferencesSettings = () => {
 
       // First delete existing instructions
       const { error: deleteError } = await supabase
-          .from("ai_instructions")
-          .delete()
-          .eq("contractor_id", contractor.id);
+        .from("ai_instructions")
+        .delete()
+        .eq("contractor_id", contractor.id);
 
       if (deleteError) throw deleteError;
 
       // Then insert new instructions
       if (instructions.length > 0) {
-        const instructionsToInsert = instructions.map(instruction => ({
+        const instructionsToInsert = instructions.map((instruction) => ({
           contractor_id: contractor.id,
           title: instruction.title,
           description: instruction.description,
-          instructions: instruction.instructions
+          instructions: instruction.instructions,
         }));
 
         const { error: insertError } = await supabase
-            .from("ai_instructions")
-            .insert(instructionsToInsert);
+          .from("ai_instructions")
+          .insert(instructionsToInsert);
 
         if (insertError) throw insertError;
       }
@@ -327,27 +353,27 @@ export const AIPreferencesSettings = () => {
 
       // First delete existing rates
       const { error: deleteError } = await supabase
-          .from("ai_rates")
-          .delete()
-          .eq("contractor_id", contractor.id);
+        .from("ai_rates")
+        .delete()
+        .eq("contractor_id", contractor.id);
 
       if (deleteError) throw deleteError;
 
       // Then insert new rates
       if (rates.length > 0) {
-        const ratesToInsert = rates.map(rate => ({
+        const ratesToInsert = rates.map((rate) => ({
           contractor_id: contractor.id,
           title: rate.title,
           description: rate.description,
           rate: rate.rate,
           unit: rate.unit,
           type: rate.type,
-          instructions: rate.instructions || ""
+          instructions: rate.instructions || "",
         }));
 
         const { error: insertError } = await supabase
-            .from("ai_rates")
-            .insert(ratesToInsert);
+          .from("ai_rates")
+          .insert(ratesToInsert);
 
         if (insertError) throw insertError;
       }
@@ -386,7 +412,7 @@ export const AIPreferencesSettings = () => {
     setNewInstruction({
       title: "",
       description: "",
-      instructions: ""
+      instructions: "",
     });
 
     setNewRate({
@@ -395,7 +421,7 @@ export const AIPreferencesSettings = () => {
       rate: 0,
       unit: "",
       type: "material_labor",
-      instructions: ""
+      instructions: "",
     });
   }, []);
 
@@ -405,11 +431,13 @@ export const AIPreferencesSettings = () => {
     const formData = new FormData(e.currentTarget);
     const data: ContractorSettings = {
       ai_preferences: {
-        rate: formData.get("rate") as string || defaultPreferences.rate,
-        type: formData.get("type") as string || defaultPreferences.type,
-        instructions: formData.get("instructions") as string || defaultPreferences.instructions
+        rate: (formData.get("rate") as string) || defaultPreferences.rate,
+        type: (formData.get("type") as string) || defaultPreferences.type,
+        instructions:
+          (formData.get("instructions") as string) ||
+          defaultPreferences.instructions,
       },
-      ai_instructions: formData.get("ai_instructions") as string || ""
+      ai_instructions: (formData.get("ai_instructions") as string) || "",
     };
     updateSettings.mutate(data);
   };
@@ -430,7 +458,7 @@ export const AIPreferencesSettings = () => {
     setNewInstruction({
       title: "",
       description: "",
-      instructions: ""
+      instructions: "",
     });
   };
 
@@ -461,7 +489,7 @@ export const AIPreferencesSettings = () => {
       rate: 0,
       unit: "",
       type: "material_labor",
-      instructions: ""
+      instructions: "",
     });
   };
 
@@ -473,273 +501,318 @@ export const AIPreferencesSettings = () => {
     saveRates.mutate(aiRates);
   };
 
-  const isLoading = isContractorLoading || isSettingsLoading || isInstructionsLoading || isRatesLoading;
+  const isLoading =
+    isContractorLoading ||
+    isSettingsLoading ||
+    isInstructionsLoading ||
+    isRatesLoading;
 
   if (isLoading) {
     return (
-       <div className="min-h-full min-w-full flex items-center justify-center">
-          {/* <div className="text-lg">Loading...</div> */}
-          <Spinner />
-        </div>
-    )
+      <div className="min-h-full min-w-full flex items-center justify-center">
+        {/* <div className="text-lg">Loading...</div> */}
+        <Spinner />
+      </div>
+    );
   }
 
   return (
-      <div className="space-y-6">
-        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 mb-6">
-            <TabsTrigger value="instructions">AI Instructions</TabsTrigger>
-            <TabsTrigger value="rates">AI Rates</TabsTrigger>
-          </TabsList>
+    <div className="space-y-6">
+      <Tabs
+        defaultValue={activeTab}
+        onValueChange={setActiveTab}
+        className="w-full"
+      >
+        <TabsList className="grid grid-cols-2 mb-6">
+          <TabsTrigger value="instructions">AI Instructions</TabsTrigger>
+          <TabsTrigger value="rates">AI Rates</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="instructions" className="mt-4">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <Info className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="text-lg font-medium">AI Instructions</h3>
-                </div>
-                <Button
-                    onClick={() => setIsAddingInstruction(true)}
-                    size="sm"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Instruction
-                </Button>
+        <TabsContent value="instructions" className="mt-4">
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Info className="h-5 w-5 text-muted-foreground" />
+                <h3 className="text-lg font-medium">AI Instructions</h3>
               </div>
-
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Instructions</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {aiInstructions.map((instruction, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{instruction.title}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{instruction.description}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{instruction.instructions}</TableCell>
-                        <TableCell>
-                          <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeInstruction(index)}
-                              className="text-destructive hover:text-destructive"
-                          >
-                            Remove
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              <Dialog open={isAddingInstruction} onOpenChange={setIsAddingInstruction}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Instruction</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="instruction-title">Title</Label>
-                      <Input
-                          id="instruction-title"
-                          value={newInstruction.title}
-                          onChange={(e) => setNewInstruction({ ...newInstruction, title: e.target.value })}
-                          placeholder="e.g., Material Cost Calculation"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="instruction-description">Description</Label>
-                      <Input
-                          id="instruction-description"
-                          value={newInstruction.description}
-                          onChange={(e) => setNewInstruction({ ...newInstruction, description: e.target.value })}
-                          placeholder="Brief description of the instruction"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                        <Label htmlFor="instruction-content">Instructions</Label>
-                      </div>
-                      <Textarea
-                          id="instruction-content"
-                          className="w-full min-h-[100px]"
-                          value={newInstruction.instructions}
-                          onChange={(e) => setNewInstruction({ ...newInstruction, instructions: e.target.value })}
-                          placeholder="Enter detailed instructions for AI..."
-                      />
-                    </div>
-                    <Button onClick={addInstruction} className="w-full">
-                      Add Instruction
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              {aiInstructions.length > 0 && (
-                  <Button onClick={handleSaveInstructions} className="w-full">
-                    Save Changes
-                  </Button>
-              )}
+              <Button onClick={() => setIsAddingInstruction(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Instruction
+              </Button>
             </div>
-          </TabsContent>
 
-          <TabsContent value="rates" className="mt-4">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="text-lg font-medium">AI Rates</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Instructions</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {aiInstructions.map((instruction, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{instruction.title}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">
+                      {instruction.description}
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate">
+                      {instruction.instructions}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeInstruction(index)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        Remove
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            <Dialog
+              open={isAddingInstruction}
+              onOpenChange={setIsAddingInstruction}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Instruction</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="instruction-title">Title</Label>
+                    <Input
+                      id="instruction-title"
+                      value={newInstruction.title}
+                      onChange={(e) =>
+                        setNewInstruction({
+                          ...newInstruction,
+                          title: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., Material Cost Calculation"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="instruction-description">Description</Label>
+                    <Input
+                      id="instruction-description"
+                      value={newInstruction.description}
+                      onChange={(e) =>
+                        setNewInstruction({
+                          ...newInstruction,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="Brief description of the instruction"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="instruction-content">Instructions</Label>
+                    </div>
+                    <Textarea
+                      id="instruction-content"
+                      className="w-full min-h-[100px]"
+                      value={newInstruction.instructions}
+                      onChange={(e) =>
+                        setNewInstruction({
+                          ...newInstruction,
+                          instructions: e.target.value,
+                        })
+                      }
+                      placeholder="Enter detailed instructions for AI..."
+                    />
+                  </div>
+                  <Button onClick={addInstruction} className="w-full">
+                    Add Instruction
+                  </Button>
                 </div>
-                <Button
-                    onClick={() => setIsAddingRate(true)}
-                    size="sm"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Rate
-                </Button>
+              </DialogContent>
+            </Dialog>
+
+            {aiInstructions.length > 0 && (
+              <Button onClick={handleSaveInstructions} className="w-full">
+                Save Changes
+              </Button>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="rates" className="mt-4">
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-muted-foreground" />
+                <h3 className="text-lg font-medium">AI Rates</h3>
               </div>
-
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Rate</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Instructions</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {aiRates.map((rate, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{rate.title}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{rate.description}</TableCell>
-                        <TableCell>{rate.rate}</TableCell>
-                        <TableCell>{rate.unit}</TableCell>
-                        <TableCell>{rate.type}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{rate.instructions}</TableCell>
-                        <TableCell>
-                          <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeRate(index)}
-                              className="text-destructive hover:text-destructive"
-                          >
-                            Remove
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              <Dialog open={isAddingRate} onOpenChange={setIsAddingRate}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Rate</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="rate-title">Title</Label>
-                      <Input
-                          id="rate-title"
-                          value={newRate.title}
-                          onChange={(e) => setNewRate({ ...newRate, title: e.target.value })}
-                          placeholder="e.g., Standard Labor Rate"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="rate-description">Description</Label>
-                      <Input
-                          id="rate-description"
-                          value={newRate.description || ""}
-                          onChange={(e) => setNewRate({ ...newRate, description: e.target.value })}
-                          placeholder="Brief description of the rate"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="rate-value">Rate</Label>
-                      <Input
-                          id="rate-value"
-                          type="number"
-                          value={newRate.rate}
-                          onChange={(e) => setNewRate({ ...newRate, rate: parseFloat(e.target.value) || 0 })}
-                          placeholder="e.g., 75"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="rate-unit">Unit</Label>
-                      <Select
-                          value={newRate.unit}
-                          onValueChange={(value) => setNewRate({ ...newRate, unit: value })}
-                      >
-                        <SelectTrigger id="rate-unit">
-                          <SelectValue placeholder="Select a unit" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {UNIT_OPTIONS.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="rate-type">Type</Label>
-                      <Select
-                          value={newRate.type}
-                          onValueChange={(value) => setNewRate({ ...newRate, type: value })}
-                      >
-                        <SelectTrigger id="rate-type">
-                          <SelectValue placeholder="Select a type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TYPE_OPTIONS.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                        <Label htmlFor="rate-instructions">Instructions (Optional)</Label>
-                      </div>
-                      <Textarea
-                          id="rate-instructions"
-                          className="w-full min-h-[100px]"
-                          value={newRate.instructions}
-                          onChange={(e) => setNewRate({ ...newRate, instructions: e.target.value })}
-                          placeholder="Tell AI how to use this rate..."
-                      />
-                    </div>
-                    <Button onClick={addRate} className="w-full">
-                      Add Rate
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              {aiRates.length > 0 && (
-                  <Button onClick={handleSaveRates} className="w-full">
-                    Save Changes
-                  </Button>
-              )}
+              <Button onClick={() => setIsAddingRate(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Rate
+              </Button>
             </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Rate</TableHead>
+                  <TableHead>Unit</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Instructions</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {aiRates.map((rate, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{rate.title}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">
+                      {rate.description}
+                    </TableCell>
+                    <TableCell>{rate.rate}</TableCell>
+                    <TableCell>{rate.unit}</TableCell>
+                    <TableCell>{rate.type}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">
+                      {rate.instructions}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeRate(index)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        Remove
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            <Dialog open={isAddingRate} onOpenChange={setIsAddingRate}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Rate</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="rate-title">Title</Label>
+                    <Input
+                      id="rate-title"
+                      value={newRate.title}
+                      onChange={(e) =>
+                        setNewRate({ ...newRate, title: e.target.value })
+                      }
+                      placeholder="e.g., Standard Labor Rate"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rate-description">Description</Label>
+                    <Input
+                      id="rate-description"
+                      value={newRate.description || ""}
+                      onChange={(e) =>
+                        setNewRate({ ...newRate, description: e.target.value })
+                      }
+                      placeholder="Brief description of the rate"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rate-value">Rate</Label>
+                    <Input
+                      id="rate-value"
+                      type="number"
+                      value={newRate.rate}
+                      onChange={(e) =>
+                        setNewRate({
+                          ...newRate,
+                          rate: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="e.g., 75"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rate-unit">Unit</Label>
+                    <Select
+                      value={newRate.unit}
+                      onValueChange={(value) =>
+                        setNewRate({ ...newRate, unit: value })
+                      }
+                    >
+                      <SelectTrigger id="rate-unit">
+                        <SelectValue placeholder="Select a unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {UNIT_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rate-type">Type</Label>
+                    <Select
+                      value={newRate.type}
+                      onValueChange={(value) =>
+                        setNewRate({ ...newRate, type: value })
+                      }
+                    >
+                      <SelectTrigger id="rate-type">
+                        <SelectValue placeholder="Select a type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TYPE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="rate-instructions">
+                        Instructions (Optional)
+                      </Label>
+                    </div>
+                    <Textarea
+                      id="rate-instructions"
+                      className="w-full min-h-[100px]"
+                      value={newRate.instructions}
+                      onChange={(e) =>
+                        setNewRate({ ...newRate, instructions: e.target.value })
+                      }
+                      placeholder="Tell AI how to use this rate..."
+                    />
+                  </div>
+                  <Button onClick={addRate} className="w-full">
+                    Add Rate
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {aiRates.length > 0 && (
+              <Button onClick={handleSaveRates} className="w-full">
+                Save Changes
+              </Button>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };

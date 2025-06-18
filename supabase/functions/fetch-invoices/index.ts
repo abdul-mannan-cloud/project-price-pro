@@ -9,7 +9,8 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
 serve(async (req) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
     "Content-Type": "application/json",
   };
 
@@ -20,7 +21,7 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const { customerId, limit = 10, offset = 0 } = body;
-    
+
     if (!customerId) {
       throw new Error("CustomerId is required");
     }
@@ -30,7 +31,7 @@ serve(async (req) => {
       customer: customerId,
       limit: limit,
     });
-    
+
     // Process each invoice and get its line items - without detailed line items for now
     // to avoid errors
     const invoices = invoicesResponse.data.map((invoice) => {
@@ -49,7 +50,7 @@ serve(async (req) => {
         line_items: invoice.lines?.data || [],
       };
     });
-      
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -60,11 +61,11 @@ serve(async (req) => {
           offset,
         },
       }),
-      { headers, status: 200 }
+      { headers, status: 200 },
     );
   } catch (error) {
     console.error("Error fetching invoices:", error);
-    
+
     return new Response(
       JSON.stringify({
         success: false,
@@ -73,7 +74,7 @@ serve(async (req) => {
           type: error.type || "server_error",
         },
       }),
-      { headers, status: 400 }
+      { headers, status: 400 },
     );
   }
 });

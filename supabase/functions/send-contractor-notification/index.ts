@@ -9,7 +9,7 @@ interface CustomerInfo {
   address: string;
   available_date?: string;
   available_time?: string;
-  flexible?: 'flexible' | 'on_date' | 'before_date';
+  flexible?: "flexible" | "on_date" | "before_date";
 }
 
 interface Question {
@@ -54,7 +54,6 @@ interface ContractorNotificationRequest {
   leadId: string; // <-- Added this line
 }
 
-
 // Environment variables handling
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 if (!RESEND_API_KEY) {
@@ -68,7 +67,7 @@ const resend = new Resend(RESEND_API_KEY);
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type",
   "Content-Type": "application/json",
 };
 
@@ -78,20 +77,24 @@ const CORS_HEADERS = {
  * @param answers - Object containing all answers
  * @returns Formatted HTML string
  */
-function formatQuestionsAndAnswers(questions: CategoryData[], answers: Answers): string {
+function formatQuestionsAndAnswers(
+  questions: CategoryData[],
+  answers: Answers,
+): string {
   let html = '<div style="margin: 20px 0;">';
   html += '<h3 style="color: #333;">Customer Responses:</h3>';
   html += '<ul style="list-style-type: none; padding: 0;">';
 
   // Check if we have questions and answers
   if (!questions?.length || !answers) {
-    html += '<li style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 4px;">No responses available</li>';
-    html += '</ul></div>';
+    html +=
+      '<li style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 4px;">No responses available</li>';
+    html += "</ul></div>";
     return html;
   }
 
   // For each category in the questions
-  questions.forEach(categoryData => {
+  questions.forEach((categoryData) => {
     const { category, questions: categoryQuestions } = categoryData;
     const categoryAnswers = answers[category];
 
@@ -104,7 +107,7 @@ function formatQuestionsAndAnswers(questions: CategoryData[], answers: Answers):
       // Process each answered question in this category
       Object.entries(categoryAnswers).forEach(([questionId, answerData]) => {
         // Find the corresponding question text
-        const questionObj = categoryQuestions.find(q => q.id === questionId);
+        const questionObj = categoryQuestions.find((q) => q.id === questionId);
         if (questionObj && answerData.answers) {
           const questionText = questionObj.question;
           const answerValues = answerData.answers;
@@ -112,7 +115,7 @@ function formatQuestionsAndAnswers(questions: CategoryData[], answers: Answers):
           html += `
             <li style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 4px;">
               <strong style="color: #444;">Q: ${questionText}</strong><br>
-              <span style="color: #666;">A: ${Array.isArray(answerValues) ? answerValues.join(', ') : answerValues}</span>
+              <span style="color: #666;">A: ${Array.isArray(answerValues) ? answerValues.join(", ") : answerValues}</span>
             </li>
           `;
         }
@@ -120,7 +123,7 @@ function formatQuestionsAndAnswers(questions: CategoryData[], answers: Answers):
     }
   });
 
-  html += '</ul></div>';
+  html += "</ul></div>";
   return html;
 }
 
@@ -130,9 +133,9 @@ function formatQuestionsAndAnswers(questions: CategoryData[], answers: Answers):
  * @returns Formatted currency string
  */
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
   }).format(amount);
 }
 
@@ -160,7 +163,7 @@ function generateEmailContent(params: {
     answers,
     estimate,
     isTestEstimate,
-    leadId // <-- Destructured this
+    leadId, // <-- Destructured this
   } = params;
 
   const viewLink = `https://estimatrix.io/leads?leadId=${leadId}`;
@@ -180,12 +183,14 @@ function generateEmailContent(params: {
         ${customerDetails}
       </div>
       
-          ${customerAvailability
-        ? `<div style="margin: 20px 0; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+          ${
+            customerAvailability
+              ? `<div style="margin: 20px 0; padding: 20px; background: #f9f9f9; border-radius: 8px;">
              <h3 style="color: #444;">Availability:</h3>
              ${customerAvailability}
            </div>`
-        : ""}
+              : ""
+          }
 
       ${formatQuestionsAndAnswers(questions, answers)}
 
@@ -199,15 +204,16 @@ function generateEmailContent(params: {
       </div>
 
       <p style="color: #666; font-size: 14px;">
-        ${isTestEstimate
-          ? 'This is a test estimate preview. No customer information is attached.'
-          : 'This is an automated notification. Please log in to your dashboard to view the full estimate details and take action.'}
+        ${
+          isTestEstimate
+            ? "This is a test estimate preview. No customer information is attached."
+            : "This is an automated notification. Please log in to your dashboard to view the full estimate details and take action."
+        }
       </p>
     </body>
     </html>
   `;
 }
-
 
 /**
  * Formats customer availability information
@@ -245,7 +251,7 @@ function formatAvailability(customerInfo: CustomerInfo): string {
   // ── Time ──────────────────────────────────────────────────────────
   if (isProvided(customerInfo.available_time)) {
     lines.push(
-      `<li><strong>Time Available:</strong> ${customerInfo.available_time}</li>`
+      `<li><strong>Time Available:</strong> ${customerInfo.available_time}</li>`,
     );
   }
 
@@ -271,7 +277,7 @@ serve(async (req: Request): Promise<Response> => {
       questions,
       answers,
       isTestEstimate = false,
-      leadId
+      leadId,
     } = requestData;
 
     if (!contractor?.contact_email) {
@@ -282,10 +288,9 @@ serve(async (req: Request): Promise<Response> => {
       ? `[TEST] New Estimate Preview Generated`
       : `New $${estimate.totalCost.toLocaleString()} Opportunity from ${customerInfo.fullName}`;
 
-
     const customerDetails = isTestEstimate
-        ? `<p style="color: #666;"><strong>Note:</strong> This is a test estimate preview.</p>`
-        : `
+      ? `<p style="color: #666;"><strong>Note:</strong> This is a test estimate preview.</p>`
+      : `
         <ul style="list-style-type: none; padding: 0;">
           <li><strong>Name:</strong> ${customerInfo.fullName}</li>
           <li><strong>Email:</strong> ${customerInfo.email}</li>
@@ -305,7 +310,7 @@ serve(async (req: Request): Promise<Response> => {
       answers,
       estimate,
       isTestEstimate,
-      leadId // <-- pass it here
+      leadId, // <-- pass it here
     });
 
     const emailResponse = await resend.emails.send({
@@ -322,11 +327,13 @@ serve(async (req: Request): Promise<Response> => {
   } catch (error) {
     console.error("Error in send-contractor-notification function:", error);
     return new Response(
-        JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-        {
-          status: 500,
-          headers: CORS_HEADERS,
-        }
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: CORS_HEADERS,
+      },
     );
   }
 });

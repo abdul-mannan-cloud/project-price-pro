@@ -16,21 +16,24 @@ export const ProgressSteps = ({ currentStep, steps }: ProgressStepsProps) => {
           <div
             className={cn(
               "h-8 w-8 rounded-full transition-colors text-white flex items-center justify-center",
-              currentStep >= step.value
-                ? "bg-primary"
-                : "bg-gray-300"
+              currentStep >= step.value ? "bg-primary" : "bg-gray-300",
             )}
           >
-            {index+1}
+            {index + 1}
           </div>
-          <span className={cn("font-medium", currentStep >= step.value ? "text-primary" : 'text-gray-300')}>{step.label}</span>
+          <span
+            className={cn(
+              "font-medium",
+              currentStep >= step.value ? "text-primary" : "text-gray-300",
+            )}
+          >
+            {step.label}
+          </span>
           {index < steps.length - 1 && (
             <div
               className={cn(
                 "h-[2px] w-12",
-                currentStep > step.value
-                  ? "bg-primary"
-                  : "bg-gray-300"
+                currentStep > step.value ? "bg-primary" : "bg-gray-300",
               )}
             />
           )}

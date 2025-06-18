@@ -16,7 +16,9 @@ export const WebhookSettings = () => {
   const { data: webhooks, isLoading } = useQuery({
     queryKey: ["webhooks"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       const { data, error } = await supabase
@@ -31,7 +33,9 @@ export const WebhookSettings = () => {
 
   const addWebhook = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       const { error } = await supabase.from("webhooks").insert({
@@ -62,10 +66,7 @@ export const WebhookSettings = () => {
 
   const deleteWebhook = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("webhooks")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("webhooks").delete().eq("id", id);
 
       if (error) throw error;
     },
@@ -91,19 +92,21 @@ export const WebhookSettings = () => {
     addWebhook.mutate();
   };
 
-  if (isLoading) return (
-    <div className="min-h-full min-w-full flex items-center justify-center">
-      {/* <div className="text-lg">Loading...</div> */}
-      <Spinner />
-    </div>
-  )
+  if (isLoading)
+    return (
+      <div className="min-h-full min-w-full flex items-center justify-center">
+        {/* <div className="text-lg">Loading...</div> */}
+        <Spinner />
+      </div>
+    );
 
   return (
     <div className="space-y-6">
       <div className="text-sm text-muted-foreground mb-4">
-        Webhooks allow you to receive real-time notifications when new leads are created. 
-        Enter a URL where you want to receive POST requests containing lead information. 
-        This can be used to integrate with your CRM, messaging apps, or other systems.
+        Webhooks allow you to receive real-time notifications when new leads are
+        created. Enter a URL where you want to receive POST requests containing
+        lead information. This can be used to integrate with your CRM, messaging
+        apps, or other systems.
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -136,7 +139,9 @@ export const WebhookSettings = () => {
             <div className="space-y-1">
               <p className="font-medium break-all">{webhook.url}</p>
               {webhook.description && (
-                <p className="text-sm text-muted-foreground">{webhook.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {webhook.description}
+                </p>
               )}
             </div>
             <Button

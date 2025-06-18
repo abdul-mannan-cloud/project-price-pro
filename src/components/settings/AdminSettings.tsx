@@ -1,21 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { 
+import {
   Table,
   TableHeader,
   TableBody,
   TableRow,
   TableHead,
-  TableCell
+  TableCell,
 } from "@/components/ui/table";
 
 export const AdminSettings = () => {
   const { data: contractors } = useQuery({
     queryKey: ["adminContractors"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contractors")
-        .select(`
+      const { data, error } = await supabase.from("contractors").select(`
           *,
           leads (
             count
@@ -30,9 +28,7 @@ export const AdminSettings = () => {
   const { data: leads } = useQuery({
     queryKey: ["adminLeads"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("leads")
-        .select("*");
+      const { data, error } = await supabase.from("leads").select("*");
 
       if (error) throw error;
       return data;

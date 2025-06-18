@@ -42,7 +42,9 @@ const Login = () => {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
         // Get contractor data to check verification status and tier
         const { data: contractor } = await supabase
@@ -88,10 +90,14 @@ const Login = () => {
     try {
       // Invalidate relevant queries to force refetch
       await queryClient.invalidateQueries({ queryKey: ["session"] });
-      await queryClient.invalidateQueries({ queryKey: ["contractor-verification"] });
-      
+      await queryClient.invalidateQueries({
+        queryKey: ["contractor-verification"],
+      });
+
       // Get fresh session data
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         throw new Error("Failed to get session after login");
       }
@@ -181,7 +187,7 @@ const Login = () => {
         options: {
           shouldCreateUser: false,
           emailRedirectTo: `${window.location.origin}/dashboard`,
-        }
+        },
       });
 
       if (error) throw error;
@@ -190,13 +196,15 @@ const Login = () => {
       startResendTimer();
       toast({
         title: "Magic Link Sent",
-        description: "Check your email for a magic link to sign in. You can also enter the OTP code below.",
+        description:
+          "Check your email for a magic link to sign in. You can also enter the OTP code below.",
       });
     } catch (error) {
       console.error("Magic link error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to send magic link. Please try again.",
+        description:
+          error.message || "Failed to send magic link. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -220,7 +228,7 @@ const Login = () => {
       const { error } = await supabase.auth.verifyOtp({
         email,
         token: otp,
-        type: 'magiclink',
+        type: "magiclink",
       });
 
       if (error) throw error;
@@ -236,7 +244,9 @@ const Login = () => {
       console.error("OTP verification error:", error);
       toast({
         title: "Verification Failed",
-        description: error.message || "Failed to verify OTP. Please check the code and try again.",
+        description:
+          error.message ||
+          "Failed to verify OTP. Please check the code and try again.",
         variant: "destructive",
       });
     } finally {
@@ -268,7 +278,8 @@ const Login = () => {
       console.error("Password login error:", error);
       toast({
         title: "Authentication Error",
-        description: error.message === "Invalid login credentials"
+        description:
+          error.message === "Invalid login credentials"
             ? "Invalid email or password. Please try again."
             : error.message || "An error occurred during authentication.",
         variant: "destructive",
@@ -311,7 +322,7 @@ const Login = () => {
         title: "Account created successfully!",
         description: "Please check your email to verify your account.",
       });
-      
+
       // Invalidate queries and navigate
       await queryClient.invalidateQueries({ queryKey: ["session"] });
       navigate("/onboarding", { replace: true });
@@ -337,7 +348,7 @@ const Login = () => {
         options: {
           shouldCreateUser: false,
           emailRedirectTo: `${window.location.origin}/dashboard`,
-        }
+        },
       });
 
       if (error) throw error;
@@ -375,13 +386,16 @@ const Login = () => {
       startResendTimer();
       toast({
         title: "Reset Email Sent",
-        description: "We've sent a password reset OTP to your email. Please check your inbox.",
+        description:
+          "We've sent a password reset OTP to your email. Please check your inbox.",
       });
     } catch (error) {
       console.error("Password reset error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to send password reset email. Please try again.",
+        description:
+          error.message ||
+          "Failed to send password reset email. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -405,7 +419,7 @@ const Login = () => {
       const { error } = await supabase.auth.verifyOtp({
         email,
         token: otp,
-        type: 'recovery',
+        type: "recovery",
       });
 
       if (error) throw error;
@@ -419,7 +433,9 @@ const Login = () => {
       console.error("OTP verification error:", error);
       toast({
         title: "Verification Failed",
-        description: error.message || "Failed to verify OTP. Please check the code and try again.",
+        description:
+          error.message ||
+          "Failed to verify OTP. Please check the code and try again.",
         variant: "destructive",
       });
     } finally {
@@ -466,7 +482,8 @@ const Login = () => {
 
       toast({
         title: "Password Updated",
-        description: "Your password has been updated successfully. You can now sign in with your new password.",
+        description:
+          "Your password has been updated successfully. You can now sign in with your new password.",
       });
 
       setIsResetPassword(false);
@@ -480,7 +497,8 @@ const Login = () => {
       console.error("Password update error:", error);
       toast({
         title: "Update Failed",
-        description: error.message || "Failed to update password. Please try again.",
+        description:
+          error.message || "Failed to update password. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -510,315 +528,292 @@ const Login = () => {
   };
 
   return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <Card className="w-full max-w-md shadow-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">
-              {isResetPassword
-                  ? "Reset Password"
-                  : isSignUp
-                      ? "Create Account"
-                      : "Welcome Back"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isResetPassword ? (
-                <div className="space-y-4">
-                  {!otpSent ? (
-                      <form onSubmit={handleResetPassword} className="space-y-4">
-                        <Input
-                            label="Email"
-                            id="resetEmail"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={loading}
-                        >
-                          {loading ? "Sending..." : "Send Reset OTP"}
-                        </Button>
-                        <div className="text-center">
-                          <button
-                              type="button"
-                              onClick={() => setIsResetPassword(false)}
-                              className="text-blue-600 hover:text-blue-800 transition-colors"
-                          >
-                            Back to login
-                          </button>
-                        </div>
-                      </form>
-                  ) : !otpVerified ? (
-                      <form onSubmit={verifyResetOtp} className="space-y-4">
-                        <div className="text-center mb-4">
-                          <p className="text-sm text-gray-600">
-                            We've sent a password reset OTP to <strong>{email}</strong>.
-                            Please enter it below.
-                          </p>
-                        </div>
-
-                        <div className="flex flex-col items-center">
-                          <h3 className="text-xl font-medium mb-2">OTP input (spaced)</h3>
-                          <OtpInput
-                              length={6}
-                              value={otp}
-                              onChange={setOtp}
-                          />
-                        </div>
-
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={loading}
-                        >
-                          {loading ? "Verifying..." : "Verify OTP"}
-                        </Button>
-
-                        <div className="text-center">
-                          {resendTimer > 0 ? (
-                              <p className="text-sm text-gray-600">
-                                Resend OTP in {resendTimer} seconds
-                              </p>
-                          ) : (
-                              <button
-                                  type="button"
-                                  onClick={handleResetPassword}
-                                  disabled={loading}
-                                  className="text-blue-600 hover:text-blue-800 transition-colors"
-                              >
-                                Resend OTP
-                              </button>
-                          )}
-                        </div>
-                      </form>
-                  ) : (
-                      <form onSubmit={updatePassword} className="space-y-4">
-                        <Input
-                            label="New Password"
-                            id="newPassword"
-                            type="password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            required
-                            minLength={6}
-                        />
-                        <Input
-                            label="Confirm New Password"
-                            id="confirmPassword"
-                            type="password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
-                            minLength={6}
-                        />
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={loading}
-                        >
-                          {loading ? "Updating..." : "Update Password"}
-                        </Button>
-                      </form>
-                  )}
-                </div>
-            ) : isSignUp ? (
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                        label="First Name"
-                        id="firstName"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        required
-                    />
-                    <Input
-                        label="Last Name"
-                        id="lastName"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        required
-                    />
-                  </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <Card className="w-full max-w-md shadow-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">
+            {isResetPassword
+              ? "Reset Password"
+              : isSignUp
+                ? "Create Account"
+                : "Welcome Back"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isResetPassword ? (
+            <div className="space-y-4">
+              {!otpSent ? (
+                <form onSubmit={handleResetPassword} className="space-y-4">
                   <Input
+                    label="Email"
+                    id="resetEmail"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Sending..." : "Send Reset OTP"}
+                  </Button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setIsResetPassword(false)}
+                      className="text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      Back to login
+                    </button>
+                  </div>
+                </form>
+              ) : !otpVerified ? (
+                <form onSubmit={verifyResetOtp} className="space-y-4">
+                  <div className="text-center mb-4">
+                    <p className="text-sm text-gray-600">
+                      We've sent a password reset OTP to{" "}
+                      <strong>{email}</strong>. Please enter it below.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-center">
+                    <h3 className="text-xl font-medium mb-2">
+                      OTP input (spaced)
+                    </h3>
+                    <OtpInput length={6} value={otp} onChange={setOtp} />
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Verifying..." : "Verify OTP"}
+                  </Button>
+
+                  <div className="text-center">
+                    {resendTimer > 0 ? (
+                      <p className="text-sm text-gray-600">
+                        Resend OTP in {resendTimer} seconds
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResetPassword}
+                        disabled={loading}
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                      >
+                        Resend OTP
+                      </button>
+                    )}
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={updatePassword} className="space-y-4">
+                  <Input
+                    label="New Password"
+                    id="newPassword"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
+                  <Input
+                    label="Confirm New Password"
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Updating..." : "Update Password"}
+                  </Button>
+                </form>
+              )}
+            </div>
+          ) : isSignUp ? (
+            <form onSubmit={handleSignUp} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="First Name"
+                  id="firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Last Name"
+                  id="lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                />
+              </div>
+              <Input
+                label="Email"
+                id="signUpEmail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <Input
+                label="Password"
+                id="signUpPassword"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+              <div className="w-full flex flex-row gap-2 items-center justify-start">
+                <Input
+                  id="acceptTerms"
+                  type="checkbox"
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  required
+                  minLength={6}
+                  className="w-5 h-5"
+                />
+                <label htmlFor="acceptTerms" className="text-sm text-gray-600">
+                  I accept the{" "}
+                  <a href="/terms-of-service" className="underline">
+                    terms of services
+                  </a>
+                </label>
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Creating Account..." : "Create Account"}
+              </Button>
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={switchToLogin}
+                  className="text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  Already have an account? Sign in
+                </button>
+              </div>
+            </form>
+          ) : (
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="space-y-6"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="magic-link">Magic Link / OTP</TabsTrigger>
+                <TabsTrigger value="password">Email & Password</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="magic-link" className="space-y-4">
+                {!otpSent ? (
+                  <form onSubmit={sendMagicLink} className="space-y-4">
+                    <Input
                       label="Email"
-                      id="signUpEmail"
+                      id="email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                  />
-                  <Input
-                      label="Password"
-                      id="signUpPassword"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={6}
-                  />
-                  <div className="w-full flex flex-row gap-2 items-center justify-start">
-                  <Input
-                      id="acceptTerms"
-                      type="checkbox"
-                      onChange={(e) => setAcceptTerms(e.target.checked)}
-                      required
-                      minLength={6}
-                      className="w-5 h-5"
-                  />
-                    <label htmlFor="acceptTerms" className="text-sm text-gray-600">
-                      I accept the <a href="/terms-of-service" className="underline">terms of services</a>
-                    </label>
+                    />
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Sending..." : "Send Magic Link & OTP"}
+                    </Button>
+                  </form>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center mb-4">
+                      <p className="text-sm text-gray-600">
+                        We've sent a magic link to <strong>{email}</strong>.
+                        Click the link in your email or enter the OTP below.
+                      </p>
+                    </div>
+
+                    <form onSubmit={verifyOtp} className="space-y-4">
+                      <div className="flex flex-col items-center">
+                        <OtpInput length={6} value={otp} onChange={setOtp} />
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={loading}
+                      >
+                        {loading ? "Verifying..." : "Verify OTP"}
+                      </Button>
+                    </form>
+
+                    <div className="text-center">
+                      {resendTimer > 0 ? (
+                        <p className="text-sm text-gray-600">
+                          Resend OTP in {resendTimer} seconds
+                        </p>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="text-sm"
+                          onClick={resendOtp}
+                          disabled={loading}
+                        >
+                          Resend OTP
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={loading}
-                  >
-                    {loading ? "Creating Account..." : "Create Account"}
+                )}
+              </TabsContent>
+
+              <TabsContent value="password" className="space-y-4">
+                <form onSubmit={handlePasswordLogin} className="space-y-4">
+                  <Input
+                    label="Email"
+                    id="passwordEmail"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Password"
+                    id="passwordInput"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Signing In..." : "Sign In"}
                   </Button>
-                  <div className="mt-4 text-center">
+                  <div className="text-center">
                     <button
-                        type="button"
-                        onClick={switchToLogin}
-                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                      type="button"
+                      onClick={() => {
+                        setIsResetPassword(true);
+                        setOtpSent(false);
+                        setOtpVerified(false);
+                      }}
+                      className="text-blue-600 hover:text-blue-800 transition-colors"
                     >
-                      Already have an account? Sign in
+                      Forgot password?
                     </button>
                   </div>
                 </form>
-            ) : (
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="magic-link">Magic Link / OTP</TabsTrigger>
-                    <TabsTrigger value="password">Email & Password</TabsTrigger>
-                  </TabsList>
+              </TabsContent>
+            </Tabs>
+          )}
 
-                  <TabsContent value="magic-link" className="space-y-4">
-                    {!otpSent ? (
-                        <form onSubmit={sendMagicLink} className="space-y-4">
-                          <Input
-                              label="Email"
-                              id="email"
-                              type="email"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              required
-                          />
-                          <Button
-                              type="submit"
-                              className="w-full"
-                              disabled={loading}
-                          >
-                            {loading ? "Sending..." : "Send Magic Link & OTP"}
-                          </Button>
-                        </form>
-                    ) : (
-                        <div className="space-y-4">
-                          <div className="text-center mb-4">
-                            <p className="text-sm text-gray-600">
-                              We've sent a magic link to <strong>{email}</strong>.
-                              Click the link in your email or enter the OTP below.
-                            </p>
-                          </div>
-
-                          <form onSubmit={verifyOtp} className="space-y-4">
-                            <div className="flex flex-col items-center">
-                              <OtpInput
-                                  length={6}
-                                  value={otp}
-                                  onChange={setOtp}
-                              />
-                            </div>
-
-                            <Button
-                                type="submit"
-                                className="w-full"
-                                disabled={loading}
-                            >
-                              {loading ? "Verifying..." : "Verify OTP"}
-                            </Button>
-                          </form>
-
-                          <div className="text-center">
-                            {resendTimer > 0 ? (
-                                <p className="text-sm text-gray-600">
-                                  Resend OTP in {resendTimer} seconds
-                                </p>
-                            ) : (
-                                <Button
-                                    variant="outline"
-                                    className="text-sm"
-                                    onClick={resendOtp}
-                                    disabled={loading}
-                                >
-                                  Resend OTP
-                                </Button>
-                            )}
-                          </div>
-                        </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="password" className="space-y-4">
-                    <form onSubmit={handlePasswordLogin} className="space-y-4">
-                      <Input
-                          label="Email"
-                          id="passwordEmail"
-                          type="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                      />
-                      <Input
-                          label="Password"
-                          id="passwordInput"
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                      />
-                      <Button
-                          type="submit"
-                          className="w-full"
-                          disabled={loading}
-                      >
-                        {loading ? "Signing In..." : "Sign In"}
-                      </Button>
-                      <div className="text-center">
-                        <button
-                            type="button"
-                            onClick={() => {
-                              setIsResetPassword(true);
-                              setOtpSent(false);
-                              setOtpVerified(false);
-                            }}
-                            className="text-blue-600 hover:text-blue-800 transition-colors"
-                        >
-                          Forgot password?
-                        </button>
-                      </div>
-                    </form>
-                  </TabsContent>
-                </Tabs>
-            )}
-
-            {!isSignUp && !isResetPassword && (
-                <div className="mt-6 text-center">
-                  <button
-                      type="button"
-                      onClick={switchToSignUp}
-                      className="text-blue-600 hover:text-blue-800 transition-colors"
-                  >
-                    Don't have an account? Sign up
-                  </button>
-                </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          {!isSignUp && !isResetPassword && (
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={switchToSignUp}
+                className="text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                Don't have an account? Sign up
+              </button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

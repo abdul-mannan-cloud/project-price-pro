@@ -20,7 +20,7 @@ export const AdditionalServicesGrid = ({
   completedCategories,
 }: AdditionalServicesGridProps) => {
   const availableCategories = categories.filter(
-    cat => !completedCategories.includes(cat.id)
+    (cat) => !completedCategories.includes(cat.id),
   );
 
   if (availableCategories.length === 0) {
@@ -34,7 +34,9 @@ export const AdditionalServicesGrid = ({
 
   return (
     <Card className="p-6">
-      <h3 className="text-xl font-semibold mb-6">Would you like any additional work done?</h3>
+      <h3 className="text-xl font-semibold mb-6">
+        Would you like any additional work done?
+      </h3>
       <RadioGroup
         value={selectedCategory || ""}
         onValueChange={onSelect}
@@ -62,18 +64,13 @@ export const AdditionalServicesGrid = ({
           </div>
         ))}
       </RadioGroup>
-      
+
       <div className="mt-6 flex justify-between">
-        <Button
-          variant="outline"
-          onClick={onComplete}
-        >
+        <Button variant="outline" onClick={onComplete}>
           Complete Estimate
         </Button>
         {selectedCategory && (
-          <Button 
-            onClick={() => onSelect(selectedCategory)}
-          >
+          <Button onClick={() => onSelect(selectedCategory)}>
             Continue with Selected Service
           </Button>
         )}

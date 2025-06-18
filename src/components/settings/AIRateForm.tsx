@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Info, DollarSign, Plus } from "lucide-react";
@@ -11,7 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -19,13 +23,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {supabase} from "@/integrations/supabase/client.ts";
+import { supabase } from "@/integrations/supabase/client.ts";
 
 interface AIRate {
-  id?: number; 
+  id?: number;
   title: string;
   description: string | null;
-  rate: number;  // Changed from string to number to match database
+  rate: number; // Changed from string to number to match database
   unit: string;
   type: string;
   instructions?: string;
@@ -70,10 +74,10 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
   const [newRate, setNewRate] = useState<AIRate>({
     title: "",
     description: "",
-    rate: 0,  // Changed initial value to number
+    rate: 0, // Changed initial value to number
     unit: "",
     type: "material_labor",
-    instructions: ""
+    instructions: "",
   });
 
   const addRate = () => {
@@ -82,15 +86,15 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
     setNewRate({
       title: "",
       description: "",
-      rate: 0,  // Changed initial value to number
+      rate: 0, // Changed initial value to number
       unit: "",
       type: "material_labor",
-      instructions: ""
+      instructions: "",
     });
   };
 
   const removeRate = async (index: number) => {
-    await supabase.from('ai_rates').delete().eq('id', aiRates[index].id);
+    await supabase.from("ai_rates").delete().eq("id", aiRates[index].id);
     setAiRates(aiRates.filter((_, i) => i !== index));
   };
 
@@ -105,10 +109,7 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
           <DollarSign className="h-5 w-5 text-muted-foreground" />
           <h3 className="text-lg font-medium">AI Rates</h3>
         </div>
-        <Button
-          onClick={() => setIsAddingRate(true)}
-          size="sm"
-        >
+        <Button onClick={() => setIsAddingRate(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Rate
         </Button>
@@ -130,11 +131,15 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
           {aiRates.map((rate, index) => (
             <TableRow key={index}>
               <TableCell>{rate.title}</TableCell>
-              <TableCell className="max-w-[200px] truncate">{rate.description}</TableCell>
+              <TableCell className="max-w-[200px] truncate">
+                {rate.description}
+              </TableCell>
               <TableCell>{rate.rate}</TableCell>
               <TableCell>{rate.unit}</TableCell>
               <TableCell>{rate.type}</TableCell>
-              <TableCell className="max-w-[200px] truncate">{rate.instructions}</TableCell>
+              <TableCell className="max-w-[200px] truncate">
+                {rate.instructions}
+              </TableCell>
               <TableCell>
                 <Button
                   variant="ghost"
@@ -159,27 +164,38 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
             <Input
               label="Title"
               value={newRate.title}
-              onChange={(e) => setNewRate({ ...newRate, title: e.target.value })}
+              onChange={(e) =>
+                setNewRate({ ...newRate, title: e.target.value })
+              }
               placeholder="e.g., Standard Labor Rate"
             />
             <Input
               label="Description"
               value={newRate.description || ""}
-              onChange={(e) => setNewRate({ ...newRate, description: e.target.value })}
+              onChange={(e) =>
+                setNewRate({ ...newRate, description: e.target.value })
+              }
               placeholder="Brief description of the rate"
             />
             <Input
               label="Rate"
               type="number"
               value={newRate.rate}
-              onChange={(e) => setNewRate({ ...newRate, rate: parseFloat(e.target.value) || 0 })}  // Parse as number
+              onChange={(e) =>
+                setNewRate({
+                  ...newRate,
+                  rate: parseFloat(e.target.value) || 0,
+                })
+              } // Parse as number
               placeholder="e.g., 75"
             />
             <div className="space-y-2">
               <label className="text-sm font-medium">Unit</label>
               <Select
                 value={newRate.unit}
-                onValueChange={(value) => setNewRate({ ...newRate, unit: value })}
+                onValueChange={(value) =>
+                  setNewRate({ ...newRate, unit: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a unit" />
@@ -197,7 +213,9 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
               <label className="text-sm font-medium">Type</label>
               <Select
                 value={newRate.type}
-                onValueChange={(value) => setNewRate({ ...newRate, type: value })}
+                onValueChange={(value) =>
+                  setNewRate({ ...newRate, type: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a type" />
@@ -214,12 +232,16 @@ export const AIRateForm = ({ rates = [], onSave }: AIRateFormProps) => {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Info className="h-4 w-4 text-muted-foreground" />
-                <label className="text-sm font-medium">Instructions (Optional)</label>
+                <label className="text-sm font-medium">
+                  Instructions (Optional)
+                </label>
               </div>
               <textarea
                 className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                 value={newRate.instructions}
-                onChange={(e) => setNewRate({ ...newRate, instructions: e.target.value })}
+                onChange={(e) =>
+                  setNewRate({ ...newRate, instructions: e.target.value })
+                }
                 placeholder="Tell AI how to use this rate..."
               />
             </div>

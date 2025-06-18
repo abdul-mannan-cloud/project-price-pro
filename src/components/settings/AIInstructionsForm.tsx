@@ -10,7 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface AIInstruction {
   title: string;
@@ -23,13 +28,17 @@ interface AIInstructionsFormProps {
   onSave: (instructions: AIInstruction[]) => void;
 }
 
-export const AIInstructionsForm = ({ instructions = [], onSave }: AIInstructionsFormProps) => {
-  const [aiInstructions, setAiInstructions] = useState<AIInstruction[]>(instructions);
+export const AIInstructionsForm = ({
+  instructions = [],
+  onSave,
+}: AIInstructionsFormProps) => {
+  const [aiInstructions, setAiInstructions] =
+    useState<AIInstruction[]>(instructions);
   const [isAddingInstruction, setIsAddingInstruction] = useState(false);
   const [newInstruction, setNewInstruction] = useState<AIInstruction>({
     title: "",
     description: "",
-    instructions: ""
+    instructions: "",
   });
 
   const addInstruction = () => {
@@ -38,7 +47,7 @@ export const AIInstructionsForm = ({ instructions = [], onSave }: AIInstructions
     setNewInstruction({
       title: "",
       description: "",
-      instructions: ""
+      instructions: "",
     });
   };
 
@@ -57,10 +66,7 @@ export const AIInstructionsForm = ({ instructions = [], onSave }: AIInstructions
           <Info className="h-5 w-5 text-muted-foreground" />
           <h3 className="text-lg font-medium">AI Instructions</h3>
         </div>
-        <Button
-          onClick={() => setIsAddingInstruction(true)}
-          size="sm"
-        >
+        <Button onClick={() => setIsAddingInstruction(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Instruction
         </Button>
@@ -79,8 +85,12 @@ export const AIInstructionsForm = ({ instructions = [], onSave }: AIInstructions
           {aiInstructions.map((instruction, index) => (
             <TableRow key={index}>
               <TableCell>{instruction.title}</TableCell>
-              <TableCell className="max-w-[200px] truncate">{instruction.description}</TableCell>
-              <TableCell className="max-w-[200px] truncate">{instruction.instructions}</TableCell>
+              <TableCell className="max-w-[200px] truncate">
+                {instruction.description}
+              </TableCell>
+              <TableCell className="max-w-[200px] truncate">
+                {instruction.instructions}
+              </TableCell>
               <TableCell>
                 <Button
                   variant="ghost"
@@ -105,13 +115,20 @@ export const AIInstructionsForm = ({ instructions = [], onSave }: AIInstructions
             <Input
               label="Title"
               value={newInstruction.title}
-              onChange={(e) => setNewInstruction({ ...newInstruction, title: e.target.value })}
+              onChange={(e) =>
+                setNewInstruction({ ...newInstruction, title: e.target.value })
+              }
               placeholder="e.g., Material Cost Calculation"
             />
             <Input
               label="Description"
               value={newInstruction.description}
-              onChange={(e) => setNewInstruction({ ...newInstruction, description: e.target.value })}
+              onChange={(e) =>
+                setNewInstruction({
+                  ...newInstruction,
+                  description: e.target.value,
+                })
+              }
               placeholder="Brief description of the instruction"
             />
             <div className="space-y-2">
@@ -122,7 +139,12 @@ export const AIInstructionsForm = ({ instructions = [], onSave }: AIInstructions
               <textarea
                 className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                 value={newInstruction.instructions}
-                onChange={(e) => setNewInstruction({ ...newInstruction, instructions: e.target.value })}
+                onChange={(e) =>
+                  setNewInstruction({
+                    ...newInstruction,
+                    instructions: e.target.value,
+                  })
+                }
                 placeholder="Enter detailed instructions for AI..."
               />
             </div>

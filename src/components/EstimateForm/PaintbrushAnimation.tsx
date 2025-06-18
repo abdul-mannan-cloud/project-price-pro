@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import * as THREE from 'three';
+import { useEffect, useRef } from "react";
+import * as THREE from "three";
 
 export const PaintbrushAnimation = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -15,7 +15,7 @@ export const PaintbrushAnimation = () => {
     const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ alpha: true });
     rendererRef.current = renderer;
-    
+
     renderer.setSize(200, 200);
     containerRef.current.appendChild(renderer.domElement);
 
@@ -48,15 +48,15 @@ export const PaintbrushAnimation = () => {
 
     const animate = () => {
       if (!rendererRef.current || !sceneRef.current) return;
-      
+
       animationFrameIdRef.current = requestAnimationFrame(animate);
 
       frame += 0.02;
-      
+
       // Paintbrush painting motion
       handle.rotation.z = Math.sin(frame) * 0.2;
       brush.rotation.z = Math.sin(frame) * 0.2;
-      
+
       // Gentle floating motion
       handle.position.y = Math.sin(frame * 0.5) * 0.1;
       brush.position.y = 1.2 + Math.sin(frame * 0.5) * 0.1;

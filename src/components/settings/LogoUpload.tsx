@@ -6,7 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Upload } from "lucide-react";
 
-export const LogoUpload = ({ currentLogo }: { currentLogo?: string | null }) => {
+export const LogoUpload = ({
+  currentLogo,
+}: {
+  currentLogo?: string | null;
+}) => {
   const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
 
@@ -16,29 +20,31 @@ export const LogoUpload = ({ currentLogo }: { currentLogo?: string | null }) => 
       const file = event.target.files?.[0];
       if (!file) return;
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       // Upload to storage
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const filePath = `${user.id}-logo.${fileExt}`;
-      
+
       const { error: uploadError } = await supabase.storage
-        .from('business_logos')
+        .from("business_logos")
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('business_logos')
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("business_logos").getPublicUrl(filePath);
 
       // Update contractor
       const { error: updateError } = await supabase
-        .from('contractors')
+        .from("contractors")
         .update({ business_logo_url: publicUrl })
-        .eq('user_id', user.id);
+        .eq("user_id", user.id);
 
       if (updateError) throw updateError;
 

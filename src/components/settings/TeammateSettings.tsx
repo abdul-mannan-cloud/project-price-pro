@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +13,9 @@ export const TeammateSettings = () => {
   const { data: teammates = [], isLoading } = useQuery({
     queryKey: ["teammates"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       const { data, error } = await supabase
@@ -30,7 +31,9 @@ export const TeammateSettings = () => {
   const { data: currentUser } = useQuery({
     queryKey: ["currentUser"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       const { data, error } = await supabase
@@ -46,32 +49,37 @@ export const TeammateSettings = () => {
 
   const addTeammate = useMutation({
     mutationFn: async (email: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       try {
-        const { error } = await supabase.functions.invoke('send-teammate-invitation', {
-          body: { 
-            email,
-            contractorId: user.id,
-            businessName: currentUser?.business_name || 'Our Company'
-          }
-        });
+        const { error } = await supabase.functions.invoke(
+          "send-teammate-invitation",
+          {
+            body: {
+              email,
+              contractorId: user.id,
+              businessName: currentUser?.business_name || "Our Company",
+            },
+          },
+        );
 
         if (error) throw error;
 
-        const { error: dbError } = await supabase
-          .from("teammates")
-          .insert([{ 
-            contractor_id: user.id, 
+        const { error: dbError } = await supabase.from("teammates").insert([
+          {
+            contractor_id: user.id,
             email,
-            invitation_status: 'pending',
-            role: 'member'
-          }]);
+            invitation_status: "pending",
+            role: "member",
+          },
+        ]);
 
         if (dbError) {
-          if (dbError.message.includes('Maximum of 2 teammates')) {
-            throw new Error('You can only have up to 2 team members.');
+          if (dbError.message.includes("Maximum of 2 teammates")) {
+            throw new Error("You can only have up to 2 team members.");
           }
           throw dbError;
         }
@@ -98,18 +106,23 @@ export const TeammateSettings = () => {
 
   const resendInvitation = useMutation({
     mutationFn: async (teammateEmail: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
-      console.log('Resending invitation to:', teammateEmail);
+      console.log("Resending invitation to:", teammateEmail);
 
-      const { error } = await supabase.functions.invoke('send-teammate-invitation', {
-        body: { 
-          email: teammateEmail,
-          contractorId: user.id,
-          businessName: currentUser?.business_name || 'Our Company'
-        }
-      });
+      const { error } = await supabase.functions.invoke(
+        "send-teammate-invitation",
+        {
+          body: {
+            email: teammateEmail,
+            contractorId: user.id,
+            businessName: currentUser?.business_name || "Our Company",
+          },
+        },
+      );
 
       if (error) throw error;
 
@@ -140,7 +153,9 @@ export const TeammateSettings = () => {
 
   const removeTeammate = useMutation({
     mutationFn: async (teammateId: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       const { error } = await supabase
@@ -194,8 +209,8 @@ export const TeammateSettings = () => {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="teammate@example.com"
         />
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           disabled={!email || addTeammate.isPending || teammates.length >= 2}
         >
           {addTeammate.isPending ? "Sending Invitation..." : "Add Teammate"}
@@ -210,7 +225,7 @@ export const TeammateSettings = () => {
           >
             <div className="flex items-center space-x-2">
               <span>{teammate.email}</span>
-              {teammate.invitation_status === 'pending' && (
+              {teammate.invitation_status === "pending" && (
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Clock className="h-4 w-4 mr-1" />
                   Pending

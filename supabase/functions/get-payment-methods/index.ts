@@ -21,13 +21,10 @@ serve(async (req) => {
     const { customer_id } = await req.json();
 
     if (!customer_id) {
-      return new Response(
-        JSON.stringify({ error: "Missing customer_id" }),
-        {
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-          status: 400,
-        }
-      );
+      return new Response(JSON.stringify({ error: "Missing customer_id" }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+        status: 400,
+      });
     }
 
     // Get customer details
@@ -39,21 +36,20 @@ serve(async (req) => {
       type: "card",
     });
 
-    return new Response(
-      JSON.stringify({ customer, paymentMethods }),
-      {
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-        status: 200,
-      }
-    );
+    return new Response(JSON.stringify({ customer, paymentMethods }), {
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+      status: 200,
+    });
   } catch (error) {
     console.error("Error fetching customer/payment methods:", error);
     return new Response(
-      JSON.stringify({ error: "Unable to retrieve customer or payment methods" }),
+      JSON.stringify({
+        error: "Unable to retrieve customer or payment methods",
+      }),
       {
         headers: { "Content-Type": "application/json", ...corsHeaders },
         status: 500,
-      }
+      },
     );
   }
 });

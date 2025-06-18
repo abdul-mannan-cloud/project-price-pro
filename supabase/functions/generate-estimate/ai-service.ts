@@ -1,37 +1,45 @@
-import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 export const formatAnswersForContext = (answers: Record<string, any>) => {
-    return Object.entries(answers).reduce((acc, [category, categoryAnswers]) => {
-        acc[category] = Object.entries(categoryAnswers || {}).reduce((catAcc, [questionId, answer]) => {
-            catAcc[questionId] = {
-                question: answer.question,
-                type: answer.type,
-                answers: answer.answers,
-                options: answer.options
-            };
-            return catAcc;
-        }, {} as Record<string, any>);
-        return acc;
-    }, {} as Record<string, any>);
+  return Object.entries(answers).reduce(
+    (acc, [category, categoryAnswers]) => {
+      acc[category] = Object.entries(categoryAnswers || {}).reduce(
+        (catAcc, [questionId, answer]) => {
+          catAcc[questionId] = {
+            question: answer.question,
+            type: answer.type,
+            answers: answer.answers,
+            options: answer.options,
+          };
+          return catAcc;
+        },
+        {} as Record<string, any>,
+      );
+      return acc;
+    },
+    {} as Record<string, any>,
+  );
 };
 
 export const generateEstimate = async (
-    context: string,
-    imageUrl: string | undefined,
-    openAIApiKey: string,
-    signal: AbortSignal,
-    description: string,
-    category: string
+  context: string,
+  imageUrl: string | undefined,
+  openAIApiKey: string,
+  signal: AbortSignal,
+  description: string,
+  category: string,
 ) => {
+  const similarTasks = await findSimilarTasks(
+    `${category} : ${description}`,
+    10,
+  );
+  console.log("context testing", context);
 
-    const similarTasks = await findSimilarTasks(`${category} : ${description}`, 10);
-    console.log('context testing',context)
-
-    try {
-        const messages = [
-            {
-                role: "system",
-                content: `
+  try {
+    const messages = [
+      {
+        role: "system",
+        content: `
                 You are a professional contractor estimator. Generate detailed estimates based on project descriptions and answers to questions.
 
                     You will be provided with a list of Questions and Answers regarding what changes the client wants in their project.
@@ -119,140 +127,142 @@ export const generateEstimate = async (
                         5. If Both Material and Labor are required for a task and added in AI Tasks, include both in the estimate
                         5. If Material+Labor is Not in AI tasks, then create two line items, one for Material and one for Labor.
                         6. Maintain JSON structure integrity.
-        `
+        `,
+      },
+      {
+        role: "user",
+        content: context,
+      },
+    ];
 
+    if (imageUrl) {
+      messages.push({
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "Please also consider this project image in your estimate:",
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: imageUrl,
             },
-            {
-                role: "user",
-                content: context
-            }
-        ];
-
-        if (imageUrl) {
-            messages.push({
-                role: "user",
-                content: [
-                    {
-                        type: "text",
-                        text: "Please also consider this project image in your estimate:"
-                    },
-                    {
-                        type: "image_url",
-                        image_url: {
-                            url: imageUrl
-                        }
-                    }
-                ]
-            });
-        }
-
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${openAIApiKey}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                model: 'gpt-4o',
-                messages,
-                temperature: 0.7,
-                max_tokens: 2000,
-                response_format: {type: "json_object"}
-                // Removed stream_options as it's only for streaming mode
-            }),
-            signal
-        });
-
-        if (!response.ok) {
-            throw new Error(`OpenAI API error: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.choices?.[0]?.message?.content) {
-            throw new Error('Invalid response format from OpenAI');
-        }
-
-        // Extract token usage information
-        const tokenUsage = data.usage;
-        console.log('Token usage:', {
-            promptTokens: tokenUsage?.prompt_tokens || 0,
-            completionTokens: tokenUsage?.completion_tokens || 0,
-            totalTokens: tokenUsage?.total_tokens || 0
-        });
-
-        const content = data.choices[0].message.content;
-        console.log('Raw AI response content:', content);
-
-        // Ensure we have valid JSON
-        const parsed = typeof content === 'string' ? JSON.parse(content) : content;
-
-        // Validate structure
-        if (!parsed.groups || !Array.isArray(parsed.groups) || typeof parsed.totalCost !== 'number') {
-            console.error('Invalid response structure:', parsed);
-            throw new Error('AI response missing required fields');
-        }
-
-        // Add token usage to the response
-        const responseWithUsage = {
-            ...parsed,
-            tokenUsage: {
-                promptTokens: tokenUsage?.prompt_tokens || 0,
-                completionTokens: tokenUsage?.completion_tokens || 0,
-                totalTokens: tokenUsage?.total_tokens || 0
-            }
-        };
-
-        // Return stringified JSON to ensure consistent format
-        return JSON.stringify(responseWithUsage);
-
-    } catch (error) {
-        console.error('Error generating estimate with AI:', error);
-        if (error instanceof SyntaxError) {
-            throw new Error('AI response was not valid JSON');
-        }
-        throw error;
+          },
+        ],
+      });
     }
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openAIApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages,
+        temperature: 0.7,
+        max_tokens: 2000,
+        response_format: { type: "json_object" },
+        // Removed stream_options as it's only for streaming mode
+      }),
+      signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error("Invalid response format from OpenAI");
+    }
+
+    // Extract token usage information
+    const tokenUsage = data.usage;
+    console.log("Token usage:", {
+      promptTokens: tokenUsage?.prompt_tokens || 0,
+      completionTokens: tokenUsage?.completion_tokens || 0,
+      totalTokens: tokenUsage?.total_tokens || 0,
+    });
+
+    const content = data.choices[0].message.content;
+    console.log("Raw AI response content:", content);
+
+    // Ensure we have valid JSON
+    const parsed = typeof content === "string" ? JSON.parse(content) : content;
+
+    // Validate structure
+    if (
+      !parsed.groups ||
+      !Array.isArray(parsed.groups) ||
+      typeof parsed.totalCost !== "number"
+    ) {
+      console.error("Invalid response structure:", parsed);
+      throw new Error("AI response missing required fields");
+    }
+
+    // Add token usage to the response
+    const responseWithUsage = {
+      ...parsed,
+      tokenUsage: {
+        promptTokens: tokenUsage?.prompt_tokens || 0,
+        completionTokens: tokenUsage?.completion_tokens || 0,
+        totalTokens: tokenUsage?.total_tokens || 0,
+      },
+    };
+
+    // Return stringified JSON to ensure consistent format
+    return JSON.stringify(responseWithUsage);
+  } catch (error) {
+    console.error("Error generating estimate with AI:", error);
+    if (error instanceof SyntaxError) {
+      throw new Error("AI response was not valid JSON");
+    }
+    throw error;
+  }
 };
 
 async function findSimilarTasks(query: string, limit = 10) {
-    const supabase = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
 
-    // Generate embedding for the query
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            input: query,
-            model: 'text-embedding-3-small'
-        })
+  // Generate embedding for the query
+  const response = await fetch("https://api.openai.com/v1/embeddings", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${Deno.env.get("OPENAI_API_KEY")}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      input: query,
+      model: "text-embedding-3-small",
+    }),
+  });
+
+  const embeddingData = await response.json();
+
+  // Log embedding token usage if available
+  if (embeddingData.usage) {
+    console.log("Embedding API usage:", {
+      promptTokens: embeddingData.usage.prompt_tokens,
+      totalTokens: embeddingData.usage.total_tokens,
     });
+  }
 
-    const embeddingData = await response.json();
-    
-    // Log embedding token usage if available
-    if (embeddingData.usage) {
-        console.log('Embedding API usage:', {
-            promptTokens: embeddingData.usage.prompt_tokens,
-            totalTokens: embeddingData.usage.total_tokens
-        });
-    }
+  // Query Supabase
+  const { data: similarTasks } = await supabase.rpc("match_tasks", {
+    query_embedding: embeddingData.data[0].embedding,
+    match_threshold: 0.5,
+    match_count: limit,
+    query_text: query,
+  });
 
-    // Query Supabase
-    const {data: similarTasks} = await supabase.rpc('match_tasks', {
-        query_embedding: embeddingData.data[0].embedding,
-        match_threshold: 0.5,
-        match_count: limit,
-        query_text: query
-    });
+  console.log("rpc response", similarTasks);
 
-    console.log('rpc response', similarTasks);
-
-    return similarTasks || [];
+  return similarTasks || [];
 }

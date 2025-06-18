@@ -3,23 +3,23 @@ import { LayoutDashboard, Users, Settings } from "lucide-react";
 
 const TopMenu = () => {
   const location = useLocation();
-  
+
   const menuItems = [
-    { 
-      label: "Dashboard", 
-      icon: <LayoutDashboard className="w-4 h-4" />, 
-      path: "/dashboard" 
+    {
+      label: "Dashboard",
+      icon: <LayoutDashboard className="w-4 h-4" />,
+      path: "/dashboard",
     },
-    { 
-      label: "Leads", 
-      icon: <Users className="w-4 h-4" />, 
-      path: "/leads" 
+    {
+      label: "Leads",
+      icon: <Users className="w-4 h-4" />,
+      path: "/leads",
     },
-    { 
-      label: "Settings", 
-      icon: <Settings className="w-4 h-4" />, 
-      path: "/settings" 
-    }
+    {
+      label: "Settings",
+      icon: <Settings className="w-4 h-4" />,
+      path: "/settings",
+    },
   ];
 
   return (

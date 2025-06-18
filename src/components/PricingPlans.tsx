@@ -5,7 +5,7 @@ const PricingPlans = ({ formData, setFormData, selectPlan, loading }) => {
   const navigate = useNavigate();
   // Add the manual selection flag
   const [manualSelection, setManualSelection] = useState(false);
-  
+
   const plans = [
     {
       key: "pioneer",
@@ -35,7 +35,7 @@ const PricingPlans = ({ formData, setFormData, selectPlan, loading }) => {
         "24/7 priority support",
       ],
       buttonText: "Schedule a call",
-    }
+    },
   ];
 
   // Update handleSelectPlan to set the manual selection flag
@@ -55,7 +55,7 @@ const PricingPlans = ({ formData, setFormData, selectPlan, loading }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
       {plans.map((plan) => (
-        <div 
+        <div
           key={plan.key}
           className={`flex flex-col rounded-lg p-4 md:p-8 border border-gray-200
               ${plan.key === "pioneer" ? "bg-white" : "bg-gray-100"}
@@ -64,27 +64,28 @@ const PricingPlans = ({ formData, setFormData, selectPlan, loading }) => {
           <div className="mb-4 md:mb-6 flex flex-col gap-5">
             <div className="flex gap-3 items-center">
               <h3 className="text-lg md:text-2xl font-bold">{plan.title}</h3>
-              <div className={`${plan.key === "pioneer" ? "bg-green-400 text-white" : "bg-white text-green-400"} rounded-full py-1 px-3 text-[10px] md:text-sm font-semibold`}>
-                { plan.key === "pioneer" ?
+              <div
+                className={`${plan.key === "pioneer" ? "bg-green-400 text-white" : "bg-white text-green-400"} rounded-full py-1 px-3 text-[10px] md:text-sm font-semibold`}
+              >
+                {plan.key === "pioneer" ? (
                   <span>$1,000 Free Credit</span>
-                  :                 
+                ) : (
                   <span>Unlimited</span>
-                }
+                )}
               </div>
             </div>
             <div>
               <p className="text-black text-4xl font-bold">{plan.pricing}</p>
-              {
-                plan.key === "pioneer" ?
+              {plan.key === "pioneer" ? (
                 <p>Subtotal Volume</p>
-                :
+              ) : (
                 <p>Talk to Sales</p>
-              }
+              )}
             </div>
           </div>
 
           <div className="min-w-[100%] border-b border-gray-200 mb-8"></div>
-          
+
           <div className="flex-grow">
             <ul className="space-y-2 md:space-y-4 text-sm md:text-base">
               {plan.features.map((feature, index) => (
@@ -95,7 +96,7 @@ const PricingPlans = ({ formData, setFormData, selectPlan, loading }) => {
               ))}
             </ul>
           </div>
-          
+
           <button
             onClick={() => handleSelectPlan(plan.key)}
             disabled={loading}
@@ -103,7 +104,9 @@ const PricingPlans = ({ formData, setFormData, selectPlan, loading }) => {
               hover:bg-primary hover:text-white hover:border-primary disabled:opacity-50
               transition-colors duration-200 ${plan.key === "pioneer" ? "bg-gray-100" : "bg-white"}`}
           >
-            {loading && formData.tier == plan.key ? 'Processing...' : plan.buttonText}
+            {loading && formData.tier == plan.key
+              ? "Processing..."
+              : plan.buttonText}
           </button>
         </div>
       ))}

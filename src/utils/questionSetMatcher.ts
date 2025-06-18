@@ -7,7 +7,7 @@ interface MatchedQuestionSet {
 
 export async function findMatchingQuestionSets(
   description: string,
-  categories: Category[]
+  categories: Category[],
 ): Promise<CategoryQuestions[]> {
   const lowerDesc = description.toLowerCase();
   const matches: MatchedQuestionSet[] = [];
@@ -18,7 +18,7 @@ export async function findMatchingQuestionSets(
     }
 
     // Count how many keywords match
-    const matchingKeywords = category.keywords.filter(keyword => {
+    const matchingKeywords = category.keywords.filter((keyword) => {
       const kw = keyword.trim().toLowerCase();
       const isMatch = lowerDesc.includes(kw);
       return isMatch;
@@ -28,21 +28,27 @@ export async function findMatchingQuestionSets(
       const questionSet: CategoryQuestions = {
         category: category.id,
         keywords: category.keywords,
-        questions: category.questions || getDefaultQuestionsForCategory(category.id)
+        questions:
+          category.questions || getDefaultQuestionsForCategory(category.id),
       };
 
       matches.push({
         priority: matchingKeywords.length,
-        questionSet
+        questionSet,
       });
-      console.log("Matched category:", category.id, "with priority:", matchingKeywords.length);
+      console.log(
+        "Matched category:",
+        category.id,
+        "with priority:",
+        matchingKeywords.length,
+      );
     }
   });
 
   // Sort by priority (most matches first) and extract just the question sets
   const sortedMatches = matches
     .sort((a, b) => b.priority - a.priority)
-    .map(match => match.questionSet);
+    .map((match) => match.questionSet);
 
   console.log("findMatchingQuestionSets: sorted matches =", sortedMatches);
   return sortedMatches;
@@ -50,11 +56,11 @@ export async function findMatchingQuestionSets(
 
 export function consolidateQuestionSets(
   matches: CategoryQuestions[],
-  description: string
+  description: string,
 ): CategoryQuestions[] {
   const uniqueCategories = new Map<string, CategoryQuestions>();
-  
-  matches.forEach(match => {
+
+  matches.forEach((match) => {
     if (!uniqueCategories.has(match.category)) {
       uniqueCategories.set(match.category, match);
     }
@@ -65,7 +71,7 @@ export function consolidateQuestionSets(
 
 function getDefaultQuestionsForCategory(categoryId: string): Question[] {
   const id = categoryId.toLowerCase();
-  
+
   if (id.includes("kitchen")) {
     return [
       {
@@ -76,12 +82,12 @@ function getDefaultQuestionsForCategory(categoryId: string): Question[] {
         options: [
           { label: "Full Remodel", value: "full_remodel" },
           { label: "Partial Update", value: "partial_update" },
-          { label: "Appliance Installation", value: "appliance" }
-        ]
-      }
+          { label: "Appliance Installation", value: "appliance" },
+        ],
+      },
     ];
   }
-  
+
   // Default questions for any category
   return [
     {
@@ -92,8 +98,8 @@ function getDefaultQuestionsForCategory(categoryId: string): Question[] {
       options: [
         { label: "Small Repair", value: "small" },
         { label: "Medium Project", value: "medium" },
-        { label: "Large Project", value: "large" }
-      ]
-    }
+        { label: "Large Project", value: "large" },
+      ],
+    },
   ];
 }

@@ -32,7 +32,8 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 });
 
 // ISO8601 detection
-const isoTimestampRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?[+-]\d{2}:\d{2}$/;
+const isoTimestampRegex =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?[+-]\d{2}:\d{2}$/;
 function formatMaybeTimestamp(val?: string): string | undefined {
   if (!val) return val;
   if (isoTimestampRegex.test(val)) {
@@ -41,7 +42,10 @@ function formatMaybeTimestamp(val?: string): string | undefined {
   return val;
 }
 
-const describeEstimateDiff = (oldEst: any = {}, newEst: any = {}): ChangeRow[] => {
+const describeEstimateDiff = (
+  oldEst: any = {},
+  newEst: any = {},
+): ChangeRow[] => {
   const rows: ChangeRow[] = [];
   const oldGroups = oldEst.groups || [];
   const newGroups = newEst.groups || [];
@@ -71,7 +75,9 @@ const describeEstimateDiff = (oldEst: any = {}, newEst: any = {}): ChangeRow[] =
       const osub = (og.subgroups || []).find((os: any) => os.name === sub.name);
 
       (sub.items || []).forEach((item: any) => {
-        const existed = (osub?.items || []).some((oi: any) => oi.title === item.title);
+        const existed = (osub?.items || []).some(
+          (oi: any) => oi.title === item.title,
+        );
         if (!existed) {
           rows.push({
             field: `Added item in "${sub.name}"`,
@@ -81,7 +87,9 @@ const describeEstimateDiff = (oldEst: any = {}, newEst: any = {}): ChangeRow[] =
       });
 
       (osub?.items || []).forEach((item: any) => {
-        const stillHere = (sub.items || []).some((ni: any) => ni.title === item.title);
+        const stillHere = (sub.items || []).some(
+          (ni: any) => ni.title === item.title,
+        );
         if (!stillHere) {
           rows.push({
             field: `Removed item from "${sub.name}"`,
@@ -141,10 +149,8 @@ const getChangeRows = (oldData: any = {}, newData: any = {}): ChangeRow[] => {
     const oVal = oldData[key];
     const nVal = newData[key];
     if (JSON.stringify(oVal) !== JSON.stringify(nVal)) {
-      let oldValue =
-        typeof oVal === "string" ? oVal : JSON.stringify(oVal);
-      let newValue =
-        typeof nVal === "string" ? nVal : JSON.stringify(nVal);
+      let oldValue = typeof oVal === "string" ? oVal : JSON.stringify(oVal);
+      let newValue = typeof nVal === "string" ? nVal : JSON.stringify(nVal);
       oldValue = formatMaybeTimestamp(oldValue);
       newValue = formatMaybeTimestamp(newValue);
       rows.push({ field: key, oldValue, newValue });
@@ -158,7 +164,11 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
   const qc = useQueryClient();
   const [pendingRevert, setPendingRevert] = useState<any>(null);
 
-  const { data = [], isLoading, error } = useQuery({
+  const {
+    data = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["lead-history", leadId],
     enabled: !!leadId,
     queryFn: async () => {
@@ -175,9 +185,11 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
   // Actually perform the revert
   const performRevert = async (log: any) => {
     const snap =
-      log.operation === "UPDATE" ? log.old_data :
-      log.operation === "INSERT" ? log.new_data :
-      null;
+      log.operation === "UPDATE"
+        ? log.old_data
+        : log.operation === "INSERT"
+          ? log.new_data
+          : null;
     if (!snap) {
       toast({ title: "Cannot revert", variant: "destructive" });
     } else {
@@ -191,7 +203,11 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
         .update(patch)
         .eq("id", leadId);
       if (revertError) {
-        toast({ title: "Revert failed", description: revertError.message, variant: "destructive" });
+        toast({
+          title: "Revert failed",
+          description: revertError.message,
+          variant: "destructive",
+        });
       } else {
         qc.invalidateQueries({ queryKey: ["lead", leadId] });
         qc.invalidateQueries({ queryKey: ["lead-history", leadId] });
@@ -209,9 +225,10 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
     <>
       <ScrollArea className="h-full space-y-4 pr-2">
         {data.map((log) => {
-          const rows = log.operation === "UPDATE"
-            ? getChangeRows(log.old_data, log.new_data)
-            : [];
+          const rows =
+            log.operation === "UPDATE"
+              ? getChangeRows(log.old_data, log.new_data)
+              : [];
 
           return (
             <div key={log.id} className="bg-white shadow rounded-lg p-4">
@@ -234,8 +251,10 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
                   {/* Section notes */}
                   <div className="mt-2 space-y-1">
                     {rows
-                      .filter(r => ["Added section","Removed section"].includes(r.field))
-                      .map((r,i) => (
+                      .filter((r) =>
+                        ["Added section", "Removed section"].includes(r.field),
+                      )
+                      .map((r, i) => (
                         <div key={i} className="italic text-gray-600 px-2">
                           {r.field}
                         </div>
@@ -243,7 +262,10 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
                   </div>
 
                   {/* Detail table */}
-                  {rows.some(r => !["Added section","Removed section"].includes(r.field)) && (
+                  {rows.some(
+                    (r) =>
+                      !["Added section", "Removed section"].includes(r.field),
+                  ) && (
                     <div className="mt-3 overflow-x-auto">
                       <table className="min-w-max w-full divide-y divide-gray-200 text-sm whitespace-nowrap">
                         <thead className="bg-gray-50">
@@ -261,12 +283,21 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100">
                           {rows
-                            .filter(r => !["Added section","Removed section"].includes(r.field))
+                            .filter(
+                              (r) =>
+                                !["Added section", "Removed section"].includes(
+                                  r.field,
+                                ),
+                            )
                             .map((r, i) => (
                               <tr key={i} className="hover:bg-gray-50">
                                 <td className="px-4 py-2">{r.field}</td>
-                                <td className="px-4 py-2 text-gray-700">{r.oldValue}</td>
-                                <td className="px-4 py-2 text-gray-700">{r.newValue}</td>
+                                <td className="px-4 py-2 text-gray-700">
+                                  {r.oldValue}
+                                </td>
+                                <td className="px-4 py-2 text-gray-700">
+                                  {r.newValue}
+                                </td>
                               </tr>
                             ))}
                         </tbody>
@@ -278,7 +309,9 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
 
               {log.operation === "DELETE" && (
                 <details className="border-t pt-2">
-                  <summary className="cursor-pointer text-red-600">Show Deleted Data</summary>
+                  <summary className="cursor-pointer text-red-600">
+                    Show Deleted Data
+                  </summary>
                   <pre className="mt-2 bg-gray-50 p-2 rounded text-xs overflow-auto">
                     {JSON.stringify(log.old_data, null, 2)}
                   </pre>
@@ -286,7 +319,11 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
               )}
 
               <div className="mt-4">
-                <Button variant="outline" size="sm" onClick={() => setPendingRevert(log)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPendingRevert(log)}
+                >
                   Revert to this version
                 </Button>
               </div>
@@ -296,14 +333,19 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
       </ScrollArea>
 
       {/* Responsive — styled confirmation dialog */}
-      <AlertDialog open={!!pendingRevert} onOpenChange={() => setPendingRevert(null)}>
+      <AlertDialog
+        open={!!pendingRevert}
+        onOpenChange={() => setPendingRevert(null)}
+      >
         <AlertDialogContent className="w-[90vw] max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle>Revert to this version?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to roll back to the snapshot taken at{" "}
-              {pendingRevert && new Date(pendingRevert.changed_at).toLocaleString()}?
-              Your current data will be replaced with the old data. This action cannot be undone.
+              {pendingRevert &&
+                new Date(pendingRevert.changed_at).toLocaleString()}
+              ? Your current data will be replaced with the old data. This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

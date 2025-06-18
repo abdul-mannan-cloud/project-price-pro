@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,9 @@ export const AdminSettings = () => {
 
   const checkAuthorization = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user || !ADMIN_EMAILS.includes(user.email || "")) {
         navigate("/settings");
         toast({
@@ -63,9 +64,11 @@ export const AdminSettings = () => {
   const handleBack = () => navigate("/settings");
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-w-full min-h-screen">
-      <Spinner />
-    </div>;
+    return (
+      <div className="flex items-center justify-center min-w-full min-h-screen">
+        <Spinner />
+      </div>
+    );
   }
 
   if (!isAuthorized) {
@@ -74,21 +77,30 @@ export const AdminSettings = () => {
         <div className="w-full max-w-sm space-y-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-2">Admin Access</h1>
-            <p className="text-muted-foreground">Enter the admin code to continue</p>
+            <p className="text-muted-foreground">
+              Enter the admin code to continue
+            </p>
           </div>
-          
+
           <div className="bg-secondary p-4 rounded-lg text-center mb-6">
             <div className="text-2xl font-mono tracking-wider">
-              {Array(KEYPAD_CODE.length).fill('•').map((dot, i) => (
-                <span key={i} className={i < code.length ? 'text-primary' : 'text-muted-foreground'}>
-                  {dot}
-                </span>
-              ))}
+              {Array(KEYPAD_CODE.length)
+                .fill("•")
+                .map((dot, i) => (
+                  <span
+                    key={i}
+                    className={
+                      i < code.length ? "text-primary" : "text-muted-foreground"
+                    }
+                  >
+                    {dot}
+                  </span>
+                ))}
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <Button
                 key={num}
                 variant="outline"
@@ -98,11 +110,7 @@ export const AdminSettings = () => {
                 {num}
               </Button>
             ))}
-            <Button
-              variant="outline"
-              className="h-16"
-              onClick={handleClear}
-            >
+            <Button variant="outline" className="h-16" onClick={handleClear}>
               Clear
             </Button>
             <Button
@@ -112,11 +120,7 @@ export const AdminSettings = () => {
             >
               0
             </Button>
-            <Button
-              variant="outline"
-              className="h-16"
-              onClick={handleBack}
-            >
+            <Button variant="outline" className="h-16" onClick={handleBack}>
               Back
             </Button>
           </div>
@@ -130,7 +134,9 @@ export const AdminSettings = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Admin Settings</h1>
-          <Button variant="outline" onClick={handleBack}>Back to Settings</Button>
+          <Button variant="outline" onClick={handleBack}>
+            Back to Settings
+          </Button>
         </div>
 
         <div className="grid gap-6">
@@ -140,7 +146,7 @@ export const AdminSettings = () => {
             <h2 className="text-lg font-semibold mb-4">Global Settings</h2>
             {/* Add admin controls */}
           </div>
-          
+
           <div className="bg-card rounded-lg p-6 border">
             <h2 className="text-lg font-semibold mb-4">User Management</h2>
             {/* Add user management controls */}

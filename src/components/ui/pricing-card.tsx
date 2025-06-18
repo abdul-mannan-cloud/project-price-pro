@@ -1,6 +1,11 @@
 "use client";
 
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { motion, useInView } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -96,8 +101,12 @@ export function PricingCard({
               <CardHeader className="p-0">
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-3xl font-bold">{title}</CardTitle>
-                    <CardDescription className="mt-2">{description}</CardDescription>
+                    <CardTitle className="text-3xl font-bold">
+                      {title}
+                    </CardTitle>
+                    <CardDescription className="mt-2">
+                      {description}
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -129,7 +138,9 @@ export function PricingCard({
             <div className="space-y-6">
               {features.map((feature, featureIndex) => (
                 <div key={featureIndex}>
-                  <h3 className="mb-4 text-lg font-semibold">{feature.title}:</h3>
+                  <h3 className="mb-4 text-lg font-semibold">
+                    {feature.title}:
+                  </h3>
                   <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {feature.items.map((item, index) => (
                       <motion.li
@@ -143,7 +154,9 @@ export function PricingCard({
                       </motion.li>
                     ))}
                   </ul>
-                  {featureIndex < features.length - 1 && <Separator className="my-6" />}
+                  {featureIndex < features.length - 1 && (
+                    <Separator className="my-6" />
+                  )}
                 </div>
               ))}
             </div>

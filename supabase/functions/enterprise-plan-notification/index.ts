@@ -9,7 +9,7 @@ interface CustomerInfo {
   address: string;
   available_date?: string;
   available_time?: string;
-  flexible?: 'flexible' | 'on_date' | 'before_date';
+  flexible?: "flexible" | "on_date" | "before_date";
 }
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -22,7 +22,8 @@ const resend = new Resend(RESEND_API_KEY);
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Max-Age": "86400",
 };
@@ -77,16 +78,19 @@ serve(async (req: Request): Promise<Response> => {
 
   // Only allow POST requests
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({
-      success: false,
-      error: "Method not allowed. Only POST requests are accepted."
-    }), {
-      status: 405,
-      headers: {
-        ...CORS_HEADERS,
-        "Content-Type": "application/json",
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Method not allowed. Only POST requests are accepted.",
+      }),
+      {
+        status: 405,
+        headers: {
+          ...CORS_HEADERS,
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
   }
 
   try {
@@ -100,7 +104,9 @@ serve(async (req: Request): Promise<Response> => {
 
     // Validate required fields
     if (!customerInfo.fullName || !customerInfo.email || !customerInfo.phone) {
-      throw new Error("fullName, email, and phone are required fields in customerInfo");
+      throw new Error(
+        "fullName, email, and phone are required fields in customerInfo",
+      );
     }
 
     // Generate email content
@@ -114,25 +120,31 @@ serve(async (req: Request): Promise<Response> => {
       html: emailContent,
     });
 
-    console.log("Enterprise plan activation email sent successfully:", emailResponse);
+    console.log(
+      "Enterprise plan activation email sent successfully:",
+      emailResponse,
+    );
 
-    return new Response(JSON.stringify({
-      success: true,
-      message: "Enterprise plan activation request email sent successfully",
-      emailId: emailResponse.data?.id
-    }), {
-      status: 200,
-      headers: {
-        ...CORS_HEADERS,
-        "Content-Type": "application/json",
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Enterprise plan activation request email sent successfully",
+        emailId: emailResponse.data?.id,
+      }),
+      {
+        status: 200,
+        headers: {
+          ...CORS_HEADERS,
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
   } catch (error) {
     console.error("Error in send-contractor-notification function:", error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error" 
+        error: error instanceof Error ? error.message : "Unknown error",
       }),
       {
         status: 500,
@@ -140,7 +152,7 @@ serve(async (req: Request): Promise<Response> => {
           ...CORS_HEADERS,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   }
 });

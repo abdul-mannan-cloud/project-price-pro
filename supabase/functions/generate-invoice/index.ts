@@ -9,7 +9,8 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
 serve(async (req) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
     "Content-Type": "application/json",
   };
 
@@ -18,12 +19,7 @@ serve(async (req) => {
   }
 
   try {
-    const { 
-      customerId, 
-      amount, 
-      description,
-      items = [],  
-    } = await req.json();
+    const { customerId, amount, description, items = [] } = await req.json();
 
     if (!customerId) {
       throw new Error("Customer ID is required");
@@ -34,7 +30,7 @@ serve(async (req) => {
     }
 
     let invoiceItems: Stripe.InvoiceItem[] = [];
-    
+
     if (items.length > 0) {
       for (const item of items) {
         const invoiceItem = await stripe.invoiceItems.create({
@@ -56,35 +52,35 @@ serve(async (req) => {
     }
 
     const invoice = await stripe.invoices.create({
-        customer: customerId,
-        auto_advance: false, 
-        collection_method: "charge_automatically",
-        description: description,
+      customer: customerId,
+      auto_advance: false,
+      collection_method: "charge_automatically",
+      description: description,
     });
-    
+
     if (items.length > 0) {
-        for (const item of items) {
+      for (const item of items) {
         await stripe.invoiceItems.create({
-            customer: customerId,
-            amount: item.amount,
-            currency: "usd",
-            description: item.description,
-            invoice: invoice.id, 
+          customer: customerId,
+          amount: item.amount,
+          currency: "usd",
+          description: item.description,
+          invoice: invoice.id,
         });
-        }
+      }
     } else {
-        await stripe.invoiceItems.create({
+      await stripe.invoiceItems.create({
         customer: customerId,
         amount: amount,
         currency: "usd",
         description: description || "Service charge",
-        invoice: invoice.id, 
-        });
+        invoice: invoice.id,
+      });
     }
-    
+
     const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id);
-    
-    const paidInvoice = await stripe.invoices.pay(finalizedInvoice.id);  
+
+    const paidInvoice = await stripe.invoices.pay(finalizedInvoice.id);
 
     return new Response(
       JSON.stringify({
@@ -98,14 +94,14 @@ serve(async (req) => {
           created: paidInvoice.created,
         },
       }),
-      { headers, status: 200 }
+      { headers, status: 200 },
     );
   } catch (error) {
     console.error("Error processing invoice:", error);
-    
+
     const errorMessage = error.message || "Unknown error occurred";
     const errorType = error.type || "server_error";
-    
+
     return new Response(
       JSON.stringify({
         success: false,
@@ -115,7 +111,7 @@ serve(async (req) => {
           code: error.code || "unknown_error",
         },
       }),
-      { headers, status: 400 }
+      { headers, status: 400 },
     );
   }
 });

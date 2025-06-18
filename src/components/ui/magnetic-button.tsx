@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, useMotionValue, useSpring } from 'framer-motion';
+import React, { useState, useEffect, useRef } from "react";
+import { motion, useMotionValue, useSpring } from "framer-motion";
 
 const SPRING_CONFIG = { damping: 100, stiffness: 400 };
 
@@ -39,10 +39,10 @@ function MagneticButton({ children, distance = 0.6 }: MagneticButtonType) {
       }
     };
 
-    document.addEventListener('mousemove', calculateDistance);
+    document.addEventListener("mousemove", calculateDistance);
 
     return () => {
-      document.removeEventListener('mousemove', calculateDistance);
+      document.removeEventListener("mousemove", calculateDistance);
     };
   }, [ref, isHovered, distance, x, y]);
 
@@ -53,8 +53,9 @@ function MagneticButton({ children, distance = 0.6 }: MagneticButtonType) {
       onMouseLeave={() => setIsHovered(false)}
       style={{
         x: springX,
-        y: springY
-      }}>
+        y: springY,
+      }}
+    >
       {children}
     </motion.div>
   );

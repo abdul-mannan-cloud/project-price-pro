@@ -1,6 +1,6 @@
-import React from 'react'
-import { Check } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import React from "react";
+import { Check } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * The actual “feature” block you showed me.
@@ -10,7 +10,9 @@ export function Feature() {
     <div className="w-full py-20 lg:py-40">
       <div className="container mx-auto">
         <div className="flex gap-4 py-20 lg:py-40 flex-col items-start">
-          <div><Badge>Platform</Badge></div>
+          <div>
+            <Badge>Platform</Badge>
+          </div>
           <div className="flex flex-col gap-2">
             <h2 className="text-3xl md:text-5xl tracking-tighter lg:max-w-xl font-regular">
               Something new!
@@ -42,7 +44,7 @@ export function Feature() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -53,5 +55,5 @@ export function FeatureDemo() {
     <div className="block">
       <Feature />
     </div>
-  )
+  );
 }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Button } from "@/components/ui/button";
@@ -12,8 +11,12 @@ interface BrandingSettingsProps {
   onSave: (colors: BrandingColors) => Promise<void>;
 }
 
-export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProps) => {
-  const [brandingColors, setBrandingColors] = useState<BrandingColors>(initialColors);
+export const BrandingSettings = ({
+  initialColors,
+  onSave,
+}: BrandingSettingsProps) => {
+  const [brandingColors, setBrandingColors] =
+    useState<BrandingColors>(initialColors);
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -21,13 +24,15 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
   useEffect(() => {
     const loadAndApplyColors = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) return;
 
         const { data: contractor, error } = await supabase
-          .from('contractors')
-          .select('branding_colors')
-          .eq('id', user.id)
+          .from("contractors")
+          .select("branding_colors")
+          .eq("id", user.id)
           .maybeSingle();
 
         if (error) throw error;
@@ -38,7 +43,7 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
           applyGlobalColors(colors);
         }
       } catch (error) {
-        console.error('Error loading branding colors:', error);
+        console.error("Error loading branding colors:", error);
       }
     };
 
@@ -55,33 +60,57 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
 
   const applyGlobalColors = (colors: BrandingColors) => {
     // Set primary color and its variations
-    document.documentElement.style.setProperty('--primary', colors.primary);
-    document.documentElement.style.setProperty('--primary-foreground', '#FFFFFF');
+    document.documentElement.style.setProperty("--primary", colors.primary);
+    document.documentElement.style.setProperty(
+      "--primary-foreground",
+      "#FFFFFF",
+    );
 
     // Convert hex to RGB for creating variations
-    const primaryHex = colors.primary.replace('#', '');
+    const primaryHex = colors.primary.replace("#", "");
     const r = parseInt(primaryHex.slice(0, 2), 16);
     const g = parseInt(primaryHex.slice(2, 4), 16);
     const b = parseInt(primaryHex.slice(4, 6), 16);
 
     // Set all primary color variations
-    document.documentElement.style.setProperty('--primary-100', `rgba(${r}, ${g}, ${b}, 0.1)`);
-    document.documentElement.style.setProperty('--primary-200', `rgba(${r}, ${g}, ${b}, 0.2)`);
-    document.documentElement.style.setProperty('--primary-300', `rgba(${r}, ${g}, ${b}, 0.4)`);
-    document.documentElement.style.setProperty('--primary-400', `rgba(${r}, ${g}, ${b}, 0.6)`);
-    document.documentElement.style.setProperty('--primary-500', `rgba(${r}, ${g}, ${b}, 0.8)`);
-    document.documentElement.style.setProperty('--primary-600', colors.primary);
-    document.documentElement.style.setProperty('--primary-700', `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`);
+    document.documentElement.style.setProperty(
+      "--primary-100",
+      `rgba(${r}, ${g}, ${b}, 0.1)`,
+    );
+    document.documentElement.style.setProperty(
+      "--primary-200",
+      `rgba(${r}, ${g}, ${b}, 0.2)`,
+    );
+    document.documentElement.style.setProperty(
+      "--primary-300",
+      `rgba(${r}, ${g}, ${b}, 0.4)`,
+    );
+    document.documentElement.style.setProperty(
+      "--primary-400",
+      `rgba(${r}, ${g}, ${b}, 0.6)`,
+    );
+    document.documentElement.style.setProperty(
+      "--primary-500",
+      `rgba(${r}, ${g}, ${b}, 0.8)`,
+    );
+    document.documentElement.style.setProperty("--primary-600", colors.primary);
+    document.documentElement.style.setProperty(
+      "--primary-700",
+      `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 1)`,
+    );
 
     // Set secondary color
-    document.documentElement.style.setProperty('--secondary', colors.secondary);
-    document.documentElement.style.setProperty('--secondary-foreground', '#1d1d1f');
+    document.documentElement.style.setProperty("--secondary", colors.secondary);
+    document.documentElement.style.setProperty(
+      "--secondary-foreground",
+      "#1d1d1f",
+    );
   };
 
-  const handleColorChange = (type: 'primary' | 'secondary', color: string) => {
+  const handleColorChange = (type: "primary" | "secondary", color: string) => {
     const newColors = {
       ...brandingColors,
-      [type]: color
+      [type]: color,
     };
     setBrandingColors(newColors);
     applyGlobalColors(newColors);
@@ -91,24 +120,27 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
     try {
       setIsSaving(true);
       await onSave(brandingColors);
-      
+
       // Update the colors in Supabase directly
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
       const { error } = await supabase
-        .from('contractors')
+        .from("contractors")
         .update({ branding_colors: brandingColors })
-        .eq('user_id', user.id);
+        .eq("user_id", user.id);
 
       if (error) throw error;
 
       toast({
         title: "Branding colors updated",
-        description: "Your brand colors have been updated and saved successfully.",
+        description:
+          "Your brand colors have been updated and saved successfully.",
       });
     } catch (error) {
-      console.error('Error saving branding colors:', error);
+      console.error("Error saving branding colors:", error);
       toast({
         title: "Error",
         description: "Failed to update branding colors. Please try again.",
@@ -130,7 +162,7 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
             </label>
             <ColorPicker
               color={brandingColors.primary}
-              onChange={(color) => handleColorChange('primary', color)}
+              onChange={(color) => handleColorChange("primary", color)}
             />
           </div>
           <div>
@@ -139,7 +171,7 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
             </label>
             <ColorPicker
               color={brandingColors.secondary}
-              onChange={(color) => handleColorChange('secondary', color)}
+              onChange={(color) => handleColorChange("secondary", color)}
             />
           </div>
           <Button onClick={handleSave} disabled={isSaving}>
@@ -153,9 +185,7 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Buttons</h3>
               <div className="space-y-2">
-                <Button className="w-full">
-                  Primary Button
-                </Button>
+                <Button className="w-full">Primary Button</Button>
                 <Button variant="secondary" className="w-full">
                   Secondary Button
                 </Button>
@@ -168,13 +198,13 @@ export const BrandingSettings = ({ initialColors, onSave }: BrandingSettingsProp
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Background Colors</h3>
               <div className="space-y-2">
-                <div 
+                <div
                   className="h-20 rounded-lg flex items-center justify-center text-white"
                   style={{ backgroundColor: brandingColors.primary }}
                 >
                   Primary Background
                 </div>
-                <div 
+                <div
                   className="h-20 rounded-lg flex items-center justify-center"
                   style={{ backgroundColor: brandingColors.secondary }}
                 >
