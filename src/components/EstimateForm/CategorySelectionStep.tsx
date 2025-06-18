@@ -6,7 +6,7 @@ interface CategorySelectionStepProps {
   categories: Category[];
   selectedCategory?: string;
   completedCategories: string[];
-  onSelectCategory: (categoryId: string) => void;
+  onSelectCategory: (categoryIds: string[]) => void
 }
 
 export const CategorySelectionStep = ({
