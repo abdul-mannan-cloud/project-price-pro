@@ -57,7 +57,7 @@ lead,
   const [hasClientMessageChanges, setHasClientMessageChanges] = useState(false);
   const [hasFooterTextChanges, setHasFooterTextChanges] = useState(false);
 
-  console.log("Contractor Settings:", contractor);
+
   
 
   const { data: settings, isLoading } = useQuery({

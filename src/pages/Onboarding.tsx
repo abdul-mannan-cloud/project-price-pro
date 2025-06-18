@@ -366,7 +366,7 @@ const Onboarding = () => {
       const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
       
       if (currentStep === OnboardingSteps.PRICING && formData.tier === 'enterprise') {
-        console.log("NAVIGATION TO DASHBOARD ENTERPRISE");
+       
 
         setNavigatingToDashboard(true);
         await delay(5000);

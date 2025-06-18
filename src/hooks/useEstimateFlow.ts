@@ -408,7 +408,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
     if (lead.status === 'complete' && lead.estimate_data) {
       setEstimate(lead.estimate_data);
 
-      console.log("THIS IS THE LEAD DATA", lead);
+      
 
       const { data: emailData, error: emailFetchError } = await supabase
           .from('contractors')
@@ -422,7 +422,7 @@ export const useEstimateFlow = (config: EstimateConfig) => {
 const safeBusinessName = slugify(emailData.business_name);
 
       if (emailData.tier === 'pioneer') {
-        console.log("HERE IS THE ESTIMATE DATA", lead.estimate_data);
+        
 
         const totalFee = lead.estimate_data.totalCost;
         const availableCredits = emailData.cash_credits;

@@ -455,7 +455,7 @@ useEffect(() => {
 
   // Update the effect to handle the signatures correctly with null checks
   useEffect(() => {
-    console.log("LEAD DATA, ESTIMATE CHANGE");
+    
     
     if (leadData) {
       // Get contractor signature if any
@@ -636,8 +636,6 @@ useEffect(() => {
 
     // Only proceed with billing logic if contractor is available
     if (contractor?.tier === 'pioneer' && estimate) {
-      console.log("HERE IS THE ESTIMATE DATA", contractor);
-
       const totalFee = estimate.totalCost;
       const availableCredits = contractor.cash_credits || 0;
       let remainingFee = totalFee;

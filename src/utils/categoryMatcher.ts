@@ -68,7 +68,7 @@ export const findBestMatchingCategory = async (description: string): Promise<Cat
   Object.entries(categoryKeywords).forEach(([categoryId, keywords]) => {
     let matchCount = 0;
     let totalWeight = 0;
-    let categoryMatches: string[] = [];
+    const categoryMatches: string[] = [];
 
     keywords.forEach(keyword => {
       if (description.toLowerCase().includes(keyword.toLowerCase())) {
