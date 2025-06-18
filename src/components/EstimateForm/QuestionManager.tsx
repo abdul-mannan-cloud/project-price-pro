@@ -103,8 +103,7 @@ export const QuestionManager = ({
     }, [currentSetAnswers]);
 
     const handleNext = () => {
-        console.log("INTO THE HANDLE NEXT OR CONTINUE");
-        
+ 
         // If we're not at the last question in history, just navigate to the next saved question
         if (currentQuestionIndex < questionHistory.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
