@@ -264,7 +264,8 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           website?: string | null
-        }
+           }
+        },
       leads: {
         Row: {
           ai_generated_message: string | null
@@ -306,7 +307,7 @@ export type Database = {
           client_signature_date?: string | null
           contractor_id?: string | null
           contractor_signature?: string | null
-          contractor_signature_date?: string | null
+          contractor_signature_date?: string | null  
           created_at?: string | null
           error_message?: string | null
           error_timestamp?: string | null
@@ -315,6 +316,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_test_estimate?: boolean | null
+          signature_enabled?: boolean | null
           preview_data?: Json | null
           project_address?: string | null
           project_description?: string | null

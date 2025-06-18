@@ -12,13 +12,7 @@ const ProtectedRoute = () => {
       return session;
     },
   });
-
-  // If no session, redirect to login
-  if (!sessionLoading && !session) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // If we have a session, check if contractor is verified and get tier
+    // If we have a session, check if contractor is verified and get tier
   const { data: contractor, isLoading: contractorLoading } = useQuery({
     queryKey: ["contractor-verification", session?.user?.id],
     enabled: !!session?.user?.id,
@@ -26,7 +20,7 @@ const ProtectedRoute = () => {
       const { data, error } = await supabase
         .from("contractors")
         .select("verified, tier")
-        .eq("user_id", session.user.id)
+        .eq("user_id", session!.user.id)
         .maybeSingle();
 
       if (error) {
@@ -37,6 +31,13 @@ const ProtectedRoute = () => {
       return data;
     },
   });
+
+  // If no session, redirect to login
+  if (!sessionLoading && !session) {
+    return <Navigate to="/login" replace />;
+  }
+
+
 
   // Show loading spinner while checking authentication and verification
   if (sessionLoading || contractorLoading) {

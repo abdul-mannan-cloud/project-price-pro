@@ -321,9 +321,21 @@ const Settings = () => {
       });
     }
   };
+interface BusinessSettingsFormData {
+  businessName: string;
+  contactEmail: string;
+  contactPhone?: string;
+  businessAddress?: string;
+  website?: string;
+  licenseNumber?: string;
+  minimumProjectCost?: number | null;
+  markupPercentage?: number | null;
+  taxRate?: number | null;
+  aiInstructions?: string | null;
+}
 
-  const updateSettings = useMutation({
-    mutationFn: async (formData) => {
+  const updateSettings = useMutation<void, Error, BusinessSettingsFormData>({
+    mutationFn: async (formData: BusinessSettingsFormData) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
@@ -430,10 +442,10 @@ const Settings = () => {
   const isAdmin = contractor?.contact_email === "cairlbrandon@gmail.com" ||
       contractor?.contact_email === "brandon@reliablepro.net";
 
-  const handleSubmitBusinessForm = (e) => {
+  const handleSubmitBusinessForm = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
+    const data = Object.fromEntries(formData.entries()) as unknown as BusinessSettingsFormData;
     data.businessAddress = businessAddress;
     updateSettings.mutate(data);
   };

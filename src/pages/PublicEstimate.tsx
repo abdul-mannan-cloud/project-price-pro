@@ -161,7 +161,7 @@ const PublicEstimate = () => {
             contractor={{
               business_name: contractor?.business_name,
               business_logo_url: contractor?.business_logo_url || undefined,
-              branding_colors: contractor?.branding_colors as { primary: string; secondary: string; } || undefined
+              branding_colors: contractor?.branding_colors as BrandingColors | undefined
             }} handleRefreshEstimate={function (id: string): void {
           throw new Error("Function not implemented.");
         }}        />

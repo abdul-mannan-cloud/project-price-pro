@@ -20,6 +20,7 @@ type ContactData = {
 };
 
 interface Lead {
+  id: string;
   estimate_data: Record<string, any> | null;
   status: 'pending' | 'complete' | 'error' | string;
   error_message: string | null;
@@ -661,7 +662,7 @@ businessEmail: emailData?.contact_email || "",
     setStage('contact');
   };
 
-  const handleContactSubmit = async (contactData: ContactData, skip: boolean = false): Promise<void> => {
+  const handleContactSubmit = async (contactData: Partial<ContactData> = {}, skip: boolean = false): Promise<void> => {
     try {
       if (!currentLeadId) {
         throw new Error('No lead ID available');

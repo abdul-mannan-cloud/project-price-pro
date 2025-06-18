@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tables } from "@/integrations/supabase/types";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, MinusCircle, Save } from "lucide-react";
+import { BrandingColors } from "@/types/settings";
 //import { Switch } from "@/components/ui/switch";
 import { useQueryClient } from '@tanstack/react-query'
 export interface LineItem {
@@ -55,7 +56,7 @@ export type ContractorDisplay = {
   business_logo_url?: string | null;
   contact_email?: string;
   contact_phone?: string | null;
-  branding_colors?: JSON | null;
+  branding_colors?: BrandingColors | null;
   tier?: string;
   cash_credits?: number;
   stripe_customer_id?: string;
@@ -95,7 +96,7 @@ interface EstimateDisplayProps {
   handleRefreshEstimate: (id: string) => void;
   leadId: string;
   contractorParam?: string;
-  handleContractSign: (leadId: string) => void;
+handleContractSign?: (leadId: string) => void;
   isLeadPage?: boolean;
   lead?: any;
   isEstimateLocked?: boolean;
