@@ -94,8 +94,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = 'Button';
 
-export interface ButtonGroupProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
+export type ButtonGroupProps = React.HTMLAttributes<HTMLDivElement>;
 
 export const ButtonGroup = React.forwardRef<HTMLDivElement, ButtonGroupProps>(
   ({ className, ...props }, ref) => {

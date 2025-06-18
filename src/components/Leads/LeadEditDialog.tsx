@@ -230,8 +230,8 @@ const handleSave = async () => {
     if (error) throw error;
 
     toast({ title: "Success", description: "Lead updated successfully" });
-    queryClient.invalidateQueries(["lead", editedLead.id]);
-    queryClient.invalidateQueries(["leads"]);
+    queryClient.invalidateQueries({ queryKey:["lead", editedLead.id] });
+    queryClient.invalidateQueries({ queryKey: ["leads"] });
     onLeadUpdated(data?.[0] || editedLead);
     onClose();
   } catch (err) {
@@ -269,7 +269,7 @@ const handleSave = async () => {
       });
       
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries(['leads']);
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
       
       // Close the dialogs
       setShowDeleteDialog(false);

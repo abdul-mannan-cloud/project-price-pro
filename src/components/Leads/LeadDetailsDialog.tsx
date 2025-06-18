@@ -192,9 +192,14 @@ const refreshEstimate = async (leadId: string) => {
       description: "The latest numbers are now showing.",
     });
 
-    const contractorData = await supabase.from("contractors").select("*").eq("id", effectiveContractorId).single();
+     const { data: contractorRow, error: contractorFetchError } = await supabase
+      .from("contractors")
+      .select("usage")            // fetch only the column we use
+      .eq("id", effectiveContractorId)
+      .single();
+    if (contractorFetchError) throw contractorFetchError;
 
-    const currentUsage = contractorData?.usage || 0;
+    const currentUsage = contractorRow?.usage ?? 0;
     const newUsage = currentUsage + ((data.tokenUsage.totalTokens / 1000) * 0.01 * 2);
 
     console.log("Updating contractor usage:", data);
@@ -461,8 +466,8 @@ useEffect(() => {
       if (dbError) throw dbError;
 
       toast({ title: "Lead cancelled", description: "Status set to \"cancelled\"." });
-      queryClient.invalidateQueries(["lead", lead.id]);
-      queryClient.invalidateQueries(["leads"]);
+      queryClient.invalidateQueries({ queryKey: ["lead", lead.id] });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
     } catch (err) {
       toast({ title: "Error", description: "Could not cancel lead.", variant: "destructive" });
     } finally {
@@ -482,8 +487,8 @@ useEffect(() => {
       if (dbError) throw dbError;
 
       toast({ title: "Lead archived", description: "Status set to \"archived\"." });
-      queryClient.invalidateQueries(["lead", lead.id]);
-      queryClient.invalidateQueries(["leads"]);
+      queryClient.invalidateQueries({ queryKey: ["lead", lead.id] });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
     } catch (err) {
       toast({ title: "Error", description: "Could not archive lead.", variant: "destructive" });
     } finally {
@@ -646,8 +651,8 @@ const syncLeadStatus = async (l: Lead) => {
       .eq("id", l.id);
     if (!error) {
       setLead(p => (p ? { ...p, status: desired } : p));
-      queryClient.invalidateQueries(["lead", l.id]);
-      queryClient.invalidateQueries(["leads"]);
+      queryClient.invalidateQueries({ queryKey: ["lead", l.id] });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
     } else {
       console.error("Could not update lead status", error);
     }
@@ -672,8 +677,8 @@ useEffect(() => {
         .eq("id", lead.id);
       if (!error) {
         setLead(p => (p ? { ...p, status: "cancelled" } : p));
-        queryClient.invalidateQueries(["lead", lead.id]);
-        queryClient.invalidateQueries(["leads"]);
+        queryClient.invalidateQueries({ queryKey: ["lead", lead.id] });
+        queryClient.invalidateQueries({ queryKey: ["leads"] });
       }
     })();
   }
@@ -706,7 +711,7 @@ useEffect(() => {
       });
 
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries(['leads']);
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
 
       // Close the dialogs
       setShowDeleteDialog(false);
@@ -759,7 +764,7 @@ useEffect(() => {
       });
 
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries(['leads']);
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
 
       // Navigate to the new lead
       if (data && data.length > 0) {
@@ -890,7 +895,7 @@ useEffect(() => {
 
     const contractor = contractorData;
 
-    console.log("CONTRACTOR EMAILLLLLLLL:", contractor);
+    
     
 
     const pdfToSend = await handleExportPDF(safeBusinessName || "Estimate");

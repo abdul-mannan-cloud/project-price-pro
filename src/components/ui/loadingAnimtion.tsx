@@ -20,9 +20,9 @@ const CubeLoader = () => {
   const generateKeyframes = () => {
     let styles = '';
     
-    for (let h of dimensions.h) {
-      for (let w of dimensions.w) {
-        for (let l of dimensions.l) {
+    for (const h of dimensions.h) {
+      for (const w of dimensions.w) {
+        for (const l of dimensions.l) {
           styles += `
             @keyframes h${h}w${w}l${l} {
               0% {

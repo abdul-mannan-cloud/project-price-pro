@@ -22,6 +22,7 @@ import {
 import {supabase} from "@/integrations/supabase/client.ts";
 
 interface AIRate {
+  id?: number; 
   title: string;
   description: string | null;
   rate: number;  // Changed from string to number to match database

@@ -29,13 +29,29 @@ interface Segmenter {
 }
 
 // Extend the global Intl interface
+/* eslint-disable @typescript-eslint/no-namespace */
+
 declare global {
   namespace Intl {
-    var Segmenter: {
-      new (locale: string, options?: { granularity?: "grapheme" | "word" | "sentence" }): Segmenter
+    // use const → satisfies “no-var”
+    const Segmenter: {
+      new (
+        locale?: string,
+        options?: { granularity?: "grapheme" | "word" | "sentence" }
+      ): {
+        segment(
+          input: string
+        ): Iterable<{
+          segment: string
+          index: number
+          input: string
+        }>
+      }
     }
   }
 }
+
+/* eslint-enable @typescript-eslint/no-namespace */
 
 interface TextRotateProps {
   texts: string[]

@@ -193,8 +193,8 @@ export default function LeadHistory({ leadId }: { leadId: string }) {
       if (revertError) {
         toast({ title: "Revert failed", description: revertError.message, variant: "destructive" });
       } else {
-        qc.invalidateQueries(["lead", leadId]);
-        qc.invalidateQueries(["lead-history", leadId]);
+        qc.invalidateQueries({ queryKey: ["lead", leadId] });
+        qc.invalidateQueries({ queryKey: ["lead-history", leadId] });
         toast({ title: "Reverted" });
       }
     }
