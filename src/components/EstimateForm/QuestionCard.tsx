@@ -672,7 +672,7 @@ export const QuestionCard = ({
                                 setNextButtonDisable={setNextButtonDisable}
                                 option={option}
                                 isSelected={selectedAnswers.includes(option.value)}
-                                type={question.type}
+                                type={question.type as 'yes_no' | 'single_choice' | 'multiple_choice'}
                                 onClick={() => handleOptionClick(option.value, option)}
                                 showImage={shouldShowImage(option)}
                                 onInputChange={(value) => handleOptionInputChange(option.value, value)}

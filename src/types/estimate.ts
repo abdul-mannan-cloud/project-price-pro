@@ -22,7 +22,7 @@ export interface Question {
   order: number;
   options: Option[];
   next?: string;
-
+character_limit?: string;
   // New properties for measurement_input type
   unit?: string; // e.g., "LF" (linear feet), "SF" (square feet)
   placeholder?: string;
