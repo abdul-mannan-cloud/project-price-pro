@@ -1489,7 +1489,6 @@ const { data: fetchedContractor } = useQuery({
         isContractorSignature={false} // Set to false for clients in estimate page
       />
 
-      {settings?.estimate_signature_enabled && (
         <>
           {showSettings && (
             <SettingsDialog
@@ -1517,7 +1516,7 @@ const { data: fetchedContractor } = useQuery({
             </SettingsDialog>
           )}
         </>
-      )}
+      
     </>
   );
 };
