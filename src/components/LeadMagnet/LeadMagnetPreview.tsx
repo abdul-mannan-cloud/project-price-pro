@@ -52,6 +52,8 @@ export const LeadMagnetPreview = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 5 * 60 * 1000, // Add this line - cache for 5 minutes
+  cacheTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   const generateQuestions = async () => {

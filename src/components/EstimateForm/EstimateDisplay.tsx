@@ -307,35 +307,50 @@ export const EstimateDisplay = ({
   };
 
   // Fetch contractor data when contractor is undefined but we have contractorId
-  const { data: fetchedContractor } = useQuery({
-    queryKey: ["contractor-data", contractorId],
-    queryFn: async () => {
-      if (!contractorId) throw new Error("No contractor ID");
+// Fetch contractor data when contractor is undefined but we have contractorId
+const { data: fetchedContractor } = useQuery({
+  queryKey: ["contractor-data", contractorId],
+  queryFn: async () => {
+    if (!contractorId) throw new Error("No contractor ID");
+    
+    // Skip if it's the problematic UUID
+    if (contractorId === "f039eb94-60f4-4f22-b018-1c524fc37927") {
+      console.warn("Skipping fetch for hardcoded contractor ID");
+      return null;
+    }
 
-      const { data, error } = await supabase
-        .from("contractors")
-        .select(
-          `
-          id,
-          business_name,
-          business_logo_url,
-          contact_email,
-          contact_phone,
-          branding_colors,
-          tier,
-          cash_credits,
-          stripe_customer_id
-        `,
-        )
-        .eq("id", contractorId)
-        .single();
+    const { data, error } = await supabase
+      .from("contractors")
+      .select(
+        `
+        id,
+        business_name,
+        business_logo_url,
+        contact_email,
+        contact_phone,
+        branding_colors,
+        tier,
+        cash_credits,
+        stripe_customer_id
+      `,
+      )
+      .eq("id", contractorId)
+      .single();
 
-      if (error) throw error;
-      return data as ContractorDisplay;
-    },
-    enabled: !!contractorId && !contractor,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+    if (error) {
+      // Don't throw for expected "not found" errors
+      if (error.code === 'PGRST116') {
+        console.log("Contractor not found:", contractorId);
+        return null;
+      }
+      throw error;
+    }
+    return data as ContractorDisplay;
+  },
+  enabled: !!contractorId && !contractor && contractorId !== "f039eb94-60f4-4f22-b018-1c524fc37927",
+  staleTime: 5 * 60 * 1000,
+  retry: false, // Don't retry failed requests
+});
 
   // Update contractor state when fetched data is available
   useEffect(() => {
@@ -344,19 +359,7 @@ export const EstimateDisplay = ({
     }
   }, [fetchedContractor, contractor]);
 
-  const { data: contractorSettings } = useQuery({
-    queryKey: ["contractor-settings"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contractor_settings")
-        .select("*")
-        .eq("id", contractorId);
-      if (error) {
-        return null;
-      }
-      return data;
-    },
-  });
+ 
 
   const { data: leadData, refetch: refetchLeadData } = useQuery<
     LeadData,

@@ -32,7 +32,7 @@ export const BrandingSettings = ({
         const { data: contractor, error } = await supabase
           .from("contractors")
           .select("branding_colors")
-          .eq("id", user.id)
+          .eq("user_id", user.id)
           .maybeSingle();
 
         if (error) throw error;

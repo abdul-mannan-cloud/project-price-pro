@@ -281,7 +281,7 @@ export const initializeBranding = async () => {
     const { data: contractor } = await supabase
       .from("contractors")
       .select("branding_colors")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .single();
 
     if (contractor?.branding_colors) {

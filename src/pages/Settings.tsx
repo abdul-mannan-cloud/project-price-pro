@@ -438,7 +438,7 @@ const Settings = () => {
       const { error } = await supabase
         .from("contractors")
         .update({ branding_colors: colors })
-        .eq("id", user.id);
+        .eq("user_id", user.id);
 
       if (error) throw error;
 

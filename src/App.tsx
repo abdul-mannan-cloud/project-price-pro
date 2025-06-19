@@ -88,18 +88,24 @@ function GlobalBrandingLoader() {
     queryKey: ["globalBranding", session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
+      if (!session?.user?.id) return null;
+      
       const { data: contractor, error } = await supabase
         .from("contractors")
         .select("branding_colors")
         .eq("user_id", session.user.id)
         .maybeSingle();
 
-      if (error || !contractor) {
-        console.error(
-          error
-            ? `Error fetching contractor: ${error.message}`
-            : `No contractor found for user: ${session.user.id}`,
-        );
+      if (error) {
+        // Don't log error for missing contractor - this is normal for non-contractor users
+        if (error.code !== 'PGRST116') {
+          console.error(`Error fetching contractor: ${error.message}`);
+        }
+        return null;
+      }
+
+      if (!contractor) {
+        // User is not a contractor, this is fine
         return null;
       }
 
@@ -107,11 +113,14 @@ function GlobalBrandingLoader() {
         primary: string;
         secondary: string;
       } | null;
+      
       if (colors) {
         setColorVariables(colors);
       }
+      
       return colors;
     },
+    retry: false, // Don't retry if contractor doesn't exist
   });
 
   return null;

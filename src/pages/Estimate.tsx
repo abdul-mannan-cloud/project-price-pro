@@ -60,22 +60,43 @@ function GlobalBrandingLoader({ contractorId }) {
   useQuery({
     queryKey: ["globalBranding", contractorId],
     queryFn: async () => {
+      // Don't query if no valid contractor ID
+      if (!contractorId || !isValidUUID(contractorId)) {
+        return null;
+      }
+
+      // Try by ID first
       const { data: contractor, error } = await supabase
         .from("contractors")
         .select("branding_colors")
         .eq("id", contractorId)
         .maybeSingle();
 
-      if (error || !contractor) {
-        console.error(
-          error
-            ? `Error fetching contractor: ${error.message}`
-            : `No contractor found for user: `,
-        );
+      if (!error && contractor) {
+        const colors = contractor.branding_colors as {
+          primary: string;
+          secondary: string;
+        } | null;
+        if (colors) {
+          setColorVariables(colors);
+        }
+        return colors;
+      }
+
+      // Fallback to user_id if ID fails
+      console.warn("No contractor found by id for branding. Trying by user_id...");
+      const fallbackResult = await supabase
+        .from("contractors")
+        .select("branding_colors")
+        .eq("user_id", contractorId)
+        .maybeSingle();
+
+      if (fallbackResult.error || !fallbackResult.data) {
+        console.error("No contractor found for branding colors");
         return null;
       }
 
-      const colors = contractor.branding_colors as {
+      const colors = fallbackResult.data.branding_colors as {
         primary: string;
         secondary: string;
       } | null;
@@ -84,6 +105,9 @@ function GlobalBrandingLoader({ contractorId }) {
       }
       return colors;
     },
+    enabled: !!contractorId && isValidUUID(contractorId), // Add this enabled condition
+    staleTime: 10 * 60 * 1000,
+    retry: false,
   });
 
   return null;
@@ -158,75 +182,44 @@ const EstimatePage = () => {
 
   // Fetch contractor data from Supabase using the extracted ID
   const {
-    data: contractor,
-    isLoading: isContractorLoading,
-    error: contractorError,
-  } = useQuery({
-    queryKey: ["contractor", finalContractorId],
-    queryFn: async () => {
-      console.log("Fetching contractor settings for ID:", finalContractorId);
+  data: contractor,
+  isLoading: isContractorLoading,
+  error: contractorError,
+} = useQuery({
+  queryKey: ["contractor-full-data", finalContractorId], // ← CHANGED: standardized key
+  queryFn: async () => {
+    console.log("Fetching contractor settings for ID:", finalContractorId);
 
-      const { data, error } = await supabase
-        .from("contractors")
-        .select("*, contractor_settings(*)")
-        .eq("user_id", finalContractorId)
-        .maybeSingle();
+    // ← CHANGED: Try by ID first (more reliable)
+    const { data, error } = await supabase
+      .from("contractors")
+      .select("*, contractor_settings(*)")
+      .eq("id", finalContractorId)  // ← CHANGED: use 'id' first instead of 'user_id'
+      .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching contractor by user_id:", error);
-        throw new Error(
-          `Failed to fetch contractor by user_id: ${error.message}`,
-        );
-      }
-
-      if (!data) {
-        console.warn("No contractor found by user_id. Trying by id...");
-
-        const fallbackResult = await supabase
-          .from("contractors")
-          .select("*, contractor_settings(*)")
-          .eq("id", finalContractorId)
-          .maybeSingle();
-
-        if (fallbackResult.error) {
-          console.error(
-            "Error fetching contractor by id:",
-            fallbackResult.error,
-          );
-          throw new Error(
-            `Failed to fetch contractor by id: ${fallbackResult.error.message}`,
-          );
-        }
-
-        if (!fallbackResult.data) {
-          console.error(
-            "No contractor found with user_id or id:",
-            finalContractorId,
-          );
-          throw new Error(
-            `No contractor found with user_id or id: ${finalContractorId}`,
-          );
-        }
-
-        console.log(
-          "Successfully fetched contractor by id:",
-          fallbackResult.data,
-        );
-        return fallbackResult.data;
-      }
-
-      console.log("Successfully fetched contractor by user_id:", data);
+    if (!error && data) {
+      console.log("Successfully fetched contractor by id:", data);
       return data;
-    },
-    enabled: isValidUUID(finalContractorId),
-    retry: (failureCount, error) => {
-      if (error?.message?.includes("No contractor found")) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+    }
+
+    // ← CHANGED: Fallback to user_id only if ID fails
+    console.warn("No contractor found by id. Trying by user_id...");
+    const fallbackResult = await supabase
+      .from("contractors")
+      .select("*, contractor_settings(*)")
+      .eq("user_id", finalContractorId)
+      .maybeSingle();
+
+    if (fallbackResult.error || !fallbackResult.data) {
+      throw new Error(`No contractor found: ${finalContractorId}`);
+    }
+
+    return fallbackResult.data;
+  },
+  enabled: isValidUUID(finalContractorId),
+  retry: false, // ← CHANGED: Don't retry to avoid duplicate calls
+  staleTime: 10 * 60 * 1000, // ← CHANGED: Cache for 10 minutes
+});
 
   // Always use the final contractor ID for the estimate config
   const estimateConfig: EstimateConfig = {
@@ -275,62 +268,66 @@ const EstimatePage = () => {
     }
   };
 
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const { data: optionsData, error: optionsError } = await supabase
-          .from("Options")
-          .select("*")
-          .eq("Key Options", "42e64c9c-53b2-49bd-ad77-995ecb3106c6")
-          .single();
+// ← NEW: Add this query before the useEffect
+const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
+  queryKey: ["service-categories", contractor?.id],
+  queryFn: async () => {
+    // Fetch options data with caching
+    const { data: optionsData, error: optionsError } = await supabase
+      .from("Options")
+      .select("*")
+      .eq("Key Options", "42e64c9c-53b2-49bd-ad77-995ecb3106c6")
+      .single();
 
-        if (optionsError) throw optionsError;
+    if (optionsError) throw optionsError;
 
-        const excludedCategoriesData = await supabase
-          .from("contractor_settings")
-          .select("excluded_categories")
-          .eq("id", contractor?.id)
-          .single();
+    // Fetch excluded categories only if contractor exists
+    let excludedCategories = [];
+    if (contractor?.id) {
+      const excludedCategoriesData = await supabase
+        .from("contractor_settings")
+        .select("excluded_categories")
+        .eq("id", contractor.id)
+        .single();
 
-        const excludedCategories =
-          excludedCategoriesData.data?.excluded_categories || [];
+      excludedCategories = excludedCategoriesData.data?.excluded_categories || [];
+    }
 
-        let transformedCategories: Category[] = Object.keys(optionsData)
-          .filter((key) => key !== "Key Options")
-          .map((key) => {
-            const catData = optionsData[key] as Record<string, any>;
-            return {
-              id: key,
-              name: catData.name || key.replace(/_/g, " "),
-              description:
-                catData.description ||
-                `Get an estimate for your ${key.toLowerCase()} project`,
-              icon: catData.icon,
-              keywords: Array.isArray(catData.keywords) ? catData.keywords : [],
-              questions: Array.isArray(catData.questions)
-                ? catData.questions
-                : [],
-            };
-          });
+    // Transform categories
+    let transformedCategories = Object.keys(optionsData)
+      .filter((key) => key !== "Key Options")
+      .map((key) => {
+        const catData = optionsData[key];
+        return {
+          id: key,
+          name: catData.name || key.replace(/_/g, " "),
+          description: catData.description || `Get an estimate for your ${key.toLowerCase()} project`,
+          icon: catData.icon,
+          keywords: Array.isArray(catData.keywords) ? catData.keywords : [],
+          questions: Array.isArray(catData.questions) ? catData.questions : [],
+        };
+      });
 
-        // Filter out excluded categories
-        if (excludedCategories.length > 0) {
-          transformedCategories = transformedCategories.filter(
-            (cat) => !excludedCategories.includes(cat.id),
-          );
-        }
+    // Filter out excluded categories
+    if (excludedCategories.length > 0) {
+      transformedCategories = transformedCategories.filter(
+        (cat) => !excludedCategories.includes(cat.id)
+      );
+    }
 
-        console.log("excludedCategories", excludedCategories);
-        setCategories(transformedCategories);
-      } catch (error) {
-        console.error("Error loading categories:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    return transformedCategories;
+  },
+  enabled: !!contractor?.id, // Only run when contractor is available
+  staleTime: 15 * 60 * 1000, // Cache for 15 minutes
+});
 
-    loadCategories();
-  }, [contractor?.id, setCategories, setIsLoading]);
+// ← CHANGED: Replace the old useEffect with this simpler one
+useEffect(() => {
+  if (categoriesData) {
+    setCategories(categoriesData);
+    setIsLoading(false);
+  }
+}, [categoriesData, setCategories, setIsLoading]);
 
   useEffect(() => {
     const isSupported =

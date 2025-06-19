@@ -41,7 +41,7 @@ export function Header1() {
       const { data, error } = await supabase
         .from("contractors")
         .select("*")
-        .eq("id", user.id)
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (error) throw error;
