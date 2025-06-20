@@ -14,12 +14,16 @@ export function Header1() {
   // Auth check
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
     };
     checkAuth();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => setIsAuthenticated(!!session)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) =>
+      setIsAuthenticated(!!session),
     );
     return () => subscription.unsubscribe();
   }, []);
@@ -28,7 +32,9 @@ export function Header1() {
   useQuery({
     queryKey: ["contractor"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return null;
       const { data, error } = await supabase
         .from("contractors")

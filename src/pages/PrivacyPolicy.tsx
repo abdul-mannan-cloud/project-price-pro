@@ -73,12 +73,12 @@ const PrivacyPolicy = () => {
                 about their construction project.
               </li>
               <li>
-                <strong>Payment Information:</strong> Credit/debit card
-                details, billing address (processed securely).
+                <strong>Payment Information:</strong> Credit/debit card details,
+                billing address (processed securely).
               </li>
               <li>
-                <strong>Technical Data:</strong> IP address, device
-                information, browsing activity on our site.
+                <strong>Technical Data:</strong> IP address, device information,
+                browsing activity on our site.
               </li>
               <li>
                 <strong>SMS Consent Data:</strong> If you opt in to receive text
@@ -100,7 +100,9 @@ const PrivacyPolicy = () => {
               <li>
                 Connecting users with contractors who can provide services.
               </li>
-              <li>Sending service notifications and updates via SMS if opted in.</li>
+              <li>
+                Sending service notifications and updates via SMS if opted in.
+              </li>
               <li>
                 Providing marketing and promotional offers (email or SMS, if
                 consent is given).

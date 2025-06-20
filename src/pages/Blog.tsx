@@ -54,7 +54,9 @@ export default function Blog() {
       <Header1 />
 
       <main className="flex-grow container mx-auto px-4 py-16 mt-20">
-        <h1 className="text-4xl font-bold text-center mb-12 text-[var(--foreground)]">Our Blog</h1>
+        <h1 className="text-4xl font-bold text-center mb-12 text-[var(--foreground)]">
+          Our Blog
+        </h1>
 
         <div className="grid gap-8 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1">
           {posts.map((post) => (
@@ -62,8 +64,12 @@ export default function Blog() {
               key={post.id}
               className="bg-[var(--card)] rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow border border-[var(--border)]"
             >
-              <h2 className="text-2xl font-semibold mb-2 text-[var(--foreground)]">{post.title}</h2>
-              <p className="text-sm text-[var(--muted-foreground)] mb-4">{post.date}</p>
+              <h2 className="text-2xl font-semibold mb-2 text-[var(--foreground)]">
+                {post.title}
+              </h2>
+              <p className="text-sm text-[var(--muted-foreground)] mb-4">
+                {post.date}
+              </p>
               <p className="text-[var(--foreground)] mb-6">{post.excerpt}</p>
               <Link
                 to={`/blog/${post.id}`}

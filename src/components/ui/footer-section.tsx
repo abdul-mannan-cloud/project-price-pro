@@ -2,7 +2,12 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -27,13 +32,20 @@ export function Footerdemo() {
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({ email }),
-        }
+        },
       );
       if (!response.ok) throw new Error("Subscription failed");
-      toast({ title: "Successfully subscribed!", description: "Thank you for subscribing." });
+      toast({
+        title: "Successfully subscribed!",
+        description: "Thank you for subscribing.",
+      });
       setEmail("");
     } catch {
-      toast({ title: "Subscription failed", description: "Please try again later.", variant: "destructive" });
+      toast({
+        title: "Subscription failed",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -45,15 +57,23 @@ export function Footerdemo() {
         <div className="py-16">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-8">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-[var(--foreground)]">Quick Links</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-[var(--foreground)]">
+                Quick Links
+              </h3>
               <ul role="list" className="mt-6 space-y-4">
                 <li>
-                  <Link to="/pricing" className="text-sm text-gray-600 dark:text-[var(--muted-foreground)] hover:text-gray-900 dark:hover:text-[var(--foreground)]">
+                  <Link
+                    to="/pricing"
+                    className="text-sm text-gray-600 dark:text-[var(--muted-foreground)] hover:text-gray-900 dark:hover:text-[var(--foreground)]"
+                  >
                     Pricing
                   </Link>
                 </li>
                 <li>
-                  <Link to="/industry" className="text-sm text-gray-600 dark:text-[var(--muted-foreground)] hover:text-gray-900 dark:hover:text-[var(--foreground)]">
+                  <Link
+                    to="/industry"
+                    className="text-sm text-gray-600 dark:text-[var(--muted-foreground)] hover:text-gray-900 dark:hover:text-[var(--foreground)]"
+                  >
                     Industries
                   </Link>
                 </li>
@@ -61,7 +81,9 @@ export function Footerdemo() {
             </div>
 
             <div className="space-y-8">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-[var(--foreground)]">Legal</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-[var(--foreground)]">
+                Legal
+              </h3>
               <ul role="list" className="mt-6 space-y-4">
                 <li>
                   <button
@@ -80,7 +102,10 @@ export function Footerdemo() {
                   </button>
                 </li>
                 <li>
-                  <Link to="/blog" className="text-sm text-gray-600 dark:text-[var(--muted-foreground)] hover:text-gray-900 dark:hover:text-[var(--foreground)]">
+                  <Link
+                    to="/blog"
+                    className="text-sm text-gray-600 dark:text-[var(--muted-foreground)] hover:text-gray-900 dark:hover:text-[var(--foreground)]"
+                  >
                     Blog
                   </Link>
                 </li>
@@ -88,7 +113,9 @@ export function Footerdemo() {
             </div>
 
             <div className="md:col-span-2">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-[var(--foreground)]">Stay connected</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-[var(--foreground)]">
+                Stay connected
+              </h3>
               <p className="mt-6 text-sm text-gray-600 dark:text-[var(--muted-foreground)]">
                 Subscribe to our newsletter for updates and exclusive content.
               </p>
@@ -119,7 +146,9 @@ export function Footerdemo() {
         </div>
 
         <div className="flex justify-center pb-8">
-          <p>© {new Date().getFullYear()} ESTIMATRIX LLC. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} ESTIMATRIX LLC. All rights reserved.
+          </p>
         </div>
       </div>
 
@@ -129,7 +158,10 @@ export function Footerdemo() {
             <DialogTitle>Privacy Policy</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p>Your privacy is important to us. This privacy policy explains how we collect, use, and protect your personal information.</p>
+            <p>
+              Your privacy is important to us. This privacy policy explains how
+              we collect, use, and protect your personal information.
+            </p>
           </div>
         </DialogContent>
       </Dialog>
@@ -140,7 +172,10 @@ export function Footerdemo() {
             <DialogTitle>Terms of Service</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p>By using our service, you agree to these terms. Please read them carefully.</p>
+            <p>
+              By using our service, you agree to these terms. Please read them
+              carefully.
+            </p>
           </div>
         </DialogContent>
       </Dialog>

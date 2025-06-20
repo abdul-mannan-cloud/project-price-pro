@@ -74,10 +74,19 @@ const TermsOfService = () => {
               3. User Accounts & Responsibilities
             </h2>
             <ul className="list-disc list-inside space-y-2 text-[15px] text-[var(--muted-foreground)] px-5">
-              <li>Users must provide accurate and complete information when creating an account.</li>
+              <li>
+                Users must provide accurate and complete information when
+                creating an account.
+              </li>
               <li>Users must be at least 18 years old to use our services.</li>
-              <li>Users are responsible for maintaining the confidentiality of their account credentials.</li>
-              <li>Misuse of our platform, including fraudulent project requests or spamming, is strictly prohibited.</li>
+              <li>
+                Users are responsible for maintaining the confidentiality of
+                their account credentials.
+              </li>
+              <li>
+                Misuse of our platform, including fraudulent project requests or
+                spamming, is strictly prohibited.
+              </li>
             </ul>
           </div>
 
@@ -87,9 +96,18 @@ const TermsOfService = () => {
               4. Payments & Transactions
             </h2>
             <ul className="list-disc list-inside space-y-2 text-[15px] text-[var(--muted-foreground)] px-5">
-              <li>Estimatrix may charge users for premium services, estimate generation, or lead access.</li>
-              <li>Payments are processed securely through third-party payment providers.</li>
-              <li>Users agree that all transactions are final unless otherwise stated in our refund policy.</li>
+              <li>
+                Estimatrix may charge users for premium services, estimate
+                generation, or lead access.
+              </li>
+              <li>
+                Payments are processed securely through third-party payment
+                providers.
+              </li>
+              <li>
+                Users agree that all transactions are final unless otherwise
+                stated in our refund policy.
+              </li>
             </ul>
           </div>
 
@@ -99,9 +117,19 @@ const TermsOfService = () => {
               5. Relationship Between Customers & Contractors
             </h2>
             <ul className="list-disc list-inside space-y-2 text-[15px] text-[var(--muted-foreground)] px-5">
-              <li>Estimatrix does not employ or endorse Contractors. Any agreements made between Customers and Contractors are independent of Estimatrix.</li>
-              <li>We are not responsible for the quality, pricing, or completion of services provided by Contractors.</li>
-              <li>Users should conduct their own research and due diligence before hiring a Contractor.</li>
+              <li>
+                Estimatrix does not employ or endorse Contractors. Any
+                agreements made between Customers and Contractors are
+                independent of Estimatrix.
+              </li>
+              <li>
+                We are not responsible for the quality, pricing, or completion
+                of services provided by Contractors.
+              </li>
+              <li>
+                Users should conduct their own research and due diligence before
+                hiring a Contractor.
+              </li>
             </ul>
           </div>
 
@@ -112,7 +140,9 @@ const TermsOfService = () => {
             </h2>
             <ul className="list-disc list-inside space-y-2 text-[15px] text-[var(--muted-foreground)] px-5">
               <li>Use the platform for illegal activities.</li>
-              <li>Misrepresent project details or provide false information.</li>
+              <li>
+                Misrepresent project details or provide false information.
+              </li>
               <li>Attempt to hack, disrupt, or overload the website.</li>
               <li>Use automated bots or scraping tools to extract data.</li>
             </ul>
@@ -140,7 +170,10 @@ const TermsOfService = () => {
             </h2>
             <p>
               Your use of Estimatrix is also governed by our{" "}
-              <a href="/privacy-policy" className="text-[var(--primary)] underline">
+              <a
+                href="/privacy-policy"
+                className="text-[var(--primary)] underline"
+              >
                 Privacy Policy
               </a>
               , which explains how we collect, use, and protect your data.
@@ -172,14 +205,36 @@ const TermsOfService = () => {
 
           {/* 11. SMS Terms */}
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">11. SMS Terms</h2>
+            <h2 className="text-lg font-semibold tracking-tight">
+              11. SMS Terms
+            </h2>
             <ul className="list-disc list-inside space-y-2 text-[15px] text-[var(--muted-foreground)] px-5">
-              <li>By providing your phone number and opting in, you consent to receive text messages from Estimatrix related to service updates, appointment reminders, estimate alerts, and promotional offers.</li>
-              <li>Message frequency may vary. Message and data rates may apply depending on your mobile carrier and plan.</li>
-              <li>You can opt out at any time by replying STOP to any message. You may also reply HELP for assistance.</li>
-              <li>If you unsubscribe, you will no longer receive text communications from Estimatrix unless you opt in again by replying START.</li>
-              <li>We will never sell or share your mobile number with third parties for marketing purposes. See our{" "}
-                <a href="/privacy-policy" className="text-[var(--primary)] underline">
+              <li>
+                By providing your phone number and opting in, you consent to
+                receive text messages from Estimatrix related to service
+                updates, appointment reminders, estimate alerts, and promotional
+                offers.
+              </li>
+              <li>
+                Message frequency may vary. Message and data rates may apply
+                depending on your mobile carrier and plan.
+              </li>
+              <li>
+                You can opt out at any time by replying STOP to any message. You
+                may also reply HELP for assistance.
+              </li>
+              <li>
+                If you unsubscribe, you will no longer receive text
+                communications from Estimatrix unless you opt in again by
+                replying START.
+              </li>
+              <li>
+                We will never sell or share your mobile number with third
+                parties for marketing purposes. See our{" "}
+                <a
+                  href="/privacy-policy"
+                  className="text-[var(--primary)] underline"
+                >
                   Privacy Policy
                 </a>{" "}
                 for more details on how your information is used.
