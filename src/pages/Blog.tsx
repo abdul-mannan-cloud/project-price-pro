@@ -63,17 +63,16 @@ const posts = [
 
 export default function Blog() {
   return (
-    <div className="bg-white dark:bg-gray-950 flex flex-col min-h-screen transition-colors">
+    <div className="bg-background flex flex-col min-h-screen transition-colors">
       <Header1 />
-
       <main className="flex-grow">
         {/* Hero Section */}
-        <section className="bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 pt-32 pb-12 md:pb-16">
+        <section className="bg-gradient-to-b from-muted/50 to-background pt-32 pb-12 md:pb-16">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 tracking-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 md:mb-6 tracking-tight">
               Insights & Ideas
             </h1>
-            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Discover strategies, tips, and industry insights to help your
               business thrive in today's competitive landscape.
             </p>
@@ -98,84 +97,75 @@ export default function Blog() {
                     <>
                       <div className="space-y-4 md:space-y-6">
                         <div className="flex items-center gap-3 md:gap-4 text-sm">
-                          <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 md:px-3 py-1 rounded-full font-medium text-xs md:text-sm">
+                          <span className="bg-primary/20 text-primary px-2 md:px-3 py-1 rounded-full font-medium text-xs md:text-sm">
                             Featured
                           </span>
-                          <span className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 md:px-3 py-1 rounded-full font-medium text-xs md:text-sm">
+                          <span className="bg-muted text-muted-foreground px-2 md:px-3 py-1 rounded-full font-medium text-xs md:text-sm">
                             {post.category}
                           </span>
                         </div>
-
-                        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
                           {post.title}
                         </h2>
-
-                        <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+                        <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
                           {post.excerpt}
                         </p>
-
-                        <div className="flex items-center gap-4 md:gap-6 text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-4 md:gap-6 text-xs md:text-sm text-muted-foreground">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-3 h-3 md:w-4 md:h-4" />
                             <span>{post.date}</span>
                           </div>
                           <span>{post.readTime}</span>
                         </div>
-
                         <Link
                           to={`/blog/${post.id}`}
-                          className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold group-hover:gap-3 transition-all text-sm md:text-base"
+                          className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-semibold group-hover:gap-3 transition-all text-sm md:text-base"
                         >
                           Read Article
                           <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
                         </Link>
                       </div>
-
                       {/* Hide image placeholder on mobile to save space */}
                       <div className="hidden lg:block mt-8 lg:mt-0">
-                        <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-gray-200 dark:border-gray-700"></div>
+                        <div className="aspect-[4/3] bg-gradient-to-br from-primary/10 to-primary/20 rounded-2xl border border-border"></div>
                       </div>
                     </>
                   )}
 
                   {/* Regular Post Layout */}
                   {index !== 0 && (
-                    <div className="border-b border-gray-200 dark:border-gray-800 pb-8 md:pb-12">
+                    <div className="border-b border-border pb-8 md:pb-12">
                       <div className="flex items-start justify-between gap-4 md:gap-8">
                         <div className="flex-1 space-y-3 md:space-y-4">
                           <div className="flex items-center gap-3 md:gap-4 text-xs md:text-sm">
-                            <span className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 md:px-3 py-1 rounded-full font-medium">
+                            <span className="bg-muted text-muted-foreground px-2 md:px-3 py-1 rounded-full font-medium">
                               {post.category}
                             </span>
-                            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center gap-2 text-muted-foreground">
                               <Calendar className="w-3 h-3 md:w-4 md:h-4" />
                               <span>{post.date}</span>
                             </div>
-                            <span className="text-gray-500 dark:text-gray-400 hidden sm:inline">
+                            <span className="text-muted-foreground hidden sm:inline">
                               {post.readTime}
                             </span>
                           </div>
-
-                          <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                          <h2 className="text-xl md:text-2xl font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
                             {post.title}
                           </h2>
-
-                          <p className="text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+                          <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
                             {post.excerpt}
                           </p>
-
                           <Link
                             to={`/blog/${post.id}`}
-                            className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold group-hover:gap-3 transition-all text-sm md:text-base"
+                            className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-semibold group-hover:gap-3 transition-all text-sm md:text-base"
                           >
                             Read Article
                             <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
                           </Link>
                         </div>
-
                         {/* Hide small image placeholder on mobile */}
                         <div className="hidden md:block">
-                          <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600"></div>
+                          <div className="w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-muted to-muted/50 rounded-xl border border-border"></div>
                         </div>
                       </div>
                     </div>
@@ -186,14 +176,13 @@ export default function Blog() {
 
             {/* Load More Section */}
             <div className="text-center mt-12 md:mt-16">
-              <button className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 md:px-8 py-2 md:py-3 rounded-lg font-semibold hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-sm md:text-base">
+              <button className="bg-foreground text-background px-6 md:px-8 py-2 md:py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity text-sm md:text-base">
                 Load More Articles
               </button>
             </div>
           </div>
         </section>
       </main>
-
       <Footerdemo />
     </div>
   );

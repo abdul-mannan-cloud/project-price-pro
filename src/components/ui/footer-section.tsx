@@ -128,7 +128,11 @@ export function Footerdemo() {
                   className="w-full"
                   required
                 />
-                <Button type="submit" disabled={isLoading} className="ml-4">
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="ml-4 dark:bg-white dark:text-gray-900"
+                >
                   {isLoading ? "Subscribing..." : "Subscribe"}
                 </Button>
               </form>

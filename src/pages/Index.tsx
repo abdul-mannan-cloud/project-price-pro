@@ -96,7 +96,7 @@ const Index = () => {
             <div className="flex justify-center">
               <TextRotate
                 texts={rotatingTexts}
-                mainClassName="text-primary-600 text-2xl sm:text-3xl md:text-4xl font-bold"
+                mainClassName="text-primary-600 dark:text-black text-2xl sm:text-3xl md:text-4xl font-bold"
                 rotationInterval={3000}
                 staggerDuration={0.02}
               />
@@ -115,11 +115,12 @@ const Index = () => {
               transition={{ duration: 0.8, delay: 0.4 }}
               className="pt-4"
             >
+              {" "}
               <Button
                 onClick={() => navigate(`/estimate/${contractorId}`)}
                 size="lg"
                 variant="default"
-                className="text-lg px-8 py-6 bg-primary-600 hover:bg-secondary text-secondary hover:text-primary border-secondary"
+                className="text-lg px-8 py-6 bg-primary-600 dark:bg-black dark:text-white hover:bg-secondary text-secondary hover:text-primary border-secondary"
               >
                 Start Your Estimate
               </Button>

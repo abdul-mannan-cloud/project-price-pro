@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Header1 } from "@/components/ui/header";
 import { Footerdemo } from "@/components/ui/footer-section";
 
-/* ── keep this in sync with Header1’s real height ── */
+/* ── keep this in sync with Header1's real height ── */
 const HEADER_HEIGHT = 80; // px
 
 const TermsOfService = () => {
@@ -18,8 +18,7 @@ const TermsOfService = () => {
   };
 
   return (
-    /* light = whatever --background is; dark = Estimatrix navy */
-    <div className="flex flex-col min-h-screen bg-[var(--background)] dark:bg-[#0B1E3C] text-[var(--foreground)] transition-colors">
+    <div className="flex flex-col min-h-screen bg-background text-foreground transition-colors">
       <Header1 />
 
       {/* push content below (possibly fixed) header so the Back button never
@@ -31,13 +30,13 @@ const TermsOfService = () => {
         {/* always on top of any hero / banner */}
         <button
           onClick={handleBack}
-          className="relative z-10 text-[var(--primary)] hover:underline text-sm mb-6"
+          className="relative z-10 text-primary dark:text-white hover:underline text-sm mb-6"
         >
           ← Back
         </button>
 
         <h1 className="text-3xl font-semibold mb-2">Terms of Service</h1>
-        <p className="mb-8 text-sm text-[var(--muted-foreground)]">
+        <p className="mb-8 text-sm text-muted-foreground">
           Last Updated: 3/14/2025
         </p>
 
@@ -48,9 +47,9 @@ const TermsOfService = () => {
               1. Acceptance of Terms
             </h2>
             <p>
-              Welcome to <strong>Estimatrix</strong> (“we,” “our,” or “us”). By
+              Welcome to <strong>Estimatrix</strong> ("we," "our," or "us"). By
               accessing or using our website and services, you agree to these
-              Terms of Service (“Terms”). If you do not agree to these Terms,
+              Terms of Service ("Terms"). If you do not agree to these Terms,
               please do not use our platform.
             </p>
           </div>
@@ -62,7 +61,7 @@ const TermsOfService = () => {
             </h2>
             <p>
               Estimatrix provides an AI-powered construction-estimate generator
-              that connects users (“Customers”) with contractors (“Contractors”)
+              that connects users ("Customers") with contractors ("Contractors")
               for potential services. We do not perform construction work
               ourselves but act as a lead-generation platform.
             </p>
@@ -73,7 +72,7 @@ const TermsOfService = () => {
             <h2 className="text-lg font-semibold tracking-tight">
               3. User Accounts & Responsibilities
             </h2>
-            <ul className="list-disc list-inside space-y-2 text-[15px] text-[var(--muted-foreground)] px-5">
+            <ul className="list-disc list-inside space-y-2 text-[15px] text-muted-foreground px-5">
               <li>
                 Users must provide accurate and complete information when
                 creating an account.
@@ -95,7 +94,7 @@ const TermsOfService = () => {
             <h2 className="text-lg font-semibold tracking-tight">
               4. Payments & Transactions
             </h2>
-            <ul className="list-disc list-inside space-y-2 text-[15px] text-[var(--muted-foreground)] px-5">
+            <ul className="list-disc list-inside space-y-2 text-[15px] text-muted-foreground px-5">
               <li>
                 Estimatrix may charge users for premium services, estimate
                 generation, or lead access.
@@ -116,7 +115,7 @@ const TermsOfService = () => {
             <h2 className="text-lg font-semibold tracking-tight">
               5. Relationship Between Customers & Contractors
             </h2>
-            <ul className="list-disc list-inside space-y-2 text-[15px] text-[var(--muted-foreground)] px-5">
+            <ul className="list-disc list-inside space-y-2 text-[15px] text-muted-foreground px-5">
               <li>
                 Estimatrix does not employ or endorse Contractors. Any
                 agreements made between Customers and Contractors are
@@ -138,7 +137,7 @@ const TermsOfService = () => {
             <h2 className="text-lg font-semibold tracking-tight">
               6. Prohibited Activities
             </h2>
-            <ul className="list-disc list-inside space-y-2 text-[15px] text-[var(--muted-foreground)] px-5">
+            <ul className="list-disc list-inside space-y-2 text-[15px] text-muted-foreground px-5">
               <li>Use the platform for illegal activities.</li>
               <li>
                 Misrepresent project details or provide false information.
@@ -154,7 +153,7 @@ const TermsOfService = () => {
               7. Limitation of Liability
             </h2>
             <p>
-              Estimatrix is provided “as is” without warranties of any kind. We
+              Estimatrix is provided "as is" without warranties of any kind. We
               do not guarantee the accuracy of AI-generated estimates. We are
               not liable for any disputes, damages, or losses resulting from
               interactions between Customers and Contractors. In no event shall
@@ -170,10 +169,7 @@ const TermsOfService = () => {
             </h2>
             <p>
               Your use of Estimatrix is also governed by our{" "}
-              <a
-                href="/privacy-policy"
-                className="text-[var(--primary)] underline"
-              >
+              <a href="/privacy-policy" className="text-primary underline">
                 Privacy Policy
               </a>
               , which explains how we collect, use, and protect your data.
@@ -208,7 +204,7 @@ const TermsOfService = () => {
             <h2 className="text-lg font-semibold tracking-tight">
               11. SMS Terms
             </h2>
-            <ul className="list-disc list-inside space-y-2 text-[15px] text-[var(--muted-foreground)] px-5">
+            <ul className="list-disc list-inside space-y-2 text-[15px] text-muted-foreground px-5">
               <li>
                 By providing your phone number and opting in, you consent to
                 receive text messages from Estimatrix related to service
@@ -231,10 +227,7 @@ const TermsOfService = () => {
               <li>
                 We will never sell or share your mobile number with third
                 parties for marketing purposes. See our{" "}
-                <a
-                  href="/privacy-policy"
-                  className="text-[var(--primary)] underline"
-                >
+                <a href="/privacy-policy" className="text-primary underline">
                   Privacy Policy
                 </a>{" "}
                 for more details on how your information is used.

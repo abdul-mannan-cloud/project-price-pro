@@ -17,7 +17,7 @@ const PrivacyPolicy = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--background)] dark:bg-[#0B1E3C] text-[var(--foreground)] transition-colors">
+    <div className="flex flex-col min-h-screen bg-background text-foreground transition-colors">
       <Header1 />
 
       {/* push everything below the fixed header */}
@@ -27,14 +27,14 @@ const PrivacyPolicy = () => {
       >
         <button
           onClick={handleBack}
-          className="relative z-10 text-[var(--primary)] hover:underline text-sm mb-6"
+          className="relative z-10 text-primary dark:text-white hover:underline text-sm mb-6"
         >
           ← Back
         </button>
 
         <div className="text-base leading-relaxed">
           <h1 className="text-3xl font-semibold mb-2">Privacy Policy</h1>
-          <p className="mb-8 text-sm text-[var(--muted-foreground)]">
+          <p className="mb-8 text-sm text-muted-foreground">
             Last Updated: 3/14/2025
           </p>
 
@@ -63,7 +63,7 @@ const PrivacyPolicy = () => {
             <h2 className="text-lg font-semibold leading-none tracking-tight my-4">
               2. Data We Collect
             </h2>
-            <ul className="list-disc list-inside space-y-2 px-5 text-[15px] text-[var(--muted-foreground)]">
+            <ul className="list-disc list-inside space-y-2 px-5 text-[15px] text-muted-foreground">
               <li>
                 <strong>Identity &amp; Contact Information:</strong> Name,
                 email, phone number.
@@ -95,7 +95,7 @@ const PrivacyPolicy = () => {
             <h2 className="text-lg font-semibold leading-none tracking-tight my-4">
               3. How We Use Your Data
             </h2>
-            <ul className="list-disc list-inside space-y-2 text-[15px] text-[var(--muted-foreground)] px-5">
+            <ul className="list-disc list-inside space-y-2 text-[15px] text-muted-foreground px-5">
               <li>Generating construction estimates using AI.</li>
               <li>
                 Connecting users with contractors who can provide services.

@@ -32,7 +32,7 @@ export default function Industry() {
   });
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--background)] dark:bg-[#0B1E3C] text-[var(--foreground)] transition-colors">
+    <div className="flex flex-col min-h-screen bg-background text-foreground transition-colors">
       <Header1 />
 
       {/* push content below the fixed header */}
@@ -61,9 +61,9 @@ export default function Industry() {
               {categories.map((cat) => (
                 <div
                   key={cat.id}
-                  className="flex items-start gap-4 p-4 rounded-lg transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                  className="flex items-start gap-4 p-4 rounded-lg transition-colors duration-200 hover:bg-muted cursor-pointer"
                 >
-                  <Check className="w-5 h-5 text-primary mt-1" />
+                  <Check className="w-5 h-5 text-primary dark:text-white mt-1" />
                   <div>
                     <h3 className="text-lg font-medium">{cat.name}</h3>
                     <p className="text-sm text-muted-foreground mt-1">

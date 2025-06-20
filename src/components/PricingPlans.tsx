@@ -75,47 +75,35 @@ const PricingPlans = ({
         return (
           <div
             key={plan.key}
-            className={`
-              flex flex-col rounded-lg p-4 md:p-8
-              bg-[var(--card)] border border-[var(--border)]
-              transition-shadow hover:shadow-lg
-            `}
-            style={{ color: "var(--card-foreground)" }}
+            className="flex flex-col rounded-lg p-4 md:p-8 bg-card border border-border transition-shadow hover:shadow-lg text-card-foreground"
           >
             {/* Header */}
             <div className="mb-6 flex flex-col gap-5">
               <div className="flex items-center gap-3">
                 <h3 className="text-lg md:text-2xl font-bold">{plan.title}</h3>
-                <span
-                  className="
-                    inline-block rounded-full py-1 px-3 text-[10px] md:text-sm font-semibold
-                    bg-white text-green-600 border border-green-200
-                  "
-                >
+                <span className="inline-block rounded-full py-1 px-3 text-[10px] md:text-sm font-semibold bg-white text-green-500 border border-green-200">
                   {plan.label}
                 </span>
               </div>
               <div>
-                <p className="text-[var(--foreground)] text-4xl font-bold">
+                <p className="text-foreground text-4xl font-bold">
                   {plan.pricing}
                 </p>
-                <p className="text-[var(--muted-foreground)]">
-                  {plan.subtitle}
-                </p>
+                <p className="text-muted-foreground">{plan.subtitle}</p>
               </div>
             </div>
 
             {/* Divider */}
-            <div className="border-b mb-8 border-[var(--border)]" />
+            <div className="border-b mb-8 border-border" />
 
             {/* Features */}
             <ul className="flex-grow space-y-3 md:space-y-4 text-sm md:text-base">
               {plan.features.map((feature, idx) => (
                 <li key={idx} className="flex items-start">
-                  <span className="mr-3 mt-1 text-[var(--card-foreground)]">
+                  <span className="mr-3 mt-1 text-primary dark:text-white">
                     ✓
                   </span>
-                  <span>{feature}</span>
+                  <span className="text-card-foreground">{feature}</span>
                 </li>
               ))}
             </ul>
@@ -124,13 +112,7 @@ const PricingPlans = ({
             <button
               onClick={() => handleSelectPlan(plan.key)}
               disabled={loading}
-              className={`
-                mt-6 md:mt-8 w-full py-2 md:py-3 rounded-md font-semibold
-                bg-white text-gray-900 border border-gray-300
-                hover:bg-blue-600 hover:text-white hover:border-blue-600
-                disabled:opacity-50 disabled:cursor-not-allowed
-                transition-all duration-200
-              `}
+              className="mt-6 md:mt-8 w-full py-2 md:py-3 rounded-md font-semibold bg-foreground text-background hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {loading && isCurrent ? "Processing..." : plan.buttonText}
             </button>

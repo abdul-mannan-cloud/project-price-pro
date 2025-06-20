@@ -33,18 +33,55 @@
     --warning: #fbbf24;
     --warning-foreground: #1d1d1f;
   }
+
   :root.dark {
-    --background: #0d0f1c;
-    --foreground: #f5f5f7;
-    --card: #1a1e2e;
-    --card-foreground: #f5f5f7;
-    --popover: #1a1e2e;
-    --popover-foreground: #f5f5f7;
-    --primary: #1dd97a;
-    --primary-foreground: #0d0f1c;
-    --border: #2a2e3e;
-    --input: #2a2e3e;
-    /* add any other overrides you need */
+    /* Charcoal/graphite backgrounds instead of navy */
+    --background: #0a0a0a;
+    --foreground: #f0f0f0;
+
+    /* Dark charcoal cards with subtle warmth */
+    --card: #161616;
+    --card-foreground: #f0f0f0;
+    --popover: #1c1c1c;
+    --popover-foreground: #f0f0f0;
+
+    /* Vibrant teal/cyan primary for contrast */
+    --primary: #06b6d4;
+    --primary-foreground: #000000;
+    --primary-100: rgba(6, 182, 212, 0.1);
+    --primary-200: rgba(6, 182, 212, 0.2);
+    --primary-300: rgba(6, 182, 212, 0.3);
+    --primary-400: rgba(6, 182, 212, 0.5);
+    --primary-500: rgba(6, 182, 212, 0.7);
+    --primary-600: #06b6d4;
+    --primary-700: #0891b2;
+
+    /* Dark gray secondary */
+    --secondary: #1a1a1a;
+    --secondary-foreground: #f0f0f0;
+
+    /* Muted tones with warmth */
+    --muted: #262626;
+    --muted-foreground: #a3a3a3;
+
+    /* Complementary accent - amber */
+    --accent: #f59e0b;
+    --accent-foreground: #000000;
+
+    /* Softer destructive for dark mode */
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    /* Subtle borders */
+    --border: #262626;
+    --input: #262626;
+
+    /* Ring matches primary */
+    --ring: #06b6d4;
+
+    /* Warm warning */
+    --warning: #f59e0b;
+    --warning-foreground: #000000;
   }
 
   * {
@@ -52,7 +89,16 @@
   }
 
   body {
-    @apply bg-secondary text-foreground font-sans antialiased min-h-screen;
+    @apply bg-background text-foreground font-sans antialiased min-h-screen;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  /* Dark mode enhancements */
+  .dark body {
+    background: #0a0a0a;
+    min-height: 100vh;
   }
 
   h1 {
@@ -61,6 +107,14 @@
 
   p {
     @apply text-[15px] text-muted-foreground;
+  }
+
+  /* Smooth transitions for dark mode */
+  * {
+    transition:
+      border-color 0.2s ease,
+      background-color 0.2s ease,
+      color 0.2s ease;
   }
 }
 
@@ -86,7 +140,7 @@
     @apply text-[11px] text-muted-foreground;
     top: -7px;
     transform: translateY(0);
-    background-color: white;
+    background-color: var(--background);
     padding-left: 4px;
     padding-right: 4px;
   }
@@ -130,6 +184,125 @@
   .container {
     @apply w-full mx-auto;
   }
+}
+
+/* Dark mode specific styles */
+.dark .card {
+  background: #161616;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.dark .form-input,
+.dark .select-trigger {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dark .form-input:hover,
+.dark .select-trigger:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dark .form-input:focus,
+.dark .select-trigger:focus {
+  background: rgba(6, 182, 212, 0.05);
+  border-color: #06b6d4;
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+}
+
+.dark .button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fafafa;
+}
+
+.dark .button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.dark .button-primary {
+  background: #f0f0f0;
+  color: #0a0a0a;
+  border: none;
+  box-shadow: 0 4px 12px rgba(240, 240, 240, 0.1);
+  border-bottom: 3px solid #d0d0d0;
+}
+
+.dark .button-primary:hover {
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(240, 240, 240, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Text enhancements for dark mode */
+.dark h1,
+.dark h2,
+.dark h3 {
+  color: #f0f0f0;
+}
+
+/* Link styles for dark mode */
+.dark a {
+  color: #06b6d4;
+  text-decoration: none;
+}
+
+.dark a:hover {
+  color: #22d3ee;
+}
+
+/* Scrollbar styling for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #262626;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #404040;
+}
+
+/* Selection color */
+.dark ::selection {
+  background: rgba(6, 182, 212, 0.3);
+  color: #ffffff;
+}
+
+/* Modal styles - ensure proper contrast */
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background: var(--card);
+  color: var(--card-foreground);
+}
+
+.dark .modal-content {
+  background: #161616;
+  color: #f0f0f0;
+}
+
+/* Ensure text visibility on light backgrounds */
+.estimate-card {
+  background: var(--card);
+  color: var(--card-foreground);
+}
+
+.dark .estimate-card {
+  background: #161616;
+  color: #f0f0f0;
 }
 
 .PhoneInputInput {

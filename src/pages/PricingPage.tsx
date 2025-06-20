@@ -19,7 +19,7 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--background)] dark:bg-[#0B1E3C] text-[var(--foreground)] transition-colors">
+    <div className="flex flex-col min-h-screen bg-background text-foreground transition-colors">
       <Header1 />
 
       {/* push content below fixed header so nothing hides  */}
