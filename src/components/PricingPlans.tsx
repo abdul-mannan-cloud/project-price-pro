@@ -62,9 +62,11 @@ const PricingPlans = ({
   useEffect(() => {
     if (manualSelection) {
       selectPlan();
+      // Navigate to signup page after plan selection
+      navigate("/signup");
       setManualSelection(false);
     }
-  }, [formData.tier, manualSelection, selectPlan]);
+  }, [formData.tier, manualSelection, selectPlan, navigate]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
@@ -83,13 +85,11 @@ const PricingPlans = ({
             {/* Header */}
             <div className="mb-6 flex flex-col gap-5">
               <div className="flex items-center gap-3">
-                <h3 className="text-lg md:text-2xl font-bold">
-                  {plan.title}
-                </h3>
+                <h3 className="text-lg md:text-2xl font-bold">{plan.title}</h3>
                 <span
                   className="
                     inline-block rounded-full py-1 px-3 text-[10px] md:text-sm font-semibold
-                    bg-[var(--primary)] text-[var(--primary-foreground)]
+                    bg-white text-green-600 border border-green-200
                   "
                 >
                   {plan.label}
@@ -99,7 +99,9 @@ const PricingPlans = ({
                 <p className="text-[var(--foreground)] text-4xl font-bold">
                   {plan.pricing}
                 </p>
-                <p className="text-[var(--muted-foreground)]">{plan.subtitle}</p>
+                <p className="text-[var(--muted-foreground)]">
+                  {plan.subtitle}
+                </p>
               </div>
             </div>
 
@@ -124,9 +126,10 @@ const PricingPlans = ({
               disabled={loading}
               className={`
                 mt-6 md:mt-8 w-full py-2 md:py-3 rounded-md font-semibold
-                bg-[var(--primary)] text-[var(--primary-foreground)]
+                bg-white text-gray-900 border border-gray-300
+                hover:bg-blue-600 hover:text-white hover:border-blue-600
                 disabled:opacity-50 disabled:cursor-not-allowed
-                transition-colors duration-200
+                transition-all duration-200
               `}
             >
               {loading && isCurrent ? "Processing..." : plan.buttonText}

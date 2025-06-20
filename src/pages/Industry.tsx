@@ -48,7 +48,6 @@ export default function Industry() {
           <div className="space-y-10">
             {/* badge + heading */}
             <div className="space-y-2">
-              <Badge variant="outline">Service</Badge>
               <h2 className="text-3xl md:text-5xl font-semibold tracking-tight">
                 Service Categories
               </h2>
@@ -60,7 +59,10 @@ export default function Industry() {
             {/* category list */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {categories.map((cat) => (
-                <div key={cat.id} className="flex items-start gap-4">
+                <div
+                  key={cat.id}
+                  className="flex items-start gap-4 p-4 rounded-lg transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                >
                   <Check className="w-5 h-5 text-primary mt-1" />
                   <div>
                     <h3 className="text-lg font-medium">{cat.name}</h3>
