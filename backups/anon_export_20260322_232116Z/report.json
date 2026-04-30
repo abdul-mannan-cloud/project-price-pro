@@ -1,0 +1,90 @@
+{
+  "generated_at_utc": "2026-03-22T23:21:16.574Z",
+  "project_url": "https://sflysnodxcufeszuymxk.supabase.co",
+  "mode": "anon-key-export",
+  "limitations": [
+    "Only data exposed to anon role is included.",
+    "RLS-protected/private data is not included.",
+    "DB roles, grants, policies, triggers, extensions, and full SQL schema are not included."
+  ],
+  "totals": {
+    "table_candidates": 12,
+    "exported_tables": 8,
+    "blocked_or_failed_tables": 4,
+    "exported_rows": 53
+  },
+  "tables": [
+    {
+      "table": "Options",
+      "status": "exported",
+      "row_count": 1,
+      "file": "tables/Options.json"
+    },
+    {
+      "table": "ai_instructions",
+      "status": "exported",
+      "row_count": 0,
+      "file": "tables/ai_instructions.json"
+    },
+    {
+      "table": "ai_rates",
+      "status": "exported",
+      "row_count": 0,
+      "file": "tables/ai_rates.json"
+    },
+    {
+      "table": "categories",
+      "status": "exported",
+      "row_count": 0,
+      "file": "tables/categories.json"
+    },
+    {
+      "table": "contractor_settings",
+      "status": "exported",
+      "row_count": 7,
+      "file": "tables/contractor_settings.json"
+    },
+    {
+      "table": "contractors",
+      "status": "exported",
+      "row_count": 8,
+      "file": "tables/contractors.json"
+    },
+    {
+      "table": "leads",
+      "status": "exported",
+      "row_count": 37,
+      "file": "tables/leads.json"
+    },
+    {
+      "table": "newsletter_subscriptions",
+      "status": "blocked_or_failed",
+      "http_status": 404,
+      "error": "{\"code\":\"PGRST205\",\"details\":null,\"hint\":\"Perhaps you meant the table 'public.subscriptions'\",\"message\":\"Could not find the table 'public.newsletter_subscriptions' in the schema cache\"}"
+    },
+    {
+      "table": "password_resets",
+      "status": "blocked_or_failed",
+      "http_status": 404,
+      "error": "{\"code\":\"PGRST205\",\"details\":null,\"hint\":\"Perhaps you meant the table 'public.projects'\",\"message\":\"Could not find the table 'public.password_resets' in the schema cache\"}"
+    },
+    {
+      "table": "question_sets",
+      "status": "blocked_or_failed",
+      "http_status": 404,
+      "error": "{\"code\":\"PGRST205\",\"details\":null,\"hint\":\"Perhaps you meant the table 'public.questions'\",\"message\":\"Could not find the table 'public.question_sets' in the schema cache\"}"
+    },
+    {
+      "table": "teammates",
+      "status": "exported",
+      "row_count": 0,
+      "file": "tables/teammates.json"
+    },
+    {
+      "table": "webhooks",
+      "status": "blocked_or_failed",
+      "http_status": 404,
+      "error": "{\"code\":\"PGRST205\",\"details\":null,\"hint\":\"Perhaps you meant the table 'public.questions'\",\"message\":\"Could not find the table 'public.webhooks' in the schema cache\"}"
+    }
+  ]
+}

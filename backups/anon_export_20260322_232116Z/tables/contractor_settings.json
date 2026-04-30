@@ -1,0 +1,3684 @@
+[
+  {
+    "id": "05162b5d-9303-462f-b8a9-336dd358c7a3",
+    "contractor_id": "dabe7335-5617-4cad-8842-8de7a157704e",
+    "minimum_project_cost": 500,
+    "markup_percentage": 20,
+    "tax_rate": 6,
+    "ai_instructions": "",
+    "estimate_client_message": "",
+    "estimate_footer_text": "",
+    "estimate_hide_subtotals": false,
+    "estimate_signature_enabled": true,
+    "webhook_url": null,
+    "webhook_secret": null,
+    "api_key_prefix": null,
+    "created_at": "2025-08-28T23:59:06.367903+00:00",
+    "updated_at": "2025-08-28T23:59:06.367903+00:00",
+    "discount_percentage": null,
+    "vendor_preference": "Lowes",
+    "global_prompt": null,
+    "global_prompt_enabled": false,
+    "integrations": {},
+    "custom_question_form": null,
+    "categories": {},
+    "preferred_language": null,
+    "ai_rates": []
+  },
+  {
+    "id": "d6381df3-a2fd-47e3-9d39-386c29605e22",
+    "contractor_id": "3398f1e8-0afb-4b54-8cfb-ba54e6c4fa4b",
+    "minimum_project_cost": 0,
+    "markup_percentage": 20,
+    "tax_rate": 8.5,
+    "ai_instructions": "",
+    "estimate_client_message": "",
+    "estimate_footer_text": "",
+    "estimate_hide_subtotals": false,
+    "estimate_signature_enabled": true,
+    "webhook_url": null,
+    "webhook_secret": null,
+    "api_key_prefix": null,
+    "created_at": "2026-01-08T20:22:04.504378+00:00",
+    "updated_at": "2026-01-08T20:22:04.504378+00:00",
+    "discount_percentage": null,
+    "vendor_preference": "Lowes",
+    "global_prompt": null,
+    "global_prompt_enabled": false,
+    "integrations": {},
+    "custom_question_form": null,
+    "categories": {},
+    "preferred_language": null,
+    "ai_rates": []
+  },
+  {
+    "id": "8d1703df-c220-45f9-9744-25932ba19937",
+    "contractor_id": "8d1703df-c220-45f9-9744-25932ba19937",
+    "minimum_project_cost": 0,
+    "markup_percentage": 20,
+    "tax_rate": 8.5,
+    "ai_instructions": "",
+    "estimate_client_message": "",
+    "estimate_footer_text": "",
+    "estimate_hide_subtotals": false,
+    "estimate_signature_enabled": true,
+    "webhook_url": null,
+    "webhook_secret": null,
+    "api_key_prefix": null,
+    "created_at": "2026-01-25T18:51:24.681457+00:00",
+    "updated_at": "2026-01-25T18:51:24.681457+00:00",
+    "discount_percentage": null,
+    "vendor_preference": "Lowes",
+    "global_prompt": null,
+    "global_prompt_enabled": false,
+    "integrations": {},
+    "custom_question_form": null,
+    "categories": {
+      "Fencing": {
+        "category": "Fence Installation",
+        "keywords": [
+          "fence installation",
+          "fence",
+          "fence repair",
+          "fence painting",
+          "fence staining",
+          "wood fence",
+          "vinyl fence",
+          "chainlink",
+          "chain link",
+          "gates",
+          "fence post"
+        ],
+        "questions": [
+          {
+            "id": "F1a",
+            "type": "multiple_choice",
+            "order": 1.1,
+            "options": [
+              {
+                "next": "F_Install",
+                "label": "Fence Installation",
+                "value": "install",
+                "image_url": "https://theamericanfencecompany.com/wp-content/uploads/2021/05/BlogPic_BoardonBoardInstall.jpg"
+              },
+              {
+                "next": "F_Repair",
+                "label": "Fence Repair",
+                "value": "repair",
+                "image_url": "https://media.istockphoto.com/id/1373160102/photo/garden-fence-blown-over-by-high-wind-in-a-storm.jpg?s=612x612&w=0&k=20&c=4R5d5rt95sxOQAXiIuftwvxURTC1EHnGA0vQjp3qh-o="
+              },
+              {
+                "next": "F_Paint",
+                "label": "Fence Painting",
+                "value": "painting",
+                "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSu2dmLVItiou5Ntbb4_SQrDr2OWaC1PhH6ww&s"
+              },
+              {
+                "next": "F_Stain",
+                "label": "Fence Staining",
+                "value": "staining",
+                "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCC4TJ0bwRkIEu5_9tsngWQA5gcxdXrTzXcg&s"
+              },
+              {
+                "next": "F_Post",
+                "label": "Fence Post Installation",
+                "value": "posting",
+                "image_url": "https://s3-us-west-2.amazonaws.com/dunndiy.com/project-images/DunnDIY_SetAFencePost-25.jpg"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,350}",
+                "placeholder": "Describe the scope of work",
+                "character_limit": "350",
+                "validation_message": "Please provide details about what work you require"
+              }
+            ],
+            "question": "Which fence services do you require? (Select all that apply)"
+          },
+          {
+            "id": "F_Post",
+            "type": "camera_measurement",
+            "unit": "EA",
+            "order": 6,
+            "options": [
+              {
+                "max": 200,
+                "min": 1,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter the area size",
+                "validation": "^[0-9]+(\\.[0-9]{1,2})?$",
+                "placeholder": "Enter amount of posts",
+                "validation_message": "Please enter a valid number of posts"
+              },
+              {
+                "max": 200,
+                "min": 1,
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Measure with Camera",
+                "tooltip": "Use your device’s camera to snap photos. Our AI will detect post spacing and automatically estimate the number of fence posts needed.",
+                "camera_prompt": "Take a photo to measure fence post spacing"
+              }
+            ],
+            "tooltip": "Include all corner, end, and line posts. Posts are typically spaced 6–8 ft apart. To estimate: (Total Fence Length ÷ Spacing = Number of Posts)",
+            "question": "How many fence posts require installation or replacement?",
+            "helper_text": "This helps us estimate materials and labor"
+          },
+          {
+            "id": "F_Install",
+            "type": "camera_measurement",
+            "unit": "LF",
+            "order": 2,
+            "options": [
+              {
+                "max": 20000,
+                "min": 4,
+                "next": "F_Install_Height",
+                "type": "number_input",
+                "label": "What is the total linear footage of fence to be installed?",
+                "validation": "^[0-9]+(\\.[0-9]{1,2})?$",
+                "placeholder": "Please enter a valid linear footage of fence",
+                "validation_message": "Please enter a valid linear footage of fence"
+              },
+              {
+                "max": 20000,
+                "min": 4,
+                "next": "F_Install_Height",
+                "type": "camera_measurement",
+                "label": "Measure with Camera",
+                "tooltip": "Use your device’s camera to snap photos. Our AI will detect fence lines and automatically calculate the linear footage.",
+                "camera_prompt": "Take a photo to calculate fence linear footage"
+              }
+            ],
+            "tooltip": "Measure the total length of the fence line with a tape, wheel, or step count. For panel fences, use: (Panels × Panel Width = Total LF)",
+            "question": "What is the total linear footage of fence to be installed?",
+            "video_url": "https://www.youtube.com/watch?v=l01MSBlpaRY",
+            "helper_text": "This helps us estimate materials and labor"
+          },
+          {
+            "id": "F_Install_Height",
+            "type": "single_choice",
+            "order": 2.1,
+            "options": [
+              {
+                "next": "F_Install_Material",
+                "label": "3 ft",
+                "value": "3_ft",
+                "image_url": "https://mobileimages.lowes.com/productimages/02b9d852-e12e-4ff8-9066-bc661c9792d1/03062966.jpg"
+              },
+              {
+                "next": "F_Install_Material",
+                "label": "4 ft",
+                "value": "4_ft",
+                "image_url": "https://cdn.shopify.com/s/files/1/2393/7423/files/cat62.jpg"
+              },
+              {
+                "next": "F_Install_Material",
+                "label": "6 ft",
+                "value": "6_ft",
+                "image_url": "https://fencecity.com/common/images/styles/IMG_7351x1100sq.jpg"
+              },
+              {
+                "next": "F_Install_Material",
+                "label": "8 ft",
+                "value": "8_ft",
+                "image_url": "https://www.charlesandivy.co.uk/cdn/shop/files/6ft-hudson-lightoak-greyali_900x.jpg?v=1718817291"
+              },
+              {
+                "max": 20,
+                "min": 1,
+                "next": "F_Install_Material",
+                "type": "number_input",
+                "unit": "FT",
+                "label": "Other (FT)",
+                "value": "custom_size",
+                "validation": "^[0-9]+(\\.[0-9]{1,2})?$",
+                "placeholder": "How tall will the fence be?",
+                "validation_message": "How tall will the fence be?"
+              }
+            ],
+            "question": "How tall will the fence be?"
+          },
+          {
+            "id": "F_Install_Material",
+            "type": "single_choice",
+            "order": 2.2,
+            "options": [
+              {
+                "next": "F_Install_Wood",
+                "label": "Wood",
+                "value": "wood",
+                "image_url": "https://cdn.prod.website-files.com/664b4a371f1e43b58efbb1fe/66755f616176a4541a5bfc2f_shutterstock_2319365355.webp"
+              },
+              {
+                "next": "F_Install_Vinyl",
+                "label": "Vinyl",
+                "value": "vinyl",
+                "image_url": "https://barrierbossusa.com/cdn/shop/products/Vinyl-Fence-Panels-The-Glacier-Line-BarrierBoss-37941654257965.jpg?v=1746244982"
+              },
+              {
+                "next": "F_Install_Chainlink",
+                "label": "Chain Link",
+                "value": "chainlink",
+                "image_url": "https://octanecdn.com/firstfencecom/yard-with-black-chain-Link-Fence-1024x683.jpg"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe the fencing material",
+                "character_limit": "250",
+                "validation_message": "Please provide details about fence material"
+              }
+            ],
+            "question": "What material are you considering for the fence installation?"
+          },
+          {
+            "id": "F_Install_Wood",
+            "type": "multiple_choice",
+            "order": 2.21,
+            "options": [
+              {
+                "next": "F_Install_Wood_Grade",
+                "label": "Select wood grade (price/quality)",
+                "value": "wood_grade",
+                "image_url": ""
+              },
+              {
+                "next": "F_Install_Wood_Stain",
+                "label": "Would you like to stain the wood?",
+                "value": "wood_stain",
+                "image_url": ""
+              },
+              {
+                "next": "F_Install_Wood_Style",
+                "label": "Fence style",
+                "value": "wood_style",
+                "image_url": ""
+              }
+            ],
+            "question": "For a wooden fence, please specify additional details:"
+          },
+          {
+            "id": "F_Install_Wood_Grade",
+            "type": "single_choice",
+            "order": 2.211,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Premium (High quality, expensive)",
+                "value": "premium"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Standard (Balanced quality and price)",
+                "value": "standard"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Economy (Lower cost, basic quality)",
+                "value": "economy"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe the preferred wood grade",
+                "character_limit": "250",
+                "validation_message": "Please provide details about preferred wood grade"
+              }
+            ],
+            "question": "Select the wood grade you prefer:"
+          },
+          {
+            "id": "F_Install_Wood_Stain",
+            "type": "single_choice",
+            "order": 2.212,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes_stain"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no_stain"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe the fence staining/painting preferences",
+                "character_limit": "250",
+                "validation_message": "Describe the fence staining/painting preferences"
+              }
+            ],
+            "question": "Would you like to have the wood fence stained or painted?"
+          },
+          {
+            "id": "F_Install_Wood_Style",
+            "type": "single_choice",
+            "order": 2.213,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Vertical boards",
+                "value": "vertical",
+                "image_url": "https://austexfenceanddeck.com/wp-content/uploads/2023/10/board-on-board-fence-picture-frame.jpg"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Horizontal boards",
+                "value": "horizontal",
+                "image_url": "https://images.squarespace-cdn.com/content/v1/5abada29e17ba3a10b3e9e38/090dab8f-2bbf-4bc9-9b14-604ec10687dd/Fence+3_001.jpg"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Picket fence",
+                "value": "picket",
+                "image_url": "https://cdn.shopify.com/s/files/1/2393/7423/files/cat105.jpg"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Which style of wood fence pattern do you prefer?",
+                "character_limit": "250",
+                "validation_message": "Which style of wood fence pattern do you prefer?"
+              }
+            ],
+            "question": "Which style of wood fence pattern do you prefer?"
+          },
+          {
+            "id": "F_Install_Vinyl",
+            "type": "single_choice",
+            "order": 2.22,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "White",
+                "value": "White",
+                "image_url": "https://fivestarfenceandstain.com/wp-content/uploads/2024/09/five-star-fence-and-stain-llc-fencing-company-nashville-brentwood-clarksville-and-murfreesboro-tn-010.webp"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Black",
+                "value": "vinyl_black",
+                "image_url": "https://barrierbossusa.com/cdn/shop/files/Black-Aluminum-Privacy-Fence-Panels-96-Wide-x-96-High-BarrierBoss-41834978672941_535x.jpg?v=1737868364"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "For a vinyl fence, which color/style do you prefer?",
+                "character_limit": "250",
+                "validation_message": "For a vinyl fence, which color/style do you prefer?"
+              }
+            ],
+            "question": "For a vinyl fence, which color/style do you prefer?"
+          },
+          {
+            "id": "F_Install_Chainlink",
+            "type": "single_choice",
+            "order": 2.23,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Steel",
+                "value": "chainlink_steel",
+                "image_url": "https://jewettcameronfence.com/cdn/shop/files/RESIDENTIALFRONTYARD6FTSILVER-1000x.jpg?v=1710705328"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Black",
+                "value": "chainlink_black",
+                "image_url": "https://images.thdstatic.com/productImages/ccea1e97-a081-4f66-abf9-5fbc0e3ed595/svn/everbilt-fence-hardware-328787bkeb-4f_600.jpg"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "For a chainlink fence, which color/style do you prefer?",
+                "character_limit": "250",
+                "validation_message": "For a chainlink fence, which color/style do you prefer?"
+              }
+            ],
+            "question": "For a chainlink fence, which color/style do you prefer?"
+          },
+          {
+            "id": "F_Repair",
+            "type": "single_choice",
+            "order": 3,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Minor repair",
+                "value": "minor_repair",
+                "image_url": "https://empirefence.net/wp-content/uploads/2021/02/fix-a-fence-1024x684.jpg"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Major repair",
+                "value": "major_repair",
+                "image_url": "https://www.kirkwoodfence.com/wp-content/uploads/2023/08/Depositphotos_342299034_L.jpg"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "For fence repair, what type of repair is needed?",
+                "character_limit": "250",
+                "validation_message": "For fence repair, what type of repair is needed?"
+              }
+            ],
+            "question": "For fence repair, what type of repair is needed?"
+          },
+          {
+            "id": "F_Paint",
+            "type": "single_choice",
+            "order": 3,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Full repaint",
+                "value": "full_repaint",
+                "image_url": ""
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Touch up only",
+                "value": "touch_up",
+                "image_url": ""
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "For fence painting, what treatment is required?",
+                "character_limit": "250",
+                "validation_message": "For fence painting, what treatment is required?"
+              }
+            ],
+            "question": "For fence painting, what treatment is required?"
+          },
+          {
+            "id": "F_Stain",
+            "type": "single_choice",
+            "order": 3,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Natural wood stain",
+                "value": "wood_stain",
+                "image_url": "https://staindfence.com/wp-content/uploads/2017/11/temp-background.png"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Color stain",
+                "value": "color_stain",
+                "image_url": "https://www.olympic.com/cms/getmedia/6e2d63d0-6c73-4648-8cdd-6681828fd1f0/fence_blue_04.jpg?width=500&height=500&ext=.jpg"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "For fence staining, please select the desired treatment?",
+                "character_limit": "250",
+                "validation_message": "For fence staining, please select the desired treatment?"
+              }
+            ],
+            "question": "For fence staining, please select the desired treatment:"
+          },
+          {
+            "id": "F8",
+            "type": "single_choice",
+            "order": 4,
+            "options": [
+              {
+                "next": "F9",
+                "label": "No landscaping needed",
+                "value": "no_landscaping",
+                "image_url": ""
+              },
+              {
+                "next": "F8a",
+                "type": "text_input",
+                "label": "Yes, specify",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe fence-related landscaping work?",
+                "character_limit": "250",
+                "validation_message": "Describe fence-related landscaping work?"
+              }
+            ],
+            "question": "Do you need any fence-related landscaping work?"
+          },
+          {
+            "id": "F8a",
+            "type": "multiple_choice",
+            "order": 4.1,
+            "options": [
+              {
+                "next": "F9",
+                "label": "Tree/bush removal along fence line",
+                "value": "removal"
+              },
+              {
+                "next": "F9",
+                "label": "Leveling or grading before installation",
+                "value": "grading"
+              },
+              {
+                "next": "F9",
+                "label": "Grass/sod replacement",
+                "value": "grass_replacement"
+              },
+              {
+                "next": "F9",
+                "label": "Planting shrubs or hedges",
+                "value": "planting"
+              },
+              {
+                "next": "F9",
+                "label": "None of these",
+                "value": "no_extra_landscape"
+              }
+            ],
+            "question": "Which landscaping services do you need? (Select all that apply)"
+          },
+          {
+            "id": "F9",
+            "type": "single_choice",
+            "order": 5,
+            "options": [
+              {
+                "next": "F9a",
+                "label": "Yes, explore additional services",
+                "value": "yes_additional",
+                "image_url": ""
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No additional services",
+                "value": "no_additional",
+                "image_url": ""
+              }
+            ],
+            "question": "Would you like any additional services after fence installation?"
+          },
+          {
+            "id": "F9a",
+            "type": "multiple_choice",
+            "order": 5.1,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Landscape design",
+                "value": "landscape_design"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Patio installation",
+                "value": "patio"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Deck installation",
+                "value": "deck"
+              },
+              {
+                "next": "F8a",
+                "type": "NEXT_BRANCH",
+                "label": "Yes, specify",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe additional services you're interested in?",
+                "character_limit": "250",
+                "validation_message": "Describe additional services you're interested in?"
+              }
+            ],
+            "question": "Which additional services are you interested in? (Select all that apply)"
+          }
+        ]
+      },
+      "General Contractor": {
+        "category": "General Contractor",
+        "keywords": [
+          "general contractor",
+          "home builder",
+          "home remodel",
+          "home addition",
+          "permit help",
+          "concrete foundation",
+          "roof install",
+          "decks patios",
+          "garage construction",
+          "shed",
+          "interior finish",
+          "exterior siding",
+          "commercial construction"
+        ],
+        "questions": [
+          {
+            "id": "GC1",
+            "type": "multiple_choice",
+            "order": 1,
+            "options": [
+              {
+                "next": "GC2a",
+                "label": "Accessory buildings",
+                "value": "accessory"
+              },
+              {
+                "next": "GC2b",
+                "label": "Decks and patio",
+                "value": "decks"
+              },
+              {
+                "next": "GC2c",
+                "label": "Foundations and concrete",
+                "value": "foundation"
+              },
+              {
+                "next": "GC2d",
+                "label": "Home building",
+                "value": "build"
+              },
+              {
+                "next": "GC2e",
+                "label": "Interior finishing",
+                "value": "interior"
+              },
+              {
+                "next": "GC2f",
+                "label": "Roofing",
+                "value": "roofing"
+              },
+              {
+                "next": "GC2g",
+                "label": "Commercial projects",
+                "value": "commercial"
+              },
+              {
+                "next": "GC2h",
+                "label": "Exterior finishing",
+                "value": "exterior"
+              },
+              {
+                "next": "GC2i",
+                "label": "Home addition",
+                "value": "addition"
+              },
+              {
+                "next": "GC2j",
+                "label": "Home remodel and renovation",
+                "value": "remodel"
+              },
+              {
+                "next": "GC2k",
+                "label": "Permit Assistance",
+                "value": "permit"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe your project",
+                "character_limit": 250,
+                "validation_message": "Please describe the project"
+              }
+            ],
+            "question": "What general contracting services do you need?"
+          },
+          {
+            "id": "GC2a",
+            "type": "single_choice",
+            "order": 2,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Garage",
+                "value": "garage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Shed",
+                "value": "shed"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Detached unit/ADU",
+                "value": "adu"
+              }
+            ],
+            "question": "What kind of accessory building?"
+          },
+          {
+            "id": "GC2b",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 3,
+            "options": [
+              {
+                "max": 5000,
+                "min": 50,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 400",
+                "validation_message": "Enter valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Measure with camera",
+                "camera_prompt": "Take photo of site"
+              }
+            ],
+            "question": "What size is the deck or patio project?"
+          },
+          {
+            "id": "GC2c",
+            "type": "single_choice",
+            "order": 4,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "New foundation",
+                "value": "new"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Repair existing",
+                "value": "repair"
+              }
+            ],
+            "question": "Is this for new foundation work or repairs?"
+          },
+          {
+            "id": "GC2d",
+            "next": "NEXT_BRANCH",
+            "type": "text_input",
+            "order": 5,
+            "value": "home_size",
+            "question": "What size home do you plan to build?",
+            "validation": ".{1,200}",
+            "placeholder": "e.g., 3 bed, 2 bath, 2,000 SF",
+            "character_limit": 200,
+            "validation_message": "Please provide home details"
+          },
+          {
+            "id": "GC2e",
+            "type": "multiple_choice",
+            "order": 6,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Drywall",
+                "value": "drywall"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Trim & baseboards",
+                "value": "trim"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Cabinetry",
+                "value": "cabinets"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Painting",
+                "value": "painting"
+              }
+            ],
+            "question": "Which interior finishing tasks are needed?"
+          },
+          {
+            "id": "GC2f",
+            "type": "single_choice",
+            "order": 7,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Shingle",
+                "value": "shingle"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Metal",
+                "value": "metal"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Flat",
+                "value": "flat"
+              }
+            ],
+            "question": "What type of roofing?"
+          },
+          {
+            "id": "GC2g",
+            "type": "single_choice",
+            "order": 8,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "New build",
+                "value": "new"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Renovation",
+                "value": "reno"
+              }
+            ],
+            "question": "Is this a ground-up commercial build or renovation?"
+          },
+          {
+            "id": "GC2h",
+            "type": "multiple_choice",
+            "order": 9,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Siding",
+                "value": "siding"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Painting",
+                "value": "painting"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Windows/Doors",
+                "value": "windows"
+              }
+            ],
+            "question": "What exterior finishing is needed?"
+          },
+          {
+            "id": "GC2i",
+            "next": "NEXT_BRANCH",
+            "type": "text_input",
+            "order": 10,
+            "value": "addition_size",
+            "question": "What size addition are you planning?",
+            "validation": ".{1,200}",
+            "placeholder": "e.g., 500 SF 2nd floor or sunroom",
+            "character_limit": 200,
+            "validation_message": "Please describe the addition"
+          },
+          {
+            "id": "GC2j",
+            "next": "NEXT_BRANCH",
+            "type": "text_input",
+            "order": 11,
+            "value": "remodel_scope",
+            "question": "What areas are involved in the remodel or renovation?",
+            "validation": ".{1,250}",
+            "placeholder": "e.g., kitchen + bathroom remodel",
+            "character_limit": 250,
+            "validation_message": "Please describe the remodel"
+          },
+          {
+            "id": "GC2k",
+            "type": "single_choice",
+            "order": 12,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Do you need help pulling permits?"
+          }
+        ]
+      },
+      "Countertops Service": {
+        "category": "Countertops Service",
+        "keywords": [
+          "countertop",
+          "countertop installation",
+          "granite countertops",
+          "marble countertops",
+          "quartz countertops",
+          "stone slab countertops",
+          "tile countertops",
+          "laminate countertops",
+          "countertop design",
+          "fireplace facade",
+          "kitchen countertops",
+          "kitchen wall panels",
+          "bathroom wall panels",
+          "countertop maintenance",
+          "countertop repair"
+        ],
+        "questions": [
+          {
+            "id": "CT1",
+            "type": "multiple_choice",
+            "order": 1,
+            "options": [
+              {
+                "next": "CT2a",
+                "label": "Countertop Installation",
+                "value": "install",
+                "image_url": "http://example.com/install.png"
+              },
+              {
+                "next": "CT2b",
+                "label": "Kitchen Countertops",
+                "value": "kitchen",
+                "image_url": "http://example.com/kitchen.png"
+              },
+              {
+                "next": "CT2c",
+                "label": "Fireplace Facade",
+                "value": "fireplace",
+                "image_url": "http://example.com/fireplace.png"
+              },
+              {
+                "next": "CT2d",
+                "label": "Granite Countertops",
+                "value": "granite",
+                "image_url": "http://example.com/granite.png"
+              },
+              {
+                "next": "CT2e",
+                "label": "Kitchen Wall Panels",
+                "value": "kitchen_panels",
+                "image_url": "http://example.com/kitchen_panels.png"
+              },
+              {
+                "next": "CT2f",
+                "label": "Countertop Design",
+                "value": "design",
+                "image_url": "http://example.com/design.png"
+              },
+              {
+                "next": "CT2g",
+                "label": "Bathroom Wall Panels",
+                "value": "bathroom_panels",
+                "image_url": "http://example.com/bathroom_panels.png"
+              },
+              {
+                "next": "CT2h",
+                "label": "Stone Slab Countertops",
+                "value": "stone",
+                "image_url": "http://example.com/stone.png"
+              },
+              {
+                "next": "CT2i",
+                "label": "Tile Countertops",
+                "value": "tile",
+                "image_url": "http://example.com/tile.png"
+              },
+              {
+                "next": "CT2j",
+                "label": "Countertop Repair/Maintenance",
+                "value": "repair",
+                "image_url": "http://example.com/repair.png"
+              },
+              {
+                "next": "CT2k",
+                "label": "Laminate Countertops",
+                "value": "laminate",
+                "image_url": "http://example.com/laminate.png"
+              },
+              {
+                "next": "CT2l",
+                "label": "Quartz Countertops",
+                "value": "quartz",
+                "image_url": "http://example.com/quartz.png"
+              },
+              {
+                "next": "CT2m",
+                "label": "Marble Countertops",
+                "value": "marble",
+                "image_url": "http://example.com/marble.png"
+              }
+            ],
+            "question": "What type of countertop service do you need?"
+          },
+          {
+            "id": "CT2a",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the countertop installation area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for countertop installation?",
+            "helper_text": "This helps estimate materials and labor needed."
+          },
+          {
+            "id": "CT2b",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the kitchen countertops area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for kitchen countertops?",
+            "helper_text": "This helps estimate materials and labor needed."
+          },
+          {
+            "id": "CT2c",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the fireplace facade area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for fireplace facade?",
+            "helper_text": "This helps estimate materials and labor needed."
+          },
+          {
+            "id": "CT2d",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the granite countertops area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for granite countertops?",
+            "helper_text": "This helps estimate materials and labor needed."
+          },
+          {
+            "id": "CT2e",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the kitchen wall panels area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for kitchen wall panels?",
+            "helper_text": "This helps estimate materials and labor needed."
+          },
+          {
+            "id": "CT2f",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the countertop design area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for countertop design?",
+            "helper_text": "This helps estimate materials and labor needed."
+          },
+          {
+            "id": "CT2g",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the bathroom wall panels area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for bathroom wall panels?",
+            "helper_text": "This helps estimate materials and labor needed."
+          },
+          {
+            "id": "CT2h",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the stone slab countertops area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for stone slab countertops?",
+            "helper_text": "This helps estimate materials and labor needed."
+          },
+          {
+            "id": "CT2i",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the tile countertops area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for tile countertops?",
+            "helper_text": "This helps estimate materials and labor needed."
+          },
+          {
+            "id": "CT2j",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the countertop repair/maintenance area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for countertop repair/maintenance?",
+            "helper_text": "This helps estimate materials and labor needed."
+          },
+          {
+            "id": "CT2k",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the laminate countertops area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for laminate countertops?",
+            "helper_text": "This helps estimate materials and labor needed."
+          },
+          {
+            "id": "CT2l",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the quartz countertops area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for quartz countertops?",
+            "helper_text": "This helps estimate materials and labor needed."
+          },
+          {
+            "id": "CT2m",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 2,
+            "options": [
+              {
+                "max": 1000,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 80",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of the marble countertops area"
+              }
+            ],
+            "tooltip": "Measure the area in square feet. Multiply length by width for each section and total them.",
+            "question": "How much area do you need for marble countertops?",
+            "helper_text": "This helps estimate materials and labor needed."
+          }
+        ]
+      }
+    },
+    "preferred_language": null,
+    "ai_rates": []
+  },
+  {
+    "id": "7d25b7f4-84ca-434d-99bd-083903929f95",
+    "contractor_id": "514d1acb-09dd-4199-b3c4-2a80adc4d000",
+    "minimum_project_cost": 0,
+    "markup_percentage": 20,
+    "tax_rate": 8.5,
+    "ai_instructions": "",
+    "estimate_client_message": "",
+    "estimate_footer_text": "",
+    "estimate_hide_subtotals": false,
+    "estimate_signature_enabled": true,
+    "webhook_url": null,
+    "webhook_secret": null,
+    "api_key_prefix": null,
+    "created_at": "2026-01-13T01:43:00.251742+00:00",
+    "updated_at": "2026-01-13T01:43:00.251742+00:00",
+    "discount_percentage": null,
+    "vendor_preference": "Lowes",
+    "global_prompt": null,
+    "global_prompt_enabled": false,
+    "integrations": {},
+    "custom_question_form": null,
+    "categories": {},
+    "preferred_language": null,
+    "ai_rates": []
+  },
+  {
+    "id": "ba611110-f32e-498c-9099-c96b74b6ca66",
+    "contractor_id": "a7850481-e082-4511-8a83-75948048fd87",
+    "minimum_project_cost": 0,
+    "markup_percentage": 20,
+    "tax_rate": 8.5,
+    "ai_instructions": "",
+    "estimate_client_message": "",
+    "estimate_footer_text": "",
+    "estimate_hide_subtotals": false,
+    "estimate_signature_enabled": true,
+    "webhook_url": null,
+    "webhook_secret": null,
+    "api_key_prefix": null,
+    "created_at": "2026-01-23T18:32:51.182142+00:00",
+    "updated_at": "2026-01-23T18:32:51.182142+00:00",
+    "discount_percentage": null,
+    "vendor_preference": "homedepot",
+    "global_prompt": "Only provide materials line items nothing else.",
+    "global_prompt_enabled": true,
+    "integrations": {},
+    "custom_question_form": null,
+    "categories": {},
+    "preferred_language": null,
+    "ai_rates": []
+  },
+  {
+    "id": "bf6f6a67-9e17-4f77-a5a2-adbfe5aed830",
+    "contractor_id": "8502252c-ccf5-46df-96e6-c9433c18a343",
+    "minimum_project_cost": 0,
+    "markup_percentage": 0,
+    "tax_rate": 8.5,
+    "ai_instructions": "",
+    "estimate_client_message": "",
+    "estimate_footer_text": "",
+    "estimate_hide_subtotals": false,
+    "estimate_signature_enabled": true,
+    "webhook_url": null,
+    "webhook_secret": null,
+    "api_key_prefix": null,
+    "created_at": "2025-09-13T15:56:27.078843+00:00",
+    "updated_at": "2025-12-22T18:38:52.498+00:00",
+    "discount_percentage": null,
+    "vendor_preference": "lowes",
+    "global_prompt": null,
+    "global_prompt_enabled": false,
+    "integrations": {
+      "quickbooks": {
+        "enabled": false,
+        "sandboxMode": true,
+        "syncInvoices": false,
+        "syncEstimates": false,
+        "syncTimesheets": false
+      },
+      "payment_methods": {
+        "ach_enabled": true,
+        "eps_enabled": false,
+        "p24_enabled": false,
+        "blik_enabled": false,
+        "link_enabled": true,
+        "check_enabled": true,
+        "ideal_enabled": false,
+        "klarna_enabled": false,
+        "sofort_enabled": false,
+        "cashapp_enabled": false,
+        "giropay_enabled": false,
+        "apple_pay_enabled": true,
+        "bancontact_enabled": false,
+        "google_pay_enabled": false,
+        "sepa_debit_enabled": false,
+        "us_bank_account_enabled": false,
+        "afterpay_clearpay_enabled": false
+      }
+    },
+    "custom_question_form": {
+      "id": "1767314885492-q7o9el0nh",
+      "name": "My Custom Form",
+      "isActive": true,
+      "createdAt": "2026-01-02T00:48:05.492Z",
+      "questions": [
+        {
+          "id": "1767367316242-hxc3vsiow",
+          "type": "multi_feature",
+          "order": 0,
+          "options": [],
+          "question": "cvxcvxvxcv",
+          "multiFeatureSettings": {
+            "includeEmail": true,
+            "includePhone": false,
+            "includeContact": false,
+            "includePayment": true,
+            "includeSchedule": false,
+            "includePhotoVideo": true,
+            "textQuestionLabel": "Additional Information",
+            "includeTextQuestion": true,
+            "textQuestionPlaceholder": "Enter any additional details..."
+          }
+        },
+        {
+          "id": "1767367608877-jduq02q7u",
+          "type": "contact_info",
+          "order": 1,
+          "options": [],
+          "question": "ccxvxcv",
+          "contact_fields": {
+            "showEmail": true,
+            "showPhone": true,
+            "showUnit2": true,
+            "emailLabel": "Email",
+            "phoneLabel": "Phone Number",
+            "showAddress": true,
+            "showMessage": true,
+            "addressLabel": "Project Address",
+            "showAddress2": true,
+            "showFullName": true,
+            "showLastName": true,
+            "fullNameLabel": "Full Name",
+            "showFirstName": true,
+            "emailPlaceholder": "Email",
+            "phonePlaceholder": "Phone Number",
+            "addressPlaceholder": "Project Address",
+            "fullNamePlaceholder": "Full Name",
+            "showSecondaryContact": true
+          }
+        }
+      ],
+      "updatedAt": "2026-01-02T15:33:37.051Z",
+      "description": "",
+      "flowActions": [
+        {
+          "id": "1767316920192-3niu00l1o",
+          "type": "start",
+          "order": 0
+        },
+        {
+          "id": "1767316920192-6dglexki0",
+          "type": "end",
+          "order": 999,
+          "endActionConfig": {
+            "actionType": "success_page",
+            "showSummary": true,
+            "successPageTitle": "Thank You!",
+            "successPageMessage": "Your submission has been received successfully."
+          }
+        }
+      ]
+    },
+    "categories": {},
+    "preferred_language": null,
+    "ai_rates": []
+  },
+  {
+    "id": "2931b43e-7b17-490e-8338-4e4f36f230c5",
+    "contractor_id": "2931b43e-7b17-490e-8338-4e4f36f230c5",
+    "minimum_project_cost": 0,
+    "markup_percentage": 20,
+    "tax_rate": 8.5,
+    "ai_instructions": "",
+    "estimate_client_message": "",
+    "estimate_footer_text": "",
+    "estimate_hide_subtotals": false,
+    "estimate_signature_enabled": true,
+    "webhook_url": null,
+    "webhook_secret": null,
+    "api_key_prefix": null,
+    "created_at": "2026-01-25T05:55:09.52108+00:00",
+    "updated_at": "2026-01-25T05:55:09.52108+00:00",
+    "discount_percentage": null,
+    "vendor_preference": "Lowes",
+    "global_prompt": null,
+    "global_prompt_enabled": false,
+    "integrations": {},
+    "custom_question_form": null,
+    "categories": {
+      "Handyman": {
+        "category": "Handyman",
+        "keywords": [
+          "handyman",
+          "smart home",
+          "item assembly",
+          "tv mounting",
+          "repair",
+          "installation",
+          "gutter cleaning",
+          "awning",
+          "drywall",
+          "crown molding",
+          "blinds",
+          "shades",
+          "pressure washing",
+          "fan repair",
+          "fan install",
+          "flooring repair",
+          "tile repair",
+          "water fixture"
+        ],
+        "questions": [
+          {
+            "id": "HD1",
+            "type": "multiple_choice",
+            "order": 1,
+            "options": [
+              {
+                "next": "HD2a",
+                "label": "Smart Home Setup",
+                "value": "smart_home"
+              },
+              {
+                "next": "HD2b",
+                "label": "Item assembly",
+                "value": "assembly"
+              },
+              {
+                "next": "HD2c",
+                "label": "TV Mounting",
+                "value": "tv_mount"
+              },
+              {
+                "next": "HD2d",
+                "label": "General Repair or Installation",
+                "value": "general"
+              },
+              {
+                "next": "HD2e",
+                "label": "Gutter Cleaning",
+                "value": "gutters"
+              },
+              {
+                "next": "HD2f",
+                "label": "Install Awning",
+                "value": "awning"
+              },
+              {
+                "next": "HD2g",
+                "label": "Drywall Repair or Installation",
+                "value": "drywall"
+              },
+              {
+                "next": "HD2h",
+                "label": "Crown Molding Installation",
+                "value": "molding"
+              },
+              {
+                "next": "HD2i",
+                "label": "Blind or Shade Install",
+                "value": "blinds"
+              },
+              {
+                "next": "HD2j",
+                "label": "Pressure Washing",
+                "value": "pressure"
+              },
+              {
+                "next": "HD2k",
+                "label": "Fan install or repair",
+                "value": "fan"
+              },
+              {
+                "next": "HD2l",
+                "label": "Repair water fixtures",
+                "value": "water_fixture"
+              },
+              {
+                "next": "HD2m",
+                "label": "Repair Flooring",
+                "value": "flooring"
+              },
+              {
+                "next": "HD2n",
+                "label": "Tile repair",
+                "value": "tile"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe the work needed",
+                "character_limit": 250,
+                "validation_message": "Please provide more detail"
+              }
+            ],
+            "question": "What handyman services do you need?"
+          },
+          {
+            "id": "HD2a",
+            "type": "single_choice",
+            "order": 2,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Smart thermostat",
+                "value": "thermostat"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Security system or cameras",
+                "value": "security"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Smart lighting",
+                "value": "lighting"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Smart doorbell",
+                "value": "doorbell"
+              }
+            ],
+            "question": "What kind of smart home device setup do you need?"
+          },
+          {
+            "id": "HD2b",
+            "max": 30,
+            "min": 1,
+            "next": "NEXT_BRANCH",
+            "type": "number_input",
+            "unit": "EA",
+            "order": 3,
+            "question": "How many items need assembly?",
+            "validation": "^[0-9]+$",
+            "placeholder": "e.g., 3 chairs, 1 table",
+            "validation_message": "Enter a valid number"
+          },
+          {
+            "id": "HD2c",
+            "type": "single_choice",
+            "order": 4,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Do you already have a TV mount?"
+          },
+          {
+            "id": "HD2d",
+            "next": "NEXT_BRANCH",
+            "type": "text_input",
+            "order": 5,
+            "value": "general_description",
+            "question": "Briefly describe the repair or installation needed",
+            "validation": ".{1,250}",
+            "placeholder": "e.g., fix leaking pipe, install shelves",
+            "character_limit": 250,
+            "validation_message": "Please provide details"
+          },
+          {
+            "id": "HD2e",
+            "type": "camera_measurement",
+            "unit": "LF",
+            "order": 6,
+            "options": [
+              {
+                "max": 300,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter linear feet",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 60",
+                "validation_message": "Enter valid length"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of gutter line"
+              }
+            ],
+            "question": "How many linear feet of gutter need cleaning?"
+          },
+          {
+            "id": "HD2f",
+            "type": "single_choice",
+            "order": 7,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Manual",
+                "value": "manual"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Retractable",
+                "value": "retractable"
+              }
+            ],
+            "question": "Is this a manual or retractable awning?"
+          },
+          {
+            "id": "HD2g",
+            "type": "single_choice",
+            "order": 8,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Patch holes",
+                "value": "patch"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Full sheet installation",
+                "value": "full_sheet"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Repair cracks",
+                "value": "cracks"
+              }
+            ],
+            "question": "What type of drywall work?"
+          },
+          {
+            "id": "HD2h",
+            "type": "camera_measurement",
+            "unit": "LF",
+            "order": 9,
+            "options": [
+              {
+                "max": 200,
+                "min": 5,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter length in feet",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 40",
+                "validation_message": "Enter valid length"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Measure with camera",
+                "camera_prompt": "Take photo of wall/ceiling"
+              }
+            ],
+            "question": "How many linear feet of crown molding are needed?"
+          },
+          {
+            "id": "HD2i",
+            "max": 50,
+            "min": 1,
+            "next": "NEXT_BRANCH",
+            "type": "number_input",
+            "unit": "EA",
+            "order": 10,
+            "question": "How many windows need blinds/shades installed?",
+            "validation": "^[0-9]+$",
+            "placeholder": "e.g., 6",
+            "validation_message": "Enter a valid count"
+          },
+          {
+            "id": "HD2j",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 11,
+            "options": [
+              {
+                "max": 5000,
+                "min": 50,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 200",
+                "validation_message": "Enter valid area"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Measure with camera",
+                "camera_prompt": "Take photo of area"
+              }
+            ],
+            "question": "How much area needs to be pressure washed?"
+          },
+          {
+            "id": "HD2k",
+            "type": "single_choice",
+            "order": 12,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Install new fan",
+                "value": "install"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Repair existing fan",
+                "value": "repair"
+              }
+            ],
+            "question": "What do you need for the fan?"
+          },
+          {
+            "id": "HD2l",
+            "next": "NEXT_BRANCH",
+            "type": "text_input",
+            "order": 13,
+            "value": "fixture_description",
+            "question": "Briefly describe the plumbing fixture to repair",
+            "validation": ".{1,250}",
+            "placeholder": "e.g., dripping faucet in bathroom",
+            "character_limit": 250,
+            "validation_message": "Please describe clearly"
+          },
+          {
+            "id": "HD2m",
+            "type": "single_choice",
+            "order": 14,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Hardwood",
+                "value": "hardwood"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Tile",
+                "value": "tile"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Vinyl or laminate",
+                "value": "vinyl"
+              }
+            ],
+            "question": "What type of flooring is being repaired?"
+          },
+          {
+            "id": "HD2n",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 15,
+            "options": [
+              {
+                "max": 300,
+                "min": 1,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 50",
+                "validation_message": "Enter valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of tile"
+              }
+            ],
+            "question": "How many square feet of tile need repair?"
+          }
+        ]
+      },
+      "Garage Door": {
+        "category": "Garage Door",
+        "keywords": [
+          "garage door",
+          "garage door installer",
+          "garage door repair",
+          "garage door painting",
+          "garage opener",
+          "garage track fix",
+          "paint garage"
+        ],
+        "questions": [
+          {
+            "id": "GD1",
+            "type": "multiple_choice",
+            "order": 1,
+            "options": [
+              {
+                "next": "GD2a",
+                "label": "Garage Door Installer",
+                "value": "installer",
+                "image_url": "http://example.com/installer.png"
+              },
+              {
+                "next": "GD2b",
+                "label": "Garage Door Repair",
+                "value": "repair",
+                "image_url": "http://example.com/repair.png"
+              },
+              {
+                "next": "GD2c",
+                "label": "Garage Door Painter",
+                "value": "painter",
+                "image_url": "http://example.com/painter.png"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe garage service needed",
+                "character_limit": 250,
+                "validation_message": "Please describe your request"
+              }
+            ],
+            "question": "What garage door services do you need?"
+          },
+          {
+            "id": "GD2a",
+            "type": "camera_measurement",
+            "unit": "EA",
+            "order": 2,
+            "options": [
+              {
+                "max": 5,
+                "min": 1,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter number of doors",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 2",
+                "validation_message": "Enter a valid number"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to count doors",
+                "camera_prompt": "Take photo of the garage"
+              }
+            ],
+            "question": "How many garage doors are you installing?"
+          },
+          {
+            "id": "GD2b",
+            "type": "multiple_choice",
+            "order": 3,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Spring replacement",
+                "value": "spring"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Track alignment",
+                "value": "track"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Opener malfunction",
+                "value": "opener"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Panel or hardware damage",
+                "value": "panel"
+              }
+            ],
+            "question": "What type of garage door repairs are needed?"
+          },
+          {
+            "id": "GD2c",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 4,
+            "options": [
+              {
+                "max": 500,
+                "min": 10,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 120",
+                "validation_message": "Enter valid area"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure surface",
+                "camera_prompt": "Take photo of door(s)"
+              }
+            ],
+            "question": "What is the size of the garage door(s) to be painted?"
+          }
+        ]
+      },
+      "Home Inspector": {
+        "category": "Home Inspector",
+        "keywords": [
+          "home inspection",
+          "property inspector",
+          "foundation inspection",
+          "roof inspection",
+          "mold inspection",
+          "fireplace inspection",
+          "HVAC inspection",
+          "plumbing",
+          "structural",
+          "buyer inspection",
+          "commercial property inspection",
+          "wood pests",
+          "electrical inspection",
+          "well system",
+          "septic system",
+          "new construction inspection"
+        ],
+        "questions": [
+          {
+            "id": "HIQ1",
+            "type": "multiple_choice",
+            "order": 1,
+            "options": [
+              {
+                "next": "HIQ2a",
+                "label": "Buyer/seller inspection",
+                "value": "buyer_seller",
+                "image_url": "http://example.com/buyer_seller.png"
+              },
+              {
+                "next": "HIQ2b",
+                "label": "Electrical",
+                "value": "electrical",
+                "image_url": "http://example.com/electrical.png"
+              },
+              {
+                "next": "HIQ2c",
+                "label": "Fireplace and chimney",
+                "value": "fireplace",
+                "image_url": "http://example.com/fireplace.png"
+              },
+              {
+                "next": "HIQ2d",
+                "label": "Full home inspection",
+                "value": "full",
+                "image_url": "http://example.com/full_home.png"
+              },
+              {
+                "next": "HIQ2e",
+                "label": "Home warranty",
+                "value": "warranty",
+                "image_url": "http://example.com/warranty.png"
+              },
+              {
+                "next": "HIQ2f",
+                "label": "New construction",
+                "value": "new_construction",
+                "image_url": "http://example.com/new_construction.png"
+              },
+              {
+                "next": "HIQ2g",
+                "label": "Plumbing",
+                "value": "plumbing",
+                "image_url": "http://example.com/plumbing.png"
+              },
+              {
+                "next": "HIQ2h",
+                "label": "Structural",
+                "value": "structural",
+                "image_url": "http://example.com/structural.png"
+              },
+              {
+                "next": "HIQ2i",
+                "label": "Well or septic system",
+                "value": "well_septic",
+                "image_url": "http://example.com/well_septic.png"
+              },
+              {
+                "next": "HIQ2j",
+                "label": "Commercial properties",
+                "value": "commercial",
+                "image_url": "http://example.com/commercial.png"
+              },
+              {
+                "next": "HIQ2k",
+                "label": "Fire safety",
+                "value": "fire_safety",
+                "image_url": "http://example.com/fire_safety.png"
+              },
+              {
+                "next": "HIQ2l",
+                "label": "Foundation",
+                "value": "foundation",
+                "image_url": "http://example.com/foundation.png"
+              },
+              {
+                "next": "HIQ2m",
+                "label": "HVAC",
+                "value": "hvac",
+                "image_url": "http://example.com/hvac.png"
+              },
+              {
+                "next": "HIQ2n",
+                "label": "Mold",
+                "value": "mold",
+                "image_url": "http://example.com/mold.png"
+              },
+              {
+                "next": "HIQ2o",
+                "label": "Roof",
+                "value": "roof",
+                "image_url": "http://example.com/roof.png"
+              },
+              {
+                "next": "HIQ2p",
+                "label": "Water testing",
+                "value": "water",
+                "image_url": "http://example.com/water.png"
+              },
+              {
+                "next": "HIQ2q",
+                "label": "Wood & insects",
+                "value": "wood_insects",
+                "image_url": "http://example.com/wood_insects.png"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe inspection focus",
+                "character_limit": 250,
+                "validation_message": "Please describe the inspection request"
+              }
+            ],
+            "question": "Which areas should the home inspector cover?"
+          },
+          {
+            "id": "HIQ2a",
+            "type": "single_choice",
+            "order": 2,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Pre-listing",
+                "value": "listing"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Pre-purchase",
+                "value": "purchase"
+              }
+            ],
+            "question": "Is this a pre-listing or pre-purchase inspection?"
+          },
+          {
+            "id": "HIQ2b",
+            "type": "single_choice",
+            "order": 3,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Are there any known issues with your electrical system?"
+          },
+          {
+            "id": "HIQ2c",
+            "type": "single_choice",
+            "order": 4,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Has your fireplace/chimney been inspected before?"
+          },
+          {
+            "id": "HIQ2d",
+            "type": "single_choice",
+            "order": 5,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Do you want a full home inspection report for documentation?"
+          },
+          {
+            "id": "HIQ2e",
+            "type": "single_choice",
+            "order": 6,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Warranty renewal",
+                "value": "renewal"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Claim filing",
+                "value": "claim"
+              }
+            ],
+            "question": "Is this for a home warranty renewal or claim?"
+          },
+          {
+            "id": "HIQ2f",
+            "type": "single_choice",
+            "order": 7,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes, completed",
+                "value": "completed"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Still under construction",
+                "value": "in_progress"
+              }
+            ],
+            "question": "Is the new construction completed?"
+          },
+          {
+            "id": "HIQ2g",
+            "type": "single_choice",
+            "order": 8,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Do you suspect leaks or drainage issues?"
+          },
+          {
+            "id": "HIQ2h",
+            "type": "single_choice",
+            "order": 9,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Do you have visible cracks or shifting walls?"
+          },
+          {
+            "id": "HIQ2i",
+            "type": "single_choice",
+            "order": 10,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Well only",
+                "value": "well"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Septic only",
+                "value": "septic"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Both well and septic",
+                "value": "both"
+              }
+            ],
+            "question": "Which systems are in place?"
+          },
+          {
+            "id": "HIQ2j",
+            "type": "single_choice",
+            "order": 11,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Multi-unit",
+                "value": "multi"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Single-use",
+                "value": "single"
+              }
+            ],
+            "question": "Is this a multi-unit or single-use commercial property?"
+          },
+          {
+            "id": "HIQ2k",
+            "type": "single_choice",
+            "order": 12,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Do you need smoke, CO2, and extinguisher checks?"
+          },
+          {
+            "id": "HIQ2l",
+            "type": "single_choice",
+            "order": 13,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Have there been any past foundation repairs?"
+          },
+          {
+            "id": "HIQ2m",
+            "type": "single_choice",
+            "order": 14,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Central HVAC",
+                "value": "central"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Ductless",
+                "value": "ductless"
+              }
+            ],
+            "question": "Do you have central HVAC or ductless systems?"
+          },
+          {
+            "id": "HIQ2n",
+            "type": "single_choice",
+            "order": 15,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Have you had past mold inspections?"
+          },
+          {
+            "id": "HIQ2o",
+            "type": "single_choice",
+            "order": 16,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Are there known issues like leaks or damage?"
+          },
+          {
+            "id": "HIQ2p",
+            "type": "single_choice",
+            "order": 17,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Well water",
+                "value": "well"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "City water",
+                "value": "city"
+              }
+            ],
+            "question": "Is this related to well water or city water?"
+          },
+          {
+            "id": "HIQ2q",
+            "type": "single_choice",
+            "order": 18,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Have you seen signs of insect or termite damage?"
+          }
+        ]
+      },
+      "Home Insulation": {
+        "category": "Home Insulation",
+        "keywords": [
+          "home insulation",
+          "spray foam",
+          "blown-in insulation",
+          "attic insulation",
+          "air sealing",
+          "batt insulation",
+          "insulation removal"
+        ],
+        "questions": [
+          {
+            "id": "HI1",
+            "type": "multiple_choice",
+            "order": 1,
+            "options": [
+              {
+                "next": "HI2a",
+                "label": "Air Sealing",
+                "value": "air_sealing",
+                "image_url": "http://example.com/air_sealing.png"
+              },
+              {
+                "next": "HI2b",
+                "label": "Blown-In Insulation",
+                "value": "blown_in",
+                "image_url": "http://example.com/blown_in.png"
+              },
+              {
+                "next": "HI2c",
+                "label": "Insulation Removal",
+                "value": "removal",
+                "image_url": "http://example.com/removal.png"
+              },
+              {
+                "next": "HI2d",
+                "label": "Spray Foam Insulation",
+                "value": "spray_foam",
+                "image_url": "http://example.com/spray_foam.png"
+              },
+              {
+                "next": "HI2e",
+                "label": "Batt Insulation",
+                "value": "batt",
+                "image_url": "http://example.com/batt.png"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe insulation service needed",
+                "character_limit": 250,
+                "validation_message": "Please describe your needs"
+              }
+            ],
+            "question": "Which insulation services do you need?"
+          },
+          {
+            "id": "HI2a",
+            "type": "single_choice",
+            "order": 2,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Attic",
+                "value": "attic"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Basement",
+                "value": "basement"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Whole house",
+                "value": "whole_house"
+              }
+            ],
+            "question": "Where is air sealing needed?"
+          },
+          {
+            "id": "HI2b",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 3,
+            "options": [
+              {
+                "max": 5000,
+                "min": 100,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 1200",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of area"
+              }
+            ],
+            "question": "What is the square footage for blown-in insulation?"
+          },
+          {
+            "id": "HI2c",
+            "type": "single_choice",
+            "order": 4,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Attic",
+                "value": "attic"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Walls",
+                "value": "walls"
+              }
+            ],
+            "question": "Is insulation being removed from attic or walls?"
+          },
+          {
+            "id": "HI2d",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 5,
+            "options": [
+              {
+                "max": 3000,
+                "min": 100,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 800",
+                "validation_message": "Enter a valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Use camera to measure",
+                "camera_prompt": "Take photo of area"
+              }
+            ],
+            "question": "What is the area requiring spray foam?"
+          },
+          {
+            "id": "HI2e",
+            "type": "single_choice",
+            "order": 6,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Garage walls",
+                "value": "garage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Crawl space",
+                "value": "crawl"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Interior walls",
+                "value": "interior"
+              }
+            ],
+            "question": "Where do you need batt insulation?"
+          }
+        ]
+      },
+      "Heating & Cooling": {
+        "category": "HVAC Installation & Repair",
+        "keywords": [
+          "hvac",
+          "heating",
+          "cooling",
+          "air conditioning",
+          "furnace",
+          "heat pump",
+          "mini-split",
+          "ductwork",
+          "thermostat",
+          "hvac repair",
+          "hvac installation",
+          "air quality",
+          "ventilation",
+          "furnace"
+        ],
+        "questions": [
+          {
+            "id": "Q1",
+            "type": "single_choice",
+            "order": 1,
+            "options": [
+              {
+                "next": "Q3a-home-size",
+                "label": "Yes",
+                "value": "yes",
+                "image_url": "https://www.acdirect.com/media/catalog/product/cache/74afcaba5cd43447735451af317b9db0/g/o/goodman-a2l-compliant-up-to-14-3-seer2-r32-ac-with-two-stage-gas-heat-system-with-integration-kit-upflow_1.jpg"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no",
+                "image_url": "http://example.com/no.png"
+              }
+            ],
+            "question": "Are you seeking Duck, AC or Furnace services?"
+          },
+          {
+            "id": "Q3a-home-size",
+            "type": "single_choice",
+            "order": 1.1,
+            "options": [
+              {
+                "next": "Q3b-access",
+                "label": "Under 1000 sq ft",
+                "value": "under_1000",
+                "image_url": "https://cdn.houseplansservices.com/product/icoddb5fmu2tsis393eoa4dmc6/w800x533.jpg?v=4"
+              },
+              {
+                "next": "Q3b-access",
+                "label": "1000-1500 sq ft",
+                "value": "1000_1500",
+                "image_url": "https://cdn.houseplansservices.com/product/f57d02dcqkd3hgucuue88punea/w800x533.jpg?v=11"
+              },
+              {
+                "next": "Q3b-access",
+                "label": "1501-2000 sq ft",
+                "value": "1501_2000",
+                "image_url": "https://cdn.houseplansservices.com/content/s8m12g4l1o3f170sqcddtf4kvt/w991x660.jpg?v=9"
+              },
+              {
+                "next": "Q3b-access",
+                "label": "2001-3000 sq ft",
+                "value": "2001_3000",
+                "image_url": "https://s3-us-west-2.amazonaws.com/prod.monsterhouseplans.com/uploads/images_plans/52/52-610/52-610e.webp"
+              },
+              {
+                "max": 10000,
+                "min": 750,
+                "next": "Q3b-access",
+                "type": "number_input",
+                "unit": "SF",
+                "label": "Custom size",
+                "value": "custom_size",
+                "validation": "^[0-9]+(\\.[0-9]{1,2})?$",
+                "placeholder": "Enter home square footage",
+                "validation_message": "Please enter a valid measurement"
+              }
+            ],
+            "question": "What is the approximate size of your home or space?"
+          },
+          {
+            "id": "Q3b-access",
+            "type": "single_choice",
+            "order": 1.2,
+            "options": [
+              {
+                "next": "Q2",
+                "label": "Yes",
+                "value": "yes",
+                "image_url": "http://example.com/yes.png"
+              },
+              {
+                "next": "Q2",
+                "label": "No",
+                "value": "no",
+                "image_url": "http://example.com/no.png"
+              }
+            ],
+            "question": "Is the unit area easily accessible for repair/installation?"
+          },
+          {
+            "id": "Q2",
+            "type": "multiple_choice",
+            "order": 2,
+            "options": [
+              {
+                "next": "Q3a-ac-number",
+                "label": "Central AC Installation",
+                "value": "ac_install",
+                "image_url": "https://cdn-ilabbhj.nitrocdn.com/VhROFJZRxZuyKBieiyLNQnKTzOKutLIM/assets/images/optimized/rev-1d2d1a8/comfortpeople.com/wp-content/uploads/Gallaghers-Air-Conditioners.png"
+              },
+              {
+                "next": "Q3a-ductless-size",
+                "label": "Ductless Mini-Split install/repair",
+                "value": "ductless_install",
+                "image_url": "https://www.ny-engineers.com/hubfs/ductlessminisplit.jpg"
+              },
+              {
+                "next": "Q3a-furnace-size",
+                "label": "Furnace installation",
+                "value": "furnace_install",
+                "image_url": "https://fire-and-ice-cdn.s3.us-east-2.amazonaws.com/blog/19/article-image.jpg"
+              },
+              {
+                "next": "Q3-ac-repair",
+                "label": "AC Repair",
+                "value": "ac_repair",
+                "image_url": "https://images.carriercms.com/image/upload/w_800,c_lfill,f_auto,q_auto/v1648480817/carrier/residential-hvac/people/ac-repair.png"
+              },
+              {
+                "next": "Q3-furnace-repair",
+                "label": "Furnace Repair",
+                "value": "furnace_repair",
+                "image_url": "https://fantesphvac.com/wp-content/uploads/2022/06/fantes-furnace-repair-sa-main.jpg.webp"
+              },
+              {
+                "next": "Q3-duct-install",
+                "label": "Duct Installation",
+                "value": "duct_installation",
+                "image_url": "https://snyderac.com/wp-content/uploads/2023/06/air-duct-install-2.jpg"
+              },
+              {
+                "next": "Q3-duct-repair",
+                "label": "Duct Repair",
+                "value": "duct_repair",
+                "image_url": "https://p7u2b8q4.delivery.rocketcdn.me/wp-content/uploads/2022/06/inspecting-ductwork.webp"
+              },
+              {
+                "next": "Q3-duct-clean",
+                "label": "Duct Cleaning",
+                "value": "duct_cleaning",
+                "image_url": "https://bensducts.com/wp-content/uploads/2024/05/Air-Duct-Cleaning.webp"
+              }
+            ],
+            "question": "Which HVAC services do you need? (Select all that apply)"
+          },
+          {
+            "id": "Q3-furnace-repair",
+            "type": "multiple_choice",
+            "order": 3,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Leaking or dripping",
+                "value": "leaking",
+                "image_url": "https://www.blantonsair.com/wp-content/uploads/2017/10/furnace-leaking-water-1.jpg"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No heating",
+                "value": "no_heating",
+                "image_url": ""
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Strange noises",
+                "value": "strange_noises",
+                "image_url": ""
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Poor airflow",
+                "value": "poor_airflow",
+                "image_url": "http://example.com/poor_airflow.png"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Thermostat issues",
+                "value": "thermostat_issues",
+                "image_url": "http://example.com/thermostat.png"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe the scope of your repair",
+                "character_limit": "250",
+                "validation_message": "Please provide details about the repair scope"
+              }
+            ],
+            "question": "Which furnace repair issues are you experiencing? (Select all that apply)"
+          },
+          {
+            "id": "Q3a-ac-number",
+            "type": "single_choice",
+            "order": 9,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "1 AC unit",
+                "value": "1",
+                "image_url": "http://example.com/under_1000.png"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "2 AC units",
+                "value": "2",
+                "image_url": "http://example.com/1000_1500.png"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "3 AC units",
+                "value": "3",
+                "image_url": "http://example.com/1501_2000.png"
+              },
+              {
+                "max": 30,
+                "min": 1,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "unit": "EA",
+                "label": "Enter the amount of AC units",
+                "value": "custom_size",
+                "validation": "^[0-9]+$",
+                "placeholder": "Enter quantity of units",
+                "validation_message": "Please enter a valid amount of units"
+              }
+            ],
+            "question": "How many central AC units do you need?"
+          },
+          {
+            "id": "Q3a-furnace-size",
+            "type": "single_choice",
+            "order": 10,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "1 unit",
+                "value": "1",
+                "image_url": "http://example.com/under_1000.png"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "2 units",
+                "value": "2",
+                "image_url": "http://example.com/1000_1500.png"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "3 units",
+                "value": "3",
+                "image_url": "http://example.com/1501_2000.png"
+              },
+              {
+                "max": 30,
+                "min": 1,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "unit": "EA",
+                "label": "Enter the amount of furnace units",
+                "value": "custom_size",
+                "validation": "^[0-9]+$",
+                "placeholder": "Enter quantity of furnaces units",
+                "validation_message": "Please enter a valid amount of units"
+              }
+            ],
+            "question": "How many furnace units require attention?"
+          },
+          {
+            "id": "Q3a-ductless-size",
+            "type": "single_choice",
+            "order": 11,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "1 unit",
+                "value": "1",
+                "image_url": "http://example.com/under_1000.png"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "2 units",
+                "value": "2",
+                "image_url": "http://example.com/1000_1500.png"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "3 units",
+                "value": "3",
+                "image_url": "http://example.com/1501_2000.png"
+              },
+              {
+                "max": 30,
+                "min": 1,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "unit": "EA",
+                "label": "Enter the amount of ductless units",
+                "value": "custom_size",
+                "validation": "^[0-9]+$",
+                "placeholder": "Enter quantity of ductless units",
+                "validation_message": "Please enter a valid amount of units"
+              }
+            ],
+            "question": "How many ductless/mini-split units require attention?"
+          },
+          {
+            "id": "Q3-ac-repair",
+            "type": "multiple_choice",
+            "order": 12,
+            "options": [
+              {
+                "next": "Q3c-repair2",
+                "label": "No cooling",
+                "value": "no_cooling",
+                "image_url": "http://example.com/no_cooling.png"
+              },
+              {
+                "next": "Q3c-repair2",
+                "label": "No heating",
+                "value": "no_heating",
+                "image_url": "http://example.com/no_heat.png"
+              },
+              {
+                "next": "Q3c-repair2",
+                "label": "Strange noises or smells",
+                "value": "strange_noises",
+                "image_url": "http://example.com/strange_noises.png"
+              },
+              {
+                "next": "Q3c-repair2",
+                "label": "Leaking or dripping",
+                "value": "leaking",
+                "image_url": "http://example.com/leaking.png"
+              },
+              {
+                "next": "Q3c-repair2",
+                "label": "Poor airflow",
+                "value": "poor_airflow",
+                "image_url": "http://example.com/poor_airflow.png"
+              },
+              {
+                "next": "Q3c-repair2",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe the scope of your repair",
+                "character_limit": "250",
+                "validation_message": "Please provide details about the repair scope"
+              }
+            ],
+            "question": "Which AC repair issues are you experiencing? (Select all that apply)"
+          },
+          {
+            "id": "Q3c-repair2",
+            "type": "single_choice",
+            "order": 13,
+            "options": [
+              {
+                "next": "Q123",
+                "label": "Under 5 years old",
+                "value": "under_5_yrs",
+                "image_url": "http://example.com/under_5_years.png"
+              },
+              {
+                "next": "Q123",
+                "label": "5-10 years old",
+                "value": "5_10_yrs",
+                "image_url": "http://example.com/5_10_years.png"
+              },
+              {
+                "next": "Q123",
+                "label": "More than 10 years old",
+                "value": "over_10_yrs",
+                "image_url": "http://example.com/over_10_years.png"
+              },
+              {
+                "next": "Q123",
+                "label": "Not sure",
+                "value": "not_sure",
+                "image_url": "http://example.com/not_sure.png"
+              }
+            ],
+            "question": "How old is your current AC system?"
+          },
+          {
+            "id": "Q3-duct-install",
+            "type": "single_choice",
+            "order": 14,
+            "options": [
+              {
+                "next": "Q3d-duct-size",
+                "label": "Under 1000 sq ft",
+                "value": "under_1000",
+                "image_url": "https://cdn.houseplansservices.com/product/icoddb5fmu2tsis393eoa4dmc6/w800x533.jpg?v=4"
+              },
+              {
+                "next": "Q3d-duct-size",
+                "label": "1000-1500 sq ft",
+                "value": "1000_1500",
+                "image_url": "https://cdn.houseplansservices.com/product/f57d02dcqkd3hgucuue88punea/w800x533.jpg?v=11"
+              },
+              {
+                "next": "Q3d-duct-size",
+                "label": "1501-2000 sq ft",
+                "value": "1501_2000",
+                "image_url": "https://cdn.houseplansservices.com/content/s8m12g4l1o3f170sqcddtf4kvt/w991x660.jpg?v=9"
+              },
+              {
+                "next": "Q3d-duct-size",
+                "label": "2001-3000 sq ft",
+                "value": "2001_3000",
+                "image_url": "https://s3-us-west-2.amazonaws.com/prod.monsterhouseplans.com/uploads/images_plans/52/52-610/52-610e.webp"
+              },
+              {
+                "max": 10000,
+                "min": 750,
+                "next": "Q3d-duct-size",
+                "type": "number_input",
+                "unit": "SF",
+                "label": "Custom size",
+                "value": "custom_size",
+                "validation": "^[0-9]+(\\.[0-9]{1,2})?$",
+                "placeholder": "Enter home square footage",
+                "validation_message": "Please enter a valid measurement"
+              }
+            ],
+            "question": "What is the approximate size of your home or space?"
+          },
+          {
+            "id": "Q3d-duct-size",
+            "type": "single_choice",
+            "order": 17,
+            "options": [
+              {
+                "next": "Q123",
+                "label": "1-2 vents",
+                "value": "1-2_vents",
+                "image_url": "http://example.com/5_vents.png"
+              },
+              {
+                "next": "Q123",
+                "label": "3-4 vents",
+                "value": "3-4_vents",
+                "image_url": "http://example.com/5_10vents.png"
+              },
+              {
+                "next": "Q123",
+                "label": "5-6 vents",
+                "value": "5-6_plus_vents",
+                "image_url": "http://example.com/10plus_vents.png"
+              },
+              {
+                "next": "Q123",
+                "label": "I do not require vent installation",
+                "value": "no_vents",
+                "image_url": "http://example.com/10plus_vents.png"
+              },
+              {
+                "max": 34,
+                "min": 1,
+                "next": "Q123",
+                "type": "number_input",
+                "unit": "EA",
+                "label": "Custom vent amount",
+                "value": "custom_size",
+                "validation": "^[0-9]+(\\.[0-9]{1,2})?$",
+                "placeholder": "Enter vent/duct amount",
+                "validation_message": "Please enter a valid vent amount"
+              }
+            ],
+            "question": "How many duct vents or runs do you require?"
+          },
+          {
+            "id": "Q3-duct-repair",
+            "type": "multiple_choice",
+            "order": 18,
+            "options": [
+              {
+                "next": "Q123",
+                "label": "Leaky or torn ducts",
+                "value": "leaky_ducts",
+                "image_url": "https://i.ytimg.com/vi/oWJGD1L6xVs/maxresdefault.jpg"
+              },
+              {
+                "next": "Q123",
+                "label": "Poor airflow",
+                "value": "poor_airflow",
+                "image_url": "https://preview.redd.it/flex-duct-poor-airflow-v0-r8efy6hqnngc1.jpeg?width=1080&crop=smart&auto=webp&s=26fd7d589be893ade0f7b439f59c96c503ef3406"
+              },
+              {
+                "next": "Q123",
+                "label": "Damaged duct sections",
+                "value": "damaged_sections",
+                "image_url": "https://accurateelectricplumbingheatingandair.com/wp-content/uploads/2019/07/Modify-Replace-Ductwork-Service-Champions-1.jpg"
+              },
+              {
+                "next": "Q123",
+                "label": "Incorrect sizing",
+                "value": "incorrect_sizing",
+                "image_url": "https://www.championac.com/wp-content/uploads/2022/03/93466640_l-scaled-670x448-c-default.jpg"
+              },
+              {
+                "next": "Q123",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe the scope of your repair",
+                "character_limit": "250",
+                "validation_message": "Please provide details about the repair scope"
+              }
+            ],
+            "question": "Which duct repair issues do you have? (Select all that apply)"
+          },
+          {
+            "id": "Q3-duct-clean",
+            "type": "single_choice",
+            "order": 19,
+            "options": [
+              {
+                "next": "Q123",
+                "label": "1-2 vents",
+                "value": "1-2_vents",
+                "image_url": "http://example.com/5_vents.png"
+              },
+              {
+                "next": "Q123",
+                "label": "3-4 vents",
+                "value": "3-4_vents",
+                "image_url": "http://example.com/5_10vents.png"
+              },
+              {
+                "next": "Q123",
+                "label": "5-6 vents",
+                "value": "5-6_plus_vents",
+                "image_url": "http://example.com/10plus_vents.png"
+              },
+              {
+                "max": 34,
+                "min": 1,
+                "next": "Q123",
+                "type": "number_input",
+                "unit": "EA",
+                "label": "Custom vent amount",
+                "value": "custom_size",
+                "validation": "^[0-9]+(\\.[0-9]{1,2})?$",
+                "placeholder": "Enter vent cleaning count",
+                "validation_message": "Please enter a valid vent amount"
+              }
+            ],
+            "question": "How many vents or duct openings need cleaning?"
+          },
+          {
+            "id": "Q123",
+            "type": "single_choice",
+            "order": 20,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes require help ASAP",
+                "value": "yes",
+                "image_url": ""
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No, can schedule appointment",
+                "value": "no",
+                "image_url": "http://example.com/no.png"
+              }
+            ],
+            "question": "Is this an emergency?"
+          }
+        ]
+      },
+      "General Contractor": {
+        "category": "General Contractor",
+        "keywords": [
+          "general contractor",
+          "home builder",
+          "home remodel",
+          "home addition",
+          "permit help",
+          "concrete foundation",
+          "roof install",
+          "decks patios",
+          "garage construction",
+          "shed",
+          "interior finish",
+          "exterior siding",
+          "commercial construction"
+        ],
+        "questions": [
+          {
+            "id": "GC1",
+            "type": "multiple_choice",
+            "order": 1,
+            "options": [
+              {
+                "next": "GC2a",
+                "label": "Accessory buildings",
+                "value": "accessory"
+              },
+              {
+                "next": "GC2b",
+                "label": "Decks and patio",
+                "value": "decks"
+              },
+              {
+                "next": "GC2c",
+                "label": "Foundations and concrete",
+                "value": "foundation"
+              },
+              {
+                "next": "GC2d",
+                "label": "Home building",
+                "value": "build"
+              },
+              {
+                "next": "GC2e",
+                "label": "Interior finishing",
+                "value": "interior"
+              },
+              {
+                "next": "GC2f",
+                "label": "Roofing",
+                "value": "roofing"
+              },
+              {
+                "next": "GC2g",
+                "label": "Commercial projects",
+                "value": "commercial"
+              },
+              {
+                "next": "GC2h",
+                "label": "Exterior finishing",
+                "value": "exterior"
+              },
+              {
+                "next": "GC2i",
+                "label": "Home addition",
+                "value": "addition"
+              },
+              {
+                "next": "GC2j",
+                "label": "Home remodel and renovation",
+                "value": "remodel"
+              },
+              {
+                "next": "GC2k",
+                "label": "Permit Assistance",
+                "value": "permit"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "text_input",
+                "label": "Other (describe)",
+                "value": "other_description",
+                "validation": ".{1,250}",
+                "placeholder": "Describe your project",
+                "character_limit": 250,
+                "validation_message": "Please describe the project"
+              }
+            ],
+            "question": "What general contracting services do you need?"
+          },
+          {
+            "id": "GC2a",
+            "type": "single_choice",
+            "order": 2,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Garage",
+                "value": "garage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Shed",
+                "value": "shed"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Detached unit/ADU",
+                "value": "adu"
+              }
+            ],
+            "question": "What kind of accessory building?"
+          },
+          {
+            "id": "GC2b",
+            "type": "camera_measurement",
+            "unit": "SF",
+            "order": 3,
+            "options": [
+              {
+                "max": 5000,
+                "min": 50,
+                "next": "NEXT_BRANCH",
+                "type": "number_input",
+                "label": "Enter square footage",
+                "validation": "^[0-9]+$",
+                "placeholder": "e.g., 400",
+                "validation_message": "Enter valid square footage"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "type": "camera_measurement",
+                "label": "Measure with camera",
+                "camera_prompt": "Take photo of site"
+              }
+            ],
+            "question": "What size is the deck or patio project?"
+          },
+          {
+            "id": "GC2c",
+            "type": "single_choice",
+            "order": 4,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "New foundation",
+                "value": "new"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Repair existing",
+                "value": "repair"
+              }
+            ],
+            "question": "Is this for new foundation work or repairs?"
+          },
+          {
+            "id": "GC2d",
+            "next": "NEXT_BRANCH",
+            "type": "text_input",
+            "order": 5,
+            "value": "home_size",
+            "question": "What size home do you plan to build?",
+            "validation": ".{1,200}",
+            "placeholder": "e.g., 3 bed, 2 bath, 2,000 SF",
+            "character_limit": 200,
+            "validation_message": "Please provide home details"
+          },
+          {
+            "id": "GC2e",
+            "type": "multiple_choice",
+            "order": 6,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Drywall",
+                "value": "drywall"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Trim & baseboards",
+                "value": "trim"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Cabinetry",
+                "value": "cabinets"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Painting",
+                "value": "painting"
+              }
+            ],
+            "question": "Which interior finishing tasks are needed?"
+          },
+          {
+            "id": "GC2f",
+            "type": "single_choice",
+            "order": 7,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Shingle",
+                "value": "shingle"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Metal",
+                "value": "metal"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Flat",
+                "value": "flat"
+              }
+            ],
+            "question": "What type of roofing?"
+          },
+          {
+            "id": "GC2g",
+            "type": "single_choice",
+            "order": 8,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "New build",
+                "value": "new"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Renovation",
+                "value": "reno"
+              }
+            ],
+            "question": "Is this a ground-up commercial build or renovation?"
+          },
+          {
+            "id": "GC2h",
+            "type": "multiple_choice",
+            "order": 9,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Siding",
+                "value": "siding"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Painting",
+                "value": "painting"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Windows/Doors",
+                "value": "windows"
+              }
+            ],
+            "question": "What exterior finishing is needed?"
+          },
+          {
+            "id": "GC2i",
+            "next": "NEXT_BRANCH",
+            "type": "text_input",
+            "order": 10,
+            "value": "addition_size",
+            "question": "What size addition are you planning?",
+            "validation": ".{1,200}",
+            "placeholder": "e.g., 500 SF 2nd floor or sunroom",
+            "character_limit": 200,
+            "validation_message": "Please describe the addition"
+          },
+          {
+            "id": "GC2j",
+            "next": "NEXT_BRANCH",
+            "type": "text_input",
+            "order": 11,
+            "value": "remodel_scope",
+            "question": "What areas are involved in the remodel or renovation?",
+            "validation": ".{1,250}",
+            "placeholder": "e.g., kitchen + bathroom remodel",
+            "character_limit": 250,
+            "validation_message": "Please describe the remodel"
+          },
+          {
+            "id": "GC2k",
+            "type": "single_choice",
+            "order": 12,
+            "options": [
+              {
+                "next": "NEXT_BRANCH",
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "next": "NEXT_BRANCH",
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "question": "Do you need help pulling permits?"
+          }
+        ]
+      }
+    },
+    "preferred_language": null,
+    "ai_rates": []
+  }
+]
